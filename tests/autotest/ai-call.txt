@@ -1,0 +1,46 @@
+# Calls for help (spec 196-199): start, complete (brings the next hunter group), interrupt by disruptor and EMP hits, storm block.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+tacticlog on
+aiset FleeEnabled false
+aiset RegroupEnabled false
+aiset CallSeconds 5
+stageset Strike WaveGapSeconds 120
+# A strike hunter spots the players and calls; the call brings the second group long before the 120 s gap.
+spawnstage Strike
+wait 1
+expect hunterwaves == 1
+expect hunterspending == 1
+wait 14
+hunters called
+expect ai_call_start >= 1
+expect ai_call_complete >= 1
+expect hunterwaves == 2
+expect hunterspending == 0
+# A long call, cut off by one disruptor hit.
+aiset CallSeconds 60
+aiset CallCooldownSeconds 1
+spawnstage Strike
+wait 6
+expect ai_calling >= 1
+disrupt disruptor
+wait 1
+expect ai_call_interrupt >= 1
+expect ai_calling == 0
+# Damage starts a new call; one EMP missile hit cuts it off.
+damagehunters 0.9
+wait 3
+expect ai_calling >= 1
+disrupt emp
+wait 2
+expect ai_call_interrupt >= 2
+expect ai_calling == 0
+# Inside an ion storm a hunter cannot call. The newest hunter is not cooling down; only it takes damage.
+storm -1
+wait 1
+damagehunter -1 0.7
+wait 3
+expect ai_call_blocked >= 1
+quit
