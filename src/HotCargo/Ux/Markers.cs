@@ -17,12 +17,10 @@ namespace HotCargo.Ux;
 
 /// <summary>
 /// H5 and H6. A "BUYER" tag on the Buyer station blip, near or far, and a pulsing outline on the Tech Vault parts of your ships.
-/// The IDs are the shared IDs from the brief. Before the Tech and Journey areas merge, nothing matches and nothing shows.
+/// The IDs come from the Tech area (Vaults.VaultId) and the Journey area (Buyer.Tag).
 /// </summary>
 static class Markers
 {
-    static readonly ID<SimObjectSpawner> BuyerTag = new("hc_buyer");
-    static readonly ID<PartRules> VaultPart = new("yarden_zamir.tech_vault");
 
     static bool ShowBuyer => Run.Current is { } r && r.T.Ux.BuyerMarker;
 
@@ -38,7 +36,7 @@ static class Markers
         [HarmonyPriority(Priority.Low)]
         static void Postfix(ShipIndicatorSource __instance, ref string? __result)
         {
-            if (__instance.Ship.Tags?.Contains(BuyerTag) == true && ShowBuyer) __result = Tag(__result);
+            if (Journey.Buyer.IsBuyer(__instance.Ship) && ShowBuyer) __result = Tag(__result);
         }
     }
 
@@ -48,7 +46,7 @@ static class Markers
     {
         static void Postfix(StasisLandmark __instance, ref string? __result)
         {
-            if (__instance.StasisSpawner is StasisShipSpawner s && s.Tags?.Contains(BuyerTag) == true && ShowBuyer) __result = Tag(__result);
+            if (__instance.StasisSpawner is StasisShipSpawner s && s.Tags?.Contains(Journey.Buyer.Tag) == true && ShowBuyer) __result = Tag(__result);
         }
     }
 
@@ -89,7 +87,7 @@ static class Markers
         if (now - c.Time < 1.0) return c.Parts;
         c.Time = now;
         c.Parts.Clear();
-        foreach (var part in ship.Parts) if (part.Rules.ID == VaultPart) c.Parts.Add(part);
+        foreach (var part in ship.Parts) if (part.Rules.ID == Tech.Vaults.VaultId) c.Parts.Add(part);
         return c.Parts;
     }
 }

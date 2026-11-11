@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using Cosmoteer;
 using Cosmoteer.Game;
 using Cosmoteer.Gui;
@@ -8,7 +7,6 @@ using Halfling;
 using Halfling.Geometry;
 using Halfling.Graphics.Text;
 using Halfling.Gui;
-using HarmonyLib;
 using Cosmoteer.Game.Gui;
 
 namespace HotCargo.Ux;
@@ -22,9 +20,6 @@ static class ShipAlerts
 {
     enum Kind { Destroyed, Derelict, NoControl }
 
-    /// <summary>Filled from the sim update (possibly a worker thread), drained on the GUI frame.</summary>
-    static readonly ConcurrentQueue<(Kind Kind, string Name)> Pending = new();
-
     /// <summary>Local ships of the last poll and whether they could execute commands. Cleared when the sim changes.</summary>
     static readonly Dictionary<Ship, bool> Tracked = [];
     static readonly HashSet<Ship> Seen = [];
@@ -32,25 +27,11 @@ static class ShipAlerts
     static double _nextPoll;
     static int _bannerCount;
 
-    /// <summary>A ship that leaves the sim because it no longer exists (vanilla culls it with handleLostShip).</summary>
-    [HarmonyPatch(typeof(SimShipsManager), nameof(SimShipsManager.Remove))]
-    static class RemovePatch
-    {
-        static void Prefix(SimShipsManager __instance, Ship ship, bool handleLostShip, bool doingLocalJump)
-        {
-            // SimRoot.Dispose also removes every ship with handleLostShip; the ship still exists then, so it is skipped.
-            if (!handleLostShip || doingLocalJump || ship.ExistsInSim(__instance.Sim)) return;
-            if (__instance.Sim.Game is not { } game || ship.Metadata.PlayerIndex != game.LocalPlayerIndex) return;
-            Pending.Enqueue((Kind.Destroyed, ship.Metadata.PlainShipName));
-        }
-    }
-
     internal static void OnFrame()
     {
         var game = App.Director.States.OfType<GameRoot>().FirstOrDefault();
-        if (game?.Sim is not { } sim) { Pending.Clear(); return; }
+        if (game?.Sim is not { } sim) return;
         bool on = UxKit.On(s => s.ShipLossAlerts);
-        while (Pending.TryDequeue(out var a)) if (on) Show(game, a.Kind, a.Name, null);
         double now = App.Clock.Time.Seconds;
         if (now < _nextPoll) return;
         _nextPoll = now + 0.25;
@@ -66,16 +47,25 @@ static class ShipAlerts
             Tracked[ship] = can;
             Seen.Add(ship);
         }
-        // A ship that left the local list but is still in the sim as junk became derelict (no crew, no control).
+        // A ship that left the local list in the same sim was destroyed (disposed or no parts left) or became derelict (junk).
+        // A local jump keeps the parts and the owner, and a transfer to another player keeps the parts, so neither alerts.
         foreach (var ship in Tracked.Keys.Where(s => !Seen.Contains(s)).ToList())
         {
-            if (on && ship.IsJunk && !ship.IsDisposed && ship.ExistsInSim(sim)) Show(game, Kind.Derelict, ship.Metadata.PlainShipName, null);
             Tracked.Remove(ship);
+            if (!on) continue;
+            if (ship.IsDisposed || ship.Parts.Count == 0) Show(game, Kind.Destroyed, ship.Metadata.PlainShipName, null);
+            else if (ship.IsJunk) Show(game, Kind.Derelict, ship.Metadata.PlainShipName, null);
         }
     }
 
+    /// <summary>Alerts shown since start. For autotests.</summary>
+    internal static int Shown;
+    internal static int TrackedCount => Tracked.Count;
+
     static void Show(GameRoot game, Kind kind, string name, Ship? ship)
     {
+        Shown++;
+        Log.Info($"ux: ship alert {kind} {name}");
         string text = kind switch
         {
             Kind.Destroyed => UxKit.Format("ShipLostFmt", name),

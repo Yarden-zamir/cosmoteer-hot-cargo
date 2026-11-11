@@ -32,6 +32,9 @@ sealed class HeatPanel : LayoutBox
     readonly Label _alert;
     readonly Label _debug;
 
+    /// <summary>Stage alerts shown since start. For autotests.</summary>
+    internal static int AlertsShown;
+
     ObjectID? _node;
     int _seenStages = -1;
     double _alertUntil;
@@ -113,9 +116,12 @@ sealed class HeatPanel : LayoutBox
         long value = t.Tech.Value(s.SectorIndex, s.GameSeconds);
         _tech.Text = UxKit.Format("TechFmt", s.FleetTech, value.ToString("N0"));
         _alert.SelfActive = now < _alertUntil;
-        _debug.SelfActive = t.Debug.DebugKeys && !run.IsMultiplayer;
+        // Spec 60: in multiplayer the tunables hash stays visible, so players can compare it.
+        _debug.SelfActive = t.Debug.DebugKeys || run.IsMultiplayer;
         if (_debug.SelfActive)
-            _debug.Text = $"<gray>heat {s.Heat:0.0}  x{mult:0.00}  tunables {s.TunablesHash}  F9/F10</gray>";
+            _debug.Text = run.IsMultiplayer
+                ? $"<gray>tunables {s.TunablesHash} (mp, no reload)</gray>"
+                : $"<gray>heat {s.Heat:0.0}  x{mult:0.00}  tunables {s.TunablesHash}  F9/F10</gray>";
     }
 
     static string StatusLine(RunState s, HeatTunables heat, float mult)
@@ -148,6 +154,7 @@ sealed class HeatPanel : LayoutBox
         if (!run.T.Ux.StageAlerts || s.StagesStarted == 0) return;
         var stage = run.T.Heat.Stages[s.StagesStarted - 1];
         string what = StageText(stage.Name);
+        AlertsShown++;
         _alert.Text = $"<bad>{stage.Name.ToUpperInvariant()}</bad>  {what}";
         _alertUntil = now + run.T.Ux.StageAlertSeconds;
         _flashUntil = now + 2.0;

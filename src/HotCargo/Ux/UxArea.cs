@@ -82,6 +82,21 @@ public static class UxArea
         Autotest.Commands["closepanel"] = _ => CenterPanel.CloseAll();
         Autotest.Commands["map"] = arg => { var r = Autotest.RequireRun(); r.Game.ShowMap = arg != "off"; };
 
+        // kill: test only, single player. Destroys every part of the first own ship.
+        Autotest.Commands["kill"] = _ =>
+        {
+            var run = Autotest.RequireRun();
+            if (run.IsMultiplayer) throw new InvalidOperationException("kill is single player only");
+            var ship = run.Game.Sim.Ships.LocalPlayerShips.FirstOrDefault() ?? throw new InvalidOperationException("no own ship");
+            foreach (var part in ship.Parts.ToList()) part.Health = 0;
+        };
+        Autotest.Fields["ux_stage_alerts"] = () => HeatPanel.AlertsShown;
+        Autotest.Fields["ux_ship_alerts"] = () => ShipAlerts.Shown;
+        Autotest.Commands["uxlog"] = _ =>
+        {
+            var sim = Autotest.RequireRun().Game.Sim;
+            Log.Info($"ux: tracked={ShipAlerts.TrackedCount} local=[{string.Join(", ", sim.Ships.LocalPlayerShips.Select(s => $"{s.Metadata.PlainShipName} parts={s.Parts.Count} can={s.Commands.CanExecuteCommands} exists={s.ExistsInSim(sim)}"))}]");
+        };
         Autotest.Fields["ux_panel"] = () => Autotest.RequireRun().T.Ux.HeatPanel ? 1 : 0;
         Autotest.Fields["ux_integrity"] = () =>
         {
