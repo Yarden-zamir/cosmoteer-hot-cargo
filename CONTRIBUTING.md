@@ -5,7 +5,7 @@ Read SPEC.md first. It holds the design, the numbered requirements and the plan.
 ## Layout
 
 - `src/HotCargo/Core`, `Ui`, `Dev`: shared core. Change it only when an area cannot work through the hooks in `Core/Run.cs` (`Run.Hooks`), `Core/DebugKeys.cs` (`DebugKeys.Extra`) and `Dev/Autotest.cs` (`Autotest.Commands`, `Autotest.Fields`).
-- `src/HotCargo/<Area>`: one folder for each area (Tech, Journey, Hunters, Missions, Tactics). Each area has `<Area>Area.Register()`, its tunables section class and its patches.
+- `src/HotCargo/<Area>`: one folder for each area (Tech, Journey, Hunters, Missions, Tactics, Ux, Events). Each area has `<Area>Area.Register()`, its tunables section class and its patches.
 - `mod/mod.header.rules`: the mod header. `scripts/assemble-mod.sh` builds `mod.rules` from it and from every `mod/<area>/actions.rules`.
 - `mod/<area>/actions.rules`: only Action objects `{ ... }`, without an outer list.
 - `mod/<area>/strings.en.rules`: string sections for the area. Two areas must not define the same top-level section.
