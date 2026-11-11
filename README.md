@@ -13,6 +13,7 @@ You stole corporate tech. The corporation wants it back. Get it across about 8 s
 - **Protect the cargo.** Hits on the vault destroy tech. If your tech reaches 0, the run is over.
 - **Deliver.** The Buyer waits in the last sector. Sell it your tech to win.
 - **New missions.** Convoy escorts, joint strikes with allied fleets, and shady bounties that may be corporate traps.
+- **FTL-style events.** Distress beacons, corporate checkpoints, fences, rival thieves and more: choices with risks, costs and rewards.
 
 ![Heat stage alert](docs/screenshots/ux-heat-alert.jpg)
 
