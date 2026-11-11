@@ -7,7 +7,7 @@ PC_GAME_DIR="${PC_GAME_DIR:-C:\\Program Files (x86)\\Steam\\steamapps\\common\\C
 # The Mods folder sits under the Steam user id folder. The PowerShell side resolves it.
 T3="${T3:-$HOME/.t3/bin/t3}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SHARED_GAME="$REPO_ROOT/../_shared/game"
+SHARED_GAME="$REPO_ROOT/../.game"
 
 pc() { "$T3" machine exec "$PC_MACHINE" -- "$@"; }
 

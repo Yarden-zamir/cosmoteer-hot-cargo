@@ -10,8 +10,8 @@
     <AssemblyName>HotCargo</AssemblyName>
     <RootNamespace>HotCargo</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <!-- Game files are copied from the PC into _shared/game by scripts/pull-game.sh. They are not committed. -->
-    <CosmoteerBin Condition="'$(CosmoteerBin)' == ''">$(MSBuildThisFileDirectory)../../../_shared/game/Bin</CosmoteerBin>
+    <!-- Game files are copied from the PC into .game by scripts/pull-game.sh. They are not committed. -->
+    <CosmoteerBin Condition="'$(CosmoteerBin)' == ''">$(MSBuildThisFileDirectory)../../../.game/Bin</CosmoteerBin>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Cosmoteer"><HintPath>$(CosmoteerBin)/Cosmoteer.dll</HintPath><Private>false</Private></Reference>

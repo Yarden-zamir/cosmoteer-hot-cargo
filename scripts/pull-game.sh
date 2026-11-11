@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copy game DLLs, symbols and .rules files from the PC into ../_shared/game, then decompile.
+# Copy game DLLs, symbols and .rules files from the PC into ../.game, then decompile.
 # Run again after a game update.
 source "$(dirname "$0")/pc.sh"
 mkdir -p "$SHARED_GAME/Bin" "$SHARED_GAME/Data" "$SHARED_GAME/StandardMods"

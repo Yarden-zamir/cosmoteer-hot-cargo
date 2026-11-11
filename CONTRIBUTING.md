@@ -13,7 +13,7 @@ Read SPEC.md first. It holds the design, the numbered requirements and the plan.
 
 ## Build and test
 
-1. Run `scripts/pull-game.sh` once. It copies the game DLLs and rules from the PC to `../_shared/game` and decompiles them to `../_shared/game/decompiled`.
+1. Run `scripts/pull-game.sh` once. It copies the game DLLs and rules from the PC to `../.game` and decompiles them to `../.game/decompiled`.
 2. Build: `dotnet build src/HotCargo/HotCargo.csproj -c Release`.
 3. Unit tests (pure math only): `cd tests/HotCargo.Tests && dotnet run`.
 4. Game test on the PC: `scripts/autotest.sh tests/autotest/<name>.txt`. It deploys, turns the mod on, runs the game minimized and prints the log. Commands are in `src/HotCargo/Dev/Autotest.cs`.

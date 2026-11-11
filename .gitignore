@@ -1,6 +1,7 @@
 bin/
 obj/
 /_shared/
+/.game/
 /game
 *.user
 .vs/
