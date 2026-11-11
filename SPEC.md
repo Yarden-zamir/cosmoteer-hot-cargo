@@ -102,12 +102,12 @@ With defaults and 6 units held, a sector reaches the top stage after about 6 mis
 | Warning | 25 | Alert sound and message. One scout ship of the sector tier. |
 | Patrol | 50 | Two hunter ships of the sector tier. |
 | Hunt | 75 | Three hunter ships of the sector tier + 1. |
-| Strike | 100 | A strike force of the sector tier + 2. A new wave every `StrikeWaveInterval` (default 180 s) while heat stays at 100. |
+| Strike | 100 | A strike force of the sector tier + 2. A new wave every `StrikeWaveIntervalSeconds` (default 180 s) while heat stays at 100. |
 
-31. Each stage starts once for each sector visit. The Strike stage repeats its waves.
-32. Hunters spawn at a distance of `HunterSpawnDistance` (default 2,000 to 3,000) from the players. They move to the players and attack.
-33. Hunters are a corporate faction. They use ships of the right tier from the existing ship pool. **[verify]** if a new faction can be defined in rules only.
-34. Hunters prefer to attack ships that carry Tech Vaults.
+31. Each stage starts once for each sector visit. The Strike stage repeats its waves. A wave spawns only enough ships to reach `MaxLiveHunters` (default 12) live hunters in the system.
+32. Hunters spawn at a distance of `SpawnDistanceMin` to `SpawnDistanceMax` (default 2,000 to 3,000) from the center of the player fleet. All ships of one wave come from one direction, spread over `WaveArcDegrees` (default 40°). They always know where the players are, move to them and attack. Hunters far from the players move toward them in stasis too.
+33. Hunters are a corporate force, not a rules faction. They use built-in ships with the `ShipTags` tag (default `combat`) from the `ShipFactions` pools (default: all factions), at the wanted tier or the nearest lower tier. Their names start with `ShipNamePrefix` (default "Corporate"). All hunters in a system share one hostile player index, so they are allies of each other and enemies of the players. Like vanilla ambushes, they are also enemies of faction ships. Resolved: a rules faction needs an icon, two player indices and its own ship pool, and the faction reputation systems would treat it as a normal faction. A unique player index gives the same result at much lower cost.
+34. Hunters prefer to attack ships that carry Tech Vaults. A ship with a Tech Vault part counts `VaultTargetFactor` times more (default 3) when a hunter picks the nearest target.
 35. The Strike stage is dangerous but survivable. It does not end the run directly. Only a loss under requirement 9 ends the run. **Open decision:** the user may choose a hard fail instead.
 
 ## 11. Missions
@@ -126,12 +126,12 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 12. Hunter AI tactics
 
-43. Hunters use new tactics. Each tactic has an on/off switch and a minimum stage in the tunables file.
-44. **Kite**: ships with a longer weapon range than the target hold at `KiteRangeFraction` (default 0.9) of their range.
-45. **Pincer**: in a group of two or more, ships split and attack from sides that are at least `PincerAngle` (default 120°) apart.
-46. **Disable**: ships aim at weapons and thrusters first. Default minimum stage: Hunt.
-47. **Fall back**: a ship below `FallBackHealthFraction` (default 0.35) moves away and repairs, then returns.
-48. **Bait**: one fast ship comes close, then pulls back toward the rest of the group. Default minimum stage: Strike.
+43. Hunters use new tactics. Each tactic has an on/off switch (`<Tactic>Enabled`) and a minimum stage (`<Tactic>MinStage`, a stage name or empty) in the tunables file. With no active run, or with a tactic off, the hunter AI uses the vanilla module for that job.
+44. **Kite**: ships with a longer weapon range than the target hold at `KiteRangeFraction` (default 0.9) of their range, edge to edge. A ship kites only when that distance is outside the target's longest weapon range.
+45. **Pincer**: in a group of two or more on the same target, ships split and attack from sides that are `PincerAngleDegrees` (default 120°) apart, alternating left and right of the group leader. With more ships than fit in a circle at that angle, the angle shrinks to 360° ÷ group size. The leader turns the whole formation a little every 10 to 20 s.
+46. **Disable**: ships aim all weapons at the nearest weapon or thruster part of the target. Default minimum stage: Hunt.
+47. **Fall back**: a ship below `FallBackHealthFraction` (default 0.35) moves `FallBackDistance` (default 1,500) away from the nearest player ship and repairs. It returns at `FallBackRecoverFraction` (default 0.6) or after `FallBackMaxSeconds` (default 45 s), and cannot fall back again for the same time. Health is the cost of each part times its health fraction, summed and divided by the blueprint cost. Destroyed parts count as 0.
+48. **Bait**: in a group of two or more, the ship with the most thrust per mass comes within `BaitCloseDistance` (default 150) of the nearest player ship, then pulls back to the middle of its group for `BaitPullBackSeconds` (default 12 s), and repeats. Default minimum stage: Strike.
 49. Each tactic has a visible tell, so the players can read it and counter it. For example, a kiting ship keeps its distance, and a ship that falls back turns away.
 
 ## 13. Tunables, debug and live tuning
@@ -177,14 +177,14 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `HeatMultiplierByUnits` | [0.25, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2] | 26 |
 | `HeatCarryOverFraction` | 0.25 | 28 |
 | `HeatStages` | see section 10 | 30 |
-| `StrikeWaveInterval` | 180 s | 30 |
-| `HunterSpawnDistance` | [2000, 3000] | 32 |
+| `StrikeWaveIntervalSeconds` | 180 s | 30 |
+| `SpawnDistanceMin`, `SpawnDistanceMax` | 2000, 3000 | 32 |
 | `ShadyRewardFactor` | 2.0 | 38 |
 | `ShadyTrapChanceBase` | 0.2 | 39 |
 | `ShadyTrapChancePerHeat` | 0.006 | 39 |
 | `ShadyTrapSurvivalReward` | 0.5 | 40 |
 | `KiteRangeFraction` | 0.9 | 44 |
-| `PincerAngle` | 120° | 45 |
+| `PincerAngleDegrees` | 120° | 45 |
 | `FallBackHealthFraction` | 0.35 | 47 |
 
 The defaults are first guesses. Live tuning sets the real values.
@@ -198,7 +198,7 @@ mod/                       rules content, copied to <Cosmoteer Mods>/hot_cargo
   resources/stolen_tech    resource definition and icon
   parts/tech_vault         part definition and sprites (vanilla sprites where possible)
   missions/                escort, fleet assault, shady offer
-  factions/corporate       hunter faction
+  tactics/ai_hunter.rules  hunter AI (HotCargoHunter)
   run/                     galaxy size, sector tiers, Buyer station
   strings/en.rules         all text
 src/HotCargo/              C# mod
@@ -209,8 +209,8 @@ src/HotCargo/              C# mod
   HeatModel.cs             pure functions: heat delta, multiplier, stage crossing, tech value
   Fleet.cs                 fleet tech count, sale and delivery detection
   RunRules.cs              win and loss
-  Hunters.cs               stage responses, hunter spawns
-  Tactics/*.cs             AI tactics modules
+  Hunters/*.cs             stage responses, hunter spawns, hunt strategy
+  Tactics/*.cs             AI tactics modules, TacticsModel (pure tactic math)
   Missions/*.cs            escort and shady trap objectives, scaled reward, mission math
   Ui/Overlay.cs, Ui/Dialogs.cs
   Patches/*.cs             one file for each patched game area
