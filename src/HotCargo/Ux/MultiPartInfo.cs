@@ -16,6 +16,9 @@ static class MultiPartInfo
     /// <summary>Times the info box showed several parts. For autotests.</summary>
     internal static int Shown;
 
+    /// <summary>The health text of the newest parts card info. For autotests.</summary>
+    internal static Halfling.Gui.Label? HealthLabel;
+
     static bool Active(PartsCard card) => card.Sim.PlayerInput.SelectedParts.Count > 1 && UxKit.On(s => s.MultiPartInfo);
 
     [HarmonyPatch(typeof(PartsCard), nameof(PartsCard.UpdateForMultipleParts))]
@@ -32,7 +35,10 @@ static class MultiPartInfo
                 (long health, long max, int damaged) = Totals(parts);
                 __instance._infoBox.SelfActive = true;
                 Shown++;
+                HealthLabel = __instance._partHealth;
                 __instance._partName.Text = sameType ? UxKit.Format("PartsSameFmt", parts.Count, first.NameKey.Text) : UxKit.Format("PartsMixedFmt", parts.Count);
+                // The vanilla health label has no markup, so it does not parse tags. The plain "{0} / {1}" text reads the same with them on.
+                __instance._partHealth.TextRenderer.XmlFormatting = true;
                 __instance._partHealth.Text = UxKit.Format("PartsHealthFmt", health.ToString("N0"), max.ToString("N0"), damaged);
             });
         }

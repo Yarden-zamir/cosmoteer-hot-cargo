@@ -132,8 +132,11 @@ static class CareerInfoPatches
     /// in the style of the win panel, with a fixed width so that long lines wrap instead of overlapping.
     /// </summary>
     [HarmonyPatch(typeof(GameOverGui), MethodType.Constructor, typeof(GameRoot))]
-    static class GameOver
+    internal static class GameOver
     {
+        /// <summary>The newest game-over panel. For autotests that check the layout.</summary>
+        internal static WeakReference<LayoutBox>? LossPanel;
+
         static void Postfix(GameOverGui __instance, GameRoot game) => UxKit.Guard("game over", () =>
         {
             if (game.Mode is not CareerGameModeManager mode) return;
@@ -164,12 +167,8 @@ static class CareerInfoPatches
         {
             var buttons = (LayoutBox)box.Children[box.Children.Count - 1];
             float width = Math.Max(900f, buttons.Children.Count * 220f + 60f);
-            var panel = new LayoutBox { AnchorRect = AnchorPresets.Center, Width = width, InputBlockMode = InputBlockMode.Auto };
-            panel.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
-            panel.AutoSize.Anchor = new Vector2(0.5f, 0.5f);
-            panel.Children.LayoutAlgorithm = LayoutAlgorithms.StretchTopToBottom;
-            panel.Children.BorderPadding = new Borders(30f, 24f, 30f, 24f);
-            WidgetRules.AddBlur(panel);
+            var panel = CenterPanel.NewBox(width);
+            LossPanel = new WeakReference<LayoutBox>(panel);
             gui.Children.Remove(box);
             box.AnchorRect = AnchorPresets.TopLeft;
             box.AutoSize.AutoWidthMode = AutoSizeMode.Disable;

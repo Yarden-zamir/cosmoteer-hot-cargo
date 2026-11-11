@@ -5,6 +5,8 @@ wait 8
 expect active == 1
 # The start event window is open. Key 1 picks its first option.
 expect ev_pending == 1
+# Only the gold key number shows: the "1. " text prefix of the event view is stripped.
+expect ux_event_text_numbers == 0
 uxpick 1
 wait 2
 expect ev_pending == 0
@@ -18,6 +20,7 @@ select
 selectparts
 wait 1
 expect ux_parts_info > 0
+expect ux_parts_xml == 1
 # Damage to the player ship counts as a hit.
 damage 0.5
 wait 2
@@ -42,6 +45,8 @@ commstab trade
 wait 2
 tradehint
 expect ux_trade_hint > 0
+# The hint box has its own space: it overlaps no row of the trade page.
+expect ux_trade_overlap == 0
 # CommsStayOnMap: the map leaves comms open and paused; a later close unpauses.
 map on
 wait 2
@@ -67,4 +72,8 @@ wanted
 wait 2
 wantedline
 expect ux_wanted_line > 0
+# The win panel is centered and inside the screen.
+win
+wait 2
+expect ux_win_centered == 1
 quit
