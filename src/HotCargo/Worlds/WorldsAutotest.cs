@@ -192,9 +192,11 @@ static class WorldsAutotest
                 Vector2 mean = centers.Aggregate(Vector2.Zero, (a, c) => a + c) / centers.Count;
                 Vector2 flow = Current.FlowVector(sim);
                 Vector2 side = new(-flow.Y, flow.X);
-                Vector2? at = Enumerable.Range(2, 6).Select(k => (Vector2?)(mean + side * (k * 2000f)))
-                    .FirstOrDefault(p => sim.Nebulas.GetInsideStrength(p!.Value, Current.NebulaId) <= 0f);
-                Teleport(at ?? throw new InvalidOperationException("no open space beside the current"));
+                var suns = HeatZone.Suns(sim);
+                Vector2? at = Enumerable.Range(2, 8).SelectMany(k => new[] { k, -k }).Select(k => (Vector2?)(mean + side * (k * 2000f)))
+                    .FirstOrDefault(p => sim.Nebulas.GetInsideStrength(p!.Value, Current.NebulaId) <= 0f
+                        && suns.All(sun => p.Value.DistanceTo(sun.Center) > sun.EdgeRadius + 1000f));
+                Teleport(at ?? throw new InvalidOperationException("no open space beside the current and away from suns"));
                 break;
             }
             // goto sun <depth>: the point at that depth in the heat zone of the first sun, on its +X side.
