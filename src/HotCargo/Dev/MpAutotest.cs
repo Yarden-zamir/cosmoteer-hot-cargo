@@ -70,14 +70,23 @@ public static class MpAutotest
             (career._setLoadGameNameRpc ?? throw new InvalidOperationException("career config has no load RPC"))(path.FilenameWithoutExtension);
             career.InvokeReadySettingChanged();
         };
-        // mp mpresync: the resync that the game does after a desync (the host sends its game to the clients, every machine reloads it).
-        // Run it through "mp", so every machine expects the resync and DesyncPatch does not count it. Then: waitfor mpgames >= N.
+        // mpresync (host): the resync that the game does after a desync (the host sends its game to the clients, every machine
+        // reloads it). DesyncPatch does not count it. Then: waitfor mpgames >= N.
         Autotest.Commands["mpresync"] = _ =>
         {
-            var mp = RequireMpGame().NetManager as BaseMPManager ?? throw new InvalidOperationException("no MP manager");
+            var game = RequireMpGame();
+            if (!game.NetManager.IsHost) throw new InvalidOperationException("mpresync is for the host");
+            // The host can get the client's out-of-sync call before its own sim reaches the input, so it expects the resync now.
             ExpectResync = true;
+            game.NetManager.EnqueueInput(new AutotestInput("mpresync_client"));
+        };
+        Autotest.Commands["mpresync_client"] = _ =>
+        {
+            var mp = RequireMpGame().NetManager as BaseMPManager ?? throw new InvalidOperationException("no MP manager");
+            if (mp.IsHost) return;
             // A client starts it, as a client does when its integrity hash differs from the host's.
-            if (!mp.IsHost) mp._onOutOfSyncRpc(default);
+            ExpectResync = true;
+            mp._onOutOfSyncRpc(default);
         };
         // mp mpmark <n>: sets a test counter inside the sim on every machine. The other machine waits with "waitfor mpmark >= n".
         Autotest.Commands["mpmark"] = arg => _mark = int.Parse(arg, CultureInfo.InvariantCulture);

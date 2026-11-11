@@ -15,7 +15,7 @@ expectevent smuggler_den
 save mpsave
 wait 3
 # The resync that follows a desync: every machine reloads the host's game.
-mp mpresync
+mpresync
 waitfor mpgames >= 2 120
 waitfor active == 1 60
 expectevent smuggler_den

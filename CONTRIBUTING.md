@@ -37,7 +37,7 @@ Commands for co-op scripts (`src/HotCargo/Dev/MpAutotest.cs`):
 - Real player actions run without `mp`, from one machine: `choose`, `tech sell`, `buyer sell`, `pause`. They send the game's own MP inputs.
 - `waitfor <field> <op> <value> [timeout]`: wait until a check holds. Use it to keep the two scripts in step. `mp mpmark <n>` with `waitfor mpmark >= <n>` is a barrier between host and client.
 - `mplobby` (host): return all players to the game setup screen. `mpload <name>` (host): the next `mpstart` loads the save `HotCargoTest_<name>`.
-- `mp mpresync`: do the resync that follows a desync (the host's game goes to every machine). Then `waitfor mpgames >= <n>`.
+- `mpresync` (host): do the resync that follows a desync (the host's game goes to every machine). Then `waitfor mpgames >= <n>`.
 - `mpchoose <serial> <choice>`: send an event choice for any page, like a late second click.
 - `tunablesfile <text>` (before `mphost`): give this slot a different `tunables.rules`.
 - Fields: `desyncs`, `mpgames`, `ishost`, `mpplayers`, `mpconnected`, `mpsetup`, `localplayer`, `mpmark`, `heatperminute`.
