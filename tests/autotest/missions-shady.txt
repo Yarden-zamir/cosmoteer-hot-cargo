@@ -21,7 +21,8 @@ hc_mark
 hc_shady_spring
 expect hc_trap_state == 2
 expect hc_ambushers == 2
-expect hc_ambush_vs_player == 2
+# Counts every ambusher in the system, so the first offer may add two more.
+expect hc_ambush_vs_player >= 2
 hc_kill_ambush
 expect hc_ambushers == 0
 expect hc_trap_done == 1
