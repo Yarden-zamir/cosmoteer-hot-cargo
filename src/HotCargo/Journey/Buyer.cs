@@ -91,6 +91,9 @@ public static class Buyer
             missions.TrackMission(mission);
     }
 
+    /// <summary>Spec 7: BuyerPriceFactor × the run's Buyer price multiplier (an advance from the Buyer's agent event lowers it).</summary>
+    public static float PriceFactor(Run run) => run.T.Journey.BuyerPriceFactor * run.State.BuyerPriceMultiplier;
+
     public static bool IsBuyer(Ship ship) => ship.Tags?.Contains(Tag) == true;
 
     /// <summary>Buyer stations in the sim, loaded or in stasis.</summary>
@@ -102,7 +105,7 @@ public static class Buyer
     {
         if (run.State.Result != RunResult.Running) return;
         long value = run.T.Tech.Value(run.State.SectorIndex, run.State.GameSeconds);
-        float factor = run.T.Journey.BuyerPriceFactor;
+        float factor = PriceFactor(run);
         var players = new List<PlayerState>();
         run.Game.GetHumanPlayerStates(players, deterministic: true);
         long money = players.Sum(p => (long)p.Money);
@@ -125,7 +128,7 @@ public static class Buyer
         {
             if (destPlayerIndex != PlayerIndexes.Neutral || resourceType != TechResource) return;
             if (Run.Current is not { } run || run.Game.Sim != __instance.Sim) return;
-            __result = (int)(__result * run.T.Journey.BuyerPriceFactor);
+            __result = (int)(__result * PriceFactor(run));
         }
     }
 

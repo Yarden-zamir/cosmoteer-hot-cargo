@@ -22,6 +22,23 @@ public static class GameData
         [Serialize] public Halfling.Range<int> Money;
     }
 
+    [ReflectiveSerialization(Explicit = true)]
+    sealed class TierReputation
+    {
+        [Serialize] public int Tier;
+        [Serialize] public int Reputation;
+    }
+
+    static Dictionary<int, int>? _standardMissionReputation;
+
+    /// <summary>Reputation of a standard mission at a tier, from TIER_TABLES/StandardReputationPerTier. Same limit as StandardMissionFame.</summary>
+    public static int StandardMissionReputation(int tier)
+    {
+        _standardMissionReputation ??= LoadTable<TierReputation>("StandardReputationPerTier").ToDictionary(r => r.Tier, r => r.Reputation);
+        int clamped = Math.Clamp(tier, _standardMissionReputation.Keys.Min(), _standardMissionReputation.Keys.Max());
+        return _standardMissionReputation[clamped];
+    }
+
     static Dictionary<int, int>? _standardMissionFame;
     static Dictionary<int, int>? _standardMissionMoney;
 

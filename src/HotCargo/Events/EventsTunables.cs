@@ -16,6 +16,8 @@ public sealed class EventsTunables
     /// <summary>Chance, once per system visit, that the first trade station a player ship comes near opens a Station event.</summary>
     [Serialize(Optional = true)] public float StationEventChance = 0.5f;
     [Serialize(Optional = true)] public float StationTriggerDistance = 1500f;
+    /// <summary>Chance, once per system for the run, that the first trade station a player ship comes near offers a Courier Job.</summary>
+    [Serialize(Optional = true)] public float CourierChance = 0.5f;
     [Serialize(Optional = true)] public float SignalTriggerDistance = 900f;
     /// <summary>Arrival and Station events wait this many game seconds after the last triggered event. Signal and Start events ignore it but start it.</summary>
     [Serialize(Optional = true)] public float CooldownSeconds = 120f;
