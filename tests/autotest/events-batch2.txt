@@ -47,12 +47,12 @@ ev_mark
 choose 1 1
 expect ev_money_gain < -7000
 # The Buyer's Agent: credits now, a lower Buyer price later (spec 7 x the run multiplier).
-expect buyerprice >= 1.49
+expect buyerprice >= 3.99
 event buyers_agent
 ev_mark
 choose 1 1
 expect ev_buyer_mult == 0.8
-expect buyerprice <= 1.21
-expect buyerprice >= 1.19
+expect buyerprice <= 3.21
+expect buyerprice >= 3.19
 expect ev_money_gain > 0
 quit

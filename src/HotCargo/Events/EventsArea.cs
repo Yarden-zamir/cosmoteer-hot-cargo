@@ -142,12 +142,13 @@ public static class EventsArea
             var sim = RequireSim();
             var ships = sim.Ships.HumanPlayerSignificantShips.ToList();
             var tag = new ID<SimObjectSpawner>("trade_station");
-            var station = sim.Ships.Where(s => s.Tags?.Contains(tag) == true && !s.IsJunk)
-                .OrderBy(s => s.DetWorldCenter.DistanceSquaredTo(ships[0].DetWorldCenter)).FirstOrDefault()
-                ?? throw new InvalidOperationException("no live trade station in this system");
-            float offset = station.WorldBoundingRadius + 300f;
-            foreach (var s in ships) { s.WorldCenter = station.WorldCenter + new Halfling.Geometry.Vector2(offset + s.WorldBoundingRadius, 0); offset += 2 * s.WorldBoundingRadius + 100f; }
-            Log.Info($"AUTOTEST moved next to station {station.Metadata.PlainShipName}");
+            // A station far from the players is in stasis, so this takes live and stasis stations (SimQueries.TaggedShips).
+            var stations = SimQueries.TaggedShips(sim, tag);
+            if (stations.Count == 0) throw new InvalidOperationException("no trade station in this system");
+            var station = stations.MinBy(t => t.Location.DistanceSquaredTo(ships[0].DetWorldCenter));
+            float offset = (station.Live?.WorldBoundingRadius ?? 400f) + 300f;
+            foreach (var s in ships) { s.WorldCenter = station.Location + new Halfling.Geometry.Vector2(offset + s.WorldBoundingRadius, 0); offset += 2 * s.WorldBoundingRadius + 100f; }
+            Log.Info($"AUTOTEST moved next to station {station.Id} (live={station.Live is not null})");
             Autotest.Wait(2);
         };
         // 1 while the sim is paused. Event dialogs must not pause headless test games.

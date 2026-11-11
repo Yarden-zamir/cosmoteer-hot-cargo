@@ -2,15 +2,12 @@
 	// Gameplay spawns move in to about 70% of the vanilla radius, and counts drop with the area (about half).
 	// Scenery (suns, planets, nebulas, the fog radius) keeps the vanilla size.
 	// These change the shared sector rules, so they apply to every map size while the mod is on.
-	{
-		Action = Overrides
-		OverrideIn = "<modes/career/sectors/sysgen_trade_stations.rules>/SubSpawners/0"
-		Overrides { Distance = [4000, 9000] } // was [4000, 11000]; stations keep 7500 from the sun
-	}
+	// Stations keep the vanilla ring ([4000, 11000], at least 7500 from the sun). A ring of [4000, 9000] put hunter waves
+	// where they were lost within a second in the test seed. Revisit with the Hunters area to bring stations closer.
 	{
 		Action = Overrides
 		OverrideIn = "<modes/career/sectors/sysgen_trade_stations.rules>/SubSpawners/1"
-		Overrides { Count = [2, 3]; Distance = [4000, 9000]; } // was [2, 4] stations in [4000, 11000]
+		Overrides { Count = [2, 3] } // was [2, 4] stations outside the starting system
 	}
 	{
 		Action = Overrides
