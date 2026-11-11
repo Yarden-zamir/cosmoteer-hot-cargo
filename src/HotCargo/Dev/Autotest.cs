@@ -91,8 +91,12 @@ public static class Autotest
             string map = args.Length > 0 ? args[0] : "last";
             int mapSize = map == "last" ? rules.MapSizes.Length - 1 : int.Parse(map, CultureInfo.InvariantCulture);
             ShipFile ship = rules.StarterShips[args.Length > 1 ? int.Parse(args[1], CultureInfo.InvariantCulture) : 0].Ship;
-            var init = new CareerInit(null, mapSize, Settings.DefaultCareerModeCombatDifficulty, Settings.DefaultCareerModeEconDifficulty,
-                Settings.DefaultCareerModeCrewScarcity, false, false, false, false, enableIronmanMode: false, null, 12345UL,
+            // The game's default levels, not the player's saved choices: test slots start with an empty settings file.
+            int combat = Array.FindIndex(rules.CombatDifficultyLevels, l => l.IsDefault);
+            int econ = Array.FindIndex(rules.EconDifficultyLevels, l => l.IsDefault);
+            int crew = Array.FindIndex(rules.CrewScarcityLevels, l => l.IsDefault);
+            if (combat < 0 || econ < 0 || crew < 0) throw new InvalidOperationException("no default difficulty level in career rules");
+            var init = new CareerInit(null, mapSize, combat, econ, crew, false, false, false, false, enableIronmanMode: false, null, 12345UL,
                 (ship.ShipName, Ship.LoadBytes(ship.FilePath)));
             App.Director.PushState(init.CreateGame(SPManager.Create));
             Wait(5);
