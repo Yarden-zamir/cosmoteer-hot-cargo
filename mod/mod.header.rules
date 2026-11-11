@@ -6,4 +6,4 @@ ModifiesGameplay = true
 Author = "Yarden-zamir"
 StringsFolder = "strings"
 Description = "You stole corporate tech. The corporation wants it back.\n\n"\
-              "Needs the Hot Cargo C# part, installed by scripts/deploy.sh."
+              "Needs the Hot Cargo C# part: run install.bat from the release zip."

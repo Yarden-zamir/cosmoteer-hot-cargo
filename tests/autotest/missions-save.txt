@@ -1,6 +1,5 @@
 # Save and load with active Hot Cargo missions: the custom objectives (HotCargoEscort, HotCargoShadyTrap) are saved in the mission log.
 newgame last
-hc_no_codex_pause
 wait 8
 hc_generate all
 hc_accept escort

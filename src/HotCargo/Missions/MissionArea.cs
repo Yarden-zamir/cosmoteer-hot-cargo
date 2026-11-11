@@ -43,12 +43,6 @@ public static class MissionArea
         Autotest.Commands["hc_escort_diag"] = arg => LogEscort(arg);
         // Test slots start with empty settings, so tutorial codex pages are unseen. The combat tutorial pauses the game
         // the first time an enemy is in sight without a station in sight, which freezes the escort. Tests turn that off.
-        Autotest.Commands["hc_no_codex_pause"] = _ =>
-        {
-            int n = 0;
-            foreach (var page in Cosmoteer.GameApp.Rules.Codex.CodexPages.Where(p => p.AutoPause)) { page.AutoPause = false; n++; }
-            Log.Info($"AUTOTEST codex auto-pause off on {n} pages");
-        };
         Autotest.Commands["hc_assault_goto"] = _ => TeleportPlayers(TaggedShips(RequireSim(), "hc_assault_ally").First().Location);
         Autotest.Commands["hc_shady_spring"] = _ => TestShadySpring();
         Autotest.Commands["hc_kill_ambush"] = _ => TestKillAmbush();

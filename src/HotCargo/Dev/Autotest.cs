@@ -45,7 +45,11 @@ public static class Autotest
             _script.Enqueue(space < 0 ? (line, "", i + 1) : (line[..space], line[(space + 1)..].Trim(), i + 1));
         }
         AddBaseCommands();
-        Log.Info($"AUTOTEST loaded {_script.Count} commands");
+        // Test slots start with empty settings, so every tutorial page is unseen. Pages with AutoPause would pause the game
+        // for good the first time their condition fires (for example the combat page when enemies appear).
+        int unpaused = 0;
+        foreach (var page in GameApp.Rules.Codex.CodexPages.Where(p => p.AutoPause)) { page.AutoPause = false; unpaused++; }
+        Log.Info($"AUTOTEST loaded {_script.Count} commands; tutorial auto-pause off on {unpaused} pages");
         App.Director.FrameEnded += OnFrame;
     }
 

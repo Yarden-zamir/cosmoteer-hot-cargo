@@ -29,3 +29,8 @@ The game runs on a Windows PC that a person also uses. `autotest.sh` runs headle
 
 Run one autotest at a time per worktree: parallel runs from one worktree build into the same output folder.
 - Never commit personal machine data: user home paths, machine names, Steam IDs. `scripts/check-private.sh` checks this, and CI runs it on every push. Machine settings go in `scripts/pc.local.sh` (git ignores it).
+
+## Releases
+
+1. Merge, push, and run `scripts/autotest-all.sh` on a clean tree. A full pass writes a marker for that commit.
+2. Run `scripts/release.sh <version> [--prerelease]`. It builds `hot-cargo-<version>.zip` (mod, loader, `install.bat`, `uninstall.bat`, `INSTALL.md`), tags the commit and publishes a GitHub release.
