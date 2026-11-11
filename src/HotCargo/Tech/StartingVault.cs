@@ -13,7 +13,7 @@ namespace HotCargo.Tech;
 /// Spec 17: a new run starts with StartingTechUnits in Tech Vaults on the starting ship.
 /// The starter ships have no vault, so this adds vaults to the ship's blueprints and builds them at once.
 /// </summary>
-static class StartingVault
+internal static class StartingVault
 {
     static readonly ID<PartRules> StorageBayId = new("cosmoteer.storage_2x2");
 
@@ -56,7 +56,7 @@ static class StartingVault
     /// With requireDoor, the spot must allow a door to a neighbor part, and the door is added.
     /// Limit: a door to a neighbor does not prove that crew can walk there from the rest of the ship. Revisit if players report an unreachable vault.
     /// </summary>
-    static bool PlaceOutside(Ship ship, PartRules vault, bool requireDoor)
+    internal static bool PlaceOutside(Ship ship, PartRules vault, bool requireDoor)
     {
         var parts = ship.BlueprintParts;
         var cells = parts.SelectMany(p => p.Rect).ToHashSet();

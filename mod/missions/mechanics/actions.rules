@@ -1,0 +1,90 @@
+// Hot Cargo mechanics missions (spec 130 to 139): drone siege, prototype retrieval, sun mining, tow, capture, storm survey, claim jumpers.
+{
+	Action = Add
+	AddTo = "<modes/career/sectors/sector_basic/sector_basic.rules>/Sector/SystemGenerator/Spawners"
+	ToAdd = &<missions/mechanics/sysgen_mechanics.rules>
+}
+// Prototype Core part (spec 133).
+{
+	Action = AddMany
+	AddTo = "<ships/terran/terran.rules>/Terran/Parts"
+	ManyToAdd
+	[
+		&<missions/mechanics/prototype_core.rules>/Part
+	]
+}
+// Helion Ore, its deposits and its asteroids (spec 138).
+{
+	Action = Add
+	AddTo = "<resources/resources.rules>/Resources"
+	ToAdd = &<missions/mechanics/helion_ore.rules>
+}
+{
+	Action = AddMany
+	AddTo = "<ships/asteroid/asteroid.rules>/Asteroid/Parts"
+	ManyToAdd
+	[
+		&<missions/mechanics/helion_asteroids.rules>/Deposit1x
+		&<missions/mechanics/helion_asteroids.rules>/Deposit2x
+		&<missions/mechanics/helion_asteroids.rules>/Deposit3x
+	]
+}
+{
+	Action = AddMany
+	AddTo = "<doodads/doodads.rules>/Doodads"
+	ManyToAdd
+	[
+		&<missions/mechanics/helion_asteroids.rules>/AsteroidM
+		&<missions/mechanics/helion_asteroids.rules>/AsteroidL
+	]
+}
+{
+	Action = Overrides
+	OverrideIn = "<modes/career/mission_metatypes.rules>"
+	Overrides
+	{
+		HotCargoDroneSiege
+		{
+			NameKey = "HotCargoMechanics/DroneSiege"
+			DescriptionKey = "HotCargoMechanics/DroneSiegeDesc"
+			CategoryID = stations
+		}
+		HotCargoPrototype
+		{
+			NameKey = "HotCargoMechanics/Prototype"
+			DescriptionKey = "HotCargoMechanics/PrototypeDesc"
+			CategoryID = bounties
+		}
+		HotCargoSunMining
+		{
+			NameKey = "HotCargoMechanics/SunMining"
+			DescriptionKey = "HotCargoMechanics/SunMiningDesc"
+			CategoryID = deliveries
+		}
+		HotCargoTow
+		{
+			NameKey = "HotCargoMechanics/Tow"
+			DescriptionKey = "HotCargoMechanics/TowDesc"
+			CategoryID = stations
+		}
+		HotCargoCapture
+		{
+			NameKey = "HotCargoMechanics/Capture"
+			DescriptionKey = "HotCargoMechanics/CaptureDesc"
+			CategoryID = bounties
+		}
+		// Stations, not exploration: an exploration survey is not a contract (economy spec 100), and this one has a client.
+		HotCargoSurvey
+		{
+			NameKey = "HotCargoMechanics/Survey"
+			DescriptionKey = "HotCargoMechanics/SurveyDesc"
+			CategoryID = stations
+		}
+		HotCargoClaimJumpers
+		{
+			NameKey = "HotCargoMechanics/ClaimJumpers"
+			DescriptionKey = "HotCargoMechanics/ClaimJumpersDesc"
+			CategoryID = stations
+		}
+	}
+}
