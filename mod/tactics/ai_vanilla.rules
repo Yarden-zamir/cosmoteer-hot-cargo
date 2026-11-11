@@ -1,0 +1,17 @@
+// Hot Cargo modules for the vanilla combat AIs (spec 193-202). mod/tactics/actions.rules appends them to the end of each
+// StrategyModules list, so they run before the vanilla modules: Flee first, then answering a call, then regroup.
+// Each module does nothing with no active Hot Cargo run, or when its Tactics.<Behavior>OnVanilla switch is off.
+Regroup
+{
+	Type = HcRegroup
+}
+Call
+{
+	Type = HcCall
+}
+Flee
+{
+	Type = HcFlee
+	AvoidableDoodadTags = [sun]
+	AvoidableDoodadBuffer = 100
+}

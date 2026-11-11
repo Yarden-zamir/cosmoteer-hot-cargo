@@ -28,6 +28,12 @@
 			DescriptionKey = "HotCargoEventMissions/BountyDesc"
 			CategoryID = encounter
 		}
+		HotCargoEventTow
+		{
+			NameKey = "HotCargoEventMissions/Tow"
+			DescriptionKey = "HotCargoEventMissions/TowDesc"
+			CategoryID = encounter
+		}
 		HotCargoCourier
 		{
 			NameKey = "HotCargoEventMissions/Courier"

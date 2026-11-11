@@ -8,6 +8,9 @@ ev_set Enabled false
 godmode on
 maxhunters 5
 tacticlog on
+# The enemy AI behaviors (flee, regroup) have their own tests; here they would change the tactic counts.
+aiset FleeEnabled false
+aiset RegroupEnabled false
 heat 100
 wait 1
 hunters start

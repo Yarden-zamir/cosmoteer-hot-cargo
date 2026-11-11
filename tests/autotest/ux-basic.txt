@@ -52,4 +52,7 @@ wait 3
 uxlog
 wait 4
 expect ux_ship_alerts >= 1
+# The tech went with the ship, so the run is lost. The loss panel is centered and inside the screen.
+expect lost == 1
+expect ux_loss_centered == 1
 quit

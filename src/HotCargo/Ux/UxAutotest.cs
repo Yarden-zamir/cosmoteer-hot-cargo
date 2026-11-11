@@ -37,6 +37,15 @@ static class UxAutotest
         {
             var ship = TechAutotest.PlayerShip();
             ship.Sim.PlayerInput.SelectParts(ship.Parts.ToList());
+            var gui = Autotest.RequireRun().Game.Gui.ShipGui;
+            Log.Info($"ux: selected {ship.Sim.PlayerInput.SelectedParts.Count} parts; ship gui active={gui.SelfActive} parts card={gui.PartsCard.SelfActive}");
+        };
+        // partsstate: logs the part selection and the parts card state.
+        Autotest.Commands["partsstate"] = _ =>
+        {
+            var game = Autotest.RequireRun().Game;
+            var gui = game.Gui.ShipGui;
+            Log.Info($"ux: selected parts {game.Sim.PlayerInput.SelectedParts.Count}, ships {game.Sim.PlayerInput.SelectedShips.Count}; ship gui={gui.SelfActive} parts card={gui.PartsCard.SelfActive} active={gui.PartsCard.IsActive} map={game.MapDisplayFactor}");
         };
         Autotest.Fields["ux_parts_info"] = () => MultiPartInfo.Shown;
         // supplycheck: runs the low supply check now, without the one-second wait.
@@ -61,6 +70,13 @@ static class UxAutotest
         Autotest.Commands["tradehint"] = _ => Log.Info($"ux: trade hint\n{TradeText()}");
         Autotest.Commands["wantedline"] = _ => Log.Info($"ux: wanted line: {WantedTimer.Text(Autotest.RequireRun().Mode)}");
 
+        // Layout checks (the null graphics device of a headless game still lays out the GUI).
+        Autotest.Fields["ux_win_centered"] = () => Centered(Ui.CenterPanel.Newest ?? throw new InvalidOperationException("no center panel is open"), "win panel");
+        Autotest.Fields["ux_loss_centered"] = () => Centered(
+            CareerInfoPatches.GameOver.LossPanel?.TryGetTarget(out var p) == true ? p : throw new InvalidOperationException("no loss panel"), "loss panel");
+        Autotest.Fields["ux_trade_overlap"] = TradeOverlaps;
+        Autotest.Fields["ux_event_text_numbers"] = () => DialogueKeys.EventTextNumbers();
+        Autotest.Fields["ux_parts_xml"] = () => MultiPartInfo.HealthLabel?.TextRenderer.XmlFormatting == true ? 1 : 0;
         Autotest.Fields["ux_damage_hits"] = () => DamagePings.Hits;
         Autotest.Fields["ux_supply_alerts"] = () => LowSupplies.AlertsShown;
         Autotest.Fields["ux_dialogue_picks"] = () => DialogueKeys.Picks;
@@ -69,6 +85,37 @@ static class UxAutotest
         Autotest.Fields["ux_comms_open"] = () => CommWindow.IsCommWindowOpen(Autotest.RequireRun().Game) ? 1 : 0;
         Autotest.Fields["ux_watched_battery"] = () => LowSupplies.Watched(TechAutotest.PlayerShip().Rules).Contains(new ID<ResourceRules>("battery")) ? 1 : 0;
         Autotest.Fields["ux_watched_carbon"] = () => LowSupplies.Watched(TechAutotest.PlayerShip().Rules).Contains(new ID<ResourceRules>("carbon")) ? 1 : 0;
+    }
+
+    /// <summary>1 when the panel's center is on the screen center (within 2 units) and the panel is inside the screen.</summary>
+    static double Centered(Halfling.Gui.Widget panel, string what)
+    {
+        var r = panel.ScreenRect;
+        var screen = panel.Root!.RootWidget.ScreenRect;
+        Log.Info($"ux: {what} rect {r} screen {screen}");
+        bool inside = r.Left >= screen.Left && r.Right <= screen.Right && r.Top >= screen.Top && r.Bottom <= screen.Bottom;
+        return inside && Math.Abs(r.Center.X - screen.Center.X) < 2f && r.Width > 0 ? 1 : 0;
+    }
+
+    /// <summary>The number of trade page widgets that the hint box overlaps. Fails when the box has no height.</summary>
+    static double TradeOverlaps()
+    {
+        if (TradeHints.LastBox?.TryGetTarget(out var box) != true || box.Parent?.Widget is not Halfling.Gui.ScrollBox page)
+            throw new InvalidOperationException("no trade hint box");
+        var b = box.ScreenRect;
+        Log.Info($"ux: trade hint box {b}");
+        if (!box.IsActive || b.Height < 10f) throw new InvalidOperationException($"the trade hint box is not shown or has no height: {b}");
+        int n = 0;
+        foreach (var w in page.Children.Concat(page.DockedChildren.Where(d => d != box)))
+        {
+            var r = w.ScreenRect;
+            if (w.IsActive && r.Width > 0 && r.Height > 0 && b.Left < r.Right && r.Left < b.Right && b.Top < r.Bottom && r.Top < b.Bottom)
+            {
+                Log.Info($"ux: trade hint box overlaps {w.GetType().Name} {r}");
+                n++;
+            }
+        }
+        return n;
     }
 
     static string TradeText() =>
