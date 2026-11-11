@@ -1,0 +1,33 @@
+// Hot Cargo missions (spec section 11): escort, fleet assault and shady offers.
+// The offers spawn with each star system, next to the vanilla offers.
+{
+	Action = Add
+	AddTo = "<modes/career/sectors/sector_basic/sector_basic.rules>/Sector/SystemGenerator/Spawners"
+	ToAdd = &<missions/sysgen_hotcargo.rules>
+}
+{
+	Action = Overrides
+	OverrideIn = "<modes/career/mission_metatypes.rules>"
+	Overrides
+	{
+		HotCargoEscort
+		{
+			NameKey = "HotCargoMissions/Escort"
+			DescriptionKey = "HotCargoMissions/EscortDesc"
+			CategoryID = stations
+		}
+		HotCargoFleetAssault
+		{
+			NameKey = "HotCargoMissions/FleetAssault"
+			DescriptionKey = "HotCargoMissions/FleetAssaultDesc"
+			CategoryID = faction_wars
+		}
+		// Shady offers sit with the vanilla bounties on purpose (spec 38).
+		HotCargoShadyBounty
+		{
+			NameKey = "HotCargoMissions/ShadyBounty"
+			DescriptionKey = "HotCargoMissions/ShadyBountyDesc"
+			CategoryID = bounties
+		}
+	}
+}

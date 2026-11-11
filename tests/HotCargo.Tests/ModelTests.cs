@@ -1,4 +1,5 @@
 using HotCargo.Core;
+using HotCargo.Missions;
 using HotCargo.Tech;
 using Xunit;
 
@@ -58,5 +59,38 @@ public class TechModelTests
         Assert.Equal((0, 50f), TechModel.UnitsLostToDamage(50f, 100f));
         Assert.Equal((2, 30f), TechModel.UnitsLostToDamage(230f, 100f));
         Assert.Throws<ArgumentOutOfRangeException>(() => TechModel.UnitsLostToDamage(1f, 0f));
+    }
+}
+
+public class MissionModelTests
+{
+    [Fact]
+    public void Trap_chance_follows_the_heat_formula_and_clamps()
+    {
+        Assert.Equal(0.2f, MissionModel.TrapChance(0.2f, 0.006f, 0f), 4);
+        Assert.Equal(0.8f, MissionModel.TrapChance(0.2f, 0.006f, 100f), 4); // spec 39: 80 % at heat 100
+        Assert.Equal(1f, MissionModel.TrapChance(0.5f, 0.01f, 100f));
+        Assert.Equal(0f, MissionModel.TrapChance(-0.5f, 0f, 50f));
+    }
+
+    [Fact]
+    public void Trap_roll_is_below_the_chance_and_rejects_rolls_outside_0_to_1()
+    {
+        Assert.True(MissionModel.IsTrap(0.79f, 0.8f));
+        Assert.False(MissionModel.IsTrap(0.8f, 0.8f));
+        Assert.False(MissionModel.IsTrap(0f, 0f));
+        Assert.True(MissionModel.IsTrap(0.9999f, 1f));
+        Assert.Throws<ArgumentOutOfRangeException>(() => MissionModel.IsTrap(1f, 0.5f));
+    }
+
+    [Fact]
+    public void Scaled_rewards_round_to_the_multiple_and_keep_at_least_one_multiple()
+    {
+        Assert.Equal(12000, MissionModel.ScaleReward(6000, 2f, 500));
+        Assert.Equal(3000, MissionModel.ScaleReward(6000, 0.5f, 500));
+        Assert.Equal(500, MissionModel.ScaleReward(400, 0.5f, 500));
+        Assert.Equal(0, MissionModel.ScaleReward(6000, 0f, 500));
+        Assert.Equal(3, MissionModel.ScaleReward(5, 0.5f, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => MissionModel.ScaleReward(10, 1f, 0));
     }
 }
