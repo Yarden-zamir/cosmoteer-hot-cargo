@@ -32,7 +32,7 @@ public static class TechPrice
 {
     internal static Run? For(CareerSimModeManager mode) => Run.Current is { } run && run.Game == mode.Game ? run : null;
 
-    public static int Sell(Run run) => (int)Math.Clamp(run.T.Tech.Value(run.State.SectorIndex, run.State.GameSeconds), 0, int.MaxValue);
+    public static int Sell(Run run) => (int)Math.Clamp(run.T.Tech.Value(run.State), 0, int.MaxValue);
 
     public static int Buy(Run run) => (int)Math.Clamp(Math.Ceiling(Sell(run) * (double)run.T.Tech.BuyBackFactor), 0, int.MaxValue);
 }

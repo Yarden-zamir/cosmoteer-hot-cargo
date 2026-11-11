@@ -64,6 +64,8 @@ static class CareerPatches
         if (Run.Current is not { } run || run.Mode != __instance) return;
         iHash.AddHash((int)(run.State.Heat * 1000));
         iHash.AddHash(run.State.SectorIndex);
+        iHash.AddHash((int)(run.State.Notoriety * 100));
+        iHash.AddHash(run.State.PeakTier);
         // string.GetHashCode is random per process, so it would differ between clients. This hash is stable.
         int tunables = 0;
         foreach (char c in run.State.TunablesHash) tunables = tunables * 31 + c;

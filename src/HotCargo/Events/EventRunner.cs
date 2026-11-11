@@ -204,7 +204,7 @@ public static class EventRunner
 
     // ---- Conditions
 
-    public static long CurrentTechValue(Run run) => run.T.Tech.Value(run.State.SectorIndex, run.State.GameSeconds);
+    public static long CurrentTechValue(Run run) => run.T.Tech.Value(run.State);
 
     static int FirstHumanMoney(Run run) =>
         run.Game.GetPlayerState(run.Game.HumanPlayersIndexes.Min(), deterministic: true).Money;

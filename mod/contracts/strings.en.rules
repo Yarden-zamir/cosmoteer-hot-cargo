@@ -1,0 +1,40 @@
+HotCargoContracts
+{
+	Header = "Contract terms"
+	UnknownClient = "an unnamed client"
+
+	NoFee = "No fee"
+	FeeFmt = "<img name='money' colored='true'/> Fee {0:N0}, paid when you accept"
+	FeeShortFmt = "(you have {0:N0})"
+	FeeTipFmt = "The client sells this job. You pay the fee up front and do not get it back. The job pays {0:N0} extra on completion (already in Rewards)."
+	FeePaidFmt = "Fee paid: {0:N0}"
+	BonusRewardFmt = "<img name='money' colored='true'/> +{0:N0} (paid contract)"
+	BonusRewardTip = "Extra pay of a paid contract. It makes up for the fee and then some."
+
+	FlatHeatFmt = "Heat +{0} when you accept"
+	FlatHeatTip = "A loud job. Corporate scanners notice the moment you take it."
+
+	TrailFmt = "Trail: counts as {0} open contract. Open {1} → {2}, trail +{3}/min → +{4}/min"
+	OpenTrailFmt = "Open contract (counts as {0}). Open now: {1}, trail +{2}/min"
+	TrailTipFmt = "Every open contract leaves a trail. Up to {0} open contracts are quiet. Each one above that adds {1} heat per minute until you finish or drop it."
+
+	RivalFmt = "Rival offer: accepting dismisses \"{0}\""
+	RivalTip = "These clients work against each other. Take one job and the other offer is gone."
+
+	InformantFmt = "Informant risk: {0}%. The client may sell you out"
+	InformantTip = "Some clients sell your position to the corporation. If this one does, heat jumps and hunters come for you."
+	Discreet = "Discreet client"
+	SoldOutFmt = "{0} sold you out on this contract."
+	SoldOutTip = "The client sold your position to the corporation."
+	InformantBannerFmt = "INFORMANT: {0} sold you out over \"{1}\". Hunters inbound!"
+	InformantChatFmt = "<bad>INFORMANT</bad>  {0} sold your position over the contract \"{1}\". Heat +{2}, hunters inbound."
+
+	RivalDismissedChatFmt = "<gray>Offer \"{0}\" withdrawn: its client is a rival of \"{1}\".</gray>"
+
+	AcceptPayFmt = "Accept (pay {0:N0})"
+	AcceptCannotPayFmt = "Fee {0:N0}: not enough money"
+	CannotPayFmt = "Not enough money for the contract fee ({0:N0})"
+
+	PanelTrailFmt = "{0} contracts open   trail +{1}/min"
+	PanelOpenFmt = "{0} contracts open   <gray>quiet up to {1}</gray>"
+}

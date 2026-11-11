@@ -1,4 +1,5 @@
 using Halfling.Serialization;
+using HotCargo.Contracts;
 using HotCargo.Events;
 using HotCargo.Hunters;
 using HotCargo.Journey;
@@ -24,6 +25,7 @@ public sealed class Tunables
     [Serialize(Optional = true)] public MissionTunables Missions = new();
     [Serialize(Optional = true)] public TacticsTunables Tactics = new();
     [Serialize(Optional = true)] public EventsTunables Events = new();
+    [Serialize(Optional = true)] public ContractsTunables Contracts = new();
     [Serialize(Optional = true)] public UxTunables Ux = new();
     [Serialize(Optional = true)] public DebugTunables Debug = new();
 }

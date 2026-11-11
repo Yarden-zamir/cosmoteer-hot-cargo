@@ -15,7 +15,8 @@ Escort
 {
 	Type = None
 	Tags = [hc_group_escort]
-	SpawnChance = 60%
+	// Spec 105: fewer offers per system for a faster run (was 60%).
+	SpawnChance = 45%
 	RootLocation = Tag
 	RootLocationTag = trade_station
 
@@ -155,6 +156,11 @@ Escort
 						{
 							Type = HotCargoEscortCover
 						}
+						// Spec 100: a registered convoy is a quiet, legal job. It leaves only half a trail. Fee and informant use the normal roll.
+						{
+							Type = HotCargoContract
+							TrailWeight = 0.5
+						}
 					]
 				}
 			]
@@ -168,7 +174,8 @@ FleetAssault
 {
 	Type = None
 	Tags = [hc_group_assault]
-	SpawnChance = 40%
+	// Spec 105: was 40%.
+	SpawnChance = 30%
 
 	SubSpawners
 	[
@@ -278,6 +285,13 @@ FleetAssault
 							ReputationPerHighTier = &/TIER_TABLES/StandardReputationPerTier
 							ReputationPerTierMultiplier = 3
 						}
+						// Spec 100: a navy strike is loud (flat heat). The navy does not sell its jobs and does not talk.
+						{
+							Type = HotCargoContract
+							AcceptFee = 0
+							FlatHeat = 5
+							InformantChance = 0
+						}
 					]
 				}
 			]
@@ -291,9 +305,10 @@ ShadyBounty
 {
 	Type = None
 	Tags = [hc_shady, hc_group_shady]
-	SpawnChance = 70%
-	Count = [1, 2]
-	Distance = [0, 19000]
+	// Spec 105: was 70% and 1 to 2 offers. Distance matches the smaller systems (was 19000).
+	SpawnChance = 60%
+	Count = 1
+	Distance = [0, 13000]
 	MinDistanceFromTags = [[sun, 6000], [station, 4000], [bounty, 3000], [hc_shady, 6000]]
 	MinDistanceFromNebulas = [[ion_storm, 1000]]
 	SuppressLocationAssertions = true
@@ -413,6 +428,14 @@ ShadyBounty
 							Type = Fame
 							FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
 							MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+						}
+						// Spec 100: an illegal hit. The client wants buy-in money, and the job is noisy.
+						// No informant roll: the trap (spec 39) is this offer's own sell-out.
+						{
+							Type = HotCargoContract
+							AcceptFee = 0.5
+							FlatHeat = 4
+							InformantChance = 0
 						}
 					]
 				}

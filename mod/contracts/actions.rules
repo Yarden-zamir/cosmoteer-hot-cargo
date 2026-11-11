@@ -1,0 +1,74 @@
+	// Spec 105: smaller star systems and fewer missions per system, for shorter in-system travel and a faster run.
+	// Gameplay spawns move in to about 70% of the vanilla radius, and counts drop with the area (about half).
+	// Scenery (suns, planets, nebulas, the fog radius) keeps the vanilla size.
+	// These change the shared sector rules, so they apply to every map size while the mod is on.
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_trade_stations.rules>/SubSpawners/0"
+		Overrides { Distance = [4000, 9000] } // was [4000, 11000]; stations keep 7500 from the sun
+	}
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_trade_stations.rules>/SubSpawners/1"
+		Overrides { Count = [2, 3]; Distance = [4000, 9000]; } // was [2, 4] stations in [4000, 11000]
+	}
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_military_stations.rules>/BaseMilitaryStation"
+		Overrides { Distance = [0, 14000] } // was [0, 20000]
+	}
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_bounties.rules>"
+		Overrides { Count = [2, 4]; Distance = [0, 13000]; } // was 99 (as many as fit) in [0, 19000]
+	}
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sector_basic/sector_basic.rules>/Sector/ResourceDeliveryMissions"
+		Overrides { SimultaneousMissionsPerStation = 1 } // was 2
+	}
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_ftl_gates.rules>"
+		Overrides { Distance = [13500, 16000] } // was [18750, 22500]
+	}
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_wanderers.rules>/SubSpawners/0"
+		Overrides { Count = [9, 11]; Distance = [0, 13000]; } // pirates, was [14, 16] in [0, 18000]
+	}
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_wanderers.rules>/SubSpawners/1"
+		Overrides { Count = [9, 11]; Distance = [0, 13000]; } // faction wanderers, was [14, 16] in [0, 18000]
+	}
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_asteroids.rules>/SubSpawners/0"
+		Overrides { Distance = [9500, 12000] } // one belt, was [11000, 15000]
+	}
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_asteroids.rules>/SubSpawners/1"
+		Overrides { Distance = [5000, 14000] } // several belts, was [5000, 20000]
+	}
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_asteroids.rules>/SubSpawners/2"
+		Overrides { Count = [3, 4]; Distance = [0, 11000]; } // asteroid fields, was [4, 6] in [0, 15000]
+	}
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_asteroids.rules>/SubSpawners/3"
+		Overrides { Count = [80, 100]; Distance = [0, 14000]; } // loose asteroids, was [125, 150] in [0, 19000]
+	}
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_misc_discoverables.rules>"
+		Overrides { Count = [10, 12]; Distance = [0, 16000]; } // was [17, 20] in [0, 25000]
+	}
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_ftl_beacons.rules>/SubSpawners/0"
+		Overrides { Count = 20; Distance = [0, 14000]; } // was 30 in [0, 20000]
+	}

@@ -20,7 +20,7 @@ static class TechAutotest
         Autotest.Commands["tech"] = Tech;
         Autotest.Commands["vault"] = Vault;
         Autotest.Commands["tostation"] = _ => ToStation();
-        Autotest.Fields["techvalue"] = () => { var r = Active(); return r.T.Tech.Value(r.State.SectorIndex, r.State.GameSeconds); };
+        Autotest.Fields["techvalue"] = () => { var r = Active(); return r.T.Tech.Value(r.State); };
         Autotest.Fields["sellprice"] = () => Active().Game.Sim.Mode.GetResourceSellRefund(Vaults.TechId, null);
         Autotest.Fields["buyprice"] = () => Active().Game.Sim.Mode.GetResourceBuyCost(Vaults.TechId, null);
         Autotest.Fields["money"] = Money;
