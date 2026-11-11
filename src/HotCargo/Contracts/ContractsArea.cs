@@ -21,6 +21,7 @@ public static class ContractsArea
     static Mission? _picked;
     static long _markedValue;
     static int _markedMoney;
+    static float _markedHeat;
 
     static Run R() => Autotest.RequireRun();
     static SimRoot Sim() => R().Game.Sim ?? throw new InvalidOperationException("no sim");
@@ -103,6 +104,17 @@ public static class ContractsArea
             R().T.Contracts.InformantDelayMax = s;
         };
         Autotest.Commands["contract_money"] = arg => R().Game.GetPlayerState(R().Game.LocalPlayerIndex, deterministic: true).AddMoney(int.Parse(arg, CultureInfo.InvariantCulture));
+        Autotest.Commands["heat_mark"] = _ => _markedHeat = R().State.Heat;
+        // Pairs the picked offer with the first other contract offer in this system, as the scan would. Test setup only.
+        Autotest.Commands["contract_make_rival"] = _ =>
+        {
+            var run = R();
+            var other = ContractBook.Offers(Sim()).Select(o => o.Mission).FirstOrDefault(o => o != Picked() && ContractBook.Find(run, o) is not null)
+                ?? throw new InvalidOperationException("no second contract offer in this system");
+            string group = $"test-{Picked().MissionID}";
+            ContractBook.Find(run, Picked())!.RivalGroup = group;
+            ContractBook.Find(run, other)!.RivalGroup = group;
+        };
         Autotest.Commands["value_mark"] = _ => _markedValue = R().T.Tech.Value(R().State);
         // Logs terms statistics of the saved offers in this system.
         Autotest.Commands["contract_stats"] = label =>
@@ -118,6 +130,10 @@ public static class ContractsArea
         Autotest.Fields["contract_trail"] = () => ContractBook.TrailPerMinute(R(), ContractBook.OpenWeight(R()));
         Autotest.Fields["contract_accepted"] = () => R().Mode.Missions.ContainsMission(Picked()) ? 1 : 0;
         Autotest.Fields["contract_fee"] = () => ContractBook.Find(R(), Picked())?.Fee ?? -1;
+        Autotest.Fields["heat_change"] = () => R().State.Heat - _markedHeat;
+        Autotest.Fields["contract_trail_heat"] = () => ContractBook.TrailHeatAdded;
+        // Money change since contract_accept plus the saved fee: 0 when exactly the fee was paid.
+        Autotest.Fields["contract_fee_diff"] = () => R().Game.LocalPlayerMoney - _markedMoney + (ContractBook.Find(R(), Picked())?.Fee ?? 0);
         Autotest.Fields["contract_money_change"] = () => R().Game.LocalPlayerMoney - _markedMoney;
         Autotest.Fields["contract_rival_offered"] = () =>
         {

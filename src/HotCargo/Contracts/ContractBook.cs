@@ -118,7 +118,11 @@ public static class ContractBook
         }
         if (!run.PressureActive) return;
         float trail = TrailPerMinute(run, OpenWeight(run));
-        if (trail > 0) run.AddHeat(trail * (float)(dt / 60.0), sim);
+        if (trail > 0)
+        {
+            run.AddHeat(trail * (float)(dt / 60.0), sim);
+            TrailHeatAdded += trail * dt / 60.0;
+        }
         TickInformants(run, sim);
     }
 
@@ -144,21 +148,22 @@ public static class ContractBook
     }
 
     /// <summary>
-    /// Pairs a new offer with an earlier offer of another faction. Offers whose targets are each other's faction always pair;
-    /// other faction pairs pair with chance RivalPairChance, rolled from the new offer's ID.
+    /// Pairs a new offer with an earlier offer of another client: another faction, or another station.
+    /// Offers whose targets are each other's faction always pair. Other pairs form with chance RivalPairChance, rolled from the new offer's ID.
     /// </summary>
     static void PairRival(Run run, Mission m, ContractTerms terms, List<Mission> earlier)
     {
-        if (m.Faction is not { } faction) return;
         var sim = m.Game.Sim;
         var mine = new List<Cosmoteer.Data.ID<Cosmoteer.Factions.FactionRules>>();
         m.GetEnemyFactions(sim, mine);
-        bool Free(Mission o) => o.Faction is { } of && of != faction && Find(run, o) is { RivalGroup.Length: 0 };
+        bool Free(Mission o) =>
+            Find(run, o) is { RivalGroup.Length: 0 } && (o.Faction != m.Faction || o.SpawnedAt?.ShipID != m.SpawnedAt?.ShipID);
         bool Conflict(Mission o)
         {
+            if (o.Faction is not { } of || m.Faction is not { } mf || of == mf) return false;
             var theirs = new List<Cosmoteer.Data.ID<Cosmoteer.Factions.FactionRules>>();
             o.GetEnemyFactions(sim, theirs);
-            return mine.Contains(o.Faction!.Value) || theirs.Contains(faction);
+            return mine.Contains(of) || theirs.Contains(mf);
         }
         Mission? rival = earlier.FirstOrDefault(o => Free(o) && Conflict(o));
         if (rival is null && new FastRand(0x5249_5641_4CUL ^ (uint)m.MissionID.GetHashCode()).Single() < run.T.Contracts.RivalPairChance)
@@ -232,6 +237,9 @@ public static class ContractBook
         run.Game.Gui.ShowAreaName(Strings.FormatText("HotCargoContracts/InformantBannerFmt", client, contract));
         Ux.UxKit.ChatLine(run.Game, Strings.FormatText("HotCargoContracts/InformantChatFmt", client, contract, t.InformantHeat));
     }
+
+    /// <summary>Heat that the trail added since game start. For autotests only; not sim state.</summary>
+    internal static double TrailHeatAdded;
 
     /// <summary>Informant warnings shown since game start. For autotests only; not sim state.</summary>
     internal static int InformantWarnings;

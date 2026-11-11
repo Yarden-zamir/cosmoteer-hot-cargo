@@ -20,8 +20,8 @@ public sealed class ContractsTunables
     [Serialize(Optional = true)] public float PaidBonusFactor = 2f;
     [Serialize(Optional = true)] public int MoneyRoundTo = 500;
 
-    /// <summary>Spec 103: chance that a new offer pairs with an earlier offer of another faction as rivals. Offers that target each other's faction always pair.</summary>
-    [Serialize(Optional = true)] public float RivalPairChance = 0.35f;
+    /// <summary>Spec 103: chance that a new offer pairs with an earlier offer of another client (faction or station) as rivals. Offers that target each other's faction always pair.</summary>
+    [Serialize(Optional = true)] public float RivalPairChance = 0.2f;
 
     /// <summary>Spec 104: share of offers without rules terms that carry an informant risk.</summary>
     [Serialize(Optional = true)] public float InformantShare = 0.75f;
@@ -42,7 +42,6 @@ public sealed class ContractsTunables
     [
         new() { Metatype = "PirateBaseDestruction", FlatHeat = 5f },
         new() { Metatype = "FactionBaseDestruction", FlatHeat = 5f },
-        new() { Metatype = "FactionHunt", FlatHeat = 3f },
     ];
 }
 
