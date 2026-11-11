@@ -205,7 +205,7 @@ Reads as: the corporation's own data is worth money, safety or a crate. Selling 
 | `ChainAmbush` | Arrival | Combat | Defeat a rival fleet (hunter AI) that drops in near the fleet. |
 | `ChainDepot` | Arrival | Combat | Destroy 2 defense platforms and a guard ship. |
 
-Contract terms (spec 164): each Station stage mission has `Terms` with the economy area's field names. They wait for the economy area's carrier type (see the open item in SPEC.md requirement 164).
+Contract terms (spec 164): each Station stage has `Terms` (a `HotCargoContract`), so the same mission can cost differently in two chains. Return and Arrival missions carry zero terms.
 
 ## 5. Content rules for authors
 

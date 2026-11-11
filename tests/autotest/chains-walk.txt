@@ -13,8 +13,9 @@ expectstage courier
 expect chain_mission == 1
 expect chain_offers >= 1
 chain_tostation
-# The offer shows as a chain stage in comms: label, story line and chain line.
+# The offer shows as a chain stage in comms: label, story line and chain line. It carries the stage's contract terms.
 chainview
+expect chain_terms_heat == 3
 chain_accept
 expect chain_accepted == 1
 # Success: the result leads straight into the choice page, because the players are at the station.

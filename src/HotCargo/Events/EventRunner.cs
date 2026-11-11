@@ -82,20 +82,40 @@ public static class EventRunner
         }
     }
 
-    /// <summary>The first trade station that a human ship comes near in a system visit rolls one Station event.</summary>
+    /// <summary>
+    /// The first trade station that a human ship comes near in a system visit rolls one Station event.
+    /// The first one in a system for the whole run also rolls a Courier Job offer (spec 85).
+    /// </summary>
     static void CheckStations(Run run, SimRoot sim)
     {
         var s = State(run);
         ObjectID node = sim.MapNode?.UniqueID ?? throw new InvalidOperationException("sim has no map node");
-        if (s.StationRolled.Contains(node)) return;
+        if (s.StationRolled.Contains(node) && s.CourierNodes.Contains(node)) return;
         float r = run.T.Events.StationTriggerDistance;
         var ships = sim.Ships.HumanPlayerSignificantShips.ToList();
-        bool near = sim.Ships.Any(st => st.Tags?.Contains(TradeStationTag) == true && st.Tags.Contains(BuyerTag) == false && !st.IsJunk
+        Ship? station = sim.Ships.FirstOrDefault(st => st.HasTag(TradeStationTag) && !st.HasTag(BuyerTag) && !st.IsJunk
             && ships.Any(sh => sh.DetWorldBoundingCircle.DistanceTo(st.DetWorldBoundingCircle) <= r));
-        if (!near) return;
-        s.StationRolled.Add(node);
-        TryTrigger(run, sim, EventTrigger.Station, run.T.Events.StationEventChance, limited: true);
+        if (station is null) return;
+        if (s.CourierNodes.Add(node))
+        {
+            float roll = sim.Rand.Single();
+            if (roll < run.T.Events.CourierChance) OfferCourier(sim, station);
+            else Log.Info($"events: courier roll {roll:0.00} >= chance {run.T.Events.CourierChance:0.00}, no offer");
+        }
+        if (s.StationRolled.Add(node)) TryTrigger(run, sim, EventTrigger.Station, run.T.Events.StationEventChance, limited: true);
     }
+
+    /// <summary>
+    /// Puts a Courier Job into the station's mission list: the Courier generator in spawns.rules spawns the contact far away
+    /// and a mission offer at the nearest trade station (the one the players reached).
+    /// </summary>
+    static void OfferCourier(SimRoot sim, Ship station)
+    {
+        EventLibrary.Spawn(CourierSpawn).Generate(sim, sim.Rand, loadInstantly: true, rootLoc: station.DetWorldCenter, addExistingSpawnTags: true);
+        Log.Info($"courier job offered at {station.Metadata.PlainShipName}");
+    }
+
+    public const string CourierSpawn = "Courier";
 
     /// <summary>
     /// Rolls the chance, then picks an eligible event of the trigger by weight and opens it.
@@ -119,10 +139,7 @@ public static class EventRunner
             return;
         }
         var snapshot = Snap(run, sim, FirstHumanMoney(run), run.CurrentTier, CurrentTechValue(run));
-        var candidates = EventLibrary.InOrder
-            .Where(e => e.Trigger == trigger && EventModel.UnderRunLimit(s.Seen.GetValueOrDefault(e.ID), e.MaxPerRun))
-            .Where(e => EventModel.FirstUnmet(ToNeed(run, e.Need, run.CurrentTier, CurrentTechValue(run)), snapshot) is null)
-            .ToList();
+        var candidates = EventLibrary.InOrder.Where(e => e.Trigger == trigger && Eligible(run, e, snapshot)).ToList();
         var weights = candidates.Select(e => EventModel.EffectiveWeight(e.Weight, e.WeightPerHeat, e.WeightPerTech, run.State.Heat, run.State.FleetTech)).ToList();
         int pick = EventModel.PickWeighted(weights, sim.Rand.Single());
         if (pick < 0) { Log.Info($"events: no eligible {trigger} event"); return; }
@@ -130,6 +147,22 @@ public static class EventRunner
         s.LastEventSeconds = run.State.GameSeconds;
         if (limited) s.NodeEvents[node] = s.NodeEvents.GetValueOrDefault(node) + 1;
         Open(run, sim, candidates[pick], lead: "");
+    }
+
+    /// <summary>
+    /// True when the event may open now: under its run limit, under its category limit, and its need is met.
+    /// The Unavoidable count comes from the seen counts, so it needs no saved state of its own.
+    /// </summary>
+    public static bool Eligible(Run run, EventRules e, Snapshot snapshot)
+    {
+        var s = State(run);
+        if (!EventModel.UnderRunLimit(s.Seen.GetValueOrDefault(e.ID), e.MaxPerRun)) return false;
+        if (e.Category == EventCategory.Unavoidable)
+        {
+            int seen = EventLibrary.InOrder.Where(x => x.Category == EventCategory.Unavoidable).Sum(x => s.Seen.GetValueOrDefault(x.ID));
+            if (seen >= run.T.Events.MaxUnavoidablePerRun) return false;
+        }
+        return EventModel.FirstUnmet(ToNeed(run, e.Need, run.CurrentTier, CurrentTechValue(run)), snapshot) is null;
     }
 
     /// <summary>Opens an event page. Public for the autotest command that forces an event.</summary>
@@ -144,6 +177,7 @@ public static class EventRunner
             Seed = sim.Rand.UInt64(),
             Tier = run.CurrentTier,
             TechValue = CurrentTechValue(run),
+            Heat = run.State.Heat,
             Lead = lead,
         };
         Log.Info($"event opened: {e.ID} serial {s.Pending.Serial} tier {s.Pending.Tier} heat {run.State.Heat:0.0} tech {run.State.FleetTech}");
@@ -168,7 +202,7 @@ public static class EventRunner
         var choice = e.Choices[choiceIndex];
         int money = run.Game.GetPlayerState(playerIndex, deterministic: true).Money;
         var snapshot = Snap(run, sim, money, p.Tier, p.TechValue);
-        if (EventModel.FirstUnmet(ChoiceNeed(run, choice, p.Tier, p.TechValue), snapshot) is { } unmet)
+        if (EventModel.FirstUnmet(ChoiceNeed(run, choice, p), snapshot) is { } unmet)
         {
             Log.Info($"event choice ignored: {e.ID} choice {choiceIndex + 1} needs {unmet}");
             return;
@@ -241,15 +275,22 @@ public static class EventRunner
         Parts = n.Parts,
         Flags = n.Flags,
         NotFlags = n.NotFlags,
+        FlagAges = n.FlagAges.Select(f => (f.Flag, f.MinSectors)).ToList(),
+        MinSectorsLeft = n.MinSectorsLeft,
+        MaxSectorsLeft = n.MaxSectorsLeft,
     };
 
     /// <summary>The need of a choice plus its sure cost.</summary>
-    public static Need ChoiceNeed(Run run, ChoiceRules c, int tier, long techValue)
+    public static Need ChoiceNeed(Run run, ChoiceRules c, PendingEvent p)
     {
-        var need = ToNeed(run, c.Need, tier, techValue);
+        var need = ToNeed(run, c.Need, p.Tier, p.TechValue);
         if (c.Cost is not { } cost) return need;
-        return EventModel.Plus(need, Credits(run, cost.Money, 0f, tier, techValue), cost.Tech, cost.Crew, cost.Resources.Select(r => (r.ID, r.At(tier))));
+        return EventModel.Plus(need, CostCredits(run, cost, p), cost.Tech, cost.Crew, cost.Resources.Select(r => (r.ID, r.At(p.Tier))));
     }
+
+    /// <summary>Credits of a sure money cost, with the heat part from when the page opened.</summary>
+    public static int CostCredits(Run run, CostRules cost, PendingEvent p) =>
+        Credits(run, EventModel.HeatScaledUnits(cost.Money, cost.MoneyPerHeat, p.Heat), 0f, p.Tier, p.TechValue);
 
     /// <summary>The fleet as conditions see it. Money is the given player's; everything else is the whole human fleet in this system.</summary>
     public static Snapshot Snap(Run run, SimRoot sim, int money, int tier, long techValue)
@@ -270,6 +311,8 @@ public static class EventRunner
             Resources = resources,
             Parts = ships.SelectMany(sh => sh.Parts).Select(pt => pt.Rules.ID.ToString()).ToHashSet(),
             Flags = State(run).Flags,
+            FlagSectors = State(run).FlagSectors,
+            SectorsLeft = run.T.Journey.RunSectorCount - run.State.SectorIndex,
         };
     }
 
@@ -278,7 +321,8 @@ public static class EventRunner
     static void PayCost(Run run, SimRoot sim, int playerIndex, CostRules? cost, PendingEvent p, List<string> lines)
     {
         if (cost is null) return;
-        if (cost.Money > 0) ChangeMoney(run, playerIndex, -Credits(run, cost.Money, 0f, p.Tier, p.TechValue), lines);
+        int money = CostCredits(run, cost, p);
+        if (money > 0) ChangeMoney(run, playerIndex, -money, lines);
         if (cost.Tech > 0) ChangeTech(sim, -cost.Tech, lines);
         if (cost.Crew > 0) ChangeCrew(sim, -cost.Crew, p.Seed, lines);
         foreach (var r in cost.Resources) ChangeResource(sim, r.ID, -r.At(p.Tier), lines);
@@ -295,7 +339,13 @@ public static class EventRunner
         if (o.Crew != 0) ChangeCrew(sim, o.Crew, p.Seed, lines);
         foreach (var r in o.Resources) ChangeResource(sim, r.ID, r.At(p.Tier), lines);
         if (o.HullDamage > 0) DamageHull(sim, o.HullDamage, p.Seed, lines);
-        foreach (string f in o.SetFlags) State(run).Flags.Add(f);
+        if (o.Reputation != 0) ChangeReputation(run, sim, o.Reputation, p.Tier, lines);
+        if (o.BuyerPrice > 0) ChangeBuyerPrice(run, o.BuyerPrice, lines);
+        foreach (string f in o.SetFlags)
+        {
+            State(run).Flags.Add(f);
+            State(run).FlagSectors[f] = run.State.SectorIndex;
+        }
         foreach (string f in o.ClearFlags) State(run).Flags.Remove(f);
         if (o.Spawn.Length > 0) Spawn(run, sim, o.Spawn, p.Seed);
     }
@@ -324,6 +374,24 @@ public static class EventRunner
         run.Mode.PlayerFame = Math.Max(0, before + amount);
         int delta = run.Mode.PlayerFame - before;
         if (delta != 0) lines.Add(EventText.Fame(delta));
+    }
+
+    /// <summary>Reputation with the faction that controls the system. A system without one gets nothing.</summary>
+    static void ChangeReputation(Run run, SimRoot sim, float units, int tier, List<string> lines)
+    {
+        if (sim.MapNode?.ControllingFaction is not { } faction) { lines.Add(EventText.NoFaction()); return; }
+        int amount = (int)MathF.Round(units * GameData.StandardMissionReputation(tier));
+        if (amount == 0) return;
+        run.Mode.AddFactionReputation(faction, amount);
+        lines.Add(EventText.Reputation(faction, amount));
+    }
+
+    static void ChangeBuyerPrice(Run run, float factor, List<string> lines)
+    {
+        float before = run.State.BuyerPriceMultiplier;
+        run.State.BuyerPriceMultiplier = EventModel.BuyerPriceAfter(before, factor);
+        lines.Add(EventText.BuyerPrice(run.State.BuyerPriceMultiplier));
+        Log.Info($"buyer price multiplier {before:0.00} -> {run.State.BuyerPriceMultiplier:0.00}");
     }
 
     static void ChangeHeat(Run run, SimRoot sim, float amount, List<string> lines)

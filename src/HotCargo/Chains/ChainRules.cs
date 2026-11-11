@@ -13,22 +13,6 @@ namespace HotCargo.Chains;
 /// <summary>The kind of station that a chain can start at, from the vanilla station tags.</summary>
 public enum StationKind { Trade, Military }
 
-/// <summary>
-/// Contract terms of a stage mission, as data. Same field names and units as HotCargoContract (Contracts/ContractTerms.cs on feat/economy).
-/// ChainMissions.AttachTerms turns them into the economy's contract carrier once that type is in main.
-/// </summary>
-[ReflectiveSerialization(Explicit = true)]
-public sealed class StageTermsRules
-{
-    /// <summary>In standard mission pay at the mission tier (the event money unit). 0 = free.</summary>
-    [Serialize(Optional = true)] public float? AcceptFee;
-    [Serialize(Optional = true)] public float? FlatHeat;
-    [Serialize(Optional = true)] public float? TrailWeight;
-    [Serialize(Optional = true)] public string? RivalGroup;
-    /// <summary>0 to 1.</summary>
-    [Serialize(Optional = true)] public float? InformantChance;
-}
-
 /// <summary>One row of a stage's result table: which result it handles, what follows and what it changes.</summary>
 [ReflectiveSerialization(Explicit = true)]
 public sealed class ResultRules
@@ -43,7 +27,7 @@ public sealed class ResultRules
     [Serialize(Optional = true)] public string Story = "";
     /// <summary>Event outcome effects (money, fame, heat, tech, crew, resources, hull damage, spawns, event flags) and their text.</summary>
     [Serialize(Optional = true)] public OutcomeRules? Effects;
-    /// <summary>Reputation with the station's faction, in standard mission reputation at the sector tier.</summary>
+    /// <summary>Reputation with the station's faction, in standard mission reputation at the sector tier. (Effects.Reputation is the system's controlling faction.)</summary>
     [Serialize(Optional = true)] public float Reputation;
     /// <summary>Chain flags. Later rows of this chain read them.</summary>
     [Serialize(Optional = true)] public string[] SetFlags = [];
@@ -65,7 +49,8 @@ public sealed class StageRules
     [Serialize(Optional = true)] public StageWhere Where;
     /// <summary>Arrival stages: sectors after the stage began. 0 starts the stage in the current system, LaterDelaySeconds after it began.</summary>
     [Serialize(Optional = true)] public int AfterSectors = 1;
-    [Serialize(Optional = true)] public StageTermsRules? Terms;
+    /// <summary>Contract terms of a Station stage mission (the economy area's HotCargoContract). Missing fields use the economy default roll.</summary>
+    [Serialize(Optional = true)] public Contracts.ContractTermsRules? Terms;
     [Serialize] public ResultRules[] Results = [];
 
     public StageKind Kind => Mission.Length > 0 ? StageKind.Mission : StageKind.Page;

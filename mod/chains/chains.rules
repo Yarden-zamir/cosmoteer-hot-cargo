@@ -7,7 +7,7 @@
 //   (a protected ship died), abandoned, fail. timeout, lost and abandoned fall back to fail; every result falls back to any.
 //   A row applies Effects (event outcome effects, same units as events.rules), Reputation (standard mission reputation with the
 //   station's faction), chain flags (SetFlags, ClearFlags) and a Story line, then moves to Next. An empty Next ends the chain.
-// Terms: contract terms of a stage mission, with the field names of HotCargoContract (economy area).
+// Terms: contract terms of a Station stage mission, a HotCargoContract (economy area). Missing fields use the economy default roll.
 Chains
 [
 	// ---- A fence who keeps the books. Escort, then a choice between money now, a trick for later and a standing price.

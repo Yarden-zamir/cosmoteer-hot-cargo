@@ -3,7 +3,6 @@ using Cosmoteer.Data;
 using Cosmoteer.Factions;
 using Cosmoteer.Game;
 using Cosmoteer.Generators.Simulation;
-using Cosmoteer.Gui;
 using Cosmoteer.Modes.Career;
 using Cosmoteer.Modes.Career.Missions;
 using Cosmoteer.Modes.Career.Missions.Objectives;
@@ -239,7 +238,8 @@ public static class ChainRunner
         }
         if (m.MetatypeID != ChainLibrary.Metatype) throw new InvalidDataException($"mission '{stage.Mission}' made a {m.MetatypeID} mission, not {ChainLibrary.Metatype}");
         m.AddReward(new ChainStageReward(chain.Title, stage.Title, stage.Text, ChainModel.StorySoFar(c.Story, run.T.Chains.StoryLines), c.Part + 1));
-        AttachTerms(m, stage.Terms);
+        // Contract terms (economy area). Return and Arrival missions carry zero terms in missions.rules, like event missions (spec 86).
+        if (stage.Terms is { } terms) m.AddReward(terms.CreateReward(m, rand, objects, at, null, null) ?? throw new InvalidOperationException("contract terms made no carrier"));
         c.MissionId = m.MissionID;
         c.MissionSince = run.State.GameSeconds;
         Log.Info($"chain {c.ChainId} stage {c.Stage}: mission {stage.Mission} spawned ({m.MissionID})");
@@ -249,18 +249,6 @@ public static class ChainRunner
             var events = run.State.Events;
             events.LastResult = new EventResult { Serial = ++events.LastSerial, Title = $"{chain.Title}: {stage.Title}", Text = stage.Text };
         }
-    }
-
-    /// <summary>
-    /// Contract terms of a stage mission (batch 2 contract terms). The economy area's HotCargoContract carrier is not in main yet.
-    /// Limit: until it is, chain missions show no fee, flat heat, trail, rival group or informant. When feat/economy merges, add here:
-    /// <c>if (terms is not null) m.AddReward(new Contracts.ContractTermsCarrier { AcceptFee = terms.AcceptFee, FlatHeat = terms.FlatHeat,
-    /// TrailWeight = terms.TrailWeight, RivalGroup = terms.RivalGroup, InformantChance = terms.InformantChance });</c>
-    /// </summary>
-    static void AttachTerms(Mission m, StageTermsRules? terms)
-    {
-        if (terms is null) return;
-        Log.Info($"chain mission {m.MissionID} terms: fee {terms.AcceptFee} heat {terms.FlatHeat} trail {terms.TrailWeight} rival '{terms.RivalGroup}' informant {terms.InformantChance}");
     }
 
     /// <summary>
@@ -405,13 +393,13 @@ public static class ChainRunner
         events.LastResult = result;
     }
 
+    /// <summary>Reputation with the station's faction, in standard mission reputation at the sector tier (the unit of event reputation, spec 81).</summary>
     static void ChangeReputation(Run run, ChainInstance c, float units, List<string> lines)
     {
         if (FactionRules.GetFaction(c.StationPlayerIndex) is not { } faction) return;
-        int amount = (int)MathF.Round(units * GameData.StandardMissionReputation(run.CurrentTier) * run.Mode.EconDifficulty.ReputationRewardFactor);
+        int amount = (int)MathF.Round(units * GameData.StandardMissionReputation(run.CurrentTier));
         if (amount == 0) return;
         run.Mode.AddFactionReputation(faction.ID, amount);
-        var w = WidgetRules.Instance;
-        lines.Add((amount > 0 ? w.GoodTextColor : w.BadTextColor).FormatWithXml($"{faction.TextIconXml} Reputation {(amount > 0 ? "+" : "-")}{Math.Abs(amount):n0}"));
+        lines.Add(EventText.Reputation(faction.ID, amount));
     }
 }

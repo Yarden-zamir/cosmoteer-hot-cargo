@@ -38,6 +38,7 @@ StandardRewards
 ]
 
 // Pay and fame without reputation: no faction stands behind Return and Arrival missions.
+// They go straight into the log, so they carry zero contract terms, like event missions (spec 86).
 BountyRewards
 [
 	{
@@ -50,6 +51,7 @@ BountyRewards
 		FamePerHighTier = &~/Tables/Fame
 		MaxFamePerHighTier = &~/Tables/MaxFame
 	}
+	{ Type = HotCargoContract; AcceptFee = 0; FlatHeat = 0; TrailWeight = 0; InformantChance = 0; }
 ]
 
 StationMission

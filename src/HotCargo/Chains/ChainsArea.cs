@@ -211,6 +211,9 @@ public static class ChainsArea
                 }
             Autotest.Check(none == 0, $"every chain mission stage spawns a mission ({ok} spawned, {none} without a mission)");
         };
+        // Flat heat of the stage mission's contract terms, or -1 without terms.
+        Autotest.Fields["chain_terms_heat"] = () =>
+            (StageMission() ?? throw new InvalidOperationException("no stage mission")).Rewards.OfType<Contracts.ContractTermsCarrier>().SingleOrDefault()?.FlatHeat ?? -1;
         Autotest.Fields["chain_part"] = () => Test().Part;
         Autotest.Fields["chain_story"] = () => Test().Story.Count;
         Autotest.Fields["chain_mission"] = () => Test().MissionId is null ? 0 : 1;

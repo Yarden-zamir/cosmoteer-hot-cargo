@@ -74,11 +74,11 @@ static class ShipAlerts
         };
         UxKit.ChatLine(game, $"<bad>{Halfling.StringTools.EscapeForXml(text)}</bad>");
         game.Gui.PlayErrorSound();
-        Banner(game, text);
+        Banner(game, text, WidgetRules.Instance.BadTextColor);
     }
 
     /// <summary>A red banner under the area name position. Banners that come together stack instead of overlapping.</summary>
-    static async void Banner(GameRoot game, string text)
+    internal static async void Banner(GameRoot game, string text, Halfling.Graphics.Color color)
     {
         var lbl = new Label
         {
@@ -89,7 +89,7 @@ static class ShipAlerts
         };
         lbl.TextRenderer.Font = WidgetRules.Instance.ShadowFont;
         lbl.TextRenderer.FontSize = 30;
-        lbl.TextRenderer.Color = WidgetRules.Instance.BadTextColor;
+        lbl.TextRenderer.Color = color;
         lbl.TextRenderer.HAlignment = HAlignment.Center;
         lbl.TextRenderer.VAlignment = VAlignment.Top;
         lbl.TextRenderer.OversizeMode = OversizeMode.None;
