@@ -1,0 +1,121 @@
+// Hot Cargo run map (spec section 5, requirements 2 and 3).
+// A small galaxy whose tiers rise about +2 for each jump on the main route, from tier 1 to FinalSectorTier.
+// The values here are rules: a change needs a game restart and applies to new careers only.
+// Based on Data/galaxy_map/map_generators/base_galaxy.rules. Only the tier and size values differ.
+
+// Highest low tier that a normal system gets. The system after about 8 jumps on the main route reaches it.
+FinalSectorTier = 12
+TierSpread = 2
+// Faction home systems sit one tier above the final sector tier.
+MaxTier = (&~/FinalSectorTier) + (&~/TierSpread) + 1
+
+HotCargoRun
+{
+	NameKey = "HotCargoJourney/MapSize"
+	TipKey = "HotCargoJourney/MapSizeTip"
+	MapGenerator
+	{
+		Spawners
+		[
+			: <./Data/galaxy_map/map_generators/base_galaxy.rules>/MapNodes
+			{
+				Count = 50
+			}
+
+			&<./Data/galaxy_map/map_generators/base_galaxy.rules>/Factions
+			&~/FactionTiers
+			&~/StartingNodePicker
+			&~/ProgressionTiers
+			&<./Data/galaxy_map/map_generators/base_galaxy.rules>/SectorTypes
+		]
+	}
+}
+
+FactionTiers
+{
+	Type = FactionNodeTiers
+	Factions
+	[
+		{
+			FactionID = monolith
+			TierRangeLow = [1, (&~/MaxTier) - (&~/TierSpread)]
+			TierRangeHigh = [1 + (&~/TierSpread), (&~/MaxTier)]
+		}
+		{
+			FactionID = cabal
+			TierRangeLow = [1, (&~/MaxTier) - (&~/TierSpread)]
+			TierRangeHigh = [1 + (&~/TierSpread), (&~/MaxTier)]
+		}
+		{
+			FactionID = imperium
+			TierRangeLow = [1, (&~/MaxTier) - (&~/TierSpread)]
+			TierRangeHigh = [1 + (&~/TierSpread), (&~/MaxTier)]
+		}
+		{
+			FactionID = io
+			TierRangeLow = [1, (&~/MaxTier) - (&~/TierSpread)]
+			TierRangeHigh = [1 + (&~/TierSpread), (&~/MaxTier)]
+		}
+		{
+			FactionID = fringe
+			TierRangeLow = 1
+			TierRangeHigh = 1
+		}
+	]
+}
+
+StartingNodePicker
+{
+	Type = StartingNodePicker
+	AllowedFactions = [fringe]
+	MinConnections = 2
+	CandidatesFarthestFromFactions = [5, [imperium, io]]
+	CandidatesClosestToFactions = [1, [monolith, cabal]]
+	SetTierRangeTo = [1, 1 + (&~/TierSpread)]
+	SetSectorTypeTo = basic
+}
+
+// Vanilla uses +3 for the main route and +2 for side routes. Hot Cargo uses +2 and +1, so that the main route
+// reaches FinalSectorTier after 6 to 7 jumps and then stays there.
+ProgressionTiers
+{
+	Type = ProgressionNodeTiers
+	MaxLowTier = &~/FinalSectorTier
+	MaxChangeableLowTier = &MaxLowTier // Do not change the tier of faction home systems.
+	DesiredTierDeltas
+	[
+		{
+			SourceLowTierDelta = 2
+			Priority = 0 // Low priority is more important.
+			HighTierSpread = &~/TierSpread
+			PreferredAvailableConnections = 2
+		}
+		{
+			SourceLowTierDelta = 1
+			Priority = 0
+			HighTierSpread = &~/TierSpread
+			SourceLowTierRange = [1, 1] // A gentle step from the starting system.
+			PreferredAvailableConnections = 1
+		}
+		{
+			SourceLowTierDelta = 1
+			Priority = 1
+			HighTierSpread = &~/TierSpread
+		}
+		{
+			SourceLowTierDelta = 0
+			Priority = 2
+			HighTierSpread = &~/TierSpread
+		}
+		{
+			SourceLowTierDelta = -1
+			Priority = 3
+			HighTierSpread = &~/TierSpread
+		}
+		{
+			SourceLowTierDelta = -1
+			Priority = 3
+			HighTierSpread = &~/TierSpread
+		}
+	]
+}

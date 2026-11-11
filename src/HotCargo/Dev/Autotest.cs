@@ -85,9 +85,10 @@ public static class Autotest
         Commands["wait"] = arg => Wait(double.Parse(arg, CultureInfo.InvariantCulture));
         Commands["newgame"] = arg =>
         {
-            // arg: map size index, or "last" for the last map size (the Hot Cargo short map is appended last).
+            // arg: map size index, or nothing for the Hot Cargo run map (Journey inserts it first in the list).
+            // "last" also means the Hot Cargo run map, because scripts on other branches use it.
             var rules = GameApp.Rules.CareerMode;
-            int mapSize = arg is "" or "last" ? rules.MapSizes.Length - 1 : int.Parse(arg, CultureInfo.InvariantCulture);
+            int mapSize = arg is "" or "last" ? Journey.JourneyArea.RunMapSizeIndex() : int.Parse(arg, CultureInfo.InvariantCulture);
             ShipFile ship = rules.StarterShips[0].Ship;
             var init = new CareerInit(null, mapSize, Settings.DefaultCareerModeCombatDifficulty, Settings.DefaultCareerModeEconDifficulty,
                 Settings.DefaultCareerModeCrewScarcity, false, false, false, false, enableIronmanMode: false, null, 12345UL,

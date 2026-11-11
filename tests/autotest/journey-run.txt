@@ -1,0 +1,46 @@
+# Journey: Hot Cargo run map, reward scale, Buyer spawn and price, save and load, win.
+newgame
+wait 8
+log start
+expect runmap == 1
+expect nodes >= 45
+expect nodes <= 55
+maptiers
+# The last sector of a direct route (RunSectorCount - 1 jumps) is about FinalSectorTier (12).
+expect finaltier >= 10
+expect finaltier <= 13
+rewardcheck
+expect buyers == 0
+buyer spawn
+wait 3
+expect buyers == 1
+expect buyermission == 1
+buyer goto
+wait 5
+buyer goto
+wait 2
+expect buyertrades == 1
+# steel stands in for the tech resource, which the Tech area defines on another branch.
+buyer resource steel
+expect buyerprice >= 1.49
+expect buyerprice <= 1.51
+save journey
+wait 3
+load journey
+log loaded
+expect buyers == 1
+# The Buyer mission completed when the ship arrived at the Buyer.
+expect buyermission == 0
+buyer resource steel
+# A real sale: crew carry the units to the Buyer, and the first delivery wins the run.
+buyer goto
+wait 2
+buyer sell 2
+wait 45
+expect won == 1
+log won
+# Heat stays off after a win.
+heat -100
+wait 10
+expect heat == 0
+quit
