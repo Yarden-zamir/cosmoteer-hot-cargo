@@ -114,13 +114,15 @@ With defaults and 6 units held, a sector reaches the top stage after about 6 mis
 
 New mission types appear in the normal mission lists, next to the vanilla ones.
 
-36. **Escort**: a friendly AI ship flies to a destination in the system. The players must keep it alive until it arrives. Reward on arrival.
-37. **Fleet assault**: an allied AI fleet and the players attack a hostile station together. Reward when the station is destroyed.
-38. **Shady offer**: a mission offer with a reward of `ShadyRewardFactor` × the normal reward (default 2.0). It uses the shape of a normal mission (delivery or bounty).
-39. When the players arrive at a shady mission location, it is a trap with chance `ShadyTrapChanceBase` + `ShadyTrapChancePerHeat` × heat. Defaults: 0.2 + 0.006 per heat point, so 80 % at heat 100.
-40. A trap spawns a corporate ambush of the sector tier + 1 at the mission location. A trap that the players survive pays `ShadyTrapSurvivalReward` × the normal reward (default 0.5).
+36. **Escort**: a friendly AI ship flies to a destination in the system. The players must keep it alive until it arrives. Reward on arrival. The ship is a civilian freighter next to a station; the destination is a jump point 4,500 to 6,500 away, with 2 to 3 hostile raiders (sector tier − 1) near it. The freighter moves only while a player is near it, because ships far from players are in stasis.
+37. **Fleet assault**: an allied AI fleet and the players attack a hostile station together. Reward when the station is destroyed. The station is the vanilla pirate base shape. The fleet is 2 to 3 faction military ships of one faction; the mission belongs to that faction.
+38. **Shady offer**: a mission offer with a reward of `ShadyRewardFactor` × the normal money reward (default 2.0). Fame stays normal. It uses the shape of a vanilla fugitive bounty and sits in the bounty list. Tells: no faction (so no reputation reward), the high pay, and odd wording. Shady deliveries are not implemented, because a delivery needs a station or trade ship as the target.
+39. When the players arrive at a shady mission location, it is a trap with chance `ShadyTrapChanceBase` + `ShadyTrapChancePerHeat` × heat. Defaults: 0.2 + 0.006 per heat point, so 80 % at heat 100. Arrival means a human ship within `TriggerDistance` (rules, default 2,500) of the target ship, or the target is destroyed. The roll uses the heat at that moment.
+40. A trap spawns an ambush of 2 ships of the sector tier + 1 near the player ship nearest to the mission location (`mod/missions/shady_ambush.rules`). The ships are hostile local-faction ships until the hunter faction exists. A trap that the players survive pays `ShadyTrapSurvivalReward` × the normal money and fame reward (default 0.5). Survive means that all ambushers are destroyed. If the players leave the system first, the trap ends without that reward.
 41. All new missions earn fame, and so they add heat through requirement 25.
-42. New mission types use vanilla objectives where possible: `ProtectShips`, `DefeatShips`, `GotoShip`, `Sequential`, `AnyOrder`, `TimeLimit`. **[verify]** allied ship spawns and random trap choice.
+42. New mission types use vanilla objectives where possible: `ProtectShips`, `DefeatShips`, `Sequential`, `AnyOrder`, `ReceiveRewards`. The game has no objective for "an AI ship reached a location" and no random objective, so the mod adds the rules types `HotCargoEscort` and `HotCargoShadyTrap` (objectives) and `HotCargoScaled` (a reward that multiplies a vanilla Money or Fame reward by a mission tunable). Allied ships are a sibling spawner group with faction allegiance; a child of a hostile station would inherit its allegiance.
+
+Note: accepted Hot Cargo missions store the custom objectives in the save. A save with an accepted Hot Cargo mission does not load without the mod.
 
 ## 12. Hunter AI tactics
 
@@ -209,7 +211,7 @@ src/HotCargo/              C# mod
   RunRules.cs              win and loss
   Hunters.cs               stage responses, hunter spawns
   Tactics/*.cs             AI tactics modules
-  Missions/TrapObjective.cs  shady trap roll
+  Missions/*.cs            escort and shady trap objectives, scaled reward, mission math
   Ui/Overlay.cs, Ui/Dialogs.cs
   Patches/*.cs             one file for each patched game area
 tests/HotCargo.Tests/      fast unit tests for HeatModel and Tunables parsing only
