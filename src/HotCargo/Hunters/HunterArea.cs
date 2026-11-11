@@ -67,7 +67,7 @@ public static class HunterArea
 
     static SimRoot Sim() => Autotest.RequireRun().Game.Sim;
 
-    static Vector2 FleetCenter(SimRoot sim) => HunterSpawner.FleetCenter(sim) ?? throw new InvalidOperationException("no human ships");
+    static Vector2 FleetCenter(SimRoot sim) => SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no human ships");
 
     static IEnumerable<double> Distances()
     {

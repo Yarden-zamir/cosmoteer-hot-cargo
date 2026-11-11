@@ -45,6 +45,15 @@ public static class SimQueries
         return result;
     }
 
+    /// <summary>Mean position of the significant human ships, or null when there are none.</summary>
+    public static Vector2? FleetCenter(SimRoot sim)
+    {
+        Vector2 sum = Vector2.Zero;
+        int count = 0;
+        foreach (var h in sim.Ships.HumanPlayerSignificantShips) { sum += h.DetWorldCenter; count++; }
+        return count == 0 ? null : sum / count;
+    }
+
     /// <summary>The human ship of the lowest player index with the lowest ID. Null when the players have no ship in this system.</summary>
     public static Ship? FirstHumanShip(SimRoot sim) =>
         sim.Ships.HumanPlayerShips.OrderBy(s => s.Metadata.PlayerIndex).ThenBy(s => s.UniqueID).FirstOrDefault();

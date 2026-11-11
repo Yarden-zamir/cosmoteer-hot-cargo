@@ -42,14 +42,6 @@ public static class HunterSpawner
         SpawnWave(run, sim, Response(run, stages[^1].Name), stages[^1].Name);
     });
 
-    /// <summary>Mean position of the significant human ships, or null when there are none.</summary>
-    public static Vector2? FleetCenter(SimRoot sim)
-    {
-        Vector2 sum = Vector2.Zero;
-        int count = 0;
-        foreach (var h in sim.Ships.HumanPlayerSignificantShips) { sum += h.DetWorldCenter; count++; }
-        return count == 0 ? null : sum / count;
-    }
 
     static StageResponse Response(Run run, string stageName) =>
         run.T.Hunters.Stages.FirstOrDefault(s => s.Name == stageName)
@@ -62,7 +54,7 @@ public static class HunterSpawner
         if (sim != run.Game.Sim) return;
         if (sim.Mode is not CareerSimModeManager career) throw new InvalidOperationException("hunters need a career simulation");
         var t = run.T.Hunters;
-        if (FleetCenter(sim) is not { } fleetCenter)
+        if (SimQueries.FleetCenter(sim) is not { } fleetCenter)
         {
             Log.Info($"hunters: {reason} skipped, no human ships in this system");
             return;

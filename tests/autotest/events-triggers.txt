@@ -1,0 +1,38 @@
+# Event triggers: Start, Arrival (without a jump), Signal POI and Station.
+newgame run
+wait 8
+expectevent getaway
+ev_set CooldownSeconds 0
+ev_set ArrivalEventChance 1
+ev_set ArrivalDelaySeconds 1
+ev_set StationEventChance 0
+# Through the MP input, like the dialog.
+choose 3
+expect ev_pending == 0
+expect ev_seen == 1
+# Arrival: the first-arrival hook opens an Arrival event after the delay.
+ev_arrive
+wait 4
+expect ev_pending == 1
+eventview
+choose last
+expect ev_pending == 0
+# Signal: reaching the POI removes it and opens a Signal event.
+ev_signal
+expect ev_signals >= 1
+ev_signal_goto
+wait 2
+expect ev_pending == 1
+eventview
+choose last
+# Station: the first trade station in a visit rolls once. ev_arrive re-arms the roll.
+ev_set StationEventChance 1
+ev_set ArrivalEventChance 0
+ev_arrive
+wait 2
+ev_tostation
+wait 3
+expectevent the_fence
+choose last
+expect ev_pending == 0
+quit

@@ -114,11 +114,11 @@ With defaults and 6 units held, a sector reaches the top stage after about 6 mis
 
 New mission types appear in the normal mission lists, next to the vanilla ones.
 
-36. **Escort**: a friendly AI ship flies to a destination in the system. The players must keep it alive until it arrives. Reward on arrival. The ship is a civilian freighter next to a station; the destination is a jump point 4,500 to 6,500 away, with 2 to 3 hostile raiders (sector tier − 1) near it. The freighter moves only while a player is near it, because ships far from players are in stasis.
+36. **Escort**: a friendly AI ship flies to a destination in the system. The players must keep it alive until it arrives. Reward on arrival. The ship is a civilian freighter next to a station; the destination is a jump point 4,500 to 6,500 away, with 2 to 3 hostile raiders (sector tier − 1) near it. The freighter moves only while a player is near it, because ships far from players are in stasis. When the mission completes, heat changes by `EscortHeatChange` (default −15): a registered convoy hides the players' trail. The offer shows this as a reward line.
 37. **Fleet assault**: an allied AI fleet and the players attack a hostile station together. Reward when the station is destroyed. The station is the vanilla pirate base shape. The fleet is 2 to 3 faction military ships of one faction; the mission belongs to that faction.
 38. **Shady offer**: a mission offer with a reward of `ShadyRewardFactor` × the normal money reward (default 2.0). Fame stays normal. It uses the shape of a vanilla fugitive bounty and sits in the bounty list. Tells: no faction (so no reputation reward), the high pay, and odd wording. Shady deliveries are not implemented, because a delivery needs a station or trade ship as the target.
 39. When the players arrive at a shady mission location, it is a trap with chance `ShadyTrapChanceBase` + `ShadyTrapChancePerHeat` × heat. Defaults: 0.2 + 0.006 per heat point, so 80 % at heat 100. Arrival means a human ship within `TriggerDistance` (rules, default 2,500) of the target ship, or the target is destroyed. The roll uses the heat at that moment.
-40. A trap spawns an ambush of 2 ships of the sector tier + 1 near the player ship nearest to the mission location (`mod/missions/shady_ambush.rules`). The ships are local-faction ships with a unique hostile player index and the hunter AI (`HotCargoHunter`). A trap that the players survive pays `ShadyTrapSurvivalReward` × the normal money and fame reward (default 0.5). Survive means that all ambushers are destroyed. If the players leave the system first, the trap ends without that reward.
+40. A trap spawns an ambush of 2 ships of the sector tier + 1 near the player ship nearest to the mission location (`mod/missions/shady_ambush.rules`). The ships are local-faction ships with a unique hostile player index and the hunter AI (`HotCargoHunter`). When the trap springs, a message and the wanted alert tell the players that it was a setup. A trap that the players survive pays `ShadyTrapSurvivalReward` × the normal money and fame reward (default 0.5). Survive means that all ambushers are destroyed. If the players leave the system first, the trap ends without that reward.
 41. All new missions earn fame, and so they add heat through requirement 25.
 42. New mission types use vanilla objectives where possible: `ProtectShips`, `DefeatShips`, `Sequential`, `AnyOrder`, `ReceiveRewards`. The game has no objective for "an AI ship reached a location" and no random objective, so the mod adds the rules types `HotCargoEscort` and `HotCargoShadyTrap` (objectives) and `HotCargoScaled` (a reward that multiplies a vanilla Money or Fame reward by a mission tunable). Allied ships are a sibling spawner group with faction allegiance; a child of a hostile station would inherit its allegiance.
 
@@ -136,7 +136,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 13. Tunables, debug and live tuning
 
-50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48 and 65 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
+50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65 and 67 to 78 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
 51. The file uses the game's `.rules` format.
 52. The mod watches the file. When the file changes, the mod reloads it on the next frame, without a game restart.
 53. If the file has an error, the mod keeps the last valid values and shows the error in game. Errors include values that break sim logic later, for example a stage name that `Hunters.Stages` or a tactic does not match (`TunablesFile.Validate`).
@@ -146,7 +146,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 14. Persistence and multiplayer
 
-57. Heat, the stages that already started, the sector index and the run result are saved with the career save and loaded with it. Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
+57. Heat, the stages that already started, the sector index, the run result and the event state (requirement 76) are saved with the career save and loaded with it. Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
 58. All logic that changes simulation state runs in the deterministic simulation tick. It uses the simulation random source, not `System.Random`.
 59. The fleet tech count and the loss rule count all human players together. A loss ends the run for everyone.
 60. In multiplayer, the mod does not reload tunables. The heat panel shows a short hash of the tunables file, so players can compare.
@@ -183,6 +183,12 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `ShadyTrapChanceBase` | 0.2 | 39 |
 | `ShadyTrapChancePerHeat` | 0.006 | 39 |
 | `ShadyTrapSurvivalReward` | 0.5 | 40 |
+| `EscortHeatChange` | −15 | 36 |
+| `Events.ArrivalEventChance`, `ArrivalDelaySeconds` | 0.6, 6 s | 69 |
+| `Events.StationEventChance`, `StationTriggerDistance` | 0.5, 1500 | 69 |
+| `Events.SignalTriggerDistance` | 900 | 69 |
+| `Events.CooldownSeconds`, `MaxEventsPerSystem` | 120 s, 2 | 70 |
+| `Events.MoneyScale`, `FameScale`, `HeatScale` | 1, 1, 1 | 73 |
 | `KiteRangeFraction` | 0.9 | 44 |
 | `PincerAngleDegrees` | 120° | 45 |
 | `FallBackHealthFraction` | 0.35 | 47 |
@@ -201,12 +207,13 @@ mod/                       rules content; scripts/assemble-mod.sh builds mod.rul
   journey/                 run map (galaxy.rules), Buyer station
   missions/                mission spawners, shady ambush
   tactics/ai_hunter.rules  hunter AI (HotCargoHunter)
+  events/                  choice events (events.rules), outcome spawns (spawns.rules), signal POIs
 src/HotCargo.Loader/       startup hook entry point, assembly resolve
 src/HotCargo/
   Mod.cs                   Harmony setup, area registration
   Core/                    Run, RunState (save), Tunables, TunablesFile (live reload, validation), HeatModel,
                            CareerPatches (lifecycle), Activation (requirement 63), Errors, SimQueries, DebugKeys
-  Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/   one folder for each area: <Area>Area.Register, tunables, patches
+  Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/   one folder for each area: <Area>Area.Register, tunables, patches
   Ui/                      overlay, heat panel, run intro and end panels
   Dev/Autotest.cs          headless test commands
 tests/HotCargo.Tests/      fast unit tests for the pure model files
@@ -216,7 +223,7 @@ scripts/                   pull-game, deploy, run, stop, logs, autotest, release
 
 Rules:
 
-- The model files (`HeatModel`, `TechModel`, `MissionModel`, `TacticsModel`) have no game types, so that they are testable on the Mac without the game.
+- The model files (`HeatModel`, `TechModel`, `MissionModel`, `TacticsModel`, `EventModel`) have no game types, so that they are testable on the Mac without the game.
 - Patches stay thin. They call into the mod classes.
 - One tunables record type. The overlay and the code read the same values.
 
@@ -257,3 +264,21 @@ Parallel work: steps 3 and 4 touch separate files and can run at the same time a
 
 - Strike stage: survivable waves (default) or a hard fail (requirement 35).
 - Score formula: delivered units count twice, because the money already includes the Buyer payment (requirement 7).
+
+## 22. Events
+
+FTL-style choice events. EVENTS.md holds the design and the catalog.
+
+67. An event is a page with a title, a text and 1 to 4 choices. Event content is in `mod/events/events.rules`. Ships that outcomes spawn are generators in `mod/events/spawns.rules`. A change to these files needs a game restart.
+68. A choice has an optional sure cost, an optional need and 1 or more weighted outcomes. The window shows the cost on the button. A choice whose need or cost the fleet cannot meet is greyed out with the reason, or hidden when the rules say so. The need of a choice includes its cost.
+69. Triggers: Start (once, `StartDelaySeconds` after a new run), Arrival (`ArrivalDelaySeconds` after the first arrival in a system, chance `ArrivalEventChance`), Signal (a player ship within `SignalTriggerDistance` of a signal POI; the POI goes away), Station (the first trade station within `StationTriggerDistance` in a system visit, chance `StationEventChance`; never the Buyer). Signals and stations wait until the Start event opened.
+70. Arrival and Station events wait `CooldownSeconds` after the last triggered event. A system gets at most `MaxEventsPerSystem` Arrival and Station events. An event opens at most `MaxPerRun` times per run (rules, default 1; 0 means no limit). Only one event page waits at a time.
+71. A trigger picks one eligible event by weight: `Weight + WeightPerHeat × heat + WeightPerTech × fleet tech count`, never below 0. Outcomes use the same weight rule. The outcome roll uses a seed from the simulation random source, taken when the page opens.
+72. Outcome effects: money, money in tech value, fame, heat, tech units (through the Tech Vaults), crew, vanilla resources, hull damage, spawned ships, story flags and a follow-up page. Money gains are split between the human players like a mission reward. The chooser pays money costs.
+73. Event money unit: 1 = the middle of a standard mission's pay at the sector tier × the economy money reward factor × `RewardScale` × `MoneyScale`. A fame unit is a standard mission's fame × the economy fame reward factor × `RewardScale` × `FameScale`. Heat effects × `HeatScale`. Money amounts use the tier and the tech value from when the page opened.
+74. A choice goes through a multiplayer input (`HotCargoEventChoice`). The input carries the page serial, so a second click on the same page (by another player) does nothing. The input checks the chooser's need again before it applies the choice.
+75. After a choice, the window shows the outcome text and one result line per effect. A follow-up page shows the outcome text above its own text.
+76. The event state is saved in the run state: seen counts, flags, the waiting page, the last result, the cooldown and the per-system counts.
+77. In single player, an open event window pauses the game when `PauseOnEvent` is on. Headless test games do not pause.
+78. A content error in an event (a missing spawn, an unknown resource, a bad reference) shows in the overlay at the first event and turns off events for that game. An error while an outcome applies drops the page and shows the error; the game keeps running.
+

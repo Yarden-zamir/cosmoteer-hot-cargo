@@ -4,7 +4,14 @@ wait 8
 hc_generate escort
 hc_accept escort
 expect hc_active_escort == 1
+# Convoy cover: the offer carries MissionTunables.EscortHeatChange, and the reward lowers heat. Heat stays below the first stage, so no hunter disturbs the escort.
+expect hc_escort_cover == -15
+heat 20
+hc_cover_give
+expect heat <= 6
 hc_escort_goto
+# The game can pause by itself here (enemy spotted or a codex page, with default settings in test slots).
+pause off
 wait 5
 expect hc_escort_steering == 1
 hc_mark

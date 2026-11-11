@@ -37,4 +37,6 @@ public sealed class RunState
     [Serialize(Optional = true)] public int DeliveredUnits;
     /// <summary>Run score (spec 7). Set at the win and updated by later Buyer deliveries.</summary>
     [Serialize(Optional = true)] public long Score;
+    /// <summary>Events area state: seen events, flags and the pending event page.</summary>
+    [Serialize(Optional = true)] public Events.EventsState Events = new();
 }

@@ -1,0 +1,128 @@
+namespace HotCargo.Events;
+
+/// <summary>What an event or a choice needs. Zero or empty means "no need". Money and tech value parts are in final credits.</summary>
+public sealed record Need
+{
+    public int Money { get; init; }
+    public int Tech { get; init; }
+    public int VaultSpace { get; init; }
+    public int Crew { get; init; }
+    public float MinHeat { get; init; }
+    /// <summary>Heat must stay below this. Zero means no limit.</summary>
+    public float MaxHeat { get; init; }
+    public int MinSector { get; init; }
+    /// <summary>Zero means no limit.</summary>
+    public int MaxSector { get; init; }
+    public IReadOnlyList<(string Id, int Amount)> Resources { get; init; } = [];
+    public IReadOnlyList<string> Parts { get; init; } = [];
+    public IReadOnlyList<string> Flags { get; init; } = [];
+    public IReadOnlyList<string> NotFlags { get; init; } = [];
+}
+
+/// <summary>The fleet as the conditions see it. Built from sim state, or by hand in unit tests.</summary>
+public sealed record Snapshot
+{
+    public int Money { get; init; }
+    public int Tech { get; init; }
+    public int VaultSpace { get; init; }
+    public int Crew { get; init; }
+    public float Heat { get; init; }
+    public int Sector { get; init; }
+    public IReadOnlyDictionary<string, int> Resources { get; init; } = new Dictionary<string, int>();
+    public IReadOnlySet<string> Parts { get; init; } = new HashSet<string>();
+    public IReadOnlySet<string> Flags { get; init; } = new HashSet<string>();
+}
+
+/// <summary>The first need that the fleet does not meet.</summary>
+public enum UnmetKind { Money, Tech, VaultSpace, Crew, MinHeat, MaxHeat, MinSector, MaxSector, Resource, Part, Flag, NotFlag }
+
+public sealed record Unmet(UnmetKind Kind, string Id = "", float Amount = 0);
+
+/// <summary>Pure event math on plain numbers. No game types, so unit tests run on the Mac without the game.</summary>
+public static class EventModel
+{
+    /// <summary>The first need that the snapshot does not meet, or null when all are met. Checks run in a fixed order.</summary>
+    public static Unmet? FirstUnmet(Need need, Snapshot s)
+    {
+        if (s.Money < need.Money) return new(UnmetKind.Money, Amount: need.Money);
+        if (s.Tech < need.Tech) return new(UnmetKind.Tech, Amount: need.Tech);
+        if (s.VaultSpace < need.VaultSpace) return new(UnmetKind.VaultSpace, Amount: need.VaultSpace);
+        if (s.Crew < need.Crew) return new(UnmetKind.Crew, Amount: need.Crew);
+        if (s.Heat < need.MinHeat) return new(UnmetKind.MinHeat, Amount: need.MinHeat);
+        if (need.MaxHeat > 0 && s.Heat >= need.MaxHeat) return new(UnmetKind.MaxHeat, Amount: need.MaxHeat);
+        if (s.Sector < need.MinSector) return new(UnmetKind.MinSector, Amount: need.MinSector);
+        if (need.MaxSector > 0 && s.Sector > need.MaxSector) return new(UnmetKind.MaxSector, Amount: need.MaxSector);
+        foreach (var (id, amount) in need.Resources)
+            if (s.Resources.GetValueOrDefault(id) < amount) return new(UnmetKind.Resource, id, amount);
+        foreach (string part in need.Parts)
+            if (!s.Parts.Contains(part)) return new(UnmetKind.Part, part);
+        foreach (string flag in need.Flags)
+            if (!s.Flags.Contains(flag)) return new(UnmetKind.Flag, flag);
+        foreach (string flag in need.NotFlags)
+            if (s.Flags.Contains(flag)) return new(UnmetKind.NotFlag, flag);
+        return null;
+    }
+
+    /// <summary>A need plus a sure cost: the fleet must be able to pay the cost on top of the need. Resource amounts add up by ID.</summary>
+    public static Need Plus(Need need, int money, int tech, int crew, IEnumerable<(string Id, int Amount)> resources)
+    {
+        var sums = new List<(string Id, int Amount)>(need.Resources);
+        foreach (var (id, amount) in resources)
+        {
+            int i = sums.FindIndex(r => r.Id == id);
+            if (i < 0) sums.Add((id, amount));
+            else sums[i] = (id, sums[i].Amount + amount);
+        }
+        return need with { Money = need.Money + money, Tech = need.Tech + tech, Crew = need.Crew + crew, Resources = sums };
+    }
+
+    /// <summary>Weight of an outcome or an event after the heat and tech terms. Never below 0.</summary>
+    public static float EffectiveWeight(float weight, float perHeat, float perTech, float heat, int tech) =>
+        Math.Max(0f, weight + perHeat * heat + perTech * tech);
+
+    /// <summary>
+    /// Picks an index with a roll in [0, 1). Each index wins in proportion to its weight.
+    /// Returns -1 when all weights are 0 (nothing to pick).
+    /// </summary>
+    public static int PickWeighted(IReadOnlyList<float> weights, float roll01)
+    {
+        if (roll01 is < 0f or >= 1f) throw new ArgumentOutOfRangeException(nameof(roll01), roll01, "must be in [0, 1)");
+        float total = 0f;
+        foreach (float w in weights)
+        {
+            if (w < 0f || float.IsNaN(w)) throw new ArgumentOutOfRangeException(nameof(weights), w, "weights must be 0 or more");
+            total += w;
+        }
+        if (total <= 0f) return -1;
+        float target = roll01 * total;
+        int last = -1;
+        for (int i = 0; i < weights.Count; i++)
+        {
+            if (weights[i] <= 0f) continue;
+            last = i;
+            if (target < weights[i]) return i;
+            target -= weights[i];
+        }
+        // Float rounding can leave a tiny rest after the last positive weight.
+        return last;
+    }
+
+    /// <summary>
+    /// Credits for an amount in event money units: units × the standard mission pay of the tier × the reward factors,
+    /// plus techUnits × the tech value. Rounded to the nearest multiple of roundTo, away from zero.
+    /// </summary>
+    public static int Credits(float units, float standardPay, float rewardFactor, float techUnits, long techValue, int roundTo)
+    {
+        if (roundTo < 1) throw new ArgumentOutOfRangeException(nameof(roundTo), roundTo, "must be 1 or more");
+        double raw = units * (double)standardPay * rewardFactor + techUnits * (double)techValue;
+        long rounded = (long)Math.Round(raw / roundTo, MidpointRounding.AwayFromZero) * roundTo;
+        return (int)Math.Clamp(rounded, int.MinValue, int.MaxValue);
+    }
+
+    /// <summary>True when an event is allowed again: it was never seen, or maxPerRun is 0 (no limit), or it was seen less often than maxPerRun.</summary>
+    public static bool UnderRunLimit(int seenCount, int maxPerRun) => maxPerRun <= 0 || seenCount < maxPerRun;
+
+    /// <summary>True when the cooldown since the last event has passed. A negative last time means no event yet.</summary>
+    public static bool CooldownOver(double nowSeconds, double lastEventSeconds, float cooldownSeconds) =>
+        lastEventSeconds < 0 || nowSeconds - lastEventSeconds >= cooldownSeconds;
+}

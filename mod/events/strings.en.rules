@@ -1,0 +1,7 @@
+HotCargoEventMissions
+{
+	Rivals = "Rival Crew"
+	RivalsDesc = "Another crew of thieves wants your cargo. Their own bounty is posted on every station in the {mission_location} system. Take them apart and collect {money}."
+	Siege = "Freighter Under Fire"
+	SiegeDesc = "Raiders have a freighter pinned in the {mission_location} system. Its shields will not hold for long. Drive them off before time runs out, and the crew pays {money}."
+}

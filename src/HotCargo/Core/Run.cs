@@ -125,15 +125,15 @@ public sealed class Run
         int gained = e.NewValue - e.OldValue;
         if (gained <= 0) return;
         float mult = HeatModel.Multiplier(T.Heat.HeatMultiplierByUnits, State.FleetTech);
-        AddHeat(HeatModel.FameHeat(T.Heat.HeatPerStandardMission, mult, gained, StandardMissionFamePaid()), Game.Sim);
+        AddHeat(HeatModel.FameHeat(T.Heat.HeatPerStandardMission, mult, gained, (int)Math.Round(StandardMissionFamePaid(CurrentTier))), Game.Sim);
     }
 
     /// <summary>
-    /// Fame that a standard mission of the current tier pays: the vanilla table value times the same factors as the payout
+    /// Fame that a standard mission of the tier pays: the vanilla table value times the same factors as the payout
     /// (difficulty fame factor and RewardScale, see Journey/RewardScale.cs). So "heat per standard mission" holds on every difficulty.
     /// </summary>
-    int StandardMissionFamePaid() =>
-        (int)Math.Round(GameData.StandardMissionFame(CurrentTier) * Mode.EconDifficulty.FameRewardFactor * T.Journey.RewardScale);
+    public float StandardMissionFamePaid(int tier) =>
+        GameData.StandardMissionFame(tier) * Mode.EconDifficulty.FameRewardFactor * T.Journey.RewardScale;
 
     /// <summary>Adds heat and starts any stages it crosses. Call only from simulation logic (or single-player debug keys).</summary>
     public void AddHeat(float amount, SimRoot sim)
