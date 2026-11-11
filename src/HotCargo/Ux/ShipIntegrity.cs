@@ -109,11 +109,35 @@ static class ShipIntegrity
         {
             if (BlipHover.Active) return;
             var ship = __instance.Ship;
-            if (!ship.IsLocalPlayerShip || ship.IsDisposed || !UxKit.On(s => s.ShipIntegrity)) return;
+            if (!ship.IsLocalPlayerShip || ship.IsDisposed) return;
+            float f = UxKit.On(s => s.ShipIntegrity) ? Of(ship) : 1f;
+            bool hit = DamagePings.UnderFire(ship);
+            if (f >= ShowBelow && !hit) return;
+            string line = (hit ? $"<bad>{UxKit.Text("UnderFire")}</bad>  " : "") + (f < ShowBelow ? UxKit.Format("HullFmt", UxKit.PercentXml(f)) : "");
+            string text = $"<s14>{line.Trim()}</s14>";
+            __result = __result is null ? text : __result + "\n" + text;
+        }
+    }
+
+    /// <summary>V9. A thin hull bar under each damaged ship icon in the ships card (the icons that show red ghosts).</summary>
+    [HarmonyPatch(typeof(ShipIconButton), nameof(ShipIconButton.OnRender))]
+    static class IconBar
+    {
+        static void Postfix(ShipIconButton __instance, GraphicsManager gfx, Rect uiScreenRect, Color colorScale)
+        {
+            var ship = __instance.Ship;
+            if (!__instance.ShowRedprints || ship is null || ship.IsDisposed || !ship.IsViewableByLocalPlayer || !UxKit.On(s => s.ShipIconHealth)) return;
             float f = Of(ship);
             if (f >= ShowBelow) return;
-            string hull = $"<s14>{UxKit.Format("HullFmt", UxKit.PercentXml(f))}</s14>";
-            __result = __result is null ? hull : __result + "\n" + hull;
+            var back = new Rect(uiScreenRect.X + 4f, uiScreenRect.Bottom - 7f, uiScreenRect.Width - 8f, 4f);
+            var fill = new Rect(back.X, back.Y, back.Width * f, back.Height);
+            // The same green-to-red ramp as the vanilla part health bar (PartsCard.OnDrawHealthBar).
+            float damage = 1f - f;
+            var color = new Color(Mathx.InverseLerp(0f, 0.5f, damage), Mathx.InverseLerp(1f, 0.5f, damage), 0f);
+            if (DamagePings.UnderFire(ship)) color = Color.Lerp(color, Color.White, 0.5f * (0.5f + 0.5f * MathF.Sin((float)App.Clock.Time.Seconds * 10f)));
+            gfx.SetToMaterial(null);
+            gfx.Draw<Quad>(new Quad(back, new Color(0f, 0f, 0f, 0.6f) * colorScale));
+            gfx.Draw<Quad>(new Quad(fill, color * colorScale));
         }
     }
 }
