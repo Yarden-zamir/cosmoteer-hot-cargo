@@ -151,6 +151,10 @@ Escort
 							ReputationPerHighTier = &/TIER_TABLES/StandardReputationPerTier
 							ReputationPerTierMultiplier = 2
 						}
+						// Convoy cover: MissionTunables.EscortHeatChange (spec 36).
+						{
+							Type = HotCargoEscortCover
+						}
 					]
 				}
 			]

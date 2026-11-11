@@ -1,0 +1,26 @@
+// Hot Cargo events (EVENTS.md): signal POIs in each system, and the mission types that event outcomes start.
+// Event content lives in events/events.rules and events/spawns.rules, which C# reads; they need no Actions.
+{
+	Action = Add
+	AddTo = "<modes/career/sectors/sector_basic/sector_basic.rules>/Sector/SystemGenerator/Spawners"
+	ToAdd = &<events/sysgen_events.rules>
+}
+{
+	Action = Overrides
+	OverrideIn = "<modes/career/mission_metatypes.rules>"
+	Overrides
+	{
+		HotCargoEventRivals
+		{
+			NameKey = "HotCargoEventMissions/Rivals"
+			DescriptionKey = "HotCargoEventMissions/RivalsDesc"
+			CategoryID = encounter
+		}
+		HotCargoEventSiege
+		{
+			NameKey = "HotCargoEventMissions/Siege"
+			DescriptionKey = "HotCargoEventMissions/SiegeDesc"
+			CategoryID = encounter
+		}
+	}
+}

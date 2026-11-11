@@ -55,6 +55,9 @@ public static class MissionArea
         };
         Autotest.Commands["hc_ambush_file"] = _ => Autotest.Check(ShadyAmbush.Generator.Spawners.Length > 0, $"shady ambush file loads ({ShadyAmbush.FilePath})");
 
+        // Convoy cover (spec 36): the heat change on the accepted escort, and a command that gives that reward now.
+        Autotest.Fields["hc_escort_cover"] = () => EscortCover().Heat;
+        Autotest.Commands["hc_cover_give"] = _ => EscortCover().GiveReward(RequireRun().Game);
         Autotest.Fields["hc_money_gain"] = () => RequireRun().Game.LocalPlayerState.Money - _markedMoney;
         Autotest.Fields["hc_escort_steering"] = () => RequireEscort() is var o && o.Escort.TargetShip?.AI?.Parameters?.PatrolOrigin is { } p && p == o.Destination ? 1 : 0;
         Autotest.Fields["hc_escort_dist"] = () => EscortDistance();
@@ -87,6 +90,13 @@ public static class MissionArea
 
     static int _markedMoney;
     static float _markedEscortDist;
+
+    static HeatReward EscortCover()
+    {
+        var id = new ID<MissionMetatype>(Metatypes["escort"]);
+        var mission = RequireRun().Mode.Missions.LastOrDefault(m => m.MetatypeID.Equals(id)) ?? throw new InvalidOperationException("no accepted escort");
+        return mission.Rewards.OfType<HeatReward>().SingleOrDefault() ?? throw new InvalidOperationException("the escort has no convoy cover reward");
+    }
 
     static float EscortDistance() => RequireEscort() is var o && o.Escort.Location is { } at ? at.DistanceTo(o.Destination) : -1f;
 
