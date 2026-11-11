@@ -243,6 +243,12 @@ public static class ChainRunner
         c.MissionId = m.MissionID;
         c.MissionSince = run.State.GameSeconds;
         Log.Info($"chain {c.ChainId} stage {c.Stage}: mission {stage.Mission} spawned ({m.MissionID})");
+        // A Return or Arrival mission skips the comms offer, so the event window tells the players why ships come for them.
+        if (stage.Where != StageWhere.Station && run.State.Events.Pending is null)
+        {
+            var events = run.State.Events;
+            events.LastResult = new EventResult { Serial = ++events.LastSerial, Title = $"{chain.Title}: {stage.Title}", Text = stage.Text };
+        }
     }
 
     /// <summary>

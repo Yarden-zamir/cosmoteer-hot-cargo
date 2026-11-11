@@ -31,6 +31,7 @@ FTL-style choice events for the Hot Cargo run. Spec requirements 67 to 78 (SPEC.
 - The game rolls the outcome when a player chooses. Weight = `Weight + WeightPerHeat × heat + WeightPerTech × fleet tech`, never below 0. The roll seed comes from the sim when the page opens, so all co-op clients get the same result.
 - Outcome effects: money, money in tech value, fame, heat, tech units (through the vaults), crew, vanilla resources, hull damage, spawned ships (from `spawns.rules`, some with a mission), story flags, and a follow-up page (`Next`).
 - After the choice, the window shows the outcome text and one line per effect, in the colors of vanilla reward lines.
+- Story chains (CHAINS.md) use the same window for their pages. Chain pages live in `mod/chains/pages.rules`, have no trigger, and each outcome gives a `ChainResult` that the chain stage handles.
 
 ### Units and balance
 
