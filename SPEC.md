@@ -102,13 +102,13 @@ With defaults and 6 units held, a sector reaches the top stage after about 6 mis
 | Warning | 25 | Alert sound and message. One scout ship of the sector tier. |
 | Patrol | 50 | Two hunter ships of the sector tier. |
 | Hunt | 75 | Three hunter ships of the sector tier + 1. |
-| Strike | 100 | A strike force of the sector tier + 2. A new wave every `StrikeWaveIntervalSeconds` (default 180 s) while heat stays at 100. |
+| Strike | 100 | A strike force: 2 ships of the sector tier + 1 in sector 1, up to 3 ships of tier + 2 in the last sector (requirement 190). The ships arrive one at a time, 45 s apart (requirement 191). A new wave every `StrikeWaveIntervalSeconds` (default 180 s) while heat stays at 100. |
 
-31. Each stage starts once for each sector visit. The Strike stage repeats its waves. A wave spawns only enough ships to reach `MaxLiveHunters` (default 12) live hunters in the system.
+31. Each stage starts once for each sector visit. The Strike stage repeats its waves. A stage response can arrive in groups (requirement 191). A group spawns only enough ships to reach `MaxLiveHunters` (default 12) live hunters in the system.
 32. Hunters spawn at a distance of `SpawnDistanceMin` to `SpawnDistanceMax` (default 2,000 to 3,000) from the center of the player fleet. All ships of one wave come from one direction, spread over `WaveArcDegrees` (default 40°). They always know where the players are, move to them and attack. Hunters far from the players move toward them in stasis too.
-33. Hunters are a corporate force, not a rules faction. They use built-in ships with the `ShipTags` tag (default `combat`) from the `ShipFactions` pools (default: all factions), at the wanted tier or the nearest lower tier. Their names start with `ShipNamePrefix` (default "Corporate"). All hunters in a system share one hostile player index, so they are allies of each other and enemies of the players. Like vanilla ambushes, they are also enemies of faction ships. Resolved: a rules faction needs an icon, two player indices and its own ship pool, and the faction reputation systems would treat it as a normal faction. A unique player index gives the same result at much lower cost.
+33. Hunters are a corporate force, not a rules faction. They use built-in ships with the `ShipTags` tag (default `combat`) from the `ShipFactions` pools (default: all factions), at the wanted tier or the nearest lower tier. Their names start with `ShipNamePrefix` (default "Corporate"). All hunters in a system share one hostile player index, so they are allies of each other and enemies of the players. Like vanilla ambushes, they are also enemies of faction ships. Every hunter carries FTL fuel (requirement 192). Hunters never surrender and never accept surrender. Resolved: a rules faction needs an icon, two player indices and its own ship pool, and the faction reputation systems would treat it as a normal faction. A unique player index gives the same result at much lower cost.
 34. Hunters prefer to attack ships that carry Tech Vaults. A ship with a Tech Vault part counts `VaultTargetFactor` times more (default 3) when a hunter picks the nearest target.
-35. The Strike stage is dangerous but survivable. It does not end the run directly. Only a loss under requirement 9 ends the run. **Open decision:** the user may choose a hard fail instead.
+35. The Strike stage is dangerous but survivable. Its ships arrive in groups, so players who can fight have time to destroy a hunter, take its fuel and jump away (requirements 191 and 192). It does not end the run directly. Only a loss under requirement 9 ends the run. **Open decision:** the user may choose a hard fail instead.
 
 ## 11. Missions
 
@@ -126,17 +126,17 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 12. Hunter AI tactics
 
-43. Hunters use new tactics. Each tactic has an on/off switch (`<Tactic>Enabled`) and a minimum stage (`<Tactic>MinStage`, a stage name or empty) in the tunables file. A minimum stage that is not a `Heat.Stages` name is a tunables error (requirement 53). With no active run, or with a tactic off, the hunter AI uses the vanilla module for that job.
+43. Hunters use new tactics. Each tactic has an on/off switch (`<Tactic>Enabled`) and a minimum stage (`<Tactic>MinStage`, a stage name or empty) in the tunables file. A minimum stage that is not a `Heat.Stages` name is a tunables error (requirement 53). With no active run, or with a tactic off, the hunter AI uses the vanilla module for that job. Requirements 193 to 202 add enemy AI behaviors (flee, calls for help, focus fire, regroup) for hunters and for the vanilla combat AIs.
 44. **Kite**: ships with a longer weapon range than the target hold at `KiteRangeFraction` (default 0.9) of their range, edge to edge. A ship kites only when that distance is outside the target's longest weapon range.
 45. **Pincer**: in a group of two or more on the same target, ships split and attack from sides that are `PincerAngleDegrees` (default 120°) apart, alternating left and right of the group leader. With more ships than fit in a circle at that angle, the angle shrinks to 360° ÷ group size. The leader turns the whole formation a little every 10 to 20 s.
 46. **Disable**: ships aim all weapons at the nearest weapon or thruster part of the target. Default minimum stage: Hunt.
-47. **Fall back**: a ship below `FallBackHealthFraction` (default 0.35) moves `FallBackDistance` (default 1,500) away from the nearest player ship and repairs. It returns at `FallBackRecoverFraction` (default 0.6) or after `FallBackMaxSeconds` (default 45 s), and cannot fall back again for the same time. Health is the cost of each part times its health fraction, summed and divided by the blueprint cost. Destroyed parts count as 0.
+47. **Fall back**: a ship below `FallBackHealthFraction` (default 0.35) moves `FallBackDistance` (default 1,500) away from the nearest player ship and repairs. It returns at `FallBackRecoverFraction` (default 0.6) or after `FallBackMaxSeconds` (default 45 s), and cannot fall back again for the same time. Health is the cost of each part times its health fraction, summed and divided by the blueprint cost. Destroyed parts count as 0. A ship that flees (requirement 193) does not fall back: flee has the higher priority.
 48. **Bait**: in a group of two or more, the ship with the most thrust per mass comes within `BaitCloseDistance` (default 150) of the nearest player ship, then pulls back to the middle of its group for `BaitPullBackSeconds` (default 12 s), and repeats. Default minimum stage: Strike.
-49. Each tactic has a visible tell, so the players can read it and counter it. For example, a kiting ship keeps its distance, and a ship that falls back turns away.
+49. Each tactic has a visible tell, so the players can read it and counter it. For example, a kiting ship keeps its distance, and a ship that falls back turns away. The behaviors of requirements 193 to 202 have tells too: a ring and a label for a call, a label and a jump countdown for a fleeing ship, a label for a ship that regroups.
 
 ## 13. Tunables, debug and live tuning
 
-50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65 and 67 to 78 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
+50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78 and 190 to 202 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
 51. The file uses the game's `.rules` format.
 52. The mod watches the file. When the file changes, the mod reloads it on the next frame, without a game restart.
 53. If the file has an error, the mod keeps the last valid values and shows the error in game. Errors include values that break sim logic later, for example a stage name that `Hunters.Stages` or a tactic does not match (`TunablesFile.Validate`).
@@ -194,6 +194,16 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `KiteRangeFraction` | 0.9 | 44 |
 | `PincerAngleDegrees` | 120° | 45 |
 | `FallBackHealthFraction` | 0.35 | 47 |
+| `Hunters.Stages` Strike `EarlyScale`, `EarlyTierReduction` | 0.67, 1 | 190 |
+| `Hunters.Stages` Strike `Waves`, `WaveGapSeconds` | 3, 45 s | 191 |
+| `Hunters.MinFuel` | 40 | 192 |
+| `FleeHealthFraction`, `FleeChance` | 0.25, 0.5 | 193 |
+| `FleeDistance`, `FleeJumpSeconds`, `FleeRecoverFraction` | 1500, 25 s, 0.6 | 195 |
+| `CallSeconds`, `CallRange`, `CallCooldownSeconds` | 6 s, 6000, 60 s | 196, 197 |
+| `CallAssistSeconds` | 60 s | 198 |
+| `CallBlockedInNebulas`, `CallStormStrength` | [ion_storm, electron], 0.5 | 199 |
+| `FocusWeakFactor` | 1.5 | 200 |
+| `RegroupFirepowerRatio`, `RegroupRadius`, `RegroupMinGroup`, `RegroupMaxSeconds` | 0.75, 1200, 2, 25 s | 201 |
 
 The defaults are first guesses. Live tuning sets the real values.
 
@@ -209,6 +219,7 @@ mod/                       rules content; scripts/assemble-mod.sh builds mod.rul
   journey/                 run map (galaxy.rules), Buyer station
   missions/                mission spawners, shady ambush
   tactics/ai_hunter.rules  hunter AI (HotCargoHunter)
+  tactics/ai_vanilla.rules enemy AI modules that actions.rules appends to the vanilla combat AIs
   events/                  choice events (events.rules), outcome spawns (spawns.rules), signal POIs
 src/HotCargo.Loader/       startup hook entry point, assembly resolve
 src/HotCargo/
@@ -216,6 +227,7 @@ src/HotCargo/
   Core/                    Run, RunState (save), Tunables, TunablesFile (live reload, validation), HeatModel,
                            CareerPatches (lifecycle), Activation (requirement 63), Errors, SimQueries, DebugKeys
   Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/   one folder for each area: <Area>Area.Register, tunables, patches
+  Ai/                      enemy AI behaviors (flee, call, regroup, focus); TacticsArea registers it, Tactics tunables
   Ui/                      overlay, heat panel, run intro and end panels
   Dev/Autotest.cs          headless test commands
 tests/HotCargo.Tests/      fast unit tests for the pure model files
@@ -225,7 +237,7 @@ scripts/                   pull-game, deploy, run, stop, logs, autotest, release
 
 Rules:
 
-- The model files (`HeatModel`, `TechModel`, `MissionModel`, `TacticsModel`, `EventModel`) have no game types, so that they are testable on the Mac without the game.
+- The model files (`HeatModel`, `TechModel`, `MissionModel`, `TacticsModel`, `EventModel`, `WaveModel`, `AiModel`) have no game types, so that they are testable on the Mac without the game.
 - Patches stay thin. They call into the mod classes.
 - One tunables record type. The overlay and the code read the same values.
 
@@ -295,3 +307,23 @@ FTL-style choice events. EVENTS.md holds the design and the catalog.
 88. Dead in Space: a broken-down freighter needs repair supplies or a tow. It opens as an Arrival event or as a follow-up of the Distress Beacon. The tow choice needs a Tractor Beam Emitter and starts a Tow Job mission: the freighter has no AI, and the mission completes when it is within 1,200 of the nearest trade station at least 3,000 from it (`HotCargoTow` objective). It fails when the freighter is destroyed.
 89. Event texts show no counts that live elsewhere (starting tech, spawn counts). The token `{crates}` shows the live fleet tech count. The choice buttons have no number prefix; the UX area draws the key numbers.
 
+## 23. Strike waves and enemy AI
+
+Tunables: `Hunters` (requirements 190 to 192) and `Tactics` (requirements 193 to 202). Pure math: `Hunters/WaveModel.cs`, `Ai/AiModel.cs`.
+
+190. **Stage scaling.** A stage response sends `ShipCount` ships of the sector tier + `TierOffset` in the last sector of the run. In sector 1 it sends `ShipCount` × `EarlyScale` ships (rounded, at least 1) of the sector tier + `TierOffset` − `EarlyTierReduction`. Both values rise linearly with the sector index. By default only Strike scales: 2 ships of tier + 1 in sector 1, 3 ships of tier + 2 in the last sector.
+191. **Waves.** A stage response arrives in `Waves` groups, `WaveGapSeconds` apart. Defaults: Strike 3 groups 45 s apart (one ship at a time), other stages 1 group. The first group arrives when the stage starts, with the stage alert. Each later group plays the alert sound with the "more ships" text. The repeat Strike waves of requirement 30 split the same way. The run state saves the waiting groups. A jump to another system drops them: a jump is how the players escape a strike.
+192. **Hunter fuel.** Every hunter carries at least `MinFuel` (default 40) hyperium, the FTL fuel resource. Built-in ships spawn with full hyperdrive tanks. A hunter with less fuel gets the rest in any storage that takes hyperium. Some built-in ships have no hyperdrive and no such storage; the run state holds the fuel that does not fit, and it drops with the same roll when the hunter is destroyed or becomes derelict. Vanilla drop rates apply when it dies: hyperdrive tanks drop their fuel when destroyed (`DropResourcesWhenDestroyed`), each unit with the hyperium `StorageDestroyed` chance (50 %), and crew salvage recovers all of it (`StorageSalvaged` 100 %). Hunters never surrender (requirement 33), so death and salvage are the ways to get their fuel. A hunter that jumps out (requirement 195) takes its fuel with it.
+
+The enemy AI behaviors are the rules modules `HcFlee`, `HcCall` and `HcRegroup` and a patch on `SimModeManager.ModifyAIAttackValue`. The modules are in the hunter AI (`mod/tactics/ai_hunter.rules`) and at the end of the strategy modules of the vanilla combat AIs Normal, Easy, Wanderer, StationGuard and Police (`mod/tactics/ai_vanilla.rules`). Priority, highest first: flee, call (answering ally), then for hunters fall back, bait and regroup, and for vanilla AIs regroup, then the vanilla modules.
+
+193. **Flee on damage.** A ship below `FleeHealthFraction` (default 0.25) health rolls once against `FleeChance` (default 0.5). On success it flees. It rolls again only after its health is back at or above `FleeHealthFraction`. Health is as in requirement 47.
+194. **Flee unarmed.** A ship without an offensive weapon part always flees. Point defense and other defensive-only weapons do not count.
+195. **Fleeing.** A fleeing ship keeps at least `FleeDistance` (default 1,500) edge to edge from the nearest enemy on its team radar. A corporate hunter (tag `hc_hunter`) jumps out of the system `FleeJumpSeconds` (default 25 s) after it starts to flee, with the vanilla FTL effect; it leaves no wreck. Any other ship repairs when it is clear of enemies and fights again at `FleeRecoverFraction` (default 0.6) health if it has weapons. Other ships never leave the system, so mission targets stay. This includes the shady trap and event ambushers, which run the hunter AI. A ship that surrendered to the players keeps its vanilla behavior (all behaviors of this section).
+196. **Call trigger.** A ship calls for help when a human enemy ship first comes onto its team radar, or when it loses `CallDamageTrigger` (default 0.02) health between two AI checks while a human enemy is on radar. It calls only when someone can answer: for a corporate hunter, a hunter group waits to arrive (requirement 191); for any other ship, an ally within `CallRange` (default 6,000) has the call module and does not call or answer already. Allies are ships of the same team: the same faction, or the same hunter or pirate group. Only one ship of a team within `CallRange` calls at a time. After a call, a stopped call or an answer, the ship waits `CallCooldownSeconds` (default 60 s) before it calls again.
+197. **Call tells and interrupt.** A call takes `CallSeconds` (default 6 s). The caller keeps fighting. During the call, a red ring around the ship grows to a fixed outer ring, and the ship marker shows "CALLING FOR HELP n%". The log shows a line when a call starts, completes or stops, for ships on the local player's radar. One hit that drains battery power stops the call: disruptor bolts, the disruptor drain status and EMP missiles (factory_emp makes their parts). Damage from a part in `CallInterruptParts` (default ion beam emitter and ion beam prism) stops it too, because ion beams drain no battery power.
+198. **Call result.** A completed corporate hunter call brings the next waiting hunter group at once. Any other completed call makes each listener hunt the caller's target for `CallAssistSeconds` (default 60 s): it attacks the target, or flies to it while the target is off its radar. A listener that fights another target keeps that fight.
+199. **Storms.** A ship inside a nebula of a `CallBlockedInNebulas` type (default ion storm and electron nebula) at `CallStormStrength` (default 0.5) or more cannot call, and a listener there does not hear. A storm stops a running call. An unknown nebula type in the list is an error that shows in the overlay.
+200. **Focus fire.** The attack value of a target is multiplied by 1 + `FocusWeakFactor` × its lost health fraction (default factor 1.5). Hunters use it in their target choice, together with the vault factor of requirement 34. Vanilla AIs use it through `SimModeManager.ModifyAIAttackValue`. Tell: the enemies turn on a badly hurt ship.
+201. **Regroup.** A ship with less than `RegroupFirepowerRatio` (default 0.75) of its target's firepower (the vanilla AI firepower rating) does not charge alone. While fewer than `RegroupMinGroup` (default 2) ships of its team, itself included, are within `RegroupRadius` (default 1,200), and some allies within `RegroupSearchRange` (default 5,000) are further away, it flies to the nearest of them. It attacks after `RegroupMaxSeconds` (default 25 s) at the latest, and does not regroup again for the same time. The ship marker shows "REGROUPING".
+202. **Switches and determinism.** Each behavior has two switches in `Tactics`: `<Behavior>Enabled` for hunters and `<Behavior>OnVanilla` for the vanilla AIs (`Flee`, `Call`, `Focus`, `Regroup`). With no active run, all behaviors are off and the AIs stay vanilla. All decisions run in the AI tick or in hit effects inside the sim tick, use the ship's sim random source, and walk the ships in sim order. Module state is saved with the ship and is part of the integrity hash. The ring, labels and log lines change no sim state.

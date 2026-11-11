@@ -26,14 +26,16 @@ wait 1
 expect hunters >= 2
 expect hunterindices == 1
 expect huntershostile == 1
-# Hunt and Strike: 3 + 3 ships, up to tier + 2.
+# Hunt: 3 ships of tier + 1. Strike in sector 1: 2 ships of tier + 1, one now and one later (spec 190-191).
 stage
 stage
 wait 1
 hunters strike
-expect hunters >= 7
-expect huntertiermax <= 3
+expect hunters >= 5
+expect huntertiermax <= 2
 expect hunterwaves == 4
+expect hunterspending >= 1
+expect hunterfuelmin >= 40
 # Strike waves repeat while heat stays at 100.
 strikeinterval 5
 wait 8
@@ -44,7 +46,7 @@ wait 3
 load hunters
 wait 2
 hunters loaded
-expect hunters >= 7
+expect hunters >= 5
 expect hunterindices == 1
 expect huntershostile == 1
 wait 10

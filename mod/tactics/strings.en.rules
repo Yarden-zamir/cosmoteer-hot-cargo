@@ -1,0 +1,15 @@
+HotCargoAi
+{
+	// Log lines. {0} is the ship name.
+	CallStartFmt = "{0} is calling for help. Jam it with a disruptor or EMP hit."
+	CallCompleteFmt = "{0} got its call through. More ships are coming."
+	CallStoppedFmt = "{0}'s call was cut off."
+	FleeFmt = "{0} breaks off and runs."
+	JumpedOutFmt = "{0} jumped out of the system."
+
+	// Labels on the ship marker.
+	LabelCallingFmt = "CALLING FOR HELP {0}%"
+	LabelJumpFmt = "FLEEING - JUMP IN {0}s"
+	LabelFleeing = "FLEEING"
+	LabelRegroup = "REGROUPING"
+}

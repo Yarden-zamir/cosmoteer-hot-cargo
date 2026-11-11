@@ -23,6 +23,11 @@ StrategyModules
 		TargetSwitchThresholdFactor = 1.5
 		ChaseMoveTolerance = 300
 	}
+	// Wait for allies instead of charging alone into a stronger target (spec 201).
+	{
+		Type = HcRegroup
+		ForHunters = true
+	}
 	{
 		Type = HcBait
 		MoveTolerance = 100
@@ -30,6 +35,18 @@ StrategyModules
 	{
 		Type = HcFallBack
 		RepairChecksPerTick = 2
+		AvoidableDoodadTags = [sun]
+		AvoidableDoodadBuffer = 100
+	}
+	// Call the next waiting hunter group (spec 196-198). The caller keeps fighting.
+	{
+		Type = HcCall
+		ForHunters = true
+	}
+	// Run and jump out when beaten or unarmed (spec 193-195). Highest priority.
+	{
+		Type = HcFlee
+		ForHunters = true
 		AvoidableDoodadTags = [sun]
 		AvoidableDoodadBuffer = 100
 	}
