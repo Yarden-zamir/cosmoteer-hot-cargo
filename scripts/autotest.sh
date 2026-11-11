@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run an autotest script in a headless test instance of the game on the PC and print the result.
 # Usage: autotest.sh tests/autotest/<name>.txt [timeout-seconds]
-# Takes a free test slot (t1..tN, N = HOT_CARGO_SLOTS, default 4), so several autotests run at the same time.
+# Takes a free test slot (t1..tN, N = HOT_CARGO_SLOTS, default 8), so several autotests run at the same time.
 # Exit code 0 only if the log has AUTOTEST DONE and no AUTOTEST FAIL or ERROR line.
 set -euo pipefail
 SCRIPT="${1:?usage: autotest.sh <script> [timeout]}"

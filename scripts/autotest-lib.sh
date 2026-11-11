@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Shared parts of autotest.sh and autotest-mp.sh. Source it; it does not run anything.
-# Slots t1..tN (N = HOT_CARGO_SLOTS, default 4) are headless test instances on the PC (see pc.sh).
+# Slots t1..tN (N = HOT_CARGO_SLOTS, default 8) are headless test instances on the PC (see pc.sh).
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$LIB_DIR/.." && pwd)"
-SLOTS="${HOT_CARGO_SLOTS:-4}"
+SLOTS="${HOT_CARGO_SLOTS:-8}"
 
 slot_lock() { echo "/tmp/hot_cargo_slot_${1#t}.lock"; }
 

@@ -123,6 +123,8 @@ Magpies
 					]
 					Rewards
 					[
+						// Added straight to the log, not offered: no contract fee, heat, trail or informant (economy spec 100+).
+						{ Type = HotCargoContract; AcceptFee = 0; FlatHeat = 0; TrailWeight = 0; InformantChance = 0; }
 						{
 							Type = Money
 							MoneyPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMoneyPerTier
@@ -223,6 +225,8 @@ Siege
 					// Like a fleet bounty plus a rescue bonus: the raiders also pay kill fame.
 					Rewards
 					[
+						// Added straight to the log, not offered: no contract fee, heat, trail or informant (economy spec 100+).
+						{ Type = HotCargoContract; AcceptFee = 0; FlatHeat = 0; TrailWeight = 0; InformantChance = 0; }
 						{
 							Type = Money
 							MoneyPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMoneyPerTier
@@ -272,6 +276,270 @@ Drone
 				Type = HotCargoHunter
 				ChanceToConsiderSurrenderingToPlayer = 0
 				PatrolRadius = 600
+				TargetAcquireRangeFromOrigin = 4000
+				TargetUnacquireRangeFromOrigin = 6000
+			}
+		}
+	]
+}
+
+// Courier Job (spec 85). C# runs this at the first trade station that the players reach in a system; the root is that station.
+// It spawns the contact 8,000 to 12,000 away and puts the offer into the nearest trade station's mission list (that station).
+Courier
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_courier_contact]
+			Distance = [8000, 12000]
+			MinDistanceFromTags = [[sun, 5000], [station, 4000]]
+			MinDistanceFromNebulas = [[ion_storm, 1000]]
+			SuppressLocationAssertions = true
+			Allegiance = Neutral
+			NameGenerator = { Type = NameList; Names = ["Quiet Contact", "The Night Ferry", "Dead Drop", "Grey Courier", "Silent Partner"]; }
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [trade]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 100
+				TargetAcquireRangeFromOrigin = 200
+				TargetUnacquireRangeFromOrigin = 300
+			}
+			SubSpawners
+			[
+				{
+					Type = Doodads
+					Distance = [0, 1500]
+					ScaleFactor = 2250
+					Tags = [hc_courier_area]
+					DoodadType = cosmoteer.poi_target_area
+					ShowOnlyInFog = true
+					Undiscovered = true
+					HideIfUnexplored = true
+					AutoRemoveWhenTagDestroyed = hc_courier_contact
+				}
+			]
+		}
+		{
+			Type = Mission
+			Metatype = HotCargoCourier
+			SpawnAt = Tag
+			SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+			Faction = OwnerOfTag
+			FactionTag = { Mode=Nearest; Tag=trade_station; }
+			OkayIfFactionTagNotFound = true
+			Objectives
+			[
+				{
+					Type = Sequential
+					SubObjectives
+					[
+						{
+							Type = TimeLimit
+							TimeLimit = 420
+							SubObjectives
+							[
+								{
+									Type = GotoShip
+									DestinationShipTag = { Mode=Latest; Tag=hc_courier_contact; }
+									DestinationShipAreaTag = { Mode=Latest; Tag=hc_courier_area; }
+									GetTierFromTierField = true
+								}
+							]
+						}
+						{
+							Type = ReceiveRewards
+							ContactShipTag = { Mode=Nearest; Tag=trade_station; }
+						}
+					]
+				}
+			]
+			// A quiet job: good pay, half the fame of a standard mission, so it adds little heat.
+			Rewards
+			[
+				// A quiet job: free to take, little heat and trail, but the client may talk (economy spec 100+).
+				{ Type = HotCargoContract; AcceptFee = 0; FlatHeat = 3; TrailWeight = 0.5; InformantChance = 0.15; }
+				{
+					Type = Money
+					MoneyPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMoneyPerTier
+					MoneyPerTierMultiplier = 1.25
+					RoundToMultiple = 500
+				}
+				{
+					Type = Fame
+					FamePerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+					MaxFamePerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+					FamePerTierMultiplier = 0.5
+				}
+			]
+		}
+	]
+}
+
+// Local bounty hunters (Wanted Broadcast): local faction ship designs with their own hostile index, named as hunters.
+// Tag hc_ev_bounty, never hc_hunter: the Hunters area does not count them, and they do not share the corporate index.
+// Each one carries a bounty, paid by a mission that is added straight to the log.
+BountyHunters
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_ev_bounty]
+			Count = 2
+			Distance = [2000, 2600]
+			Allegiance = Unique
+			SynchronizeAllegiance = true
+			SuppressLocationAssertions = true
+			NameGenerator = { Type = NameList; Names = ["Bounty Hunter Kessa", "Bounty Hunter Varn", "Bounty Hunter Ostrova", "Bounty Hunter Mbeki", "Bounty Hunter Lisle", "Bounty Hunter Crane"]; }
+			FamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+			MaxFamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 800
+				TargetAcquireRangeFromOrigin = 5000
+				TargetUnacquireRangeFromOrigin = 7000
+			}
+		}
+		{
+			Type = Mission
+			Metatype = HotCargoEventBounty
+			SpawnAt = Player
+			Faction = None
+			Objectives
+			[
+				{
+					Type = DefeatShips
+					TargetsTag = { Tag=hc_ev_bounty; }
+					AutoDiscoverTargetArea = true
+					TierCombineMode = ValueSum
+					AllowSurrender = false
+				}
+			]
+			Rewards
+			[
+				// Added straight to the log, not offered: no contract fee, heat, trail or informant (economy spec 100+).
+				{ Type = HotCargoContract; AcceptFee = 0; FlatHeat = 0; TrailWeight = 0; InformantChance = 0; }
+				{
+					Type = Money
+					MoneyPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMoneyPerTier
+					MoneyPerTierMultiplier = 0.75
+					RoundToMultiple = 500
+				}
+			]
+		}
+	]
+}
+
+// The Magpies come back angrier: one fleet one tier above the system, hunter AI, with a bigger bounty.
+MagpiesReturn
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_ev_magpie]
+			Distance = [1600, 2200]
+			Allegiance = Unique
+			SynchronizeAllegiance = true
+			SuppressLocationAssertions = true
+			FamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+			MaxFamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				Tier = 1
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+				FleetTierRemapTable = &<./Data/modes/career/fleet_tier_remap_table.rules>/FleetTierRemapTable
+			}
+			AI
+			{
+				Type = HotCargoHunter
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 800
+				TargetAcquireRangeFromOrigin = 5000
+				TargetUnacquireRangeFromOrigin = 7000
+			}
+			SubSpawners
+			[
+				{
+					Type = Mission
+					Metatype = HotCargoEventRivals
+					SpawnAt = Player
+					Faction = None
+					Objectives
+					[
+						{
+							Type = DefeatShips
+							TargetsTag = { Tag=hc_ev_magpie; LimitToFleet=true; }
+							AutoDiscoverTargetArea = true
+							TierCombineMode = ValueSum
+							AllowSurrender = false
+						}
+					]
+					Rewards
+					[
+						// Added straight to the log, not offered: no contract fee, heat, trail or informant (economy spec 100+).
+						{ Type = HotCargoContract; AcceptFee = 0; FlatHeat = 0; TrailWeight = 0; InformantChance = 0; }
+						{
+							Type = Money
+							MoneyPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMoneyPerTier
+							MoneyPerTierMultiplier = 1.5
+							RoundToMultiple = 500
+						}
+					]
+				}
+			]
+		}
+	]
+}
+
+// The toll gate's guns: three pirates at the system tier. No bounty: the gate is their business, not a crime anyone pays for.
+TollGuards
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_ev_toll]
+			Count = 3
+			Distance = [1400, 1900]
+			Allegiance = Unique
+			SynchronizeAllegiance = true
+			SuppressLocationAssertions = true
+			FamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+			MaxFamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 800
 				TargetAcquireRangeFromOrigin = 4000
 				TargetUnacquireRangeFromOrigin = 6000
 			}

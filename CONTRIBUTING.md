@@ -43,7 +43,7 @@ Commands for co-op scripts (`src/HotCargo/Dev/MpAutotest.cs`):
 - Fields: `desyncs`, `mpgames`, `ishost`, `mpplayers`, `mpconnected`, `mpsetup`, `localplayer`, `mpmark`, `heatperminute`.
 - End each test with the client quitting first. The host waits with `waitfor mpconnected == 0`, then quits.
 
-The game runs on a Windows PC that a person also uses. `autotest.sh` runs headless test instances (no window) in slots t1..t4, each with its own save folder `%USERPROFILE%\HotCargoSlots\<slot>`, so several tests run at the same time. Other scripts take `SLOT=<name>`; without it they act on the player's own game (slot main), which starts minimized.
+The game runs on a Windows PC that a person also uses. `autotest.sh` runs headless test instances (no window) in slots t1..t8, each with its own save folder `%USERPROFILE%\HotCargoSlots\<slot>`, so several tests run at the same time. Other scripts take `SLOT=<name>`; without it they act on the player's own game (slot main), which starts minimized.
 
 ## Git
 

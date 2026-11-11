@@ -22,5 +22,17 @@
 			DescriptionKey = "HotCargoEventMissions/SiegeDesc"
 			CategoryID = encounter
 		}
+		HotCargoEventBounty
+		{
+			NameKey = "HotCargoEventMissions/Bounty"
+			DescriptionKey = "HotCargoEventMissions/BountyDesc"
+			CategoryID = encounter
+		}
+		HotCargoCourier
+		{
+			NameKey = "HotCargoEventMissions/Courier"
+			DescriptionKey = "HotCargoEventMissions/CourierDesc"
+			CategoryID = deliveries
+		}
 	}
 }

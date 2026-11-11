@@ -17,6 +17,12 @@ public sealed record Need
     public IReadOnlyList<string> Parts { get; init; } = [];
     public IReadOnlyList<string> Flags { get; init; } = [];
     public IReadOnlyList<string> NotFlags { get; init; } = [];
+    /// <summary>Each flag must be set and at least MinSectors sectors old (sector index now minus the sector where it was set).</summary>
+    public IReadOnlyList<(string Flag, int MinSectors)> FlagAges { get; init; } = [];
+    /// <summary>Sectors left before the Buyer's sector (RunSectorCount minus the sector index).</summary>
+    public int MinSectorsLeft { get; init; }
+    /// <summary>-1 means no limit.</summary>
+    public int MaxSectorsLeft { get; init; } = -1;
 }
 
 /// <summary>The fleet as the conditions see it. Built from sim state, or by hand in unit tests.</summary>
@@ -31,10 +37,13 @@ public sealed record Snapshot
     public IReadOnlyDictionary<string, int> Resources { get; init; } = new Dictionary<string, int>();
     public IReadOnlySet<string> Parts { get; init; } = new HashSet<string>();
     public IReadOnlySet<string> Flags { get; init; } = new HashSet<string>();
+    /// <summary>Sector index at which each flag was set.</summary>
+    public IReadOnlyDictionary<string, int> FlagSectors { get; init; } = new Dictionary<string, int>();
+    public int SectorsLeft { get; init; }
 }
 
 /// <summary>The first need that the fleet does not meet.</summary>
-public enum UnmetKind { Money, Tech, VaultSpace, Crew, MinHeat, MaxHeat, MinSector, MaxSector, Resource, Part, Flag, NotFlag }
+public enum UnmetKind { Money, Tech, VaultSpace, Crew, MinHeat, MaxHeat, MinSector, MaxSector, Resource, Part, Flag, NotFlag, FlagAge, MinSectorsLeft, MaxSectorsLeft }
 
 public sealed record Unmet(UnmetKind Kind, string Id = "", float Amount = 0);
 
@@ -60,6 +69,11 @@ public static class EventModel
             if (!s.Flags.Contains(flag)) return new(UnmetKind.Flag, flag);
         foreach (string flag in need.NotFlags)
             if (s.Flags.Contains(flag)) return new(UnmetKind.NotFlag, flag);
+        foreach (var (flag, minSectors) in need.FlagAges)
+            if (!s.Flags.Contains(flag) || !s.FlagSectors.TryGetValue(flag, out int setAt) || s.Sector - setAt < minSectors)
+                return new(UnmetKind.FlagAge, flag, minSectors);
+        if (s.SectorsLeft < need.MinSectorsLeft) return new(UnmetKind.MinSectorsLeft, Amount: need.MinSectorsLeft);
+        if (need.MaxSectorsLeft >= 0 && s.SectorsLeft > need.MaxSectorsLeft) return new(UnmetKind.MaxSectorsLeft, Amount: need.MaxSectorsLeft);
         return null;
     }
 
@@ -117,6 +131,16 @@ public static class EventModel
         double raw = units * (double)standardPay * rewardFactor + techUnits * (double)techValue;
         long rounded = (long)Math.Round(raw / roundTo, MidpointRounding.AwayFromZero) * roundTo;
         return (int)Math.Clamp(rounded, int.MinValue, int.MaxValue);
+    }
+
+    /// <summary>Money units of a cost that grows with heat: base + perHeat × heat. Never below 0.</summary>
+    public static float HeatScaledUnits(float units, float perHeat, float heat) => Math.Max(0f, units + perHeat * heat);
+
+    /// <summary>The Buyer price multiplier after an advance: the old one × the factor, kept in [0, 1].</summary>
+    public static float BuyerPriceAfter(float current, float factor)
+    {
+        if (factor is <= 0f or > 1f) throw new ArgumentOutOfRangeException(nameof(factor), factor, "must be above 0 and at most 1");
+        return Math.Clamp(current * factor, 0f, 1f);
     }
 
     /// <summary>True when an event is allowed again: it was never seen, or maxPerRun is 0 (no limit), or it was seen less often than maxPerRun.</summary>
