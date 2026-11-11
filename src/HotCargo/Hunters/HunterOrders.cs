@@ -25,11 +25,18 @@ public static class HunterOrders
             append: false, confirmed: true);
     }
 
-    /// <summary>Ship health as the vanilla AI measures it (AIDefaultAttackRadiusAndRotationModule): built value over blueprint value.</summary>
+    /// <summary>
+    /// Ship health: the cost of each part times its health fraction, over the blueprint cost. Destroyed parts count as 0.
+    /// The vanilla value (BasePhysicalValue) charges only the repair cost of damage, so a ship with every part at 20 % health still reads about 0.8.
+    /// </summary>
     public static float HealthFraction(Ship ship)
     {
         int full = ship.BaseBlueprintCost;
-        return full <= 0 ? 1f : (float)ship.BasePhysicalValue / full;
+        if (full <= 0) return 1f;
+        float built = ship.Doors.TotalMoneyValue;
+        foreach (var part in ship.Parts)
+            built += part.Rules.Cost * (float)part.Health / Math.Max(1, part.Rules.MaxHealth);
+        return Math.Clamp(built / full, 0f, 1f);
     }
 
     /// <summary>Longest effective range of the ship's weapons, as AttackCommand.GetMaxWeaponRange computes it. 0 without weapons.</summary>
