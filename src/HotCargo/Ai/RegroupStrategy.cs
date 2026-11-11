@@ -47,7 +47,7 @@ internal sealed class RegroupStrategy(RegroupStrategyRules rules) : AIStrategyMo
     public override bool OnAITick(Ship ship, ShipAI ai)
     {
         Time now = HunterOrders.Sim(ship).LogicalTime;
-        if (AiGate.Active(Behavior.Regroup, rules.ForHunters) is not { } t || AiGate.Surrendered(ship)) return End(ship, now, null);
+        if (AiGate.Active(Behavior.Regroup, rules.ForHunters) is not { } t || AiGate.Surrendered(ship) || !AiGate.HostileToPlayers(ship)) return End(ship, now, null);
         var target = (ship.Commands.CurConfirmedCommand as AttackCommand)?.Target ?? AiGate.NearestHumanEnemy(ship);
         if (target is null || !ship.IsEnemiesWith(target)) return End(ship, now, t);
         var allies = AiGate.Allies(ship).Where(a => a.DetWorldCenter.DistanceTo(ship.DetWorldCenter) <= t.RegroupSearchRange).ToList();

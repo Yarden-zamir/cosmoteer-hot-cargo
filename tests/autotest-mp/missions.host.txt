@@ -1,0 +1,36 @@
+# Co-op missions, host side: offers and sides, escort, the shady trap roll on arrival, a sprung trap that pays both players.
+mphost {PORT}
+mpstart 2
+mp ev_set Enabled false
+mp godmode on
+mp hc_generate all
+waitfor hc_offers_escort >= 1 20
+expect hc_allies_vs_player == 0
+expect hc_allies_vs_target >= 2
+expect hc_escort_vs_player == 0
+expect hc_raiders_vs_player >= 2
+mp hc_accept escort
+waitfor hc_active_escort == 1 20
+# The client accepts the shady offer and flies there. The trap rolls on arrival with sim.Rand and the heat formula.
+waitfor mpmark >= 1 120
+expect hc_trap_state >= 1
+# Escort: the freighter steers to the jump point when a player is near, and arrival completes the objective.
+mp hc_escort_goto
+wait 5
+expect hc_escort_steering == 1
+mp hc_escort_arrive
+waitfor hc_escort_done == 1 30
+# A forced trap. The client kills the ambush; the reward pays both players.
+mp hc_generate shady
+mp hc_accept shady
+waitfor hc_trap_state == 0 20
+mp hc_shady_spring
+waitfor hc_trap_state == 2 20
+expect hc_ambushers == 2
+hc_mark
+mp mpmark 2
+waitfor hc_trap_done == 1 120
+expect hc_money_gain > 0
+expect desyncs == 0
+waitfor mpconnected == 0 240
+quit

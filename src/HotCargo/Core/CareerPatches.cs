@@ -48,6 +48,7 @@ static class CareerPatches
     {
         if (Run.Current is not { } run || run.Mode != __instance) return;
         if (!run.IsMultiplayer && TunablesFile.ChangedSinceLastRead()) run.ReloadTunables();
+        if (run.HostTunablesPending) TunablesInput.SendFromHost(run);
         DebugKeys.Handle(run);
         RunEndUi.Update(run);
     }
@@ -62,12 +63,22 @@ static class CareerPatches
     static void IntegrityHash(CareerGameModeManager __instance, IntegrityHash iHash)
     {
         if (Run.Current is not { } run || run.Mode != __instance) return;
-        iHash.AddHash((int)(run.State.Heat * 1000));
-        iHash.AddHash(run.State.SectorIndex);
-        iHash.AddHash((int)(run.State.Notoriety * 100));
-        iHash.AddHash(run.State.PeakTier);
-        iHash.AddHash(run.State.Contracts.Terms.Count);
-        iHash.AddHash(run.State.Contracts.Informants.Count);
+        var s = run.State;
+        iHash.AddHash((int)(s.Heat * 1000));
+        iHash.AddHash(s.SectorIndex);
+        // Run state that the sim does not hash itself, so a divergence shows at once and not only when it reaches the sim.
+        iHash.AddHash((int)s.Result);
+        iHash.AddHash(s.StagesStarted);
+        iHash.AddHash(s.FleetTech);
+        iHash.AddHash(s.DeliveredUnits);
+        iHash.AddHash((int)(s.GameSeconds * 10));
+        iHash.AddHash((int)(s.SecondsWithoutTech * 10));
+        iHash.AddHash(s.Events.LastSerial);
+        iHash.AddHash(s.Events.Pending?.Serial ?? 0);
+        iHash.AddHash((int)(s.Notoriety * 100));
+        iHash.AddHash(s.PeakTier);
+        iHash.AddHash(s.Contracts.Terms.Count);
+        iHash.AddHash(s.Contracts.Informants.Count);
         // string.GetHashCode is random per process, so it would differ between clients. This hash is stable.
         int tunables = 0;
         foreach (char c in run.State.TunablesHash) tunables = tunables * 31 + c;

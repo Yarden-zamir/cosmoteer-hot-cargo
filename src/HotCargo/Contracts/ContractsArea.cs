@@ -22,6 +22,7 @@ public static class ContractsArea
     static long _markedValue;
     static int _markedMoney;
     static float _markedHeat;
+    static int _bonusGiven;
 
     static Run R() => Autotest.RequireRun();
     static SimRoot Sim() => R().Game.Sim ?? throw new InvalidOperationException("no sim");
@@ -103,7 +104,9 @@ public static class ContractsArea
             R().T.Contracts.InformantDelayMin = s;
             R().T.Contracts.InformantDelayMax = s;
         };
-        Autotest.Commands["contract_money"] = arg => R().Game.GetPlayerState(R().Game.LocalPlayerIndex, deterministic: true).AddMoney(int.Parse(arg, CultureInfo.InvariantCulture));
+        // Adds money to the acting player (the sender of an "mp" command in co-op).
+        Autotest.Commands["contract_money"] = arg => R().Game.GetPlayerState(Autotest.ActingPlayerIndex, deterministic: true).AddMoney(int.Parse(arg, CultureInfo.InvariantCulture));
+        Autotest.Commands["money_mark"] = _ => _markedMoney = R().Game.LocalPlayerMoney;
         Autotest.Commands["heat_mark"] = _ => _markedHeat = R().State.Heat;
         // Pairs the picked offer with the first other contract offer in this system, as the scan would. Test setup only.
         Autotest.Commands["contract_make_rival"] = _ =>
@@ -141,11 +144,14 @@ public static class ContractsArea
             return g.Length == 0 ? -1 : ContractBook.Offers(Sim()).Count(o => o.Mission != Picked() && ContractBook.Find(R(), o.Mission)?.RivalGroup == g);
         };
         Autotest.Fields["contract_bonus_payer"] = () => Picked().Rewards.OfType<ContractBonusReward>().Single().PayerIndex;
+        Autotest.Fields["contract_bonus_payer_local"] = () => Picked().Rewards.OfType<ContractBonusReward>().Single().PayerIndex == R().Game.LocalPlayerIndex ? 1 : 0;
+        Autotest.Fields["contract_bonus_given"] = () => _bonusGiven;
         // Gives the picked contract's bonus now, as completion would, and remembers money first (contract_money_change).
         Autotest.Commands["contract_give_bonus"] = _ =>
         {
             _markedMoney = R().Game.LocalPlayerMoney;
             Picked().Rewards.OfType<ContractBonusReward>().Single().GiveReward(R().Game);
+            _bonusGiven++;
         };
         Autotest.Fields["contract_has_bonus"] = () => Picked().Rewards.OfType<ContractBonusReward>().Sum(b => b.Money);
         Autotest.Fields["contract_informants_pending"] = () => R().State.Contracts.Informants.Count;

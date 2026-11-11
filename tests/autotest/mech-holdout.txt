@@ -1,0 +1,57 @@
+# Hold-outs (spec 132, 137): the clock runs only with a human ship on station, waves spawn while guarded, completion and failure.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+mech_generate siege
+mech_accept siege
+expect mech_active_siege == 1
+# Not on station yet: the clock does not run.
+wait 3
+expect mech_hold_seconds == 0
+mech_hold_goto
+pause off
+wait 4
+expect mech_hold_guarded == 1
+expect mech_hold_seconds > 0
+# Spec 132 defaults: first wave after 8 guarded seconds, tier 1 to 3 drones, hostile to the players.
+wait 10
+expect mech_wave_ships >= 1
+expect mech_waves_vs_player >= 1
+mech_hold_skip 400
+wait 2
+expect mech_goal_siege == 1
+expect mech_hold_settled == 1
+# Failure: a second post, and it dies.
+mech_generate siege
+mech_accept siege
+mech_hold_goto
+wait 4
+mech_hold_kill
+wait 2
+expect mech_state_siege == 2
+# Claim Jumpers uses the Guard profile: raiders one tier below the sector.
+mech_generate guard
+mech_accept guard
+mech_hold_goto
+wait 4
+expect mech_hold_guarded == 1
+mech_hold_skip 300
+wait 2
+expect mech_goal_guard == 1
+# Spec 141, leave early: a siege held for 2 of its 9 wave intervals keeps 2/9 of the pay.
+mech_generate siege
+mech_accept siege
+mech_hold_goto
+wait 3
+expect mech_hold_earned == 0
+mech_order leave
+expect mech_goal_siege == 0
+mech_hold_skip 70
+wait 1
+expect mech_hold_earned >= 0.222
+expect mech_hold_earned <= 0.223
+mech_order leave
+expect mech_goal_siege == 1
+expect mech_hold_settled >= 0.222
+quit

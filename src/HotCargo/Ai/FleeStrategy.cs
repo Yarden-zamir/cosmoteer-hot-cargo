@@ -81,7 +81,7 @@ internal sealed class FleeStrategy : AIStrategyModule
             if (now >= removeAt) sim.EnqueueDeterministic(ship.UniqueID, () => sim.Ships.Remove(ship, dispose: true, handleLostShip: false));
             return true;
         }
-        if (AiGate.Active(Behavior.Flee, _rules.ForHunters) is not { } t || AiGate.Surrendered(ship))
+        if (AiGate.Active(Behavior.Flee, _rules.ForHunters) is not { } t || AiGate.Surrendered(ship) || !AiGate.HostileToPlayers(ship))
         {
             _fleeing = false;
             return false;

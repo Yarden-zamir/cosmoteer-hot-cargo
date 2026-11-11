@@ -80,7 +80,8 @@ static class TechAutotest
         Log.Info($"AUTOTEST vault {arg}: health {part.Health}/{part.Rules.MaxHealth}, tech in it {grid.Resources}");
     }
 
-    internal static Ship PlayerShip() => SimQueries.FirstHumanShip(Active().Game.Sim) ?? throw new InvalidOperationException("no player ship");
+    /// <summary>The first ship of the player that runs the command (see Autotest.ActingShip). In co-op each player commands only own ships.</summary>
+    internal static Ship PlayerShip() => Autotest.ActingShip(Active().Game.Sim) ?? throw new InvalidOperationException("no player ship");
 
     /// <summary>The station that tostation picked.</summary>
     static Ship? _station;
@@ -105,7 +106,9 @@ static class TechAutotest
         var ship = PlayerShip();
         _station = null;
         var station = _station = NearestStation();
-        Autotest.Teleport(ship, station.WorldCenter + new Halfling.Geometry.Vector2(station.WorldBoundingRadius + ship.WorldBoundingRadius + 2f, 0f));
+        // In co-op each player's ship gets its own spot on the same side, so two ships never land on each other.
+        float side = Autotest.ActingPlayerIndex * (2f * ship.WorldBoundingRadius + 50f);
+        Autotest.Teleport(ship, station.WorldCenter + new Halfling.Geometry.Vector2(station.WorldBoundingRadius + ship.WorldBoundingRadius + 2f, side));
         Log.Info($"AUTOTEST moved {ship.Name} next to {station.Name}; trade allowed={Active().Game.Sim.Mode.AllowResourceTrade(ship, station)}");
     }
 

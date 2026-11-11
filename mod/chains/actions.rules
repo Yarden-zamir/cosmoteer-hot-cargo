@@ -1,0 +1,25 @@
+// Hot Cargo chains (CHAINS.md): the chain mission metatype and its own mission category, so comms and the log group chain stages.
+// Chain content lives in chains/chains.rules, missions.rules and pages.rules, which C# reads; they need no Actions.
+{
+	Action = Add
+	AddTo = "<modes/career/mission_categories.rules>/Categories"
+	ToAdd
+	{
+		ID = hc_chains
+		NameKey = "HotCargoChains/Category"
+	}
+}
+{
+	Action = Overrides
+	OverrideIn = "<modes/career/mission_metatypes.rules>"
+	Overrides
+	{
+		// The name and description come from the stage (Chains/ChainStageReward.cs fills the arguments).
+		HotCargoChain
+		{
+			NameKey = "HotCargoChains/Name"
+			DescriptionKey = "HotCargoChains/Desc"
+			CategoryID = hc_chains
+		}
+	}
+}

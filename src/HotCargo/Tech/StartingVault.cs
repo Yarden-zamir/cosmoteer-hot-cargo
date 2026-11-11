@@ -11,9 +11,10 @@ namespace HotCargo.Tech;
 
 /// <summary>
 /// Spec 17: a new run starts with StartingTechUnits in Tech Vaults on the starting ship.
+/// In co-op each player commands only their own ships, so the first ship of each player gets a vault and a share of the units.
 /// The starter ships have no vault, so this adds vaults to the ship's blueprints and builds them at once.
 /// </summary>
-static class StartingVault
+internal static class StartingVault
 {
     static readonly ID<PartRules> StorageBayId = new("cosmoteer.storage_2x2");
 
@@ -21,16 +22,28 @@ static class StartingVault
     {
         var sim = run.Game.Sim;
         int units = run.T.Tech.StartingTechUnits;
-        Ship ship = SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("new run has no human player ship");
+        var ships = sim.Ships.HumanPlayerShips.GroupBy(s => s.Metadata.PlayerIndex).OrderBy(g => g.Key)
+            .Select(g => g.OrderBy(s => s.UniqueID).First()).ToList();
+        if (ships.Count == 0) throw new InvalidOperationException("new run has no human player ship");
+        bool needsDoor = false;
+        for (int i = 0; i < ships.Count; i++)
+            needsDoor |= Stock(ships[i], units / ships.Count + (i < units % ships.Count ? 1 : 0));
+        // A co-op launch runs this on a worker thread, so the notice waits for the next frame.
+        if (needsDoor) Run.OnNextFrame(() => run.Game.Gui.ShowAreaName(Strings.GetText("HotCargoTech/VaultOutside")));
+    }
+
+    /// <summary>Places vaults on the ship until they hold the units, and fills them. Returns true when a vault has no door.</summary>
+    static bool Stock(Ship ship, int units)
+    {
         PartRules vault = ship.Rules.PartsByID[Vaults.VaultId];
         bool needsDoor = false;
-        // Each placement adds one vault. The loop handles a StartingTechUnits value above one vault's capacity.
-        while (Vaults.All(sim).Sum(g => g.MaxResources) < units)
+        // Each placement adds one vault. The loop handles a share above one vault's capacity.
+        while (Vaults.OnShip(ship).Sum(g => g.MaxResources) < units)
             needsDoor |= !(ReplaceStorageBay(ship, vault) || PlaceOutside(ship, vault, requireDoor: true) || PlaceOutside(ship, vault, requireDoor: false));
-        int added = Vaults.Add(sim, units);
-        if (added != units) throw new InvalidOperationException($"starting tech: added {added} of {units}");
-        Log.Info($"starting tech: {added} units in {Vaults.All(sim).Count} vault(s) on {ship.Name}");
-        if (needsDoor) run.Game.Gui.ShowAreaName(Strings.GetText("HotCargoTech/VaultOutside"));
+        int added = Vaults.Add(Vaults.OnShip(ship), units);
+        if (added != units) throw new InvalidOperationException($"starting tech: added {added} of {units} on {ship.Name}");
+        Log.Info($"starting tech: {added} units in {Vaults.OnShip(ship).Count()} vault(s) on {ship.Name} (player {ship.Metadata.PlayerIndex})");
+        return needsDoor;
     }
 
     /// <summary>
@@ -56,7 +69,7 @@ static class StartingVault
     /// With requireDoor, the spot must allow a door to a neighbor part, and the door is added.
     /// Limit: a door to a neighbor does not prove that crew can walk there from the rest of the ship. Revisit if players report an unreachable vault.
     /// </summary>
-    static bool PlaceOutside(Ship ship, PartRules vault, bool requireDoor)
+    internal static bool PlaceOutside(Ship ship, PartRules vault, bool requireDoor)
     {
         var parts = ship.BlueprintParts;
         var cells = parts.SelectMany(p => p.Rect).ToHashSet();

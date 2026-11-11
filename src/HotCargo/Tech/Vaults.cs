@@ -43,16 +43,23 @@ public static class Vaults
     public static List<TypedResourceGrid> All(SimRoot sim) =>
         HumanShips(sim)
             .OrderBy(s => s.Metadata.PlayerIndex).ThenBy(s => s.UniqueID)
-            .SelectMany(s => TypedResourceGrid.GetAllOnShip(s).Where(g => g.ResourceType == TechId && g.Part is not null)
-                .OrderBy(g => g.Part!.Location.Y).ThenBy(g => g.Part!.Location.X))
+            .SelectMany(OnShip)
             .ToList();
 
+    /// <summary>Tech Vault grids on one ship, in part location order.</summary>
+    public static IEnumerable<TypedResourceGrid> OnShip(Ship ship) =>
+        TypedResourceGrid.GetAllOnShip(ship).Where(g => g.ResourceType == TechId && g.Part is not null)
+            .OrderBy(g => g.Part!.Location.Y).ThenBy(g => g.Part!.Location.X);
+
     /// <summary>Adds tech to vaults in order. Returns the units added; it is less than requested when the vaults are full.</summary>
-    public static int Add(SimRoot sim, int units)
+    public static int Add(SimRoot sim, int units) => Add(All(sim), units);
+
+    /// <summary>Adds tech to the given vault grids in order. Returns the units added.</summary>
+    public static int Add(IEnumerable<TypedResourceGrid> grids, int units)
     {
         if (units < 0) throw new ArgumentOutOfRangeException(nameof(units));
         int left = units;
-        foreach (var grid in All(sim))
+        foreach (var grid in grids)
         {
             int n = Math.Min(left, grid.MaxResources - grid.Resources);
             grid.AddResources(n);

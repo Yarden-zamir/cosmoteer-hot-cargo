@@ -1,0 +1,14 @@
+# Co-op contract, host side (spec 102). The client accepts a paid contract: the client pays the fee and collects the bonus.
+# The host's money does not change.
+mphost {PORT}
+mpstart 2
+mp ev_set Enabled false
+money_mark
+waitfor contract_accepted == 1 180
+expect contract_money_change == 0
+expect contract_bonus_payer_local == 0
+waitfor contract_bonus_given == 1 60
+expect contract_money_change == 0
+expect desyncs == 0
+waitfor mpconnected == 0 240
+quit

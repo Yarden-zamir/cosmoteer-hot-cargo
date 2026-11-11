@@ -1,0 +1,54 @@
+# Tow (spec 134) and capture (spec 135).
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+mech_generate tow
+mech_accept tow
+mech_tow_goto
+pause off
+wait 4
+expect mech_tow_junk == 1
+expect mech_goal_tow == 0
+mech_tow_deliver
+wait 3
+expect mech_goal_tow == 1
+# Tow failure: the hulk is destroyed.
+mech_generate tow
+mech_accept tow
+mech_tow_goto
+wait 4
+mech_tow_remove
+wait 2
+expect mech_state_tow == 2
+# Tow failure: the time limit runs out.
+mech_generate tow
+mech_accept tow
+mech_expire tow
+expect mech_state_tow == 2
+# Capture by surrender.
+mech_generate capture
+mech_accept capture
+mech_capture_goto
+wait 4
+expect mech_capture_hostile == 1
+mech_capture_surrender
+wait 2
+expect mech_goal_capture == 1
+# Capture by crew: the freighter becomes a wreck, then the players' crew claim it.
+mech_generate capture
+mech_accept capture
+mech_capture_goto
+wait 4
+mech_capture_claim
+wait 2
+expect mech_goal_capture == 1
+# Capture failure: the freighter is destroyed.
+mech_generate capture
+mech_accept capture
+mech_capture_goto
+wait 4
+mech_capture_remove
+wait 2
+expect mech_state_capture == 2
+quit

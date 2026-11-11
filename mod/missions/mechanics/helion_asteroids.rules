@@ -1,0 +1,110 @@
+// Helion Ore deposits and asteroids (spec 138). The deposits inherit the vanilla gold deposits (sprites, health, salvage effects)
+// and change only the resource. The asteroids are vanilla asteroid generators with denser deposits and no hard rock,
+// so a small mining ship can work them quickly inside the sun's heat zone.
+
+Deposit1x : <./Data/ships/asteroid/deposit_gold/deposit_gold_1x.rules>/Part
+{
+	NameKey = "HotCargoMechanics/HelionDeposit"
+	IconNameKey = "HotCargoMechanics/HelionDepositIcon"
+	DescriptionKey = "HotCargoMechanics/HelionOreDesc"
+	ID = yarden_zamir.deposit_helion_1x
+	SelectionTypeID = "deposit_helion"
+	Resources
+	[
+		[yarden_zamir.helion_ore, 1]
+	]
+}
+
+Deposit2x : <./Data/ships/asteroid/deposit_gold/deposit_gold_2x.rules>/Part
+{
+	NameKey = "HotCargoMechanics/HelionDeposit"
+	IconNameKey = "HotCargoMechanics/HelionDepositIcon"
+	DescriptionKey = "HotCargoMechanics/HelionOreDesc"
+	ID = yarden_zamir.deposit_helion_2x
+	SelectionTypeID = "deposit_helion"
+	Resources
+	[
+		[yarden_zamir.helion_ore, 2]
+	]
+}
+
+Deposit3x : <./Data/ships/asteroid/deposit_gold/deposit_gold_3x.rules>/Part
+{
+	NameKey = "HotCargoMechanics/HelionDeposit"
+	IconNameKey = "HotCargoMechanics/HelionDepositIcon"
+	DescriptionKey = "HotCargoMechanics/HelionOreDesc"
+	ID = yarden_zamir.deposit_helion_3x
+	SelectionTypeID = "deposit_helion"
+	Resources
+	[
+		[yarden_zamir.helion_ore, 3]
+	]
+}
+
+AsteroidM : <./Data/doodads/asteroids/gold/doodad_asteroid_gold_m.rules>
+{
+	ID = yarden_zamir.asteroid_helion_m
+	DescriptionKey = "HotCargoMechanics/HelionAsteroid"
+	Generator
+	{
+		ShipRulesID = "cosmoteer.asteroid"
+		Stages
+		[
+			{
+				Type = AsteroidStage
+				Name = AsteroidStage
+				IsEnabled = true
+				Parts = [cosmoteer.rubble]
+				MinParts = 200
+				MaxParts = 350
+			}
+			{
+				Type = AsteroidDepositsStage
+				Name = AsteroidDepositsStage
+				IsEnabled = true
+				ReplaceableParts = [cosmoteer.rock_1x1]
+				Parts = [yarden_zamir.deposit_helion_1x, yarden_zamir.deposit_helion_2x, yarden_zamir.deposit_helion_3x]
+				MinPartsFraction = 0.06
+				MaxPartsFraction = 0.1
+				MinPartsPerDeposit = 3
+				MaxPartsPerDeposit = 8
+			}
+			&<./Data/doodads/asteroids/gold/doodad_asteroid_gold_m.rules>/Generator/Stages/2
+			&<./Data/doodads/asteroids/gold/doodad_asteroid_gold_m.rules>/Generator/Stages/3
+		]
+	}
+}
+
+AsteroidL : <./Data/doodads/asteroids/gold/doodad_asteroid_gold_l.rules>
+{
+	ID = yarden_zamir.asteroid_helion_l
+	DescriptionKey = "HotCargoMechanics/HelionAsteroid"
+	Generator
+	{
+		ShipRulesID = "cosmoteer.asteroid"
+		Stages
+		[
+			{
+				Type = AsteroidStage
+				Name = AsteroidStage
+				IsEnabled = true
+				Parts = [cosmoteer.rubble]
+				MinParts = 400
+				MaxParts = 650
+			}
+			{
+				Type = AsteroidDepositsStage
+				Name = AsteroidDepositsStage
+				IsEnabled = true
+				ReplaceableParts = [cosmoteer.rock_1x1]
+				Parts = [yarden_zamir.deposit_helion_1x, yarden_zamir.deposit_helion_2x, yarden_zamir.deposit_helion_3x]
+				MinPartsFraction = 0.05
+				MaxPartsFraction = 0.08
+				MinPartsPerDeposit = 3
+				MaxPartsPerDeposit = 10
+			}
+			&<./Data/doodads/asteroids/gold/doodad_asteroid_gold_l.rules>/Generator/Stages/2
+			&<./Data/doodads/asteroids/gold/doodad_asteroid_gold_l.rules>/Generator/Stages/3
+		]
+	}
+}

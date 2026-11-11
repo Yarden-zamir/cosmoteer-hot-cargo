@@ -143,13 +143,16 @@ public static class EventsArea
             var sim = RequireSim();
             var ships = sim.Ships.HumanPlayerSignificantShips.ToList();
             var tag = new ID<SimObjectSpawner>("trade_station");
-            // A station far from the players is in stasis, so this takes live and stasis stations (SimQueries.TaggedShips).
-            var stations = SimQueries.TaggedShips(sim, tag);
-            if (stations.Count == 0) throw new InvalidOperationException("no trade station in this system");
-            var station = stations.MinBy(t => t.Location.DistanceSquaredTo(ships[0].DetWorldCenter));
-            float offset = (station.Live?.WorldBoundingRadius ?? 400f) + 300f;
-            foreach (var s in ships) { s.WorldCenter = station.Location + new Halfling.Geometry.Vector2(offset + s.WorldBoundingRadius, 0); offset += 2 * s.WorldBoundingRadius + 100f; }
-            Log.Info($"AUTOTEST moved next to station {station.Id} (live={station.Live is not null})");
+            // Live or in stasis: after a teleport far away (for example to a signal), every station is in stasis.
+            var station = SimQueries.TaggedShips(sim, tag).OrderBy(t => t.Location.DistanceSquaredTo(ships[0].DetWorldCenter)).ThenBy(t => t.Id).ToList() switch
+            {
+                [var first, ..] => first,
+                [] => throw new InvalidOperationException("no trade station in this system"),
+            };
+            // A station in stasis has no known size; 1,200 clears a trade station and stays inside StationTriggerDistance.
+            float offset = station.Live is { } live ? live.WorldBoundingRadius + 300f : 1200f;
+            foreach (var s in ships) { Autotest.Teleport(s, station.Location + new Halfling.Geometry.Vector2(offset + s.WorldBoundingRadius, 0)); offset += 2 * s.WorldBoundingRadius + 100f; }
+            Log.Info($"AUTOTEST moved next to station {station.Id} (live: {station.Live is not null})");
             Autotest.Wait(2);
         };
         // 1 while the sim is paused. Event dialogs must not pause headless test games.

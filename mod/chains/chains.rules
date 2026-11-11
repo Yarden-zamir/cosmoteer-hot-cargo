@@ -1,0 +1,391 @@
+// Hot Cargo chains (CHAINS.md). C# reads this file (Chains/ChainRules.cs) on first use; a change needs a game restart.
+// Each trade or military station gets one chain when the players first enter its system. A chain is a graph of stages.
+// A stage is a Mission (a generator in missions.rules) or a Page (an event in pages.rules whose outcomes give a ChainResult).
+// Where: Station (offer in the station's comms / page near the station), Return (next visit to the station's system),
+//        Arrival (first arrival in a new system, AfterSectors later; 0 = in the current system).
+// Results: the first row whose On matches and whose IfFlags / NotFlags hold wins. Mission results: success, timeout, lost
+//   (a protected ship died), abandoned, fail. timeout, lost and abandoned fall back to fail; every result falls back to any.
+//   A row applies Effects (event outcome effects, same units as events.rules), Reputation (standard mission reputation with the
+//   station's faction), chain flags (SetFlags, ClearFlags) and a Story line, then moves to Next. An empty Next ends the chain.
+// Terms: contract terms of a Station stage mission, a HotCargoContract (economy area). Missing fields use the economy default roll.
+Chains
+[
+	// ---- A fence who keeps the books. Escort, then a choice between money now, a trick for later and a standing price.
+	{
+		ID = fence_ledger
+		Title = "The Fence's Ledger"
+		Stations = [Trade]
+		Stages
+		[
+			{
+				ID = courier
+				Title = "Quiet Freight"
+				Text = "Mara Quell keeps the books for half the fences in this sector. One of her freighters must reach the outer jump point, and she hears the route is watched. Get it there in one piece, and Mara will remember your hull number for the right reasons."
+				Mission = ChainEscort
+				Terms { AcceptFee = 0; FlatHeat = 3; TrailWeight = 1; InformantChance = 5% }
+				Results
+				[
+					{ On = success; Next = offer; Story = "You got Mara's freighter through."; Effects { Text = "The freighter's captain sends a short message: \"Mara says thanks. She wants to talk.\"" } }
+					{ On = lost; Next = debt; Story = "Mara's freighter burned on your watch."; Effects { Text = "The freighter is gone, and so is Mara's cargo. Your comms light up before the wreck stops glowing."; Heat = 5 } }
+					{ On = fail; Next = debt; Story = "You left Mara's freighter to fend for itself."; Effects { Text = "Mara's freighter limps home alone. She is not pleased." } }
+				]
+			}
+			{
+				ID = offer
+				Page = fence_offer
+				Results
+				[
+					{ On = account; Next = standing; SetFlags = [account]; Story = "Mara opened an account in your name." }
+					{ On = codes; Story = "Mara paid you in clean transponder codes." }
+					{ On = paid; Story = "Mara paid you and forgot your name." }
+				]
+			}
+			// A standing offer: the page opens on every visit until the players close the account.
+			{
+				ID = standing
+				Page = fence_standing
+				Results
+				[
+					{ On = sold; Next = standing }
+					{ On = later; Next = standing }
+					{ On = closed; Story = "You closed your account with Mara." }
+				]
+			}
+			{
+				ID = debt
+				Page = fence_debt
+				Results
+				[
+					{ On = pay; Story = "You paid Mara for the lost cargo." }
+					{ On = crate; Story = "You paid Mara in stolen crates." }
+					{ On = refuse; Next = collectors; Reputation = -1; Story = "You refused to pay Mara, and she sold your debt." }
+				]
+			}
+			{
+				ID = collectors
+				Title = "Debt Collectors"
+				Text = "Mara sold your debt to people who collect. Their ships wait at her station, and they know what you carry."
+				Mission = ChainStationRaid
+				Where = Return
+				Results
+				[
+					{ On = success; Story = "You scrapped Mara's collectors. Nobody else will buy that debt."; Effects { Text = "The last collector breaks apart. The station's traffic control goes very quiet."; Fame = 0.3 } }
+					{ On = fail; Story = "Mara's collectors chased you out of the system."; Effects { Text = "The collectors broadcast your hull number on every channel."; Heat = 10 } }
+				]
+			}
+		]
+	}
+
+	// ---- A corporate defector. Careful targeting, then a choice that decides who comes for you later.
+	{
+		ID = quiet_defector
+		Title = "The Quiet Defector"
+		Stages
+		[
+			{
+				ID = extract
+				Title = "Extraction"
+				Text = "A corporate transport carries Sabine Okafor, a logistics officer who wants out. Her escorts do not know that. Destroy the escorts and do not break the transport. You have seven minutes before somebody misses her."
+				Mission = ChainCarefulTarget
+				Terms { AcceptFee = 0.3; FlatHeat = 8; TrailWeight = 1.5; InformantChance = 10% }
+				Results
+				[
+					{ On = success; Next = debrief; Story = "You pulled Sabine Okafor off a corporate transport."; Effects { Text = "The escorts are scrap. The transport opens its airlock, and a woman in a corporate uniform floats across with one bag." } }
+					{ On = lost; Reputation = -0.5; Story = "The transport broke apart with Okafor aboard."; Effects { Text = "The transport's reactor goes, and Okafor with it. The corporation will call it piracy."; Heat = 10 } }
+					{ On = timeout; Story = "Okafor's escorts called it in, and the window closed."; Effects { Text = "The transport jumps out with its escorts. A corporate alert follows you."; Heat = 15 } }
+					{ On = fail; Story = "You never went for Okafor." }
+				]
+			}
+			{
+				ID = debrief
+				Page = defector_debrief
+				Results
+				[
+					{ On = aboard; Next = insider; Story = "Okafor joined your crew." }
+					{ On = navy; Reputation = 1.5; Story = "You handed Okafor to the station's navy." }
+					{ On = sold; Next = vengeance; Story = "You sold Okafor back to the corporation." }
+				]
+			}
+			{
+				ID = insider
+				Page = defector_insider
+				Where = Arrival
+				AfterSectors = 1
+				Results
+				[
+					{ On = raid; Next = depot }
+					{ On = slip; Story = "Okafor slipped you through a gap in the scanner net." }
+				]
+			}
+			{
+				ID = depot
+				Title = "Okafor's Depot"
+				Text = "Okafor's old schedules put a corporate supply depot in this system: two defense platforms and a guard ship. Take it apart."
+				Mission = ChainDepot
+				Where = Arrival
+				AfterSectors = 0
+				Results
+				[
+					{ On = success; Story = "You burned a corporate depot on Okafor's tip."; Effects { Text = "In the depot's wreckage your crew finds a crate with the same tags as the ones in your vault."; Tech = 1 } }
+					{ On = fail; Story = "The depot held." }
+				]
+			}
+			{
+				ID = vengeance
+				Title = "Okafor's Friends"
+				Text = "Sabine Okafor had friends in the fleet. They know who sold her, and they have found you."
+				Mission = ChainAmbush
+				Where = Arrival
+				AfterSectors = 2
+				Results
+				[
+					{ On = success; Story = "Okafor's friends will not try again."; Effects { Text = "The last of them goes dark. Nobody claims the bodies."; Fame = 0.3 } }
+					{ On = fail; Story = "Okafor's friends got their revenge."; Effects { Text = "They leave you a message on every buoy: your hull number and a corporate reward code."; Heat = 10 } }
+				]
+			}
+		]
+	}
+
+	// ---- A rival thief crew. A salvage race whose result decides whether Rook respects you or mocks you.
+	{
+		ID = magpie_rivalry
+		Title = "The Magpies' Rivalry"
+		Stages
+		[
+			{
+				ID = race
+				Title = "Salvage Race"
+				Text = "A corporate cargo pod drifted loose in this system, full of processors. The station pays well for them, and Captain Rook's Magpies are already on their way. Haul three processors to the station before the Magpies strip the pod."
+				Mission = ChainSalvageRace
+				Terms { FlatHeat = 2; TrailWeight = 1; RivalGroup = "magpies"; InformantChance = 0 }
+				Results
+				[
+					{ On = success; Next = parley; Story = "You beat the Magpies to a corporate pod." }
+					{ On = fail; Next = gloat; Story = "The Magpies got to the pod first." }
+				]
+			}
+			{
+				ID = parley
+				Page = magpies_parley
+				Results
+				[
+					{ On = truce; Next = favor; Story = "You and Rook agreed to stay out of each other's way." }
+					{ On = warn; Story = "You told Rook to keep her distance."; Effects { Fame = 0.3 } }
+				]
+			}
+			{
+				ID = gloat
+				Page = magpies_gloat
+				Results
+				[
+					{ On = buy; Story = "You bought your processors back from Rook." }
+					{ On = fight; Next = ambush; Story = "You went after Rook's ships." }
+				]
+			}
+			{
+				ID = favor
+				Page = magpies_favor
+				Where = Arrival
+				AfterSectors = 1
+				Results
+				[
+					{ On = even; Story = "Rook warned you about a hunter pack. You are even." }
+					{ On = partners; Story = "Rook took a cut and fed the hunters a false trail." }
+				]
+			}
+			{
+				ID = ambush
+				Title = "Take It Back"
+				Text = "Rook's ships are still in the system with your processors in their holds. She expects you to run. Take them apart."
+				Mission = ChainAmbush
+				Where = Arrival
+				AfterSectors = 0
+				Results
+				[
+					{ On = success; Story = "Rook's Magpies are scrap."; Effects { Text = "Rook's last ship spins away, venting air. Her cargo drifts free."; Resources [ { ID = processor; Amount = 3 } ]; Fame = 0.3 } }
+					{ On = fail; Story = "Rook kept the processors and her ships." }
+				]
+			}
+		]
+	}
+
+	// ---- A desperate station. Mining against the clock; the result decides between gratitude and a blackout.
+	{
+		ID = lights_out
+		Title = "Lights Out"
+		Stations = [Trade]
+		Stages
+		[
+			{
+				ID = ore
+				Title = "Reactor Shielding"
+				Text = "The station's reactor shielding is cracking, and the corporation stopped the repair shipments when the station refused to report you. Station master Ilse Brandt needs iron, fast. Mine it or buy it, but get it here within fifteen minutes."
+				Mission = ChainMine
+				Terms { AcceptFee = 0; FlatHeat = 0; TrailWeight = 0.5; InformantChance = 0 }
+				Results
+				[
+					{ On = success; Next = thanks; Story = "You brought Brandt's station the iron it needed." }
+					{ On = fail; Next = dark; Story = "The iron came too late for the station's reactor." }
+				]
+			}
+			{
+				ID = thanks
+				Page = blackout_thanks
+				Results
+				[
+					{ On = hide; Next = inspection; Story = "Brandt's station hid your ship from the corporation." }
+					{ On = crew; Story = "Two of Brandt's engineers joined your crew." }
+				]
+			}
+			{
+				ID = dark
+				Page = blackout_dark
+				Results
+				[
+					{ On = refugees; Story = "You took refugees from Brandt's dark station." }
+					{ On = coil; Reputation = 1; Story = "Your coil got Brandt's backup generators running." }
+					{ On = leave; Reputation = -1; Story = "You left Brandt's station in the dark." }
+				]
+			}
+			{
+				ID = inspection
+				Title = "Corporate Inspection"
+				Text = "The corporation sent inspectors to Brandt's station to ask about the ship she hid. They brought guns, and they are still here."
+				Mission = ChainStationRaid
+				Where = Return
+				Results
+				[
+					{ On = success; Reputation = 2; Story = "You drove the inspectors off Brandt's station."; Effects { Text = "Brandt's voice comes over an open channel: \"Free drinks for that crew. Forever.\"" } }
+					{ On = fail; Reputation = -1; Story = "The inspectors took Brandt's station apart looking for you."; Effects { Text = "The inspectors log your hull number before they leave."; Heat = 10 } }
+				]
+			}
+		]
+	}
+
+	// ---- A navy commander with a corporate request on her desk. A job, then her price.
+	{
+		ID = commanders_price
+		Title = "The Commander's Price"
+		Stations = [Military]
+		Stages
+		[
+			{
+				ID = patrol
+				Title = "Clear the Lane"
+				Text = "Commander Hale needs raiders cleared from the station's approach lane, and her own ships are busy elsewhere. She does not ask what you carry. Yet."
+				Mission = ChainClearRaiders
+				Terms { AcceptFee = 0; FlatHeat = 4; TrailWeight = 1; InformantChance = 5% }
+				Results
+				[
+					{ On = success; Next = offer; Story = "You cleared Commander Hale's approach lane." }
+					{ On = fail; Reputation = -0.5; Story = "You left Hale's raiders where they were." }
+				]
+			}
+			{
+				ID = offer
+				Page = navy_offer
+				Results
+				[
+					{ On = bribe; Story = "You paid Hale to lose the corporation's request." }
+					{ On = job; Next = convoy; Story = "You agreed to one more job for Hale." }
+					{ On = refuse; Next = reported; Reputation = -1; Story = "You refused Hale's price." }
+				]
+			}
+			{
+				ID = convoy
+				Title = "Navy Tender"
+				Text = "Hale's supply tender must reach the outer jump point, and raiders have been watching the route. Get it there, and the corporation's request disappears for good."
+				Mission = ChainEscort
+				Terms { AcceptFee = 0; FlatHeat = 0; TrailWeight = 0.5; InformantChance = 0 }
+				Results
+				[
+					{ On = success; Reputation = 1; Story = "You saw Hale's tender through. The corporate request is gone."; Effects { Text = "Hale deletes the request while you watch. \"We never met.\""; Heat = -30 } }
+					{ On = lost; Reputation = -1.5; Story = "Hale's tender burned, and she remembers names."; Effects { Text = "Hale forwards the corporate request after all, with a note of her own."; Heat = 15 } }
+					{ On = fail; Reputation = -1; Story = "You abandoned Hale's tender."; Effects { Heat = 10 } }
+				]
+			}
+			{
+				ID = reported
+				Title = "Hale's Report"
+				Text = "Commander Hale passed your hull number to the corporation, and a hunter team now waits at her station."
+				Mission = ChainStationRaid
+				Where = Return
+				Results
+				[
+					{ On = success; Story = "Hale's hunters are scrap."; Effects { Text = "Hale does not hail you this time."; Fame = 0.3 } }
+					{ On = fail; Story = "Hale's hunters chased you off."; Effects { Heat = 10 } }
+				]
+			}
+		]
+	}
+
+	// ---- A hunter's flight recorder. A guarded wreck, then routes that lead to a prize or into a trap.
+	{
+		ID = black_box
+		Title = "The Black Box"
+		Stages
+		[
+			{
+				ID = recorder
+				Title = "The Black Box"
+				Text = "A corporate hunter died near this station last week, and its flight recorder still transmits. A security drone guards the wreck, one tier tougher than anything else here. The station's broker wants the recorder. So might you."
+				Mission = ChainBlackBox
+				Terms { AcceptFee = 0.2; FlatHeat = 5; TrailWeight = 1; InformantChance = 10% }
+				Results
+				[
+					{ On = success; Next = playback; Story = "You took a hunter's flight recorder from under its drone." }
+					{ On = fail; Story = "The drone kept its wreck." }
+				]
+			}
+			{
+				ID = playback
+				Page = blackbox_playback
+				Results
+				[
+					{ On = sold; Story = "You sold the recorder to the station's broker." }
+					{ On = routes; Next = routes; Story = "You kept the hunter routes from the recorder." }
+					{ On = deal; Story = "The corporation took the recorder back and lost your trail." }
+					{ On = trap; Next = sting; Story = "You offered the recorder back to the corporation." }
+				]
+			}
+			{
+				ID = routes
+				Page = blackbox_routes
+				Where = Arrival
+				AfterSectors = 1
+				Results
+				[
+					{ On = hit; Next = courier }
+					{ On = slip; Story = "The recorder's routes kept you clear of the hunters." }
+				]
+			}
+			{
+				ID = courier
+				Title = "Courier Run"
+				Text = "The recorder's routes put a corporate courier in this system with prototype parts in its hold. Kill the escorts and leave the courier whole: the cargo is worth more than the wreck."
+				Mission = ChainCourierHit
+				Where = Arrival
+				AfterSectors = 0
+				Results
+				[
+					{ On = success; Story = "You took a corporate courier's prototype cargo."; Effects { Text = "The courier's crew surrenders the hold. One crate carries the same tags as yours."; Tech = 1 } }
+					{ On = lost; Story = "The courier broke apart, cargo and all."; Effects { Text = "The courier's reactor takes the cargo with it."; Heat = 5 } }
+					{ On = fail; Story = "The courier got away." }
+				]
+			}
+			{
+				ID = sting
+				Title = "The Sting"
+				Text = "The corporation agreed to meet you for the recorder. Too quickly. Their ships are here, and they did not come to talk."
+				Mission = ChainAmbush
+				Where = Arrival
+				AfterSectors = 1
+				Results
+				[
+					{ On = success; Story = "You fought your way out of the corporation's sting."; Effects { Fame = 0.3 } }
+					{ On = fail; Story = "The corporation's sting worked."; Effects { Heat = 15 } }
+				]
+			}
+		]
+	}
+]

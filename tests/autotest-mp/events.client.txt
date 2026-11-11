@@ -1,0 +1,19 @@
+# Co-op events, client side.
+mpjoin 127.0.0.1:{PORT}
+mpready
+waitfor ev_pending == 1 30
+expectevent getaway
+ev_mark
+choose 1
+waitfor ev_result >= 1 30
+expectflag fake_codes 1
+expect ev_money_gain < 0
+# The host's choice on the next event. The money of the sale is split, so the client gains too.
+waitfor ev_pending == 1 60
+ev_mark
+waitfor ev_result >= 2 120
+expect ev_tech_gain == -1
+expect ev_money_gain > 0
+expect ev_pending == 0
+expect desyncs == 0
+quit

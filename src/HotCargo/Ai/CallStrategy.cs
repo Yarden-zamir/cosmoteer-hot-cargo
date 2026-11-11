@@ -75,7 +75,7 @@ internal sealed class CallStrategy(CallStrategyRules rules) : AIStrategyModule
 
     public override bool OnAITick(Ship ship, ShipAI ai)
     {
-        if (AiGate.Active(Behavior.Call, rules.ForHunters) is not { } t || AiGate.Surrendered(ship))
+        if (AiGate.Active(Behavior.Call, rules.ForHunters) is not { } t || AiGate.Surrendered(ship) || !AiGate.HostileToPlayers(ship))
         {
             _calling = false;
             _assist = null;

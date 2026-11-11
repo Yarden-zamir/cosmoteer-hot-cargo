@@ -1,0 +1,6 @@
+HotCargoChains
+{
+	Category = "Story Chains"
+	Name = "{chain_tag} {chain_name}: {chain_stage}"
+	Desc = "{chain_story}{chain_brief}"
+}
