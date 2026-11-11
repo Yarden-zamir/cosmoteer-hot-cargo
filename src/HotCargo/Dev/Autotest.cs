@@ -26,6 +26,7 @@ public static class Autotest
 
     static Queue<(string Name, string Arg, int Line)>? _script;
     static double _waitUntil;
+    static EventHandler<Cosmoteer.Simulation.SimRoot>? _godmode;
 
     public static GameRoot? Game => App.Director.States.OfType<GameRoot>().FirstOrDefault();
 
@@ -85,10 +86,13 @@ public static class Autotest
         Commands["wait"] = arg => Wait(double.Parse(arg, CultureInfo.InvariantCulture));
         Commands["newgame"] = arg =>
         {
-            // arg: map size index, or "last" for the last map size (the Hot Cargo short map is appended last).
+            // arg: [map size index, or "last" / nothing for the Hot Cargo run map] [starter ship index, default 0].
+            // "last" stays as an alias of the run map because older test scripts use it.
             var rules = GameApp.Rules.CareerMode;
-            int mapSize = arg is "" or "last" ? rules.MapSizes.Length - 1 : int.Parse(arg, CultureInfo.InvariantCulture);
-            ShipFile ship = rules.StarterShips[0].Ship;
+            var args = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            string map = args.Length > 0 ? args[0] : "last";
+            int mapSize = map == "last" ? Journey.JourneyArea.RunMapSizeIndex() : int.Parse(map, CultureInfo.InvariantCulture);
+            ShipFile ship = rules.StarterShips[args.Length > 1 ? int.Parse(args[1], CultureInfo.InvariantCulture) : 0].Ship;
             // The game's default levels, not the player's saved choices: test slots start with an empty settings file.
             int combat = Array.FindIndex(rules.CombatDifficultyLevels, l => l.IsDefault);
             int econ = Array.FindIndex(rules.EconDifficultyLevels, l => l.IsDefault);
@@ -141,6 +145,20 @@ public static class Autotest
                 _ => throw new InvalidOperationException($"unknown op {parts[1]}"),
             };
             Check(ok, $"{parts[0]} {parts[1]} {expected} (actual {actual})");
+        };
+        Commands["godmode"] = arg =>
+        {
+            // Test only: keeps human ships at full part health each sim tick, so long AI tests are not cut short by a lost ship.
+            // Parts that a single hit destroys still break. Vault damage still costs tech (it counts health drops).
+            var game = Game ?? throw new InvalidOperationException("no game");
+            if (arg == "off") { if (_godmode is not null) game.EventHub.Tick -= _godmode; _godmode = null; return; }
+            _godmode ??= (_, sim) =>
+            {
+                foreach (var ship in sim.Ships.HumanPlayerShips)
+                    foreach (var part in ship.Parts)
+                        if (part.Health < part.Rules.MaxHealth) part.Health = part.Rules.MaxHealth;
+            };
+            game.EventHub.Tick += _godmode;
         };
         Commands["quit"] = _ =>
         {

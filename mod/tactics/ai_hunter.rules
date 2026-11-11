@@ -1,0 +1,97 @@
+// Hot Cargo hunter AI (spec 32, 34, 43-49). Based on Data/ai/ai_normal.rules.
+// Modules run last to first: the last module in each list has the highest priority.
+// Hc* module types come from the Hot Cargo C# assembly. Each tactic falls through to the vanilla module
+// below it when the tactic is off in tunables.rules (or when no Hot Cargo run is active).
+UpdateInterval = [.25, .75]
+
+StrategyModules
+[
+	// Fallback when no player ship is in the system: fight whatever is near.
+	{
+		Type = AggroEnemies
+		TargetSwitchThresholdFactor = 6
+		TargetDistanceFactorExponent = 1.5
+		AlreadyTargetedByAllyFactor = 0.7
+		TargetFirepowerCacheTime = 10
+		AcquireAggroWithinRadar = true
+		ReleaseAggroWithinRadar = true
+		AvoidableDoodadTags = [sun]
+	}
+	// Chase and attack the player ships. Prefers ships that carry a Tech Vault.
+	{
+		Type = HcHunt
+		TargetSwitchThresholdFactor = 1.5
+		ChaseMoveTolerance = 300
+	}
+	{
+		Type = HcBait
+		MoveTolerance = 100
+	}
+	{
+		Type = HcFallBack
+		RepairChecksPerTick = 2
+		AvoidableDoodadTags = [sun]
+		AvoidableDoodadBuffer = 100
+	}
+]
+
+TacticsModules
+[
+	{
+		Type = DefaultAttackRadiusAndRotation
+		AttackRotationSwitchThresholdFactor = 1.25
+		AttackRotationsToCheck = 8
+		UseSavedAboveHealth = 50%
+	}
+	{
+		Type = RandomAttackAngle
+		AttackAngleChangeInterval = [5, 10]
+		AttackAngleChangeDelta = [-30d, 30d]
+		CoordinateFlanking = true
+	}
+	{
+		Type = HcKite
+		AttackRotationsToCheck = 8
+		AttackRotationSwitchThresholdFactor = 1.25
+	}
+	{
+		Type = HcPincer
+		TurnInterval = [10, 20]
+		TurnDelta = [-30d, 30d]
+	}
+]
+
+TargetingModules
+[
+	{
+		Type = ValueTargeter
+		TargetChecksPerUpdate = 10
+		TargetSwitchThresholdFactor = 2
+		TargetValueFactorPerPenetrationDist = .75
+	}
+	{
+		Type = HcDisable
+	}
+]
+
+// Hunters never surrender and never accept surrender. They want the tech.
+CommsModules
+[
+	: <./Data/ai/ai_common.rules>/DialogueModule
+	{
+		DefaultChanceToConsiderSurrenderingToPlayer = 0
+		ChanceToConsiderAcceptingSurrenderFromPlayer = 0
+		ChanceToConsiderDemandingSurrender = 0
+	}
+]
+
+// Out of the live area, keep closing in on the player ships.
+StasisModules
+[
+	{
+		Type = HcHuntStasis
+		DefaultStasisSpeed = 100
+		AvoidableDoodadTags = [sun]
+		AvoidableDoodadBuffer = 100
+	}
+]

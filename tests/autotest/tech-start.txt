@@ -1,0 +1,36 @@
+# Tech: starting cargo, price, storage rule, vault damage, save and load, a sale through the trade inputs, loss on the last sale.
+newgame last
+wait 8
+log start
+expect vaults == 1
+expect vaulttech == 6
+expect tech == 6
+expect livetech == 6
+expect heatmult == 1.2
+# Spec 14: normal storage on the player ship refuses tech. The station takes it.
+expect flexsinks == 0
+expect stationsinks > 0
+# Spec 19: sector 1, first game minute: base value. Buy-back = sell x 1.5.
+expect sellprice == 10000
+expect buyprice == 15000
+save tech
+# Spec 65: 31% damage at 15% per unit loses 2 units.
+vault damage 0.31
+expect vaulttech == 4
+# livetech counts now; tech is the count from the last sim tick.
+expect livetech == 4
+# Spec 66: repair does not bring tech back.
+vault repair
+expect vaulttech == 4
+# Save and load keep tech.
+load tech
+log loaded
+expect lost == 0
+expect tech == 6
+expect vaulttech == 6
+# Spec 19: the price grows with game time in steps of PriceStepMinutes (1 min).
+wait 55
+expect seconds >= 60
+expect sellprice > 10000
+expect pricegap == 0
+quit

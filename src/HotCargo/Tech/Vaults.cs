@@ -1,0 +1,77 @@
+using Cosmoteer.Crew;
+using Cosmoteer.Data;
+using Cosmoteer.Resources;
+using Cosmoteer.Ships;
+using Cosmoteer.Ships.Crew.Jobs;
+using Cosmoteer.Ships.Parts;
+using Cosmoteer.Ships.Parts.Resources;
+using Cosmoteer.Simulation;
+
+namespace HotCargo.Tech;
+
+/// <summary>Stolen Tech in the simulation: fleet count and the Tech Vault grids. Call only from sim logic or single-player debug code.</summary>
+public static class Vaults
+{
+    public static readonly ID<ResourceRules> TechId = new("yarden_zamir.stolen_tech");
+    public static readonly ID<PartRules> VaultId = new("yarden_zamir.tech_vault");
+
+    /// <summary>Human player ships, including ships in a local jump (they are not in Sim.Ships while they jump).</summary>
+    public static IEnumerable<Ship> HumanShips(SimRoot sim) => sim.Ships.AllShips.Where(sim.Mode.IsHumanPlayerShip);
+
+    /// <summary>
+    /// The fleet tech count (spec section 4, requirement 59): tech stored on human ships, plus tech that crew carry for the players.
+    /// Tech on ships left in another system is not in this sim, so it is not counted.
+    /// </summary>
+    public static int CountFleetTech(SimRoot sim)
+    {
+        int stored = HumanShips(sim).Sum(s => s.Resources.GetResourceTotal(TechId, includeStored: true, includeCarried: false));
+        int carried = sim.Crew._allSouls.Where(c => CarriesForPlayers(sim, c)).Sum(c => c.CarriedResource.QuantityOfType(TechId));
+        return stored + carried;
+    }
+
+    /// <summary>
+    /// Human crew, wherever they are (any ship or space). Also station crew that carry a sale from a human ship:
+    /// the station pays on delivery, so until then the tech still belongs to the players.
+    /// </summary>
+    static bool CarriesForPlayers(SimRoot sim, CrewSoul crew) =>
+        sim.Mode.IsHumanPlayerAllegiance(crew.PlayerIndex)
+        || crew.Job is ResourceTransferJob { TradeType: TradeType.Sell, Source.Ship: { } from } && sim.Mode.IsHumanPlayerShip(from);
+
+    /// <summary>Tech Vault grids on human ships, in a stable order (player, then part location).</summary>
+    public static List<TypedResourceGrid> All(SimRoot sim) =>
+        HumanShips(sim)
+            .OrderBy(s => s.Metadata.PlayerIndex).ThenBy(s => s.UniqueID)
+            .SelectMany(s => TypedResourceGrid.GetAllOnShip(s).Where(g => g.ResourceType == TechId && g.Part is not null)
+                .OrderBy(g => g.Part!.Location.Y).ThenBy(g => g.Part!.Location.X))
+            .ToList();
+
+    /// <summary>Adds tech to vaults in order. Returns the units added; it is less than requested when the vaults are full.</summary>
+    public static int Add(SimRoot sim, int units)
+    {
+        if (units < 0) throw new ArgumentOutOfRangeException(nameof(units));
+        int left = units;
+        foreach (var grid in All(sim))
+        {
+            int n = Math.Min(left, grid.MaxResources - grid.Resources);
+            grid.AddResources(n);
+            left -= n;
+            if (left == 0) break;
+        }
+        return units - left;
+    }
+
+    /// <summary>Removes tech from vaults in order. Returns the units removed.</summary>
+    public static int Remove(SimRoot sim, int units)
+    {
+        if (units < 0) throw new ArgumentOutOfRangeException(nameof(units));
+        int left = units;
+        foreach (var grid in All(sim))
+        {
+            int n = Math.Min(left, grid.Resources);
+            grid.AddResources(-n);
+            left -= n;
+            if (left == 0) break;
+        }
+        return units - left;
+    }
+}

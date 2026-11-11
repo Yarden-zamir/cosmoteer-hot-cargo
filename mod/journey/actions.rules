@@ -1,0 +1,20 @@
+	// Journey: the Hot Cargo run map, first in the list, so that it is the default map size while the mod is on.
+	// The player's saved map size choice is an index. With the mod off, index 0 is Standard again.
+	{
+		Action = Add
+		AddTo = "<modes/career/career.rules>/MapSizes"
+		Index = 0
+		ToAdd = &<journey/galaxy.rules>/HotCargoRun
+	}
+	// Journey: mission type of the "go to the Buyer" mission.
+	{
+		Action = Add
+		AddTo = "<modes/career/mission_metatypes.rules>"
+		Name = HotCargoBuyer
+		ToAdd
+		{
+			NameKey = "HotCargoJourney/BuyerMission"
+			DescriptionKey = "HotCargoJourney/BuyerMissionDesc"
+			CategoryID = stations
+		}
+	}

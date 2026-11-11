@@ -1,0 +1,38 @@
+// The ambush of a shady trap (spec 40). C# reads this file (Missions/ShadyTrapObjective.cs) when a trap springs.
+// It is not part of the game rules tree, so "&/" references do not work here. Use "&<./Data/...>" paths.
+// The root location is the human ship nearest to the trap site. A rules change here needs a game restart.
+Ambush
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_shady_ambush]
+			Count = 2
+			Distance = [1300, 1800]
+			Allegiance = Unique
+			SynchronizeAllegiance = true
+			SuppressLocationAssertions = true
+			FamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+			MaxFamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+			// Sector tier + 1 (spec 40).
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				Tier = 1
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+			}
+			// The corporation springs the trap (spec 40), so ambushers use the hunter AI and its tactics.
+			AI
+			{
+				Type = HotCargoHunter
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 800
+				TargetAcquireRangeFromOrigin = 4000
+				TargetUnacquireRangeFromOrigin = 6000
+			}
+		}
+	]
+}

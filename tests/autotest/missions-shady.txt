@@ -1,0 +1,30 @@
+# Shady offer (spec 38-40): the trap rolls on arrival with the heat formula; a sprung trap pays when the ambush is gone.
+newgame last
+wait 8
+heat 50
+# Spec 39 defaults: 0.2 + 0.006 x 50.
+expect hc_trap_chance_now >= 0.5
+expect hc_trap_chance_now <= 0.51
+hc_generate shady
+hc_accept shady
+expect hc_active_shady == 1
+expect hc_trap_state == 0
+hc_shady_goto
+wait 3
+# Arrival resolves the roll: 1 = honest, 2 = sprung. The log line "shady offer resolved" shows heat, chance and roll.
+expect hc_trap_state >= 1
+# Second offer: force the trap to test the ambush and the survival reward.
+hc_generate shady
+hc_accept shady
+expect hc_trap_state == 0
+hc_mark
+hc_shady_spring
+expect hc_trap_state == 2
+expect hc_ambushers == 2
+# Counts every ambusher in the system, so the first offer may add two more.
+expect hc_ambush_vs_player >= 2
+hc_kill_ambush
+expect hc_ambushers == 0
+expect hc_trap_done == 1
+expect hc_money_gain > 0
+quit

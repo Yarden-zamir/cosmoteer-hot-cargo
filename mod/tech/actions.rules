@@ -1,0 +1,13 @@
+	{
+		Action = Add
+		AddTo = "<resources/resources.rules>/Resources"
+		ToAdd = &<tech/stolen_tech.rules>
+	}
+	{
+		Action = AddMany
+		AddTo = "<ships/terran/terran.rules>/Terran/Parts"
+		ManyToAdd
+		[
+			&<tech/tech_vault.rules>/Part
+		]
+	}
