@@ -39,12 +39,16 @@ public static class HunterOrders
         return Math.Clamp(built / full, 0f, 1f);
     }
 
-    /// <summary>Longest effective range of the ship's weapons, as AttackCommand.GetMaxWeaponRange computes it. 0 without weapons.</summary>
-    public static float MaxWeaponRange(Ship ship)
+    /// <summary>
+    /// Longest effective range of the ship's weapons, as AttackCommand.GetMaxWeaponRange computes it. 0 without weapons.
+    /// With onlyActive, weapons that the vanilla AI leaves out of firepower estimates (toggled off, suppressed) do not count.
+    /// Use onlyActive = false for a target: its player can turn those weapons on at any time.
+    /// </summary>
+    public static float MaxWeaponRange(Ship ship, bool onlyActive)
     {
         float max = 0f;
         foreach (var weapon in ship.Weapons)
-            if (weapon.ShouldEstimateFirepower)
+            if (onlyActive ? weapon.ShouldEstimateFirepower : !weapon.Rules.IsDefensiveOnly)
                 max = Math.Max(max, weapon.GetEffectiveRange(Cosmoteer.Ships.Parts.Weapons.WeaponCoverageMode.Confirmed));
         return max;
     }
