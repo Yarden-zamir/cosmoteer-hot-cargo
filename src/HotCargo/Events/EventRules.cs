@@ -23,6 +23,14 @@ public enum EventTrigger
     Station,
 }
 
+/// <summary>Event categories with their own per-run limits.</summary>
+public enum EventCategory
+{
+    Normal,
+    /// <summary>Every choice costs something, with no way to avoid it. At most EventsTunables.MaxUnavoidablePerRun per run (spec 87).</summary>
+    Unavoidable,
+}
+
 [ReflectiveSerialization(Explicit = true)]
 public sealed class ResourceAmount
 {
@@ -50,6 +58,18 @@ public sealed class NeedRules
     [Serialize(Optional = true)] public string[] Parts = [];
     [Serialize(Optional = true)] public string[] Flags = [];
     [Serialize(Optional = true)] public string[] NotFlags = [];
+    /// <summary>Flags that must be set at least MinSectors sectors ago.</summary>
+    [Serialize(Optional = true)] public FlagAge[] FlagAges = [];
+    /// <summary>Sectors left before the Buyer's sector. MaxSectorsLeft -1 means no limit.</summary>
+    [Serialize(Optional = true)] public int MinSectorsLeft;
+    [Serialize(Optional = true)] public int MaxSectorsLeft = -1;
+}
+
+[ReflectiveSerialization(Explicit = true)]
+public sealed class FlagAge
+{
+    [Serialize] public string Flag = "";
+    [Serialize] public int MinSectors;
 }
 
 /// <summary>What a choice costs for sure. The dialog shows it on the button, and the choice needs it.</summary>
@@ -57,6 +77,8 @@ public sealed class NeedRules
 public sealed class CostRules
 {
     [Serialize(Optional = true)] public float Money;
+    /// <summary>Extra money units per heat point, read when the page opens. For costs that grow with the bounty on the players.</summary>
+    [Serialize(Optional = true)] public float MoneyPerHeat;
     [Serialize(Optional = true)] public int Tech;
     [Serialize(Optional = true)] public int Crew;
     [Serialize(Optional = true)] public ResourceAmount[] Resources = [];
@@ -77,6 +99,10 @@ public sealed class OutcomeRules
     /// <summary>× the standard mission fame of the sector tier. Fame adds heat through the normal rule (spec 25).</summary>
     [Serialize(Optional = true)] public float Fame;
     [Serialize(Optional = true)] public float Heat;
+    /// <summary>× a standard mission's reputation, with the faction that controls the system. Negative loses reputation.</summary>
+    [Serialize(Optional = true)] public float Reputation;
+    /// <summary>Multiplies the Buyer price for the rest of the run (above 0, at most 1). 0 means no change.</summary>
+    [Serialize(Optional = true)] public float BuyerPrice;
     [Serialize(Optional = true)] public int Tech;
     [Serialize(Optional = true)] public int Crew;
     [Serialize(Optional = true)] public ResourceAmount[] Resources = [];
@@ -106,6 +132,7 @@ public sealed class EventRules
 {
     [Serialize] public string ID = "";
     [Serialize(Optional = true)] public EventTrigger Trigger;
+    [Serialize(Optional = true)] public EventCategory Category;
     [Serialize(Optional = true)] public float Weight = 10f;
     [Serialize(Optional = true)] public float WeightPerHeat;
     [Serialize(Optional = true)] public float WeightPerTech;
@@ -182,6 +209,7 @@ public static class EventLibrary
         foreach (var e in file.Events)
             if (!map.TryAdd(e.ID, e)) throw new InvalidDataException($"event ID '{e.ID}' is used twice in {EventsPath}");
         foreach (var e in file.Events) Validate(e, map);
+        Spawn(EventRunner.CourierSpawn);
         _ordered = file.Events;
         Log.Info($"events loaded: {map.Count} events, {map.Values.Count(e => e.Trigger != EventTrigger.None)} with a trigger");
         return map;
@@ -205,7 +233,7 @@ public static class EventLibrary
             if (choice.Outcomes.All(o => o.Weight <= 0)) throw new InvalidDataException($"{cat}: at least one outcome needs a Weight above 0");
             ValidateNeed(choice.Need, cat);
             foreach (var r in choice.Cost?.Resources ?? []) ValidateResource(r.ID, cat);
-            if (choice.Cost is { } cost && (cost.Money < 0 || cost.Tech < 0 || cost.Crew < 0)) throw new InvalidDataException($"{cat}: Cost values must not be negative");
+            if (choice.Cost is { } cost && (cost.Money < 0 || cost.MoneyPerHeat < 0 || cost.Tech < 0 || cost.Crew < 0)) throw new InvalidDataException($"{cat}: Cost values must not be negative");
             for (int o = 0; o < choice.Outcomes.Length; o++)
             {
                 var outcome = choice.Outcomes[o];
@@ -214,6 +242,7 @@ public static class EventLibrary
                 if (outcome.Text.Length == 0 && outcome.Next.Length == 0) throw new InvalidDataException($"{oat} needs a Text or a Next");
                 if (outcome.Next.Length > 0 && !all.ContainsKey(outcome.Next)) throw new InvalidDataException($"{oat}: Next '{outcome.Next}' is not an event");
                 if (outcome.HullDamage is < 0 or > 1) throw new InvalidDataException($"{oat}: HullDamage must be 0 to 1");
+                if (outcome.BuyerPrice is < 0 or > 1) throw new InvalidDataException($"{oat}: BuyerPrice must be 0 (no change) or above 0 and at most 1");
                 foreach (var r in outcome.Resources) ValidateResource(r.ID, oat);
                 if (outcome.Spawn.Length > 0) Spawn(outcome.Spawn);
             }

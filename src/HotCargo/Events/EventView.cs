@@ -35,7 +35,7 @@ public static class EventView
         for (int i = 0; i < e.Choices.Length; i++)
         {
             var c = e.Choices[i];
-            var unmet = EventModel.FirstUnmet(EventRunner.ChoiceNeed(run, c, p.Tier, p.TechValue), snapshot);
+            var unmet = EventModel.FirstUnmet(EventRunner.ChoiceNeed(run, c, p), snapshot);
             if (unmet is not null && c.HideIfUnmet) continue;
             choices.Add(new ChoiceView(i, ChoiceText(run, c, p, choices.Count + 1, unmet), unmet is null));
         }
@@ -74,7 +74,8 @@ public static class EventView
     {
         if (cost is null) return "";
         var parts = new List<string>();
-        if (cost.Money > 0) parts.Add($"-{EventRunner.Credits(run, cost.Money, 0f, p.Tier, p.TechValue):n0} credits");
+        int money = EventRunner.CostCredits(run, cost, p);
+        if (money > 0) parts.Add($"-{money:n0} credits");
         if (cost.Tech > 0) parts.Add($"-{cost.Tech} Stolen Tech");
         if (cost.Crew > 0) parts.Add($"-{cost.Crew} crew");
         parts.AddRange(cost.Resources.Select(r => $"-{EventText.ResourceName(r.ID, r.At(p.Tier))}"));
