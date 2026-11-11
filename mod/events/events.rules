@@ -504,6 +504,41 @@ Events
 		]
 	}
 
+	// Unavoidable (spec 87): every choice costs something. At most Events.MaxUnavoidablePerRun of these per run.
+	{
+		ID = vault_coolant_leak
+		Trigger = Arrival
+		Category = Unavoidable
+		// The category cap (Events.MaxUnavoidablePerRun) limits it, not a per-event limit.
+		MaxPerRun = 0
+		Need { Tech = 2 }
+		Title = "Vault Coolant Leak"
+		Text = "An alarm from the vault: a coolant line has ruptured, and the temperature is climbing. Prototype tech does not like heat. Something has to give."
+		Choices
+		[
+			{
+				Text = "Vent one crate before the heat spreads."
+				Need { Tech = 1 }
+				Cost { Tech = 1 }
+				Outcomes [ { Text = "The crate goes out the airlock in a cloud of frozen coolant. The rest stays cold." } ]
+			}
+			{
+				Text = "Send a team in with extinguishers."
+				Need { Crew = 2 }
+				Outcomes
+				[
+					{ Weight = 60; Text = "They seal the line by hand. Burns and scorched panels, but every crate survives."; HullDamage = 0.15 }
+					{ Weight = 40; Text = "They seal the line, but the vault flashes over before everyone is out."; Crew = -1; HullDamage = 0.15 }
+				]
+			}
+			{
+				Text = "Call a station tug for emergency coolant."
+				Cost { Money = 0.5 }
+				Outcomes [ { Text = "A tug arrives with coolant, at emergency prices. The pilot does not ask what is in the vault." } ]
+			}
+		]
+	}
+
 	// ---- Station
 
 	{

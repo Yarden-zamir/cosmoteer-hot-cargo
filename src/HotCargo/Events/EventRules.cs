@@ -23,6 +23,14 @@ public enum EventTrigger
     Station,
 }
 
+/// <summary>Event categories with their own per-run limits.</summary>
+public enum EventCategory
+{
+    Normal,
+    /// <summary>Every choice costs something, with no way to avoid it. At most EventsTunables.MaxUnavoidablePerRun per run (spec 87).</summary>
+    Unavoidable,
+}
+
 [ReflectiveSerialization(Explicit = true)]
 public sealed class ResourceAmount
 {
@@ -124,6 +132,7 @@ public sealed class EventRules
 {
     [Serialize] public string ID = "";
     [Serialize(Optional = true)] public EventTrigger Trigger;
+    [Serialize(Optional = true)] public EventCategory Category;
     [Serialize(Optional = true)] public float Weight = 10f;
     [Serialize(Optional = true)] public float WeightPerHeat;
     [Serialize(Optional = true)] public float WeightPerTech;

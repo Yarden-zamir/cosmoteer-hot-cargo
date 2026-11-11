@@ -84,3 +84,4 @@ To see more events fast, put `Events { ArrivalEventChance = 1  StationEventChanc
 4. Pirate Toll Gate: compare the toll at low and high heat. Does the button cost make the twist clear ("the hotter you are, the more you pay")?
 5. The Buyer's Agent (1 to 2 sectors before the Buyer): is the advance tempting? After a deal, does the trade window at the Buyer show the lower price?
 6. Courier Job: look for "Courier Job" in a station's mission list. Is the contact easy to find (target area on the map)? Is 7 minutes too short or too long? Does it feel different from a vanilla delivery?
+7. Vault Coolant Leak (at most one per run): does an event with no free choice feel fair, or punishing? Is the choice between a crate, crew and money a real decision?

@@ -188,6 +188,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `Events.StationEventChance`, `StationTriggerDistance` | 0.5, 1500 | 69 |
 | `Events.SignalTriggerDistance` | 900 | 69 |
 | `Events.CourierChance` | 0.5 | 85 |
+| `Events.MaxUnavoidablePerRun` | 1 | 87 |
 | `Events.CooldownSeconds`, `MaxEventsPerSystem` | 120 s, 2 | 70 |
 | `Events.MoneyScale`, `FameScale`, `HeatScale` | 1, 1, 1 | 73 |
 | `KiteRangeFraction` | 0.9 | 44 |
@@ -290,3 +291,4 @@ FTL-style choice events. EVENTS.md holds the design and the catalog.
 84. An outcome can multiply the run's Buyer price multiplier (`BuyerPrice`, above 0 and at most 1). The run state saves the multiplier. The Buyer sale price and the score use it (requirement 7).
 85. Courier Job: the first trade station that a player ship comes near in a system rolls `CourierChance` once for the whole run. On success, a Courier Job offer appears in that station's mission list. The job: fly a sealed case to a neutral contact 8,000 to 12,000 away within 7 minutes (the contact counts as reached when a player ship sees it), then collect the pay at the station. Pay: 1.25 × a standard mission's money, 0.5 × its fame.
 86. Event missions carry contract terms (economy, requirement 100 and later) as a `HotCargoContract` reward. Missions that events add straight to the log have zero terms: no fee, heat, trail or informant. The Courier Job: free to accept, flat heat 3, trail weight 0.5, informant chance 15 %.
+87. An event can be in the Unavoidable category: every choice costs something, with no way to avoid it. A trigger picks at most `MaxUnavoidablePerRun` (default 1) Unavoidable events per run, counted from the seen counts. Vault Coolant Leak is the only one so far.

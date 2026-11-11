@@ -139,10 +139,7 @@ public static class EventRunner
             return;
         }
         var snapshot = Snap(run, sim, FirstHumanMoney(run), run.CurrentTier, CurrentTechValue(run));
-        var candidates = EventLibrary.InOrder
-            .Where(e => e.Trigger == trigger && EventModel.UnderRunLimit(s.Seen.GetValueOrDefault(e.ID), e.MaxPerRun))
-            .Where(e => EventModel.FirstUnmet(ToNeed(run, e.Need, run.CurrentTier, CurrentTechValue(run)), snapshot) is null)
-            .ToList();
+        var candidates = EventLibrary.InOrder.Where(e => e.Trigger == trigger && Eligible(run, e, snapshot)).ToList();
         var weights = candidates.Select(e => EventModel.EffectiveWeight(e.Weight, e.WeightPerHeat, e.WeightPerTech, run.State.Heat, run.State.FleetTech)).ToList();
         int pick = EventModel.PickWeighted(weights, sim.Rand.Single());
         if (pick < 0) { Log.Info($"events: no eligible {trigger} event"); return; }
@@ -150,6 +147,22 @@ public static class EventRunner
         s.LastEventSeconds = run.State.GameSeconds;
         if (limited) s.NodeEvents[node] = s.NodeEvents.GetValueOrDefault(node) + 1;
         Open(run, sim, candidates[pick], lead: "");
+    }
+
+    /// <summary>
+    /// True when the event may open now: under its run limit, under its category limit, and its need is met.
+    /// The Unavoidable count comes from the seen counts, so it needs no saved state of its own.
+    /// </summary>
+    public static bool Eligible(Run run, EventRules e, Snapshot snapshot)
+    {
+        var s = State(run);
+        if (!EventModel.UnderRunLimit(s.Seen.GetValueOrDefault(e.ID), e.MaxPerRun)) return false;
+        if (e.Category == EventCategory.Unavoidable)
+        {
+            int seen = EventLibrary.InOrder.Where(x => x.Category == EventCategory.Unavoidable).Sum(x => s.Seen.GetValueOrDefault(x.ID));
+            if (seen >= run.T.Events.MaxUnavoidablePerRun) return false;
+        }
+        return EventModel.FirstUnmet(ToNeed(run, e.Need, run.CurrentTier, CurrentTechValue(run)), snapshot) is null;
     }
 
     /// <summary>Opens an event page. Public for the autotest command that forces an event.</summary>

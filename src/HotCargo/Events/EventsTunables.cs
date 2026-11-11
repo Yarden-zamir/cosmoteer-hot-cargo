@@ -23,6 +23,8 @@ public sealed class EventsTunables
     [Serialize(Optional = true)] public float CooldownSeconds = 120f;
     /// <summary>Arrival and Station events in one system, all visits together. Signal events do not count, because the player chose to go there.</summary>
     [Serialize(Optional = true)] public int MaxEventsPerSystem = 2;
+    /// <summary>Events of the Unavoidable category (every choice costs something) per run.</summary>
+    [Serialize(Optional = true)] public int MaxUnavoidablePerRun = 1;
     /// <summary>Global scales on event outcomes, on top of the per-event amounts.</summary>
     [Serialize(Optional = true)] public float MoneyScale = 1f;
     [Serialize(Optional = true)] public float FameScale = 1f;

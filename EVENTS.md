@@ -1,6 +1,6 @@
 # Hot Cargo events
 
-FTL-style choice events for the Hot Cargo run. Spec requirements 67 to 86 (SPEC.md section 22) describe the system. This file holds the design and the catalog.
+FTL-style choice events for the Hot Cargo run. Spec requirements 67 to 87 (SPEC.md section 22) describe the system. This file holds the design and the catalog.
 
 ## 1. Goals
 
@@ -243,18 +243,24 @@ Not an event page: a Hot Cargo mission in the station's mission list (spec 85). 
 - Pay: 1.25 × a standard mission's money, 0.5 × its fame. A quiet job: good money, little fame, so little heat.
 - Contract terms (economy): free, flat heat 3, trail weight 0.5, informant chance 15 %.
 
-### Later items (documented, not implemented)
+#### 19. Vault Coolant Leak (Arrival, 2+ tech; category Unavoidable)
+A ship event: the vault's coolant line ruptures. Every choice costs something (user decision: at most one Unavoidable event per run, tunable `MaxUnavoidablePerRun`).
+| Choice | Cost / Need | Outcomes |
+|---|---|---|
+| Vent one crate | 1 tech (keeps the last one) | Nothing more. |
+| Send a team in | 2 crew | 60 %: hull damage 15 %. 40 %: −1 crew and hull damage 15 %. Vaults are never damaged. |
+| Emergency coolant from a station tug | 0.5 money | Nothing more. |
 
-| # | Event | Trigger | Idea | Open question |
-|---|---|---|---|---|
-| 19 | Vault Coolant Leak | Arrival, any | A ship event: the vault overheats. Vent it (−1 tech) or send crew in (crew risk, hull damage). | Do players accept an unavoidable tech-loss event? The user decides. |
+Reads as: FTL's ship fire. The player picks which resource to lose: tech, crew and hull, or money.
+
+All catalog items are implemented.
 
 ## 4. Content rules for authors
 
 - Keep text to 2 to 4 short sentences. Name concrete things (a crate, a cutter, a forger), not abstractions.
 - Put the cost on the button (`Cost`), not in the text. The window adds "(-10,000 credits)" for you.
 - Hide story options (`HideIfUnmet = true`) when a flag gates them. Show part and crew options greyed out, so players learn what to build.
-- Give every event a safe "leave" choice as the last choice.
+- Give every event a safe "leave" choice as the last choice. The exception is the Unavoidable category (spec 87): put such events in `Category = Unavoidable`, so the per-run cap applies.
 - Use `Need { Tech = 1 }` next to every tech cost.
 - Weights that depend on heat or tech make the core loop visible: more tech held, worse scans; more heat, more traps.
 - `mod/events/events.rules` changes need a game restart. Validation runs at the first event and shows errors in the overlay.

@@ -164,6 +164,16 @@ public static class EventsArea
             string actual = unmet is null ? "met" : "unmet";
             Autotest.Check(actual == parts[1], $"need of {e.ID} is {parts[1]} (actual {actual}{(unmet is null ? "" : $": {unmet}")})");
         };
+        // expecteligible <event id> 1|0: whether a trigger could pick the event now (run limit, category limit, need).
+        Autotest.Commands["expecteligible"] = arg =>
+        {
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var run = RequireRun();
+            var snap = EventRunner.Snap(run, RequireSim(), run.Game.GetPlayerState(run.Game.LocalPlayerIndex, deterministic: true).Money,
+                run.CurrentTier, EventRunner.CurrentTechValue(run));
+            bool eligible = EventRunner.Eligible(run, EventLibrary.Get(parts[0]), snap);
+            Autotest.Check(eligible == (parts[1] == "1"), $"{parts[0]} eligible is {parts[1]} (actual {(eligible ? 1 : 0)})");
+        };
         // ev_sector <n>: sets the sector index without a jump (headless games cannot finish a jump). Test only.
         Autotest.Commands["ev_sector"] = arg => RequireRun().State.SectorIndex = Int(arg);
         // Courier Job (spec 85): offers in station lists, accept the first, fly to the contact, and its GotoShip state.

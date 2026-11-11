@@ -1,0 +1,25 @@
+# Unavoidable events (spec 87): every choice costs something, and at most MaxUnavoidablePerRun (1) open in a run.
+newgame run
+wait 8
+expectevent getaway
+choose 3 1
+expecteligible vault_coolant_leak 1
+event vault_coolant_leak
+# Venting costs one crate from the live vault count.
+ev_mark
+choose 1 1
+expect ev_tech_gain == -1
+# The category cap: after one Unavoidable event, no trigger picks it again.
+expecteligible vault_coolant_leak 0
+ev_set MaxUnavoidablePerRun 2
+expecteligible vault_coolant_leak 1
+ev_set MaxUnavoidablePerRun 1
+# The other choices: crew with hull damage, or money.
+event vault_coolant_leak
+ev_mark
+choose 3 1
+expect ev_money_gain < 0
+expect ev_tech_gain == 0
+event vault_coolant_leak
+choose 2 2
+quit
