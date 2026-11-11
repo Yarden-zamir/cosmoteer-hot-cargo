@@ -96,14 +96,32 @@ public static class ChainsArea
             RequireRun().Game.NetManager.EnqueueInput(new MissionLogTab.MPAbandonMissionInput(m));
             Autotest.Wait(2);
         };
+        // chain_goto [tag]: moves the player ships near the first ship with the tag (default hc_ch_enemy), so ships in stasis come alive.
+        Autotest.Commands["chain_goto"] = arg =>
+        {
+            var sim = RequireSim();
+            string tag = arg.Length > 0 ? arg : "hc_ch_enemy";
+            var target = SimQueries.TaggedShips(sim, new(tag)).FirstOrDefault();
+            if (target == default) throw new InvalidOperationException($"no ship tagged {tag}");
+            float offset = 900f;
+            foreach (var ship in sim.Ships.HumanPlayerSignificantShips.ToList())
+            {
+                Autotest.Teleport(ship, target.Location + new Vector2(offset, 0));
+                offset += 2 * ship.WorldBoundingRadius + 100f;
+            }
+            Autotest.Wait(3);
+        };
         // chain_kill [tag]: removes the live ships with the tag (default hc_ch_enemy, the enemies of stage missions).
         // Removing hc_ch_cargo destroys a protected transport, so its ProtectShips objective fails.
         Autotest.Commands["chain_kill"] = arg =>
         {
             var sim = RequireSim();
             int n = 0;
-            foreach (var t in SimQueries.TaggedShips(sim, new(arg.Length > 0 ? arg : "hc_ch_enemy")))
+            var tag = new Cosmoteer.Data.ID<Cosmoteer.Generators.Simulation.SimObjectSpawner>(arg.Length > 0 ? arg : "hc_ch_enemy");
+            foreach (var t in SimQueries.TaggedShips(sim, tag))
                 if (t.Live is { } ship) { sim.Ships.Remove(ship, dispose: true, handleLostShip: false); n++; }
+            // Ships in stasis too: removing the spawner counts as a kill for mission objectives.
+            foreach (var spawner in sim.Stasis.Where(sp => sp.HasTag(tag)).ToList()) { sim.Stasis.RemoveStasisSpawner(spawner); n++; }
             Log.Info($"AUTOTEST removed {n} ships tagged {(arg.Length > 0 ? arg : "hc_ch_enemy")}");
             Autotest.Wait(2);
         };
@@ -167,7 +185,10 @@ public static class ChainsArea
             var lines = new List<(Halfling.Gui.Components.Text.ITextProvider Text, Halfling.Gui.Components.Text.ITextProvider? Tooltip)>();
             m.GetRewardDisplayLines(lines);
             string name = EventView.Plain(m.NameAndInfo.Text), desc = EventView.Plain(m.Description?.Text ?? "");
-            Log.Info($"AUTOTEST CHAIN VIEW {name}\n{desc}\n  {string.Join("\n  ", lines.Select(l => EventView.Plain(l.Text.Text)))}");
+            var objectives = new List<Cosmoteer.Modes.Career.Missions.Objectives.Objective.DisplayLine>();
+            m.GetObjectiveDisplayLines(objectives);
+            Log.Info($"AUTOTEST CHAIN VIEW {name} ({m.Completion})\n{desc}\n  {string.Join("\n  ", lines.Select(l => EventView.Plain(l.Text.Text)))}" +
+                     $"\n  {string.Join("\n  ", objectives.Select(o => $"[{o.State}] {EventView.Plain(o.Text.Text)}"))}");
             Autotest.Check(name.Contains("[Chain]") && desc.Length > 0 && lines.Any(l => l.Text.Text.Contains("Story chain")), "the stage offer shows the chain label, a description and the chain line");
         };
         // chain_spawnall: spawns the mission of every mission stage of every chain at the test station, to catch content errors.

@@ -5,6 +5,7 @@ wait 8
 expectevent getaway
 choose 3 1
 ev_set Enabled false
+godmode
 eventviewall
 chain_force quiet_defector
 chain_tostation
@@ -17,6 +18,7 @@ expect chain_accepted == 1
 chain_mark
 ev_mark
 # The transport dies: ProtectShips fails, so the mission fails with "lost" and the chain ends with heat and a reputation loss.
+chain_goto hc_ch_cargo
 chain_kill hc_ch_cargo
 wait 3
 expectstage end

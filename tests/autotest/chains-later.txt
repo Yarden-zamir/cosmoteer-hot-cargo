@@ -11,9 +11,12 @@ chain_tostation
 chain_accept
 expect chain_accepted == 1
 # The drone dies; the mission waits for the payment at the station (ReceiveRewards), like a vanilla bounty.
+chain_goto
 chain_kill
 wait 2
 expectstage recorder
+chain_tostation
+chainview
 chain_pay
 wait 2
 expectstage playback
@@ -32,6 +35,7 @@ wait 12
 expect chain_accepted == 1
 ev_mark
 # Careful targeting: the escorts die, the transport lives.
+chain_goto
 chain_kill
 wait 3
 expectstage end
