@@ -1,0 +1,553 @@
+// Hot Cargo events (EVENTS.md). C# reads this file (Events/EventLibrary.cs) on first use; a change needs a game restart.
+// Units:
+//   Money, Cost.Money, Need.Money: event money units. 1 = the middle of a standard mission's pay at the sector tier, with the reward factors.
+//     On the default economy, 1 unit at tier 1 is about 10,000 credits, the value of one Stolen Tech in sector 1.
+//   MoneyTech: × the tech value when the event opened.  Fame: × a standard mission's fame (fame adds heat through the normal rule).
+//   Heat: heat points (a stage every 25).  Tech, Crew: units.  Resources: { ID; Amount; PerTier } with PerTier added per tier above 1.
+// A choice's Cost is paid for sure and is shown on its button. A Need greys the button out with the reason, or hides it (HideIfUnmet).
+// Outcome weights: Weight + WeightPerHeat × heat + WeightPerTech × fleet tech, never below 0.
+// Spawn names are generators in spawns.rules. Next opens another event as a follow-up page. Flags carry a story between events.
+Events
+[
+	// ---- Start
+
+	{
+		ID = getaway
+		Trigger = Start
+		Title = "Clean Getaway?"
+		Text = "The lab's alarms fade behind you. Six crates of prototype tech sit in your vault, and every one carries a corporate tracking tag. Somewhere, a security chief is already pulling up your hull number.\n\nThe jump drive is warm."
+		Choices
+		[
+			{
+				Text = "Buy forged transponder codes from a dockside forger."
+				Cost { Money = 0.5 }
+				Outcomes
+				[
+					{ Text = "The forger takes your credits and hands you a chip. \"One use. Make it count.\""; SetFlags = [fake_codes] }
+				]
+			}
+			{
+				Text = "Sell one crate to the getaway crew's fence before you go."
+				Need { Tech = 1 }
+				Cost { Tech = 1 }
+				Outcomes
+				[
+					{ Text = "The fence pays well for a crate this fresh. One less tag broadcasts your position."; MoneyTech = 1.2 }
+				]
+			}
+			{
+				Text = "Keep every crate. Fly."
+				Outcomes
+				[
+					{ Text = "You punch it. Six crates, six tags, one very angry corporation." }
+				]
+			}
+		]
+	}
+
+	// ---- Arrival
+
+	{
+		ID = distress_beacon
+		Trigger = Arrival
+		Title = "Distress Beacon"
+		Text = "A looped distress call cuts through the static: a mining tender with a failing reactor and six crew still aboard. The voice sounds tired. The beacon is close."
+		Choices
+		[
+			{
+				Text = "Answer the call."
+				Outcomes
+				[
+					{ Weight = 50; Text = "The crew is real and very grateful. They pay you from the ore money and promise to forget your hull number."; Money = 0.4; Fame = 0.3 }
+					{ Weight = 25; Text = "You get them off before the reactor goes. One of their engineers asks to stay. \"You run fast. I like fast.\""; Crew = 1; Fame = 0.3 }
+					{ Weight = 25; Text = "The tender is an empty hull with a transmitter bolted to it. Two pirate ships drop out of the dark."; Spawn = Raiders }
+				]
+			}
+			{
+				Text = "Scan the tender before you go in."
+				Need { Parts = ["cosmoteer.sensor_array"] }
+				Outcomes
+				[
+					{ Weight = 70; Text = "Six heat signatures and a real reactor leak. You pull them out with minutes to spare. The captain pays from the ore money."; Money = 0.5; Fame = 0.3 }
+					{ Weight = 30; Text = "Your scan shows an empty hull and two ships running dark behind an asteroid. You leave them waiting." }
+				]
+			}
+			{
+				Text = "Ignore it. You have your own problems."
+				Outcomes [ { Text = "You leave the beacon looping behind you." } ]
+			}
+		]
+	}
+
+	{
+		ID = stranded_freighter
+		Trigger = Arrival
+		Title = "Running on Empty"
+		Text = "A freighter drifts dead in the lane, its captain hailing on every channel. \"We're dry. Give us enough hyperium to reach the next station and we'll pay what we can.\""
+		Choices
+		[
+			{
+				Text = "Give them the fuel."
+				Cost { Resources = [{ ID = hyperium; Amount = 20; PerTier = 5 }] }
+				Outcomes
+				[
+					{ Text = "The captain thanks you, then lowers her voice. \"Corporate cutters asked about a ship like yours. I'll tell them you went the other way.\""; Fame = 0.4; Heat = -10 }
+				]
+			}
+			{
+				Text = "Sell it to them at three times the price."
+				Cost { Resources = [{ ID = hyperium; Amount = 20; PerTier = 5 }] }
+				Outcomes
+				[
+					{ Weight = 70; Text = "They pay. They do not thank you."; Money = 0.8 }
+					{ Weight = 30; Text = "They pay, and then file a report about you on an open channel."; Money = 0.8; Heat = 8 }
+				]
+			}
+			{
+				Text = "Take their cargo instead."
+				Outcomes
+				[
+					{ Weight = 60; Text = "Their hold is full of machine parts. Their distress call now has your ship's name in it."; Resources = [{ ID = steel; Amount = 30; PerTier = 6 }, { ID = coil; Amount = 10; PerTier = 2 }]; Heat = 15 }
+					{ Weight = 40; Text = "Two ships answer their call before you finish. They are not police."; Spawn = Raiders; Heat = 10 }
+				]
+			}
+			{
+				Text = "Leave them."
+				Outcomes [ { Text = "Their hails follow you for a while, then stop." } ]
+			}
+		]
+	}
+
+	{
+		ID = corporate_checkpoint
+		Trigger = Arrival
+		Weight = 8
+		WeightPerHeat = 0.15
+		Need { MinSector = 2; MinHeat = 10 }
+		Title = "Corporate Checkpoint"
+		Text = "A corporate customs cutter sits across the jump lane, its scanner already sweeping. \"Unidentified vessel, hold position for a routine cargo inspection.\"\n\nNothing about this is routine."
+		Choices
+		[
+			{
+				Text = "Transmit the forged transponder codes."
+				Need { Flags = [fake_codes] }
+				HideIfUnmet = true
+				Outcomes
+				[
+					{ Text = "The cutter's scanner blinks green. \"Apologies for the delay, Inspector.\" The codes burn out after one use, but the lane is yours."; Heat = -20; ClearFlags = [fake_codes] }
+				]
+			}
+			{
+				Text = "Offer the inspector a private fee."
+				Cost { Money = 0.6 }
+				Outcomes
+				[
+					{ Weight = 80; Text = "The inspector counts it twice and waves you through. Your file goes in a drawer, for now."; Heat = -10 }
+					{ Weight = 20; Text = "The inspector takes your money and calls it in anyway."; Heat = 10 }
+				]
+			}
+			{
+				Text = "Submit to the scan and hope."
+				Outcomes
+				[
+					{ Weight = 60; WeightPerTech = -8; Text = "The scanner sweeps the vault twice and finds only old shielding. You fly on." }
+					{ Weight = 20; WeightPerTech = 8; Text = "The scanner stops on your vault and stays there."; Next = checkpoint_caught }
+				]
+			}
+			{
+				Text = "Run the checkpoint."
+				Outcomes
+				[
+					{ Weight = 60; Text = "You punch through before the cutter can lock on. They will report it."; Heat = 15 }
+					{ Weight = 40; Text = "The cutter was not alone."; Heat = 10; Spawn = CorporatePatrol }
+				]
+			}
+		]
+	}
+
+	{
+		ID = checkpoint_caught
+		Title = "Corporate Checkpoint"
+		Text = "\"Cargo mismatch. Stand by for boarding.\" Two more cutters power up behind the first."
+		Choices
+		[
+			{
+				Text = "Hand over one crate as evidence and take the fine."
+				Need { Tech = 1 }
+				Cost { Tech = 1 }
+				Outcomes [ { Text = "They seize a crate and let you go with a warning. You both know the warning is a lie."; Heat = 5 } ]
+			}
+			{
+				Text = "Break away and fight."
+				Outcomes [ { Text = "You do not stand by. The cutters open fire."; Heat = 20; Spawn = CorporatePatrol } ]
+			}
+		]
+	}
+
+	{
+		ID = defector
+		Trigger = Arrival
+		Need { MinSector = 3 }
+		Title = "The Defector"
+		Text = "An escape pod with a corporate logo hails you on a private band. \"My name is Dr. Ines Varga. I helped design what you stole. Get me out of here and I can make those tracking tags go quiet.\""
+		Choices
+		[
+			{
+				Text = "Bring her aboard."
+				Outcomes
+				[
+					{ Weight = 75; Text = "Varga goes straight to your vault with a toolkit. An hour later the tags whisper instead of shout."; Crew = 1; Heat = -20; SetFlags = [defector] }
+					{ Weight = 25; WeightPerHeat = 0.2; Text = "Varga smiles as the hatch seals. \"Sorry. They have my family.\" Her pod beacon was never off."; Heat = 25; Spawn = CorporatePatrol }
+				]
+			}
+			{
+				Text = "Turn her in for the reward."
+				Outcomes
+				[
+					{ Text = "The corporation pays bounties, even to thieves. It also notes the hull that collected one."; Money = 1; Heat = 15 }
+				]
+			}
+			{
+				Text = "Leave the pod drifting."
+				Outcomes [ { Text = "Her voice cuts off as you leave comms range." } ]
+			}
+		]
+	}
+
+	{
+		ID = defector_contact
+		Trigger = Arrival
+		Weight = 30
+		Need { MinSector = 5; Flags = [defector]; Tech = 2 }
+		Title = "Varga's Old Office"
+		Text = "Dr. Varga finds you on the bridge. \"My old research office is in this system. My assistant still has access. He could book a crate back into the company as recovered property. The payment would be very good.\""
+		Choices
+		[
+			{
+				Text = "Sell one crate through her assistant."
+				Need { Tech = 1 }
+				Cost { Tech = 1 }
+				Outcomes
+				[
+					{ Weight = 80; Text = "The crate disappears into the corporate supply chain, booked as recovered. The payment is generous, and nobody is looking for that crate anymore."; MoneyTech = 1.6; Heat = -10 }
+					{ Weight = 20; WeightPerHeat = 0.2; Text = "The assistant was already working for security. The crate is gone, and so is your head start."; Heat = 25; Spawn = CorporatePatrol }
+				]
+			}
+			{
+				Text = "Ask her to clean the tags one more time instead."
+				Outcomes
+				[
+					{ Text = "She works through the night. \"That's all I can do,\" she says. \"After this they'll recognize my work.\""; Heat = -20; ClearFlags = [defector] }
+				]
+			}
+			{
+				Text = "Too risky."
+				Outcomes [ { Text = "Varga nods. \"Probably wise.\"" } ]
+			}
+		]
+	}
+
+	{
+		ID = rival_crew
+		Trigger = Arrival
+		Need { MinSector = 2; Tech = 2 }
+		Title = "The Magpies"
+		Text = "A battered gunship slides out of the sun's glare. \"Captain Rook of the Magpies. Heard you hit the lab. Nice haul.\" A pause. \"One crate and we never met. Otherwise we take the vault.\""
+		Choices
+		[
+			{
+				Text = "Hand over one crate."
+				Need { Tech = 1 }
+				Cost { Tech = 1 }
+				Outcomes [ { Text = "Rook's crew takes the crate and salutes. \"Pleasure doing business.\" One less tag on your trail, at least."; SetFlags = [magpies_paid] } ]
+			}
+			{
+				Text = "Pay them in credits instead."
+				Cost { Money = 1.5 }
+				Outcomes [ { Text = "Rook looks at the figure for a long moment. \"Credits spend too. Fly safe.\"" } ]
+			}
+			{
+				Text = "Fake a vault breach on your own transponder."
+				Need { Parts = ["cosmoteer.sensor_array"] }
+				Outcomes
+				[
+					{ Weight = 60; Text = "Your sensors broadcast a breached, empty vault. Rook laughs. \"Somebody beat us to it.\" The Magpies peel away." }
+					{ Weight = 40; Text = "Rook is quiet for a second too long."; Next = rival_crew_bluff }
+				]
+			}
+			{
+				Text = "Tell Rook to come and take it."
+				Outcomes [ { Text = "Rook sighs. \"Your funeral.\" The Magpies come in hot. Every station in the system has a bounty on them."; Spawn = Magpies } ]
+			}
+		]
+	}
+
+	{
+		ID = rival_crew_bluff
+		Title = "The Magpies"
+		Text = "\"Cute trick,\" Rook says. \"My sensors are better than yours.\" Their guns come up."
+		Choices
+		[
+			{
+				Text = "Hand over one crate."
+				Need { Tech = 1 }
+				Cost { Tech = 1 }
+				Outcomes [ { Text = "Rook takes the crate. \"Next time, don't insult me.\""; SetFlags = [magpies_paid] } ]
+			}
+			{
+				Text = "Fight."
+				Outcomes [ { Text = "So be it. Every station in the system has a bounty on the Magpies."; Spawn = Magpies } ]
+			}
+		]
+	}
+
+	{
+		ID = siege
+		Trigger = Arrival
+		Need { MinSector = 2 }
+		Title = "Freighter Under Fire"
+		Text = "Weapons fire flickers at the edge of your sensors. A freighter is screaming for help: two raiders, and its shields are failing. Nobody else is answering."
+		Choices
+		[
+			{
+				Text = "Go help them."
+				Outcomes [ { Text = "You turn toward the fight. The freighter's captain sends a countdown: four minutes of shields left."; Spawn = Siege } ]
+			}
+			{
+				Text = "Stay out of it. A fight means attention."
+				Outcomes [ { Text = "The freighter's calls stop a few minutes later." } ]
+			}
+		]
+	}
+
+	{
+		ID = odd_merchant
+		Trigger = Arrival
+		Title = "The Odd Merchant"
+		Text = "A ship made of three hulls welded together pulls alongside. Its owner grins through the comm. \"Mystery crate! Could be anything. Could be wonderful. No refunds.\""
+		Choices
+		[
+			{
+				Text = "Buy the crate."
+				Cost { Money = 0.5 }
+				Outcomes
+				[
+					{ Weight = 35; Text = "Processors, still in the factory wrap."; Resources = [{ ID = processor; Amount = 15; PerTier = 3 }] }
+					{ Weight = 20; Text = "Diamonds. Real ones."; Resources = [{ ID = diamond; Amount = 10; PerTier = 2 }] }
+					{ Weight = 20; Text = "A stowaway climbs out, stretches, and asks where her bunk is."; Crew = 1 }
+					{ Weight = 15; Text = "Scrap. You should have expected that." }
+					{ Weight = 10; Text = "The crate is empty, except for a blinking corporate tracker. Clever merchant."; Heat = 15 }
+				]
+			}
+			{
+				Text = "Offer him one tech crate for his whole hold."
+				Need { Tech = 1 }
+				Cost { Tech = 1 }
+				Outcomes [ { Text = "He nearly faints. His whole hold is yours, plus every credit on board."; Money = 0.6; Resources = [{ ID = processor; Amount = 20; PerTier = 4 }, { ID = steel; Amount = 40; PerTier = 8 }] } ]
+			}
+			{
+				Text = "No thanks."
+				Outcomes [ { Text = "\"Your loss!\" The merchant is already hailing someone else." } ]
+			}
+		]
+	}
+
+	// ---- Station
+
+	{
+		ID = the_fence
+		Trigger = Station
+		Need { Tech = 2 }
+		Title = "The Fence"
+		Text = "A message arrives on a band the station does not officially have. \"Heard you carry something hot. I pay below market, but I sell it on in pieces, three systems the other way. The corporation chases the pieces, not you.\""
+		Choices
+		[
+			{
+				Text = "Sell one crate through the fence."
+				Need { Tech = 1 }
+				Cost { Tech = 1 }
+				Outcomes [ { Text = "The crate leaves on a garbage scow. Credits arrive an hour later, and so does a lot of corporate traffic, somewhere else."; MoneyTech = 0.75; Heat = -20 } ]
+			}
+			{
+				Text = "Sell two crates."
+				Need { Tech = 1 }
+				Cost { Tech = 2 }
+				Outcomes [ { Text = "Two crates gone. Your sensor screen is very quiet."; MoneyTech = 1.5; Heat = -35 } ]
+			}
+			{
+				Text = "Not today."
+				Outcomes [ { Text = "\"Offer stands. For now.\"" } ]
+			}
+		]
+	}
+
+	{
+		ID = smuggler_den
+		Trigger = Station
+		Need { MinSector = 2; MinHeat = 20 }
+		Title = "Smugglers' Den"
+		Text = "Behind the ore bay, a smuggler crew runs a quiet business: transponder swaps, hull repaints and long silences. \"We can make you somebody else for a while,\" their boss says. \"It is not cheap.\""
+		Choices
+		[
+			{
+				Text = "Pay for a new transponder and a repaint."
+				Cost { Money = 1 }
+				Outcomes
+				[
+					{ Weight = 85; Text = "You leave with a new name and a dull grey hull. The corporate net loses you for a while."; Heat = -35 }
+					{ Weight = 15; WeightPerHeat = 0.15; Text = "The boss takes your money, then sells your new name to the corporation the same day."; Heat = 10 }
+				]
+			}
+			{
+				Text = "Trade a crate for the full treatment, no questions."
+				Need { Tech = 1 }
+				Cost { Tech = 1 }
+				Outcomes [ { Text = "The boss opens the crate, whistles, and shuts it fast. \"You were never here.\""; Heat = -50 } ]
+			}
+			{
+				Text = "Leave."
+				Outcomes [ { Text = "\"Come back when they're closer,\" the boss says. \"You will.\"" } ]
+			}
+		]
+	}
+
+	{
+		ID = informant
+		Trigger = Station
+		Need { MinSector = 2 }
+		Title = "The Informant"
+		Text = "A dock worker falls into step beside your crew. \"Corporate hunters asked about you an hour ago. For a price, I can tell you where they plan to wait.\""
+		Choices
+		[
+			{
+				Text = "Pay for the information."
+				Cost { Money = 0.3 }
+				Outcomes [ { Text = "The routes check out. You plot a course around the ambush."; Heat = -15 } ]
+			}
+			{
+				Text = "Lean on him until he talks."
+				Need { Crew = 3 }
+				Outcomes
+				[
+					{ Weight = 55; Text = "He talks fast, and for free."; Heat = -15 }
+					{ Weight = 45; Text = "He talks. Then he goes and talks to the corporation."; Heat = 15 }
+				]
+			}
+			{
+				Text = "Tell him to get lost."
+				Outcomes [ { Text = "He shrugs and disappears into the crowd." } ]
+			}
+		]
+	}
+
+	// ---- Signal
+
+	{
+		ID = derelict_survey
+		Trigger = Signal
+		Title = "Derelict Survey Ship"
+		Text = "The signal leads to a survey ship, dark and slowly spinning. The hull is intact, but the reactor housing glows a faint, unhealthy blue."
+		Choices
+		[
+			{
+				Text = "Send a salvage team aboard."
+				Need { Crew = 2 }
+				Outcomes
+				[
+					{ Weight = 50; Text = "The team strips the cargo hold clean."; Resources = [{ ID = steel; Amount = 40; PerTier = 8 }, { ID = coil; Amount = 10; PerTier = 2 }] }
+					{ Weight = 25; Text = "Deep in the computer core: survey data that any station will buy."; Money = 0.6 }
+					{ Weight = 25; Text = "The reactor flares while the team is aboard. They get out, but not all of them."; Crew = -1; Resources = [{ ID = steel; Amount = 20; PerTier = 4 }] }
+				]
+			}
+			{
+				Text = "Cut it open from outside."
+				Outcomes
+				[
+					{ Weight = 60; Text = "Your cutters peel armor plating off by the ton."; Resources = [{ ID = steel; Amount = 30; PerTier = 6 }] }
+					{ Weight = 40; Text = "The reactor housing ruptures, and the blast catches your hull."; HullDamage = 0.3 }
+				]
+			}
+			{
+				Text = "Leave it."
+				Outcomes [ { Text = "Some things are better left dark." } ]
+			}
+		]
+	}
+
+	{
+		ID = old_handshake
+		Trigger = Signal
+		Title = "Old Handshake"
+		Text = "The signal repeats a corporate authentication request. It is old, very old. In your vault, the stolen tech starts to hum in answer."
+		Choices
+		[
+			{
+				Text = "Let the stolen tech answer."
+				Need { Tech = 1; VaultSpace = 1 }
+				Outcomes
+				[
+					{ Weight = 35; Text = "A hidden cache opens. Inside: a sealed crate, the same make as the ones in your vault."; Tech = 1 }
+					{ Weight = 35; Text = "A dormant security drone powers up and turns toward you."; Spawn = Drone }
+					{ Weight = 30; Text = "The answer goes out on every corporate band at once."; Heat = 20 }
+				]
+			}
+			{
+				Text = "Record it and sell the recording."
+				Outcomes [ { Text = "A data broker pays well for old corporate codes."; Money = 0.3 } ]
+			}
+			{
+				Text = "Move on."
+				Outcomes [ { Text = "The request repeats behind you, patient as ever." } ]
+			}
+		]
+	}
+
+	{
+		ID = hunter_wreck
+		Trigger = Signal
+		Need { MinSector = 3 }
+		Title = "Hunter Wreck"
+		Text = "A corporate hunter, freshly dead. Its hull is torn open by weapons you do not recognize. Its flight recorder is still blinking."
+		Choices
+		[
+			{
+				Text = "Pull the flight recorder."
+				Need { Crew = 1 }
+				Outcomes
+				[
+					{ Weight = 75; Text = "The recorder holds the hunters' search pattern for this sector. You plot around it."; Heat = -25 }
+					{ Weight = 25; Text = "The recorder was wired to a charge. You keep the data, and some of the shrapnel."; Heat = -10; HullDamage = 0.2 }
+				]
+			}
+			{
+				Text = "Strip its armor."
+				Outcomes [ { Text = "Corporate plating, still warm."; Resources = [{ ID = steel; Amount = 40; PerTier = 8 }, { ID = tristeel; Amount = 4; PerTier = 1 }] } ]
+			}
+			{
+				Text = "Leave. Whatever killed it may come back."
+				Outcomes [ { Text = "You leave the wreck to its silence." } ]
+			}
+		]
+	}
+
+	// The fallback, so that a signal always shows something.
+	{
+		ID = ghost_signal
+		Trigger = Signal
+		Weight = 2
+		MaxPerRun = 0
+		Title = "Ghost Signal"
+		Text = "The signal fades as you arrive. Whatever sent it is gone. Only scattered debris remains."
+		Choices
+		[
+			{
+				Text = "Sweep the debris."
+				Outcomes [ { Text = "Your crew collects what is worth collecting."; Resources = [{ ID = steel; Amount = 10; PerTier = 2 }] } ]
+			}
+			{
+				Text = "Move on."
+				Outcomes [ { Text = "You leave the debris to drift." } ]
+			}
+		]
+	}
+]

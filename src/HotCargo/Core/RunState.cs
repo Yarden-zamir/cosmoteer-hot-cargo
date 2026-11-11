@@ -31,4 +31,6 @@ public sealed class RunState
     [Serialize(Optional = true)] public string TunablesHash = "";
     /// <summary>Last fleet tech count seen in a tick. Shown in the overlay and used by the heat multiplier.</summary>
     [Serialize(Optional = true)] public int FleetTech;
+    /// <summary>Events area state: seen events, flags and the pending event page.</summary>
+    [Serialize(Optional = true)] public Events.EventsState Events = new();
 }

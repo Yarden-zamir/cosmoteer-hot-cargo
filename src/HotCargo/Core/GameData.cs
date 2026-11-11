@@ -15,7 +15,26 @@ public static class GameData
         [Serialize] public int Fame;
     }
 
+    [ReflectiveSerialization(Explicit = true)]
+    sealed class TierMoney
+    {
+        [Serialize] public int Tier;
+        [Serialize] public Halfling.Range<int> Money;
+    }
+
     static Dictionary<int, int>? _standardMissionFame;
+    static Dictionary<int, int>? _standardMissionMoney;
+
+    /// <summary>
+    /// Middle of the money range of a standard mission at a tier, from TIER_TABLES/StandardMoneyPerTier, before reward factors.
+    /// Same limit as StandardMissionFame: reads the vanilla file.
+    /// </summary>
+    public static int StandardMissionMoney(int tier)
+    {
+        _standardMissionMoney ??= LoadTable<TierMoney>("StandardMoneyPerTier").ToDictionary(r => r.Tier, r => (r.Money.Min + r.Money.Max) / 2);
+        int clamped = Math.Clamp(tier, _standardMissionMoney.Keys.Min(), _standardMissionMoney.Keys.Max());
+        return _standardMissionMoney[clamped];
+    }
 
     /// <summary>
     /// Fame of a standard mission at a tier, from TIER_TABLES/StandardFamePerTier in the vanilla data.
@@ -28,14 +47,18 @@ public static class GameData
         return _standardMissionFame[clamped];
     }
 
-    static Dictionary<int, int> LoadStandardMissionFame()
+    static T[] LoadTable<T>(string name)
     {
         string path = (string)(Paths.DataFolder / "modes/career/tier_tables.rules");
-        var file = new OTFile(path);
-        var rows = App.ObjectTextSerializer.ReadFromPath<TierFame[]>(file, "StandardFamePerTier")
-            ?? throw new InvalidDataException($"StandardFamePerTier missing in {path}");
-        if (rows.Length == 0) throw new InvalidDataException($"StandardFamePerTier is empty in {path}");
-        var map = rows.ToDictionary(r => r.Tier, r => r.Fame);
+        var rows = App.ObjectTextSerializer.ReadFromPath<T[]>(new OTFile(path), name)
+            ?? throw new InvalidDataException($"{name} missing in {path}");
+        if (rows.Length == 0) throw new InvalidDataException($"{name} is empty in {path}");
+        return rows;
+    }
+
+    static Dictionary<int, int> LoadStandardMissionFame()
+    {
+        var map = LoadTable<TierFame>("StandardFamePerTier").ToDictionary(r => r.Tier, r => r.Fame);
         Log.Info($"standard mission fame per tier: {string.Join(", ", map.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key}={kv.Value}"))}");
         return map;
     }

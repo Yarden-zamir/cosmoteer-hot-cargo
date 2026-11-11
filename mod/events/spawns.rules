@@ -1,0 +1,280 @@
+// Ships that event outcomes spawn (Spawn = <name> in events.rules). C# reads this file (Events/EventLibrary.cs) on first use.
+// It is not part of the game rules tree, so "&/" references do not work here. Use "&<./Data/...>" paths.
+// The root location is the center of the player fleet. A change here needs a game restart.
+// Tags start with hc_ev_ so that tests can count the ships (autotest command expecttagged).
+
+// Two pirates, one tier below the system. A lure or a robbery that goes wrong.
+Raiders
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_ev_raider]
+			Count = 2
+			Distance = [1500, 2000]
+			Allegiance = Unique
+			SynchronizeAllegiance = true
+			SuppressLocationAssertions = true
+			FamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+			MaxFamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				Tier = -1
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 800
+				TargetAcquireRangeFromOrigin = 4000
+				TargetUnacquireRangeFromOrigin = 6000
+			}
+		}
+	]
+}
+
+// Two corporate ships at the system tier, with the hunter AI and its tactics. They prefer ships with Tech Vaults.
+// They are not tagged hc_hunter, so they do not count toward MaxLiveHunters and keep their own player index.
+CorporatePatrol
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_ev_corp]
+			Count = 2
+			Distance = [1800, 2400]
+			Allegiance = Unique
+			SynchronizeAllegiance = true
+			SuppressLocationAssertions = true
+			FamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+			MaxFamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+			}
+			AI
+			{
+				Type = HotCargoHunter
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 800
+				TargetAcquireRangeFromOrigin = 5000
+				TargetUnacquireRangeFromOrigin = 7000
+			}
+		}
+	]
+}
+
+// A rival thief crew: one fleet at the system tier with the hunter AI, so they go for the vault.
+// The mission is added straight to the log (like a vanilla ambush) and pays a bounty when the fleet is gone.
+Magpies
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_ev_magpie]
+			Distance = [1600, 2200]
+			Allegiance = Unique
+			SynchronizeAllegiance = true
+			SuppressLocationAssertions = true
+			FamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+			MaxFamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+				FleetTierRemapTable = &<./Data/modes/career/fleet_tier_remap_table.rules>/FleetTierRemapTable
+			}
+			AI
+			{
+				Type = HotCargoHunter
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 800
+				TargetAcquireRangeFromOrigin = 5000
+				TargetUnacquireRangeFromOrigin = 7000
+			}
+			SubSpawners
+			[
+				{
+					Type = Mission
+					Metatype = HotCargoEventRivals
+					SpawnAt = Player
+					Faction = None
+					Objectives
+					[
+						{
+							Type = DefeatShips
+							TargetsTag = { Tag=hc_ev_magpie; LimitToFleet=true; }
+							AutoDiscoverTargetArea = true
+							TierCombineMode = ValueSum
+							AllowSurrender = false
+						}
+					]
+					Rewards
+					[
+						{
+							Type = Money
+							MoneyPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMoneyPerTier
+							RoundToMultiple = 500
+						}
+					]
+				}
+			]
+		}
+	]
+}
+
+// A freighter under raider attack, 2,000 to 2,600 from the fleet. The mission fails if the freighter dies or time runs out.
+Siege
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_ev_siege_ship]
+			Distance = [2000, 2600]
+			Allegiance = FactionCivilian
+			SuppressLocationAssertions = true
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [trade]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 200
+				TargetAcquireRangeFromOrigin = 600
+				TargetUnacquireRangeFromOrigin = 800
+			}
+			SubSpawners
+			[
+				{
+					Type = Ships
+					Tags = [hc_ev_siege_raider]
+					Count = 2
+					Distance = [700, 1000]
+					Allegiance = Unique
+					SynchronizeAllegiance = true
+					SuppressLocationAssertions = true
+					FamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+					MaxFamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+					ShipCriteria
+					{
+						UseLocalFactionWeights = true
+						UseTierField = true
+						Tier = -1
+						AllowTierRangeExpansion = true
+						Tags = [combat]
+					}
+					AI
+					{
+						Type = Normal
+						ChanceToConsiderSurrenderingToPlayer = 0
+						PatrolOriginTag = { Mode=Latest; Tag=hc_ev_siege_ship; }
+						PatrolRadius = 500
+						TargetAcquireRangeFromOrigin = 2500
+						TargetUnacquireRangeFromOrigin = 3500
+					}
+				}
+				{
+					Type = Mission
+					Metatype = HotCargoEventSiege
+					SpawnAt = Player
+					Faction = OwnerOfTag
+					FactionTag = { Mode=Latest; Tag=hc_ev_siege_ship; }
+					OkayIfFactionTagNotFound = true
+					Objectives
+					[
+						{
+							Type = TimeLimit
+							TimeLimit = 240
+							StartOnCreation = true
+							SubObjectives
+							[
+								{
+									Type = DefeatShips
+									TargetsTag = { Tag=hc_ev_siege_raider; }
+									AutoDiscoverTargetArea = true
+									TierCombineMode = ValueSum
+									AllowSurrender = false
+								}
+								{
+									Type = ProtectShips
+									TargetsTag = { Tag=hc_ev_siege_ship; Max=1; }
+								}
+							]
+						}
+					]
+					// Like a fleet bounty plus a rescue bonus: the raiders also pay kill fame.
+					Rewards
+					[
+						{
+							Type = Money
+							MoneyPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMoneyPerTier
+							MoneyPerTierMultiplier = 1.5
+							RoundToMultiple = 500
+						}
+						{
+							Type = Fame
+							FamePerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+							MaxFamePerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+						}
+						{
+							Type = Reputation
+							ReputationPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardReputationPerTier
+							ReputationPerTierMultiplier = 2
+						}
+					]
+				}
+			]
+		}
+	]
+}
+
+// A dormant corporate security drone: one hostile ship one tier above the system.
+Drone
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_ev_drone]
+			Distance = [1200, 1600]
+			Allegiance = Unique
+			SuppressLocationAssertions = true
+			FamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+			MaxFamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				Tier = 1
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+			}
+			AI
+			{
+				Type = HotCargoHunter
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 600
+				TargetAcquireRangeFromOrigin = 4000
+				TargetUnacquireRangeFromOrigin = 6000
+			}
+		}
+	]
+}

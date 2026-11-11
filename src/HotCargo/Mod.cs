@@ -22,6 +22,7 @@ public static class Mod
             Hunters.HunterArea.Register();
             Missions.MissionArea.Register();
             Tactics.TacticsArea.Register();
+            Events.EventsArea.Register();
             Log.Info($"harmony patched {harmony.GetPatchedMethods().Count()} methods; mod root {ModRoot}");
         }
         catch (Exception ex)
