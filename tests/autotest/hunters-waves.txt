@@ -1,0 +1,53 @@
+# Strike stage scaling and waves (spec 190-192): fewer and lower-tier ships in early sectors, one group at a time, FTL fuel on every hunter.
+# hunterwaves counts spawned groups; it does not drop when the starter ship destroys a hunter.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+tacticlog on
+# Calls pull waiting groups forward; this test checks the plain timing.
+aiset CallEnabled false
+stageset Strike WaveGapSeconds 10
+# Sector 1: 2 ships of tier + 1, one now and one after the gap.
+spawnstage Strike
+wait 1
+hunters early
+expect hunters == 1
+expect hunterwaves == 1
+expect hunterspending == 1
+expect huntertiermax <= 2
+expect hunterfuelmin >= 40
+wait 4
+expect hunterwaves == 1
+wait 9
+hunters early_second
+expect hunterwaves == 2
+expect hunterspending == 0
+expect hunterfuelmin >= 40
+# Last sector: 3 ships of tier + 2, three groups.
+sectorindex 8
+spawnstage Strike
+wait 1
+hunters late
+expect hunterwaves == 3
+expect hunterspending == 2
+wait 22
+hunters late_all
+expect hunterwaves == 5
+expect hunterspending == 0
+expect hunterfuelmin >= 40
+# Waiting groups survive a save and load.
+stageset Strike WaveGapSeconds 60
+spawnstage Strike
+wait 1
+expect hunterspending == 2
+save waves
+wait 3
+load waves
+wait 2
+expect hunterspending == 2
+# A destroyed hunter drops its fuel: hyperdrive tanks and storage at the vanilla rate, held fuel the same way.
+killhunter held
+wait 2
+expect fuelnuggets > 0
+quit

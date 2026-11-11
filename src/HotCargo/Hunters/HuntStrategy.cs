@@ -55,6 +55,7 @@ internal sealed class HuntStrategy(HuntStrategyRules rules) : AIStrategyModule
     Ship? FindTarget(Ship ship)
     {
         float vaultFactor = Run.Current?.T.Hunters.VaultTargetFactor ?? 1f;
+        var focus = Ai.AiGate.Active(Ai.Behavior.Focus, hunter: true);
         Ship? best = null;
         float bestScore = 0f;
         foreach (var candidate in HunterOrders.Sim(ship).Ships.HumanPlayerSignificantShips)
@@ -62,6 +63,8 @@ internal sealed class HuntStrategy(HuntStrategyRules rules) : AIStrategyModule
             if (!ship.IsEnemiesWith(candidate) || !candidate.CanBeAttackedBy(ship)) continue;
             float score = 1f / Math.Max(HunterOrders.EdgeDistance(ship, candidate), 1f);
             if (CarriesVault(candidate)) score *= vaultFactor;
+            // Spec 200: weakened player ships draw the hunters.
+            if (focus is not null) score *= Ai.AiModel.FocusFactor(HunterOrders.HealthFraction(candidate), focus.FocusWeakFactor);
             if (candidate == _target) score *= rules.TargetSwitchThresholdFactor;
             if (score > bestScore) { best = candidate; bestScore = score; }
         }

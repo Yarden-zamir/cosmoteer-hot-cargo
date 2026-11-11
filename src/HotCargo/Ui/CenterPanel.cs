@@ -23,20 +23,46 @@ static class CenterPanel
         Open.Clear();
     }
 
-    public static LayoutBox Show(GameRoot game, string title, Color titleColor, string bodyXml, string button)
+    /// <summary>Space kept between a panel and each side of the screen.</summary>
+    const float ScreenMargin = 20f;
+
+    /// <summary>
+    /// A blurred panel box centered on the screen, with an automatic height. Its width is <paramref name="width"/>,
+    /// or the screen width minus the margins on a smaller screen; it is checked each frame, so a resize keeps it on screen.
+    /// The edges are set on both sides of the center anchor; a Width alone starts the box at the center and runs it off the right edge.
+    /// </summary>
+    public static LayoutBox NewBox(float width)
     {
         var box = new LayoutBox
         {
             AnchorRect = AnchorPresets.Center,
-            Width = 620f,
+            Left = -width / 2f,
+            Right = width / 2f,
             InputBlockMode = InputBlockMode.Auto,
+        };
+        box.BeforeFrameDraw += (_, _) =>
+        {
+            if (box.Root?.RootWidget is not { } root) return;
+            float w = Math.Min(width, root.ScreenRect.Width - 2f * ScreenMargin);
+            if (w <= 0f || Math.Abs(box.Right - box.Left - w) < 0.5f) return;
+            box.Left = -w / 2f;
+            box.Right = w / 2f;
         };
         box.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
         box.AutoSize.Anchor = new Vector2(0.5f, 0.5f);
         box.Children.LayoutAlgorithm = LayoutAlgorithms.StretchTopToBottom;
         box.Children.BorderPadding = new Borders(30f, 24f, 30f, 24f);
-        box.Children.WidgetPadding = new Vector2(16f);
         WidgetRules.AddBlur(box);
+        return box;
+    }
+
+    /// <summary>The newest panel. For autotests that check the layout.</summary>
+    internal static LayoutBox? Newest => Open.Count > 0 ? Open[^1].Box : null;
+
+    public static LayoutBox Show(GameRoot game, string title, Color titleColor, string bodyXml, string button)
+    {
+        var box = NewBox(620f);
+        box.Children.WidgetPadding = new Vector2(16f);
 
         var titleLabel = Text(title, 44, center: true);
         titleLabel.TextRenderer.Font = WidgetRules.Instance.ShadowGlowFont;

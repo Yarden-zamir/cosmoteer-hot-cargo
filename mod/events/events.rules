@@ -8,6 +8,8 @@
 // Outcome weights: Weight + WeightPerHeat × heat + WeightPerTech × fleet tech, never below 0.
 // Reputation: × a standard mission's reputation, with the faction that controls the system.  BuyerPrice: multiplies the Buyer price for the run.
 // Need extras: FlagAges = [{ Flag; MinSectors }], MinSectorsLeft / MaxSectorsLeft (sectors before the Buyer).  Cost.MoneyPerHeat: money units per heat point.
+// Text tokens: {crates} = the live fleet tech count ("1 crate", "7 crates"). Do not write counts that live elsewhere
+// (spawn counts in spawns.rules, the starting tech): they drift. Counts from the same choice (its Cost) are fine.
 // Spawn names are generators in spawns.rules. Next opens another event as a follow-up page. Flags carry a story between events.
 Events
 [
@@ -17,7 +19,7 @@ Events
 		ID = getaway
 		Trigger = Start
 		Title = "Clean Getaway?"
-		Text = "The lab's alarms fade behind you. Six crates of prototype tech sit in your vault, and every one carries a corporate tracking tag. Somewhere, a security chief is already pulling up your hull number.\n\nThe jump drive is warm."
+		Text = "The lab's alarms fade behind you. Your vault holds {crates} of prototype tech, and every one carries a corporate tracking tag. Somewhere, a security chief is already pulling up your hull number.\n\nThe jump drive is warm."
 		Choices
 		[
 			{
@@ -41,7 +43,7 @@ Events
 				Text = "Keep every crate. Fly."
 				Outcomes
 				[
-					{ Text = "You punch it. Six crates, six tags, one very angry corporation." }
+					{ Text = "You punch it. {crates}, one tracking tag each, and one very angry corporation." }
 				]
 			}
 		]
@@ -60,9 +62,10 @@ Events
 				Text = "Answer the call."
 				Outcomes
 				[
-					{ Weight = 50; Text = "The crew is real and very grateful. They pay you from the ore money and promise to forget your hull number."; Money = 0.4; Fame = 0.3 }
-					{ Weight = 25; Text = "You get them off before the reactor goes. One of their engineers asks to stay. \"You run fast. I like fast.\""; Crew = 1; Fame = 0.3 }
-					{ Weight = 25; Text = "The tender is an empty hull with a transmitter bolted to it. Two pirate ships drop out of the dark."; Spawn = Raiders }
+					{ Weight = 40; Text = "The crew is real and very grateful. They pay you from the ore money and promise to forget your hull number."; Money = 0.4; Fame = 0.3 }
+					{ Weight = 20; Text = "You get them off before the reactor goes. One of their engineers asks to stay. \"You run fast. I like fast.\""; Crew = 1; Fame = 0.3 }
+					{ Weight = 20; Text = "The tender is an empty hull with a transmitter bolted to it. Pirate ships drop out of the dark."; Spawn = Raiders }
+					{ Weight = 20; Text = "The reactor story was a panic. The real trouble is a dead drive."; Next = broken_down }
 				]
 			}
 			{
@@ -70,13 +73,44 @@ Events
 				Need { Parts = ["cosmoteer.sensor_array"] }
 				Outcomes
 				[
-					{ Weight = 70; Text = "Six heat signatures and a real reactor leak. You pull them out with minutes to spare. The captain pays from the ore money."; Money = 0.5; Fame = 0.3 }
-					{ Weight = 30; Text = "Your scan shows an empty hull and two ships running dark behind an asteroid. You leave them waiting." }
+					{ Weight = 55; Text = "Six heat signatures and a real reactor leak. You pull them out with minutes to spare. The captain pays from the ore money."; Money = 0.5; Fame = 0.3 }
+					{ Weight = 25; Text = "Your scan shows an empty hull and ships running dark behind an asteroid. You leave them waiting." }
+					{ Weight = 20; Text = "Your scan shows a cold reactor and a dead drive. Not a trap, just bad luck."; Next = broken_down }
 				]
 			}
 			{
 				Text = "Ignore it. You have your own problems."
 				Outcomes [ { Text = "You leave the beacon looping behind you." } ]
+			}
+		]
+	}
+
+	// From the Career 2.0 dev blog: a distress signal can be a broken-down ship that needs supplies or a tow (spec 88).
+	{
+		ID = broken_down
+		Trigger = Arrival
+		Weight = 8
+		Title = "Dead in Space"
+		Text = "A freighter drifts with its drive dark. Its engineer hails you, hands black with soot. \"Main coupling is fried. We need parts to patch it, or a tow to the nearest station. We can pay either way.\""
+		Choices
+		[
+			{
+				Text = "Hand over repair supplies."
+				Cost { Resources = [{ ID = steel; Amount = 25; PerTier = 5 }, { ID = coil; Amount = 5; PerTier = 1 }] }
+				Outcomes [ { Text = "With your parts, their drive coughs back to life. The captain pays and promises to forget your hull number."; Money = 0.5; Fame = 0.3; Reputation = 0.5 } ]
+			}
+			{
+				Text = "Tow them to the nearest station."
+				Need { Parts = ["cosmoteer.tractor_beam_emitter"] }
+				Outcomes [ { Text = "You lock a tractor beam onto their hull. Pull them to the station and keep them in one piece; the crew pays on arrival."; Spawn = TowJob } ]
+			}
+			{
+				Text = "Strip their cargo while they cannot run."
+				Outcomes [ { Text = "Their hold is full of spare plating. Their distress call now has your ship's name in it."; Resources = [{ ID = steel; Amount = 30; PerTier = 6 }]; Heat = 10; Reputation = -1 } ]
+			}
+			{
+				Text = "Leave them for someone else."
+				Outcomes [ { Text = "Their beacon blinks behind you, patient and hopeful." } ]
 			}
 		]
 	}
@@ -110,7 +144,7 @@ Events
 				Outcomes
 				[
 					{ Weight = 60; Text = "Their hold is full of machine parts. Their distress call now has your ship's name in it."; Resources = [{ ID = steel; Amount = 30; PerTier = 6 }, { ID = coil; Amount = 10; PerTier = 2 }]; Heat = 15 }
-					{ Weight = 40; Text = "Two ships answer their call before you finish. They are not police."; Spawn = Raiders; Heat = 10 }
+					{ Weight = 40; Text = "Ships answer their call before you finish. They are not police."; Spawn = Raiders; Heat = 10 }
 				]
 			}
 			{
@@ -308,12 +342,12 @@ Events
 		Trigger = Arrival
 		Need { MinSector = 2 }
 		Title = "Freighter Under Fire"
-		Text = "Weapons fire flickers at the edge of your sensors. A freighter is screaming for help: two raiders, and its shields are failing. Nobody else is answering."
+		Text = "Weapons fire flickers at the edge of your sensors. A freighter is screaming for help: raiders, and its shields are failing. Nobody else is answering."
 		Choices
 		[
 			{
 				Text = "Go help them."
-				Outcomes [ { Text = "You turn toward the fight. The freighter's captain sends a countdown: four minutes of shields left."; Spawn = Siege } ]
+				Outcomes [ { Text = "You turn toward the fight. The freighter's captain starts a countdown on the open channel. Its shields will not last long."; Spawn = Siege } ]
 			}
 			{
 				Text = "Stay out of it. A fight means attention."
@@ -375,19 +409,19 @@ Events
 				Outcomes
 				[
 					{ Weight = 70; Text = "The buoy chokes on your static. Nobody can see the notice, and nobody can trace the jam."; Heat = -5 }
-					{ Weight = 30; Text = "Someone triangulates the jam. Two ships turn toward its source: you."; Spawn = BountyHunters }
+					{ Weight = 30; Text = "Someone triangulates the jam. Hunters turn toward its source: you."; Spawn = BountyHunters }
 				]
 			}
 			{
 				Text = "Let them come. Bounty hunters have bounties too."
-				Outcomes [ { Text = "Two local hunters take the job. Their own warrants are posted on every station in the system."; Spawn = BountyHunters } ]
+				Outcomes [ { Text = "Local hunters take the job. Their own warrants are posted on every station in the system."; Spawn = BountyHunters } ]
 			}
 			{
 				Text = "Ignore it and keep moving."
 				Outcomes
 				[
 					{ Weight = 50; Text = "The hunters in this system are busy elsewhere. For now." }
-					{ Weight = 50; WeightPerHeat = 0.3; Text = "Two ships drop out of the dark with their weapons warm. \"Nothing personal. The reward is very personal.\""; Spawn = BountyHunters }
+					{ Weight = 50; WeightPerHeat = 0.3; Text = "Ships drop out of the dark with their weapons warm. \"Nothing personal. The reward is very personal.\""; Spawn = BountyHunters }
 				]
 			}
 		]
@@ -399,7 +433,7 @@ Events
 		Weight = 30
 		Need { Tech = 3; FlagAges = [{ Flag = magpies_paid; MinSectors = 2 }] }
 		Title = "The Magpies Return"
-		Text = "A familiar battered gunship, now with two friends. \"Captain Rook again. You paid so nicely last time.\" A pause. \"Two crates now. Inflation.\"\n\nPaying once made you a mark."
+		Text = "A familiar battered gunship, now with friends. \"Captain Rook again. You paid so nicely last time.\" A pause. \"Two crates now. Inflation.\"\n\nPaying once made you a mark."
 		Choices
 		[
 			{
@@ -460,7 +494,7 @@ Events
 		Trigger = Arrival
 		Need { MinSector = 2 }
 		Title = "Pirate Toll Gate"
-		Text = "Mines across the lane and three pirate gunships at the gap. \"Toll gate. We know who you are, and we know the corporation pays for sightings. The hotter you are, the more you pay.\""
+		Text = "Mines across the lane and pirate gunships at the gap. \"Toll gate. We know who you are, and we know the corporation pays for sightings. The hotter you are, the more you pay.\""
 		Choices
 		[
 			{
