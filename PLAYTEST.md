@@ -42,6 +42,23 @@ Mission checks are in [tests/playtest/missions.md](tests/playtest/missions.md).
 11. Save during a fight with hunters, load, and check that the fight continues the same way.
 12. With the Tech area merged: hunters prefer the ship with the Tech Vault (`VaultTargetFactor`). Put the vault on a second ship and check that hunters switch to it.
 
+## Strike waves and enemy AI (spec 190-202)
+
+Switch a behavior off to compare: `Tactics { CallEnabled = false }` for hunters, `Tactics { CallOnVanilla = false }` for pirates and other vanilla AIs (same for `Flee`, `Focus`, `Regroup`).
+
+1. Sector 1, low FTL fuel: raise heat to 100 (F9). Strike sends one ship now and one 45 s later. Can you destroy the first one, pick up or salvage its fuel, and jump before the second one arrives? Is it "by the skin of your teeth", or too easy, or impossible? Tune `Hunters.Stages` Strike `EarlyScale`, `WaveGapSeconds` and `Hunters.MinFuel`.
+2. Destroy a hunter's hyperdrive or storage. Do hyperium nuggets drop (about half the fuel)? Does salvaging the wreck give the rest?
+3. Last sector: three strike ships of tier + 2, one at a time. Is the last sector a real threat but still survivable?
+4. Call for help: a hunter calls when it first sees you while another group waits. Is the red ring and "CALLING FOR HELP n%" label easy to notice in a fight? Is 6 s the right window?
+5. Hit a calling ship with a disruptor, an EMP missile or an ion beam. Does the call stop at once, with the "call was cut off" log line? Does that feel like a reward for carrying disruptors?
+6. Fight a pirate group (asteroid field pirates or a fleet bounty). When you engage one, does it call the others, and do they come? Is a 6,000 call range too far or too short?
+7. Fly into an ion storm or electron nebula and fight there. Are calls blocked as expected? Is it clear to the player why no one called?
+8. Flee: damage a pirate or hunter below a quarter of its value. About half of them should break off and run (label FLEEING). A hunter jumps out after 25 s (label shows the countdown). Is the window long enough to chase and kill it? Does a fleeing pirate come back after repairs?
+9. Destroy all weapons on an enemy. Does it always run?
+10. Focus fire: let one of your ships get badly hurt. Do the enemies switch to it? Is that too punishing (lower `FocusWeakFactor`)?
+11. Regroup: a lone weak enemy near stronger friends should turn toward them (label REGROUPING) and attack together. Does it look smart, or like hesitation? Is 25 s too long?
+12. Co-op: run a strike with calls and flees for 20 minutes. Check for no desync.
+
 ## Run and UX
 
 1. Open the galaxy map at the start. Check that no system near the start shows a much higher danger tier than the systems on the way out (spec 3).
@@ -85,3 +102,65 @@ To see more events fast, put `Events { ArrivalEventChance = 1  StationEventChanc
 5. The Buyer's Agent (1 to 2 sectors before the Buyer): is the advance tempting? After a deal, does the trade window at the Buyer show the lower price?
 6. Courier Job: look for "Courier Job" in a station's mission list. Is the contact easy to find (target area on the map)? Is 7 minutes too short or too long? Does it feel different from a vanilla delivery?
 7. Vault Coolant Leak (at most one per run): does an event with no free choice feel fair, or punishing? Is the choice between a crate, crew and money a real decision?
+8. Dead in Space: with a Tractor Beam Emitter, can you actually pull the freighter to the station? Is the distance fair (the nearest station at least 3,000 away can be much farther)? Does the map show the destination ring?
+9. "Clean Getaway?" shows the real tech count ("Your vault holds 6 crates"). Do the choice buttons show the gold key numbers from the UX area, with no second "1." in the text?
+
+## Co-op (two players)
+
+The co-op autotests (`tests/autotest-mp/`) cover sync, the host's tunables, events, a sale, a loss, a win, missions, save, load and resync. Only two people can check the points below.
+
+Before you start:
+
+- Both players install the same Hot Cargo release and turn the mod on. A different mod version blocks the join.
+- The host's `tunables.rules` applies to the run. The client's file has no effect in co-op. A new co-op run uses the default values for the first seconds, until the host's values arrive. The starting vault and the first system's offers use the defaults.
+- Debug keys do not work in co-op.
+- If the game shows "resyncing", note what happened just before. Both players then send their `Mods\hot_cargo\csharp\hot_cargo_log.txt`. Search it for `MP DESYNC`.
+
+Checks:
+
+1. Host a career, the friend joins. Do both players see the run intro, the same heat panel values and the same tunables hash?
+2. Only the host's starting ship gets the Tech Vault. Is that fine for co-op, or must each player start with a vault? Can the friend's crew take tech from the host's vault?
+3. Play 20 minutes with hunters on screen: at least two stages, a Strike wave and a fight. Does a "resyncing" message show? Do both players see the same hunters in the same places?
+4. Hunters prefer the ship with the Tech Vault. With the vault on one player's ship, does the other player feel useful in the fight?
+5. Each player opens the comms window with a station. The game does not pause in co-op (`PauseOnCommsMultiplayer` is off). Is that right, or must co-op pause too?
+6. An event opens. Do both players see it? The friend picks a choice with a cost. Does the friend pay, and not the host? Does the host's window switch to the result?
+7. Both players click a choice at the same moment. Does only one choice apply, and do both see the same result?
+8. The friend sells tech at a station. Does the friend get the money? Does the tech count and the heat drop for both?
+9. The friend accepts a Hot Cargo mission (escort, assault, shady offer). Does it show in both mission logs? Does the reward pay both players?
+10. Jump to a new system together. Does the heat carry over the same for both? Does the Arrival event come for both?
+11. The host saves. Quit, host again, load the save, and the friend joins. Do heat, stage, the pending event and the missions come back?
+12. The friend leaves mid-run. Does the run continue for the host without errors? The game does not accept a join into a running game. To bring the friend back, use the save and load steps of check 11.
+13. Sell the last unit or lose the vault. Does the loss show for both players at the same time?
+14. Deliver tech to the Buyer. Does the win show for both, with the same score?
+
+## Mechanics missions (spec 130-141, MISSIONS.md)
+
+The autotests cover offers, completion, failure, leave early, intensive scans and save and load. They do not fight for real. To see the missions fast, put `Mechanics { DroneSiegeChance = 1  PrototypeChance = 1  SunMiningChance = 1  TowChance = 1  CaptureChance = 1  SurveyChance = 1  MiningGuardChance = 1  ListeningPostChance = 1 }` in `tunables.rules`, then jump to a new system.
+
+1. Drone Siege: build a platform with **Build New Ship** next to the post. It needs a reactor, a gun and a crew. Fly away. Does the clock keep running? Do the drones kill the platform too fast or too slowly? Are tier-1 to tier-3 drones "small" enough, or should drones be tier 1 only (`Siege { ShipTierMax = 1 }`)?
+2. Drone Siege: without a platform, is five minutes of waiting too long, or fine? Does "No ship on station: the clock is stopped" make sense?
+3. Leave early: does the "[Click] Leave now and keep X credits" line work in the HUD and in the mission log? Is the amount clear?
+4. Prototype Retrieval: can you see the core (magenta storage bay) on the carrier's hull? Can you target the reactors and bridge with part targeting without hitting the core? Does the carrier offer surrender when it is beaten? Does a carrier that was damaged before you arrived heal when the core goes on (known limit)?
+5. Sunside Ore: is the heat zone dangerous but survivable for a small mining ship? Are 30 to 45 units too many or too few for 30 minutes? Can you sell Helion Ore at the station (it needs free untyped storage)?
+6. Salvage Rights: can a starter-size ship tow the hulk with tractor beams in 25 minutes? Is 800 from the station hull a fair finish line?
+7. Repossession: do the escorts die before the freighter? Does the freighter offer surrender? Does claiming the wreck with crew work in the real UI (select crew, set the wreck as home ship)?
+8. Storm Survey: is 15 s per marker inside an ion storm fair? Does the starter ship have a working sensor?
+9. Listening Post: does the scout follow you well? Is the "[Click] Start the scan here" line easy to find? Do intensive scans feel worth the extra pay? Is the base close enough to be a threat?
+10. Frequency: with the economy area's mission limits per system, do mechanics missions show up about once every two systems?
+11. Multiplayer (co-op): one player clicks an order. Does the other player see the same result?
+
+## Story chains (spec 160-175, CHAINS.md)
+
+The autotests cover assignment, offers, results (success, abandoned, lost, timeout), choice pages, loops, Return and Arrival stages, rewards, reputation and save and load. Only a person can judge the points below.
+
+1. Open a station's comms in the first system. Is the "[Chain] ..." offer easy to tell apart from the other offers? Does the "Story Chains" category make sense in the list and in the mission log?
+2. Read a stage offer. Is the briefing short enough? After a few stages, does the "So far:" line help you remember the story, or is it noise?
+3. Finish a stage at the station. Does the choice window open at a good moment (near the station, after the payment)? Does the result text read well above the page?
+4. Escort and careful-targeting stages: do they play well with the default ships? Is seven minutes enough for "Extraction"? Can you keep the transport alive while you kill its escorts, or do your turrets kill it by accident?
+5. "Reactor Shielding": is 40 to 60 iron in 15 minutes fair at sector 1? Is buying the iron at the station too easy a way out?
+6. "Salvage Race": can you find the pod and haul 3 processors in 8 minutes? Do the Magpie ships make it a race?
+7. Return stages: refuse Mara's bill, leave the system and come back. Do the collectors appear about 8 seconds after you arrive? Does the result read as a consequence of your refusal?
+8. Arrival stages: take Okafor aboard or sell her. Do "Old Schedules" or "Okafor's Friends" come at a fair moment in the next system or the one after?
+9. Mara's standing offer: does it show on each visit and stay away inside one visit? Is 1.33 × the tech value worth a detour?
+10. Frequency: with every station holding a chain, are there too many offers per system? If yes, lower `Chains.StationChance` (for example 0.5) in `tunables.rules`.
+11. Multiplayer (co-op): both players see the chain offer and the chain pages. One player chooses. Does the chain advance the same for both?

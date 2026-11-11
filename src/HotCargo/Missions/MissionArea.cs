@@ -83,10 +83,11 @@ public static class MissionArea
 
     /// <summary>
     /// Mission tunables for code that runs in a game. The first system of a new career generates before the run starts,
-    /// so it reads the tunables file like Run.Start does.
+    /// so it reads the tunables file like Run.Start does. Multiplayer uses the defaults there, like Run.Start.
     /// </summary>
     internal static MissionTunables TunablesFor(GameRoot game) =>
-        Run.Current is { } run && run.Game == game ? run.T.Missions : (TunablesFile.Read()?.Values ?? new Tunables()).Missions;
+        Run.Current is { } run && run.Game == game ? run.T.Missions
+        : (game.NetManager.IsMultiplayer ? new Tunables() : TunablesFile.Read()?.Values ?? new Tunables()).Missions;
 
     static int _markedMoney;
     static float _markedEscortDist;
@@ -163,7 +164,7 @@ public static class MissionArea
     /// Spawn tags of the objects that already exist, with their IDs.
     /// SimulationGenerator's addExistingSpawnTags leaves out the IDs of objects in stasis, and missions that spawn at a station need them.
     /// </summary>
-    static SpawnedObjectCollection ExistingSpawnTags(SimRoot sim)
+    internal static SpawnedObjectCollection ExistingSpawnTags(SimRoot sim)
     {
         var objects = new SpawnedObjectCollection();
         void Add(HashSet<ID<SimObjectSpawner>>? tags, SimSpawner.SpawnedObject so)

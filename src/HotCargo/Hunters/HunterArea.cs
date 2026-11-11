@@ -17,6 +17,12 @@ public static class HunterArea
     {
         Run.Hooks.StageStarted += HunterSpawner.OnStageStarted;
         Run.Hooks.StrikeWave += HunterSpawner.OnStrikeWave;
+        Run.Hooks.Tick += HunterSpawner.OnTick;
+        Run.Hooks.SystemEntered += HunterSpawner.OnSystemEntered;
+        // Hunter groups that wait to arrive in this system (spec 191).
+        Autotest.Fields["hunterspending"] = () => Autotest.RequireRun().State.Hunters.Pending.Count;
+        // Least FTL fuel on any live hunter (spec 192). -1 without hunters.
+        Autotest.Fields["hunterfuelmin"] = () => HunterSpawner.Hunters(Sim()).Select(h => HunterSpawner.Fuel(Autotest.RequireRun(), h)).DefaultIfEmpty(-1).Min();
 
         Autotest.Fields["hunters"] = () => HunterSpawner.Hunters(Sim()).Count();
         Autotest.Fields["hunterdistmin"] = () => Distances().DefaultIfEmpty(double.NaN).Min();
@@ -55,7 +61,7 @@ public static class HunterArea
             Vector2 center = FleetCenter(sim);
             foreach (var h in HunterSpawner.Hunters(sim))
                 Log.Info($"AUTOTEST HUNTER {arg}: {h.Metadata.PlainShipName} id={h.UniqueID} tier={career.GetShipTier(h)} player={h.Metadata.PlayerIndex} " +
-                         $"dist={h.DetWorldCenter.DistanceTo(in center):0} health={HunterOrders.HealthFraction(h):0.00} ai={h.AI?.Rules.ID} cmd={h.Commands.CurConfirmedCommand?.GetType().Name}");
+                         $"dist={h.DetWorldCenter.DistanceTo(in center):0} health={HunterOrders.HealthFraction(h):0.00} fuel={HunterSpawner.Fuel(Autotest.RequireRun(), h)} ai={h.AI?.Rules.ID} cmd={h.Commands.CurConfirmedCommand?.GetType().Name}");
         };
         // damagehunters <fraction>: sets every hunter part to this fraction of its health, without destroying parts. Test only.
         Autotest.Commands["damagehunters"] = arg =>

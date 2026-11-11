@@ -1,0 +1,44 @@
+# Chains (CHAINS.md): a guarded wreck paid out through the station's comms, a choice page, an Arrival page in a later system,
+# a careful-targeting mission that starts at once in that system, and a tech reward at the end.
+newgame run
+wait 8
+expectevent getaway
+# Sell one crate, so the vault has room for the chain's tech reward.
+choose 2 1
+ev_set Enabled false
+chain_force black_box
+chain_tostation
+chain_accept
+expect chain_accepted == 1
+# The drone dies; the mission waits for the payment at the station (ReceiveRewards), like a vanilla bounty.
+chain_goto
+chain_kill
+wait 2
+expectstage recorder
+chain_tostation
+chainview
+chain_pay
+wait 2
+expectstage playback
+expectevent blackbox_playback
+choose 2
+expectstage routes
+expect ev_pending == 0
+# An Arrival stage waits for a new system. chain_due stands in for the jump.
+chain_due
+wait 3
+expectevent blackbox_routes
+choose 1
+expectstage courier
+# AfterSectors 0: the courier mission starts in this system after LaterDelaySeconds and goes straight into the log.
+wait 12
+expect chain_accepted == 1
+ev_mark
+# Careful targeting: the escorts die, the transport lives.
+chain_goto
+chain_kill
+wait 3
+expectstage end
+expect ev_tech_gain == 1
+expect chain_story >= 3
+quit

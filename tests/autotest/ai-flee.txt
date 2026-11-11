@@ -1,0 +1,39 @@
+# Flee decisions (spec 193-195): a damaged ship rolls once, an unarmed ship always runs, a fleeing hunter jumps out.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+tacticlog on
+aiset CallEnabled false
+aiset RegroupEnabled false
+aiset FleeJumpSeconds 6
+# Chance 0: damaged hunters stay and fight.
+aiset FleeChance 0
+spawnstage Patrol
+wait 2
+hunters start
+expect hunters == 2
+damagehunters 0.15
+wait 3
+expect ai_flee_stay >= 2
+expect ai_flee == 0
+# No offensive weapons: the hunter runs even at chance 0.
+disarmhunter 0
+wait 3
+hunters disarmed
+expect ai_flee >= 1
+expect ai_fleeing >= 1
+# The fleeing hunter jumps out after FleeJumpSeconds and leaves the system.
+wait 8
+hunters jumped
+expect ai_flee_jump >= 1
+expect hunters <= 1
+# Chance 1: damaged hunters run.
+aiset FleeChance 1
+spawnstage Patrol
+wait 2
+damagehunters 0.15
+wait 3
+hunters chance1
+expect ai_flee >= 3
+quit

@@ -27,13 +27,9 @@ public static class TunablesFile
         {
             if (!File.Exists(FilePath)) throw new FileNotFoundException("tunables.rules not found", FilePath);
             _lastWrite = File.GetLastWriteTimeUtc(FilePath);
-            byte[] bytes = File.ReadAllBytes(FilePath);
-            using var stream = new MemoryStream(bytes);
-            var values = App.ObjectTextSerializer.Read<Tunables>(new OTFile(stream))
-                ?? throw new InvalidDataException("tunables.rules is empty");
-            Validate(values);
+            var loaded = Parse(File.ReadAllBytes(FilePath));
             LastError = null;
-            return new Loaded(values, Convert.ToHexString(SHA256.HashData(bytes))[..8]);
+            return loaded;
         }
         catch (Exception ex)
         {
@@ -41,6 +37,19 @@ public static class TunablesFile
             Log.Error("tunables read failed", ex);
             return null;
         }
+    }
+
+    /// <summary>Reads the file bytes or null when the file is missing. For the host's tunables input in multiplayer.</summary>
+    public static byte[]? ReadBytes() => File.Exists(FilePath) ? File.ReadAllBytes(FilePath) : null;
+
+    /// <summary>Parses and validates the content of a tunables file. Throws when it is invalid.</summary>
+    public static Loaded Parse(byte[] bytes)
+    {
+        using var stream = new MemoryStream(bytes);
+        var values = App.ObjectTextSerializer.Read<Tunables>(new OTFile(stream))
+            ?? throw new InvalidDataException("tunables.rules is empty");
+        Validate(values);
+        return new Loaded(values, Convert.ToHexString(SHA256.HashData(bytes))[..8]);
     }
 
     /// <summary>True once per changed file write. Call once per frame.</summary>
@@ -65,6 +74,8 @@ public static class TunablesFile
         foreach (var r in t.Hunters.Stages)
             Require(stages.Contains(r.Name), $"Hunters.Stages names '{r.Name}', which is not a Heat.Stages name");
         Require(t.Hunters.SpawnDistanceMin > 0 && t.Hunters.SpawnDistanceMax >= t.Hunters.SpawnDistanceMin, "Hunters.SpawnDistanceMin must be above 0 and at most SpawnDistanceMax");
+        t.Hunters.Validate(Require);
+        t.Tactics.Validate(Require);
         foreach (var tactic in Enum.GetValues<Tactics.Tactic>())
         {
             string min = Tactics.TacticGate.Settings(t.Tactics, tactic).MinStage;
@@ -73,5 +84,6 @@ public static class TunablesFile
         Require(t.Tech.VaultDamagePerUnitLost > 0, "Tech.VaultDamagePerUnitLost must be above 0");
         Require(t.Tech.BuyBackFactor >= 1, "Tech.BuyBackFactor must be 1 or more, or players can sell and buy back for profit");
         Require(t.Journey.RunSectorCount >= 1, "Journey.RunSectorCount must be 1 or more");
+        Missions.Mechanics.MechanicsTunables.Validate(t.Mechanics);
     }
 }

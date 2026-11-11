@@ -1,0 +1,44 @@
+# Prototype Retrieval (spec 133): the core goes on the carrier when it is live, a broken core fails, a wrecked carrier with the core intact completes.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+mech_generate prototype
+mech_accept prototype
+expect mech_proto_core == 0
+mech_proto_goto
+pause off
+wait 4
+expect mech_proto_core == 1
+# A hostile carrier does not count as secured, even with a player ship next to the core.
+mech_proto_near
+wait 3
+expect mech_goal_prototype == 0
+# Wreck the carrier (crew gone, as when its bridge or reactors die): the core is intact, so the recovery completes.
+mech_proto_wreck
+wait 2
+expect mech_goal_prototype == 0
+# The wreck drifts. A player ship comes alongside the core, and the crew lift it.
+mech_proto_near
+wait 3
+expect mech_goal_prototype == 1
+expect mech_proto_core == 0
+# Failure: a second carrier, and its core breaks.
+mech_generate prototype
+mech_accept prototype
+mech_proto_goto
+wait 4
+expect mech_proto_core == 1
+mech_proto_break
+wait 2
+expect mech_state_prototype == 2
+# Surrender: the carrier hands the core over at once, wherever the players are.
+mech_generate prototype
+mech_accept prototype
+mech_proto_goto
+wait 4
+expect mech_proto_core == 1
+mech_proto_surrender
+wait 1
+expect mech_goal_prototype == 1
+quit

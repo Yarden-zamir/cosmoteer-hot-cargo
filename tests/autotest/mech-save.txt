@@ -1,0 +1,41 @@
+# Mechanics missions survive save and load (all custom objective types in the save; spec 130).
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+mech_generate prototype
+mech_accept prototype
+mech_proto_goto
+pause off
+wait 4
+expect mech_proto_core == 1
+mech_generate tow
+mech_accept tow
+mech_generate capture
+mech_accept capture
+mech_generate survey nonebula
+mech_accept survey
+mech_generate sunmining
+mech_accept sunmining
+mech_generate listening nonebula
+mech_accept listening
+mech_generate siege
+mech_accept siege
+mech_hold_goto
+wait 3
+mech_hold_skip 100
+mech_order intensive
+save mech
+load mech
+wait 3
+pause off
+expect mech_active_prototype == 1
+expect mech_active_tow == 1
+expect mech_active_capture == 1
+expect mech_active_survey == 1
+expect mech_active_sunmining == 1
+expect mech_active_listening == 1
+expect mech_active_siege == 1
+expect mech_hold_seconds >= 100
+expect mech_survey_markers == 3
+quit

@@ -26,7 +26,15 @@ public static class Autotest
 
     static Queue<(string Name, string Arg, int Line)>? _script;
     static double _waitUntil;
+    static WaitCondition? _waitFor;
+    static int _line;
     static EventHandler<Cosmoteer.Simulation.SimRoot>? _godmode;
+
+    /// <summary>A condition that the script waits for. Then runs after the condition holds and may start the next wait.</summary>
+    sealed record WaitCondition(Func<bool> Done, double Deadline, string What, Action? Then);
+
+    /// <summary>True when this game instance runs an autotest script.</summary>
+    public static bool IsActive => _script is not null;
 
     public static GameRoot? Game => App.Director.States.OfType<GameRoot>().FirstOrDefault();
 
@@ -45,6 +53,7 @@ public static class Autotest
             _script.Enqueue(space < 0 ? (line, "", i + 1) : (line[..space], line[(space + 1)..].Trim(), i + 1));
         }
         AddBaseCommands();
+        MpAutotest.AddCommands();
         // Test slots start with empty settings, so every tutorial page is unseen. Pages with AutoPause would pause the game
         // for good the first time their condition fires (for example the combat page when enemies appear).
         int unpaused = 0;
@@ -56,25 +65,91 @@ public static class Autotest
     static void OnFrame(object? sender, EventArgs e)
     {
         if (_script is null || App.Clock.Time.Seconds < _waitUntil) return;
+        if (_waitFor is { } w)
+        {
+            try
+            {
+                if (!Holds(w.Done))
+                {
+                    if (App.Clock.Time.Seconds > w.Deadline) throw new TimeoutException($"timed out waiting for {w.What}; states: {StateNames()}");
+                    return;
+                }
+                _waitFor = null;
+                Log.Info($"AUTOTEST waited for {w.What}");
+                w.Then?.Invoke();
+            }
+            catch (Exception ex) { Fail($"line {_line}: wait", ex); }
+            return;
+        }
         if (!App.Director.States.Any(s => s is TitleScreen or GameRoot)) return;
         if (_script.Count == 0) { App.Director.FrameEnded -= OnFrame; return; }
         var (name, arg, line) = _script.Dequeue();
+        _line = line;
         try
         {
             if (!Commands.TryGetValue(name, out var cmd)) throw new InvalidOperationException($"unknown command '{name}'");
             Log.Info($"AUTOTEST line {line}: {name} {arg}");
             cmd(arg);
         }
-        catch (Exception ex)
-        {
-            Log.Error($"AUTOTEST FAIL line {line}: {name} {arg}", ex);
-            _script.Clear();
-            _script.Enqueue(("quit", "", line));
-        }
+        catch (Exception ex) { Fail($"line {line}: {name} {arg}", ex); }
     }
+
+    /// <summary>Logs the failure and ends the script with quit.</summary>
+    static void Fail(string what, Exception ex)
+    {
+        Log.Error($"AUTOTEST FAIL {what}", ex);
+        _waitFor = null;
+        _script?.Clear();
+        _script?.Enqueue(("quit", "", _line));
+    }
+
+    /// <summary>A condition that throws (for example no run yet, during a resync) counts as not met.</summary>
+    static bool Holds(Func<bool> condition)
+    {
+        try { return condition(); }
+        catch (InvalidOperationException) { return false; }
+    }
+
+    static string StateNames() => string.Join(", ", App.Director.States.Select(s => s.GetType().Name));
 
     /// <summary>Pauses the script for real seconds.</summary>
     public static void Wait(double seconds) => _waitUntil = App.Clock.Time.Seconds + seconds;
+
+    /// <summary>Pauses the script until the condition holds, then runs then. Fails the test after timeout real seconds.</summary>
+    public static void WaitFor(Func<bool> done, double timeoutSeconds, string what, Action? then = null) =>
+        _waitFor = new(done, App.Clock.Time.Seconds + timeoutSeconds, what, then);
+
+    /// <summary>The player index of the sender while an "mp" command runs inside the sim. Null outside of it.</summary>
+    static int? _simPlayer;
+
+    /// <summary>The player that a test command acts for: the sender of an "mp" command inside the sim, else the local player.</summary>
+    public static int ActingPlayerIndex => _simPlayer ?? (Game ?? throw new InvalidOperationException("no game")).LocalPlayerIndex;
+
+    /// <summary>The first ship (lowest ID) that the acting player can command. Works for own ships and for a shared team.</summary>
+    public static Ship? ActingShip(Cosmoteer.Simulation.SimRoot sim)
+    {
+        int player = ActingPlayerIndex;
+        return sim.Ships.HumanPlayerShips.Where(s => s.Commands.CanExecuteCrewCommandsFrom(player)).OrderBy(s => s.UniqueID).FirstOrDefault();
+    }
+
+    /// <summary>
+    /// Runs one script line inside the sim on every machine, for "mp" commands (see MpAutotest.AutotestInput).
+    /// A failure fails the script on every machine the same way.
+    /// </summary>
+    internal static void RunInSim(string line, int playerIndex)
+    {
+        int space = line.IndexOf(' ');
+        string name = space < 0 ? line : line[..space], arg = space < 0 ? "" : line[(space + 1)..].Trim();
+        _simPlayer = playerIndex;
+        try
+        {
+            if (!Commands.TryGetValue(name, out var cmd)) throw new InvalidOperationException($"unknown command '{name}'");
+            Log.Info($"AUTOTEST sim tick {Game?.Sim.Tick}: {line} (player {playerIndex})");
+            cmd(arg);
+        }
+        catch (Exception ex) { Fail($"mp {line}", ex); }
+        finally { _simPlayer = null; }
+    }
 
     /// <summary>Fails the test with a message. Use for checks.</summary>
     public static void Check(bool condition, string what)
@@ -149,14 +224,17 @@ public static class Autotest
             var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length != 3) throw new InvalidOperationException("expect needs: field op value");
             double actual = Field(parts[0]);
-            double expected = double.Parse(parts[2], CultureInfo.InvariantCulture);
-            bool ok = parts[1] switch
-            {
-                ">=" => actual >= expected, "<=" => actual <= expected, ">" => actual > expected,
-                "<" => actual < expected, "==" => Math.Abs(actual - expected) < 1e-3,
-                _ => throw new InvalidOperationException($"unknown op {parts[1]}"),
-            };
-            Check(ok, $"{parts[0]} {parts[1]} {expected} (actual {actual})");
+            Check(Compare(actual, parts[1], parts[2]), $"{parts[0]} {parts[1]} {parts[2]} (actual {actual})");
+        };
+        Commands["waitfor"] = arg =>
+        {
+            // waitfor <field> <op> <value> [timeout seconds, default 60]: waits until the check holds. Use it to sync two MP instances.
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length is not (3 or 4)) throw new InvalidOperationException("waitfor needs: field op value [timeout]");
+            if (!Fields.ContainsKey(parts[0])) throw new InvalidOperationException($"unknown field '{parts[0]}'");
+            Compare(0, parts[1], parts[2]);
+            double timeout = parts.Length == 4 ? double.Parse(parts[3], CultureInfo.InvariantCulture) : 60;
+            WaitFor(() => Compare(Field(parts[0]), parts[1], parts[2]), timeout, $"{parts[0]} {parts[1]} {parts[2]}");
         };
         Commands["godmode"] = arg =>
         {
@@ -197,6 +275,17 @@ public static class Autotest
 
     static double Field(string name) =>
         Fields.TryGetValue(name, out var f) ? f() : throw new InvalidOperationException($"unknown field '{name}'");
+
+    static bool Compare(double actual, string op, string value)
+    {
+        double expected = double.Parse(value, CultureInfo.InvariantCulture);
+        return op switch
+        {
+            ">=" => actual >= expected, "<=" => actual <= expected, ">" => actual > expected,
+            "<" => actual < expected, "==" => Math.Abs(actual - expected) < 1e-3,
+            _ => throw new InvalidOperationException($"unknown op {op}"),
+        };
+    }
 }
 
 /// <summary>The startup hook runs before the game creates App.Director, so the autotest starts at the first title screen.</summary>

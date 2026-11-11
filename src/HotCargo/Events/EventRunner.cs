@@ -138,7 +138,7 @@ public static class EventRunner
             Log.Info($"events: {trigger} skipped, {t.MaxEventsPerSystem} events in this system already");
             return;
         }
-        var snapshot = Snap(run, sim, FirstHumanMoney(run), run.CurrentTier, CurrentTechValue(run));
+        var snapshot = Snap(run, sim, RichestHumanMoney(run), run.CurrentTier, CurrentTechValue(run));
         var candidates = EventLibrary.InOrder.Where(e => e.Trigger == trigger && Eligible(run, e, snapshot)).ToList();
         var weights = candidates.Select(e => EventModel.EffectiveWeight(e.Weight, e.WeightPerHeat, e.WeightPerTech, run.State.Heat, run.State.FleetTech)).ToList();
         int pick = EventModel.PickWeighted(weights, sim.Rand.Single());
@@ -215,16 +215,25 @@ public static class EventRunner
         Log.Info($"event choice: {e.ID} choice {choiceIndex + 1} outcome {outcomeIndex + 1} by player {playerIndex}");
         s.Pending = null;
         ApplyOutcome(run, sim, playerIndex, outcome, p, lines);
+        // Tokens fill after the effects, so a text sees the counts that the choice left.
+        string outcomeText = EventText.Fill(outcome.Text, Vaults.CountFleetTech(sim));
         if (outcome.Next.Length > 0)
         {
-            string lead = string.Join("\n", new[] { outcome.Text }.Concat(lines).Where(l => l.Length > 0));
+            string lead = string.Join("\n", new[] { outcomeText }.Concat(lines).Where(l => l.Length > 0));
             Open(run, sim, EventLibrary.Get(outcome.Next), lead);
         }
         else
         {
-            s.LastResult = new EventResult { Serial = serial, Title = e.Title, Text = outcome.Text, Lines = [.. lines] };
+            s.LastResult = new EventResult { Serial = serial, Title = e.Title, Text = outcomeText, Lines = [.. lines] };
         }
+        OutcomeChosen?.Invoke(run, sim, serial, playerIndex, outcome);
     });
+
+    /// <summary>
+    /// Runs inside Choose after an outcome applied. Arguments: run, sim, serial of the page that was chosen on, the choosing player, the outcome.
+    /// A follow-up page (Next) is already pending. The Chains area reads ChainResult here.
+    /// </summary>
+    public static event Action<Run, SimRoot, int, int, OutcomeRules>? OutcomeChosen;
 
     static int RollOutcome(Run run, ChoiceRules choice, ulong seed, int choiceIndex)
     {
@@ -240,8 +249,9 @@ public static class EventRunner
 
     public static long CurrentTechValue(Run run) => run.T.Tech.Value(run.State.SectorIndex, run.State.GameSeconds);
 
-    static int FirstHumanMoney(Run run) =>
-        run.Game.GetPlayerState(run.Game.HumanPlayersIndexes.Min(), deterministic: true).Money;
+    /// <summary>The most money one human player has. In co-op each player has own money and any player can pick a choice.</summary>
+    static int RichestHumanMoney(Run run) =>
+        run.Game.HumanPlayersIndexes.Max(i => run.Game.GetPlayerState(i, deterministic: true).Money);
 
     /// <summary>Credits of an amount in event money units at a tier, with the economy and Hot Cargo reward factors.</summary>
     public static int Credits(Run run, float units, float techUnits, int tier, long techValue)
@@ -321,7 +331,8 @@ public static class EventRunner
         foreach (var r in cost.Resources) ChangeResource(sim, r.ID, -r.At(p.Tier), lines);
     }
 
-    static void ApplyOutcome(Run run, SimRoot sim, int playerIndex, OutcomeRules o, PendingEvent p, List<string> lines)
+    /// <summary>Applies the effects of an outcome and adds one result line per effect. Also used by the Chains area for stage results.</summary>
+    internal static void ApplyOutcome(Run run, SimRoot sim, int playerIndex, OutcomeRules o, PendingEvent p, List<string> lines)
     {
         int credits = Credits(run, o.Money, o.MoneyTech, p.Tier, p.TechValue);
         if (credits != 0) ChangeMoney(run, playerIndex, credits, lines);

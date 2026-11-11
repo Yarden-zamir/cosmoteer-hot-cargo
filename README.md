@@ -4,6 +4,8 @@ A career mod for [Cosmoteer](https://store.steampowered.com/app/799600/Cosmoteer
 
 You stole corporate tech. The corporation wants it back. Get it across about 8 systems to the Buyer before the hunters catch you.
 
+![Main menu](docs/screenshots/title.jpg)
+
 ![Run intro](docs/screenshots/ux-intro.jpg)
 
 ## How it plays
@@ -14,10 +16,15 @@ You stole corporate tech. The corporation wants it back. Get it across about 8 s
 - **Deliver.** The Buyer waits in the last sector. Sell it your tech to win.
 - **New missions.** Convoy escorts, joint strikes with allied fleets, and shady bounties that may be corporate traps.
 - **FTL-style events.** Distress beacons, corporate checkpoints, fences, rival thieves and more: choices with risks, costs and rewards.
+- **Story chains.** Each station has a story in parts: a fence, a defector, a rival crew, a dark station. What you do in one part decides the next, and some choices come back to find you later.
 
 ![Heat stage alert](docs/screenshots/ux-heat-alert.jpg)
 
+![Choice event](docs/screenshots/ux-event-keys.jpg)
+
 ![Tech delivered](docs/screenshots/ux-win.jpg)
+
+![Run lost](docs/screenshots/ux-loss.jpg)
 
 It also improves some of the base game's UI. You can switch off each change in `tunables.rules`:
 
@@ -28,6 +35,8 @@ It also improves some of the base game's UI. You can switch off each change in `
 - A clearer fame tooltip.
 
 ![Galaxy map tooltip](docs/screenshots/ux-map.jpg)
+
+![Trade tab with sale effects](docs/screenshots/ux-trade.jpg)
 
 ## Install
 
@@ -49,6 +58,7 @@ All numbers live in `Mods\hot_cargo\tunables.rules`. The game reloads the file w
 - [SPEC.md](SPEC.md): the design and the numbered requirements.
 - [CONTRIBUTING.md](CONTRIBUTING.md): the build, the test setup (headless game instances on a Windows PC) and releases.
 - [PLAYTEST.md](PLAYTEST.md): manual checks.
+- [CHAINS.md](CHAINS.md): the story chains and their graphs.
 
 ## License
 

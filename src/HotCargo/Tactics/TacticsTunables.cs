@@ -42,4 +42,65 @@ public sealed class TacticsTunables
     [Serialize(Optional = true)] public float BaitApproachSeconds = 20f;
     /// <summary>The bait stays near the group this long, then comes close again.</summary>
     [Serialize(Optional = true)] public float BaitPullBackSeconds = 12f;
+
+    // Enemy AI behaviors (spec 193-202). "Enabled" switches the behavior for hunters (HotCargoHunter AI),
+    // "OnVanilla" for the vanilla combat AIs (Normal, Easy, Wanderer, StationGuard, Police: pirates, bounties, faction ships).
+
+    [Serialize(Optional = true)] public bool FleeEnabled = true;
+    [Serialize(Optional = true)] public bool FleeOnVanilla = true;
+    /// <summary>A ship below this health fraction rolls FleeChance once to flee. A ship without offensive weapons always flees.</summary>
+    [Serialize(Optional = true)] public float FleeHealthFraction = 0.25f;
+    [Serialize(Optional = true)] public float FleeChance = 0.5f;
+    /// <summary>A fleeing ship keeps at least this edge-to-edge distance from the nearest enemy.</summary>
+    [Serialize(Optional = true)] public float FleeDistance = 1500f;
+    /// <summary>A fleeing hunter jumps out of the system this long after it starts to flee.</summary>
+    [Serialize(Optional = true)] public float FleeJumpSeconds = 25f;
+    /// <summary>A fleeing vanilla ship repairs when clear and fights again at this health fraction, if it has weapons.</summary>
+    [Serialize(Optional = true)] public float FleeRecoverFraction = 0.6f;
+
+    [Serialize(Optional = true)] public bool CallEnabled = true;
+    [Serialize(Optional = true)] public bool CallOnVanilla = true;
+    /// <summary>A call for help takes this long. One disruptor, EMP or ion beam hit stops it.</summary>
+    [Serialize(Optional = true)] public float CallSeconds = 6f;
+    /// <summary>Allies within this distance of the caller hear the call.</summary>
+    [Serialize(Optional = true)] public float CallRange = 6000f;
+    /// <summary>A ship that called, was stopped or answered a call does not call again for this long.</summary>
+    [Serialize(Optional = true)] public float CallCooldownSeconds = 60f;
+    /// <summary>An ally that answered a call hunts the caller's target for this long.</summary>
+    [Serialize(Optional = true)] public float CallAssistSeconds = 60f;
+    /// <summary>A ship that loses this health fraction between two AI checks took damage, and calls.</summary>
+    [Serialize(Optional = true)] public float CallDamageTrigger = 0.02f;
+    /// <summary>Nebula types that block calls: a caller or listener inside one at CallStormStrength or more cannot call or hear.</summary>
+    [Serialize(Optional = true)] public string[] CallBlockedInNebulas = ["ion_storm", "electron"];
+    [Serialize(Optional = true)] public float CallStormStrength = 0.5f;
+    /// <summary>Part IDs whose damage stops a call. Any hit that drains battery power (disruptors, EMP missiles) stops a call too.</summary>
+    [Serialize(Optional = true)] public string[] CallInterruptParts = ["cosmoteer.ion_beam_emitter", "cosmoteer.ion_beam_prism"];
+
+    [Serialize(Optional = true)] public bool FocusEnabled = true;
+    [Serialize(Optional = true)] public bool FocusOnVanilla = true;
+    /// <summary>Attack value of a target × (1 + FocusWeakFactor × its lost health fraction). Higher focuses fire on weakened ships more.</summary>
+    [Serialize(Optional = true)] public float FocusWeakFactor = 1.5f;
+
+    [Serialize(Optional = true)] public bool RegroupEnabled = true;
+    [Serialize(Optional = true)] public bool RegroupOnVanilla = true;
+    /// <summary>A ship with less than this fraction of its target's firepower waits for allies before it attacks.</summary>
+    [Serialize(Optional = true)] public float RegroupFirepowerRatio = 0.75f;
+    /// <summary>Allies within this distance count as close.</summary>
+    [Serialize(Optional = true)] public float RegroupRadius = 1200f;
+    /// <summary>Only allies within this distance count as cover. Allies further away do not make the ship wait.</summary>
+    [Serialize(Optional = true)] public float RegroupSearchRange = 5000f;
+    /// <summary>The ship attacks once this many ships (itself included) are close, or all its allies are.</summary>
+    [Serialize(Optional = true)] public int RegroupMinGroup = 2;
+    /// <summary>The ship attacks anyway after this long, and does not regroup again for the same time.</summary>
+    [Serialize(Optional = true)] public float RegroupMaxSeconds = 25f;
+
+    /// <summary>Called from TunablesFile.Validate (spec 53).</summary>
+    public void Validate(Action<bool, string> require)
+    {
+        require(FleeHealthFraction is >= 0 and <= 1 && FleeRecoverFraction is >= 0 and <= 1, "Tactics.FleeHealthFraction and FleeRecoverFraction must be 0 to 1");
+        require(FleeChance is >= 0 and <= 1, "Tactics.FleeChance must be 0 to 1");
+        require(CallSeconds > 0 && CallRange > 0, "Tactics.CallSeconds and CallRange must be above 0");
+        require(CallStormStrength is > 0 and <= 1, "Tactics.CallStormStrength must be above 0 and at most 1");
+        require(RegroupMinGroup >= 1, "Tactics.RegroupMinGroup must be 1 or more");
+    }
 }

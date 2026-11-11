@@ -39,6 +39,10 @@ public sealed class RunState
     [Serialize(Optional = true)] public long Score;
     /// <summary>Events area state: seen events, flags and the pending event page.</summary>
     [Serialize(Optional = true)] public Events.EventsState Events = new();
+    /// <summary>Chains area state: the chain of each station, its stage, flags and story.</summary>
+    [Serialize(Optional = true)] public Chains.ChainsState Chains = new();
+    /// <summary>Hunters area state: hunter groups that wait to arrive in the current system (spec 191).</summary>
+    [Serialize(Optional = true)] public Hunters.HunterState Hunters = new();
     /// <summary>Multiplies the Buyer price (spec 7). Events lower it (an advance from the Buyer's agent); 1 means no change.</summary>
     [Serialize(Optional = true)] public float BuyerPriceMultiplier = 1f;
 }

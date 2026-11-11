@@ -14,6 +14,10 @@
     <Compile Include="../../src/HotCargo/Tactics/TacticsModel.cs" />
     <Compile Include="../../src/HotCargo/Events/EventModel.cs" />
     <Compile Include="../../src/HotCargo/Worlds/WorldsModel.cs" />
+    <Compile Include="../../src/HotCargo/Chains/ChainModel.cs" />
+    <Compile Include="../../src/HotCargo/Hunters/WaveModel.cs" />
+    <Compile Include="../../src/HotCargo/Ai/AiModel.cs" />
+    <Compile Include="../../src/HotCargo/Missions/Mechanics/MechanicsModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="xunit.v3" Version="4.0.3" />

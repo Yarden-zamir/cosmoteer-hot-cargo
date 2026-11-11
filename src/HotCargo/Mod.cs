@@ -21,8 +21,10 @@ public static class Mod
             Journey.JourneyArea.Register();
             Hunters.HunterArea.Register();
             Missions.MissionArea.Register();
+            Missions.Mechanics.MechanicsArea.Register();
             Tactics.TacticsArea.Register();
             Events.EventsArea.Register();
+            Chains.ChainsArea.Register();
             Ux.UxArea.Register();
             Worlds.WorldsArea.Register();
             Log.Info($"harmony patched {harmony.GetPatchedMethods().Count()} methods; mod root {ModRoot}");
