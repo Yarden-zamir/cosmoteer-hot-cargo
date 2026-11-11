@@ -1,5 +1,5 @@
 # Co-op events, host side: the client picks a choice and pays for it, a late second click does nothing,
-# then the host picks a choice with a rolled outcome and both machines get the same result.
+# then the host picks a choice with a tech cost and both machines get the same result.
 mphost {PORT}
 mpstart 2
 waitfor ev_pending == 1 30
@@ -14,11 +14,14 @@ mpchoose 1 1
 wait 3
 expect ev_result == 1
 expect ev_money_gain == 0
-# The host answers the next event. The outcome roll uses the page seed, so both machines get the same outcome.
-mp event distress_beacon
+# The host answers the next event: it sells a crate to the fence (a tech cost, and money split between the players).
+mp event getaway
 waitfor ev_pending == 1 10
-choose 1
+ev_mark
+choose 2
 waitfor ev_result >= 2 30
+expect ev_tech_gain == -1
+expect ev_money_gain > 0
 expect desyncs == 0
 waitfor mpconnected == 0 240
 quit
