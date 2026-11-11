@@ -42,7 +42,4 @@ public sealed class TacticsTunables
     [Serialize(Optional = true)] public float BaitApproachSeconds = 20f;
     /// <summary>The bait stays near the group this long, then comes close again.</summary>
     [Serialize(Optional = true)] public float BaitPullBackSeconds = 12f;
-
-    /// <summary>Writes each tactic decision to the Hot Cargo log. For tests and tuning.</summary>
-    [Serialize(Optional = true)] public bool DebugLog;
 }

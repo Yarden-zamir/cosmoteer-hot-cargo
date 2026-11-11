@@ -48,11 +48,7 @@ static class EventFramePatch
     static void Postfix(CareerGameModeManager __instance)
     {
         if (Run.Current is not { } run || run.Mode != __instance) return;
-        try { EventDialog.Update(run); }
-        catch (Exception ex)
-        {
-            Log.Error("event dialog failed", ex);
-            Ui.Overlay.FatalError = $"event dialog: {ex.Message}";
-        }
+        // Errors.Guard logs once, so a broken dialog does not write the log every frame.
+        Errors.Guard("event dialog", () => EventDialog.Update(run));
     }
 }

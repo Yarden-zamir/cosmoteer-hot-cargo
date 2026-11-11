@@ -7,4 +7,5 @@ HotCargoTech
 	TechVaultIcon = "Tech Vault"
 	TechVaultDesc = "Armored storage for Stolen Tech. Holds 6 units. Damage destroys the tech inside, and repairs do not bring it back."
 	VaultOutside = "A Tech Vault with your stolen tech is on board. Add a door to it, so that crew can reach it."
+	LossNoTech = "The fleet holds no Stolen Tech."
 }

@@ -1,5 +1,5 @@
 # Tech: starting cargo, price, storage rule, vault damage, save and load, a sale through the trade inputs, loss on the last sale.
-newgame last
+newgame run
 wait 8
 log start
 expect vaults == 1

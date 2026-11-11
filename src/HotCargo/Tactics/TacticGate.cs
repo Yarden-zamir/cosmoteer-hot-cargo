@@ -1,6 +1,5 @@
 using Cosmoteer.Ships;
 using HotCargo.Core;
-using HotCargo.Ui;
 
 namespace HotCargo.Tactics;
 
@@ -12,43 +11,35 @@ public enum Tactic { Kite, Pincer, Disable, FallBack, Bait }
 /// </summary>
 public static class TacticGate
 {
-    static readonly HashSet<string> ReportedStages = [];
-
     public static TacticsTunables? Active(Tactic tactic)
     {
         if (Run.Current is not { } run) return null;
         var t = run.T.Tactics;
-        (bool enabled, string minStage) = tactic switch
-        {
-            Tactic.Kite => (t.KiteEnabled, t.KiteMinStage),
-            Tactic.Pincer => (t.PincerEnabled, t.PincerMinStage),
-            Tactic.Disable => (t.DisableEnabled, t.DisableMinStage),
-            Tactic.FallBack => (t.FallBackEnabled, t.FallBackMinStage),
-            Tactic.Bait => (t.BaitEnabled, t.BaitMinStage),
-            _ => throw new ArgumentOutOfRangeException(nameof(tactic), tactic, null),
-        };
+        var (enabled, minStage) = Settings(t, tactic);
         return enabled && StageReached(run, minStage) ? t : null;
     }
 
+    public static (bool Enabled, string MinStage) Settings(TacticsTunables t, Tactic tactic) => tactic switch
+    {
+        Tactic.Kite => (t.KiteEnabled, t.KiteMinStage),
+        Tactic.Pincer => (t.PincerEnabled, t.PincerMinStage),
+        Tactic.Disable => (t.DisableEnabled, t.DisableMinStage),
+        Tactic.FallBack => (t.FallBackEnabled, t.FallBackMinStage),
+        Tactic.Bait => (t.BaitEnabled, t.BaitMinStage),
+        _ => throw new ArgumentOutOfRangeException(nameof(tactic), tactic, null),
+    };
+
+    /// <summary>TunablesFile.Validate rejects unknown stage names, so a name that is not found is a bug.</summary>
     static bool StageReached(Run run, string minStage)
     {
         if (minStage.Length == 0) return true;
         int index = Array.FindIndex(run.T.Heat.Stages, s => s.Name == minStage);
-        if (index >= 0) return run.State.StagesStarted > index;
-        // A wrong name in tunables.rules turns the tactic off and shows the error. It must not crash the sim tick.
-        lock (ReportedStages)
-        {
-            if (ReportedStages.Add(minStage))
-            {
-                Log.Error($"tactics: min stage '{minStage}' is not a Heat.Stages name; the tactic stays off");
-                Overlay.FatalError = $"tactics: unknown min stage '{minStage}'";
-            }
-        }
-        return false;
+        if (index < 0) throw new InvalidOperationException($"tactics: min stage '{minStage}' is not a Heat.Stages name");
+        return run.State.StagesStarted > index;
     }
 }
 
-/// <summary>Counts tactic decisions for autotest fields, and logs them when Tactics.DebugLog is on. Not sim state.</summary>
+/// <summary>Counts tactic decisions for autotest fields, and logs them when Debug.TacticsLog is on. Not sim state.</summary>
 public static class TacticsLog
 {
     static readonly Dictionary<string, int> Counts = [];
@@ -68,6 +59,6 @@ public static class TacticsLog
     public static void Event(Ship ship, string name, string message)
     {
         lock (Counts) Counts[name] = Counts.GetValueOrDefault(name) + 1;
-        if (Run.Current?.T.Tactics.DebugLog == true) Log.Info($"tactic {name} [{ship.Metadata.PlainShipName} {ship.UniqueID}] {message}");
+        if (Run.Current?.T.Debug.TacticsLog == true) Log.Info($"tactic {name} [{ship.Metadata.PlainShipName} {ship.UniqueID}] {message}");
     }
 }

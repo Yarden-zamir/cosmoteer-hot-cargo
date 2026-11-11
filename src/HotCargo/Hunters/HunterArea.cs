@@ -32,7 +32,7 @@ public static class HunterArea
         Autotest.Fields["huntershostile"] = () =>
         {
             var sim = Sim();
-            var humans = HunterSpawner.HumanShips(sim).ToList();
+            var humans = sim.Ships.HumanPlayerSignificantShips.ToList();
             return humans.Count > 0 && HunterSpawner.Hunters(sim).All(h => humans.All(h.IsEnemiesWith)) ? 1 : 0;
         };
         Autotest.Fields["huntersattacking"] = () =>
@@ -40,6 +40,8 @@ public static class HunterArea
 
         Autotest.Fields["hunterwaves"] = () => HunterSpawner.WavesSpawned;
         // strikeinterval <seconds>: sets Hunters.StrikeWaveIntervalSeconds for this run. Test only.
+        // maxhunters <count>: sets Hunters.MaxLiveHunters for this run. Test only.
+        Autotest.Commands["maxhunters"] = arg => Autotest.RequireRun().T.Hunters.MaxLiveHunters = int.Parse(arg, CultureInfo.InvariantCulture);
         Autotest.Commands["strikeinterval"] = arg => Autotest.RequireRun().T.Hunters.StrikeWaveIntervalSeconds = float.Parse(arg, CultureInfo.InvariantCulture);
         Autotest.Commands["markhunters"] = _ =>
         {
@@ -67,7 +69,7 @@ public static class HunterArea
 
     static SimRoot Sim() => Autotest.RequireRun().Game.Sim;
 
-    static Vector2 FleetCenter(SimRoot sim) => HunterSpawner.FleetCenter(sim) ?? throw new InvalidOperationException("no human ships");
+    static Vector2 FleetCenter(SimRoot sim) => SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no human ships");
 
     static IEnumerable<double> Distances()
     {

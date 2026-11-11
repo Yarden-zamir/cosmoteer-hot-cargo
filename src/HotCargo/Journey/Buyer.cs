@@ -1,6 +1,7 @@
 using Cosmoteer;
 using Cosmoteer.Data;
 using Cosmoteer.Game;
+using Cosmoteer.Localization;
 using Cosmoteer.Generators.Simulation;
 using Cosmoteer.Modes.Career;
 using Cosmoteer.Modes.Career.Missions;
@@ -8,7 +9,6 @@ using Cosmoteer.Resources;
 using Cosmoteer.Ships;
 using Cosmoteer.Ships.Crew.Jobs;
 using Cosmoteer.Simulation;
-using Cosmoteer.Simulation.Stasis;
 using Halfling;
 using Halfling.ObjectText;
 using HarmonyLib;
@@ -24,12 +24,6 @@ namespace HotCargo.Journey;
 public static class Buyer
 {
     public static readonly ID<SimObjectSpawner> Tag = new("hc_buyer");
-
-    /// <summary>
-    /// The resource that wins the run when sold to the Buyer. The autotest changes it to a vanilla resource,
-    /// because the Tech area defines the real one on another branch.
-    /// </summary>
-    internal static ID<ResourceRules> TechResource = new("yarden_zamir.stolen_tech");
 
     internal static readonly ID<MissionMetatype> MissionType = new("HotCargoBuyer");
 
@@ -83,7 +77,7 @@ public static class Buyer
         // The jump shows the system name for about 4 s after the switch. Wait so the two texts do not overlap.
         await App.Clock.UntilElapsed(6f);
         if (Run.Current != run) return;
-        run.Game.Gui.ShowAreaName("The Buyer is in this system");
+        run.Game.Gui.ShowAreaName(Strings.GetText("HotCargoJourney/BuyerHere"));
         var missions = run.Mode.Missions;
         var mission = missions.FirstOrDefault(m => m.MetatypeID == MissionType);
         if (mission is not null && !missions.IsTracked(mission)
@@ -91,25 +85,36 @@ public static class Buyer
             missions.TrackMission(mission);
     }
 
-    public static bool IsBuyer(Ship ship) => ship.Tags?.Contains(Tag) == true;
+    public static bool IsBuyer(Ship ship) => ship.HasTag(Tag);
 
     /// <summary>Buyer stations in the sim, loaded or in stasis.</summary>
-    public static int Count(SimRoot sim) =>
-        sim.Ships.Count(IsBuyer) + sim.Stasis.OfType<StasisShipSpawner>().Count(s => s.Tags?.Contains(Tag) == true);
+    public static int Count(SimRoot sim) => SimQueries.TaggedShips(sim, Tag).Count;
 
-    /// <summary>Spec 6 and 7: the first tech delivery to the Buyer wins the run. Called from the sim tick.</summary>
+    /// <summary>
+    /// Spec 6 and 7: the first tech delivery to the Buyer wins the run. Later deliveries raise DeliveredUnits and the score.
+    /// Called from the sim tick.
+    /// </summary>
     internal static void OnDelivered(Run run, int units)
     {
-        if (run.State.Result != RunResult.Running) return;
-        long value = run.T.Tech.Value(run.State.SectorIndex, run.State.GameSeconds);
-        float factor = run.T.Journey.BuyerPriceFactor;
+        var s = run.State;
+        if (s.Result == RunResult.Lost) return;
+        s.DeliveredUnits += units;
         var players = new List<PlayerState>();
         run.Game.GetHumanPlayerStates(players, deterministic: true);
-        long money = players.Sum(p => (long)p.Money);
-        // Spec 7, as written. The money already includes this sale's payment.
-        long score = money + (long)Math.Round(units * value * (double)factor);
-        run.Win($"You delivered {units} tech unit{(units == 1 ? "" : "s")} to the Buyer.\nScore: {score:N0}");
+        s.Score = Score(players.Sum(p => (long)p.Money), s.DeliveredUnits, UnitPrice(run));
+        Log.Info($"Buyer delivery: {units} units, {s.DeliveredUnits} in total, score {s.Score}");
+        run.Win(Strings.GetText("HotCargoJourney/WinReason"));
     }
+
+    /// <summary>
+    /// Spec 7, as written: money + delivered units × the Buyer price of one unit.
+    /// Open decision: the money already includes the Buyer payment, so delivered units count twice.
+    /// To count them once, return money. To score only the tech, return deliveredUnits × unitPrice.
+    /// </summary>
+    internal static long Score(long money, int deliveredUnits, long unitPrice) => money + deliveredUnits * unitPrice;
+
+    /// <summary>What the Buyer pays for one unit now: the tech value × BuyerPriceFactor, as PricePatch computes it.</summary>
+    static long UnitPrice(Run run) => (long)(TechPrice.Sell(run) * run.T.Journey.BuyerPriceFactor);
 
     /// <summary>
     /// Spec 7: a sale of tech to the Buyer pays tech value × BuyerPriceFactor.
@@ -123,7 +128,7 @@ public static class Buyer
         [HarmonyPriority(Priority.Low)]
         static void Postfix(CareerSimModeManager __instance, ID<ResourceRules> resourceType, int? destPlayerIndex, ref int __result)
         {
-            if (destPlayerIndex != PlayerIndexes.Neutral || resourceType != TechResource) return;
+            if (destPlayerIndex != PlayerIndexes.Neutral || resourceType != Vaults.TechId) return;
             if (Run.Current is not { } run || run.Game.Sim != __instance.Sim) return;
             __result = (int)(__result * run.T.Journey.BuyerPriceFactor);
         }
@@ -135,7 +140,7 @@ public static class Buyer
     {
         static void Postfix(CareerSimModeManager __instance, TradeType tradeType, ID<ResourceRules> resourceType, int amount, Ship? sinkShip)
         {
-            if (tradeType != TradeType.Sell || amount <= 0 || resourceType != TechResource || sinkShip is null || !IsBuyer(sinkShip)) return;
+            if (tradeType != TradeType.Sell || amount <= 0 || resourceType != Vaults.TechId || sinkShip is null || !IsBuyer(sinkShip)) return;
             if (Run.Current is not { } run || run.Game.Sim != __instance.Sim) return;
             OnDelivered(run, amount);
         }

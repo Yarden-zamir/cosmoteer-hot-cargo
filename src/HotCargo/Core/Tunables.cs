@@ -56,8 +56,13 @@ public sealed class StageThreshold
 [ReflectiveSerialization(Explicit = true)]
 public sealed class DebugTunables
 {
-    /// <summary>Single player only. F9 / Shift+F9 add or remove 10 heat. F10 starts the next stage now.</summary>
-    [Serialize(Optional = true)] public bool DebugKeys = true;
+    /// <summary>
+    /// Single player only. F9 / Shift+F9 add or remove 10 heat, F10 starts the next stage, F11 / Shift+F11 add or remove 1 tech.
+    /// With debug keys on, the heat panel also shows the heat value, the multiplier and the tunables hash.
+    /// </summary>
+    [Serialize(Optional = true)] public bool DebugKeys;
+    /// <summary>Writes each hunter tactic decision to hot_cargo_log.txt. For tests and tuning.</summary>
+    [Serialize(Optional = true)] public bool TacticsLog;
 }
 
 public static class HeatTunablesExtensions

@@ -13,13 +13,16 @@ public static class TechModel
     }
 
     /// <summary>
-    /// Vault damage to tech loss: each time the damage a vault took since its last loss reaches
-    /// damagePerUnit, one unit is lost. Returns the units lost and the damage left over.
+    /// Spec 65: units lost when vault health drops from oldHealth to newHealth.
+    /// One unit is lost for each step of damagePerUnit below max health that the drop crosses.
+    /// It needs no saved state, so it gives the same result after a load and on a client that joins late.
+    /// A repair raises health above the steps again, so later damage costs tech again, but the repair brings nothing back.
     /// </summary>
-    public static (int UnitsLost, float Remainder) UnitsLostToDamage(float accumulatedDamage, float damagePerUnit)
+    public static int UnitsLostToDamage(int maxHealth, int oldHealth, int newHealth, float damagePerUnit)
     {
         if (damagePerUnit <= 0) throw new ArgumentOutOfRangeException(nameof(damagePerUnit), "must be above 0");
-        int lost = (int)(accumulatedDamage / damagePerUnit);
-        return (lost, accumulatedDamage - lost * damagePerUnit);
+        if (newHealth >= oldHealth) return 0;
+        int Steps(int health) => (int)Math.Floor((maxHealth - health) / (double)damagePerUnit);
+        return Steps(newHealth) - Steps(oldHealth);
     }
 }
