@@ -31,18 +31,32 @@ static class TradeHints
     /// <summary>The newest trade tab. For autotests.</summary>
     internal static WeakReference<CommTradeTab>? Last;
 
+    /// <summary>The hint box of the newest trade tab. For autotests that check the layout.</summary>
+    internal static WeakReference<LayoutBox>? LastBox;
+
+    /// <summary>
+    /// The hints sit in a box docked at the top of the trade page, outside its scrolled rows, so they take their own space.
+    /// A label inside the scrolled rows measured one line and drew its wrapped lines over the rows below.
+    /// </summary>
     static void Postfix(CommTradeTab __instance, ScrollBox pageBox) => UxKit.Guard("trade hints", () =>
     {
         Last = new WeakReference<CommTradeTab>(__instance);
+        var box = new LayoutBox { DockMode = DockMode.Top, InputBlockMode = InputBlockMode.Never };
+        box.NineSlice.Flags = NineSliceFlags.Bottom | NineSliceFlags.Center;
+        box.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
+        box.Children.LayoutAlgorithm = LayoutAlgorithms.StretchTopToBottom;
+        box.Children.BorderPadding = new Borders(75f, 8f, 75f, 8f);
         var label = new Label { InputBlockMode = InputBlockMode.Never };
         label.TextRenderer.FontSize = 16;
         label.TextRenderer.XmlFormatting = true;
         label.TextRenderer.HAlignment = HAlignment.Left;
         label.TextRenderer.VAlignment = VAlignment.Top;
         label.TextRenderer.OversizeMode = OversizeMode.Wrap;
-        label.TextRenderer.Padding = new Borders(75f, 0f, 75f, 0f);
         label.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
-        pageBox.Children.Insert(Math.Min(1, pageBox.Children.Count), label);
+        box.AddChild(label);
+        box.SelfActive = false;
+        pageBox.DockedChildren.Insert(0, box);
+        LastBox = new WeakReference<LayoutBox>(box);
         double next = 0;
         pageBox.BeforeInputWhileActive((_, _) =>
         {
@@ -53,7 +67,7 @@ static class TradeHints
             {
                 string text = Text(__instance);
                 label.Text = text;
-                label.SelfActive = text.Length > 0;
+                box.SelfActive = text.Length > 0;
             });
         });
     });

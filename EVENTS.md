@@ -62,8 +62,8 @@ Reads as: the run's first decision. Cash now, a trick for later, or the full sco
 #### 2. Distress Beacon (Arrival, any sector)
 | Choice | Need | Outcomes |
 |---|---|---|
-| Answer the call | — | 50 %: 0.4 money, 0.3 fame. 25 %: +1 crew (if a bunk is free), 0.3 fame. 25 %: pirate lure, 2 raiders (tier − 1). |
-| Scan the tender first | Sensor Array | 70 %: 0.5 money, 0.3 fame. 30 %: you spot the trap and leave. |
+| Answer the call | — | 40 %: 0.4 money, 0.3 fame. 20 %: +1 crew (if a bunk is free), 0.3 fame. 20 %: pirate lure, 2 raiders (tier − 1). 20 %: a broken-down ship, page 24 (Dead in Space). |
+| Scan the tender first | Sensor Array | 55 %: 0.5 money, 0.3 fame. 25 %: you spot the trap and leave. 20 %: Dead in Space. |
 | Ignore it | — | Nothing. |
 
 Reads as: classic FTL beacon. The Sensor Array turns a gamble into a safe gain.
@@ -253,10 +253,23 @@ A ship event: the vault's coolant line ruptures. Every choice costs something (u
 
 Reads as: FTL's ship fire. The player picks which resource to lose: tech, crew and hull, or money.
 
+#### 24. Dead in Space (Arrival, any sector; weight 8; also a Distress Beacon outcome)
+From Cosmoteer's Career 2.0 dev blog: a distress signal can be "a broken-down ship needing supplies for repairs or a tow to the nearest shipyard".
+| Choice | Cost / Need | Outcomes |
+|---|---|---|
+| Hand over repair supplies | 25 + 5/tier steel, 5 + 1/tier coil | 0.5 money, 0.3 fame, +0.5 reputation. |
+| Tow them to the nearest station | Tractor Beam Emitter | A Tow Job mission: pull the freighter (no AI, no drive) to the nearest trade station at least 3,000 away. Pays 1 × standard money, 0.75 × fame and reputation. Fails if the freighter is destroyed. |
+| Strip their cargo | — | Steel, heat +10, −1 reputation. |
+| Leave them | — | Nothing. |
+
+Reads as: a use for the tractor beam, and a slow, visible job for a ship that wants to stay hidden.
+
 All catalog items are implemented.
 
 ## 4. Content rules for authors
 
+- Do not write counts that live elsewhere (the starting tech, spawn counts in spawns.rules): they drift. Use `{crates}` for the live fleet tech count. Counts that the same choice's Cost sets are fine.
+- Do not number the choices: the UX area draws the key numbers next to the buttons.
 - Keep text to 2 to 4 short sentences. Name concrete things (a crate, a cutter, a forger), not abstractions.
 - Put the cost on the button (`Cost`), not in the text. The window adds "(-10,000 credits)" for you.
 - Hide story options (`HideIfUnmet = true`) when a flag gates them. Show part and crew options greyed out, so players learn what to build.

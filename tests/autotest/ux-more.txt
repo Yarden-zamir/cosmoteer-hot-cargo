@@ -3,22 +3,14 @@
 newgame run
 wait 8
 expect active == 1
-# The start event window is open. Key 1 picks its first option.
+# The start event window stays open until the end of the test: its choice can move the ship.
 expect ev_pending == 1
-uxpick 1
-wait 2
-expect ev_pending == 0
-expect ux_dialogue_picks == 1
+# Only the gold key number shows: no choice text starts with its number.
+expect ux_event_text_numbers == 0
 # Watched supplies come from the part rules: battery yes, carbon (factory input only) no.
 expect ux_watched_battery == 1
 expect ux_watched_carbon == 0
 supplies
-# Several selected parts show the info box (the parts card needs the ship selected too).
-select
-selectparts
-# The parts card slides in after the ships card. In the smaller systems (spec 105) that can take more than 1 s.
-wait 4
-expect ux_parts_info > 0
 # Damage to the player ship counts as a hit.
 damage 0.5
 wait 2
@@ -43,6 +35,8 @@ commstab trade
 wait 2
 tradehint
 expect ux_trade_hint > 0
+# The hint box has its own space: it overlaps no row of the trade page.
+expect ux_trade_overlap == 0
 # CommsStayOnMap: the map leaves comms open and paused; a later close unpauses.
 map on
 wait 2
@@ -63,9 +57,32 @@ map on
 wait 2
 expect ux_comms_open == 0
 expect paused == 0
+map off
+wait 1
 # Wanted (last: it makes the station hostile): the line names the faction and the timer state.
 wanted
 wait 2
 wantedline
 expect ux_wanted_line > 0
+# Key 1 picks the first option of the start event, which is still open.
+expect ev_pending == 1
+uxpick 1
+wait 2
+expect ev_pending == 0
+expect ux_dialogue_picks == 1
+# Key 1 again closes the result page (its only option).
+uxpick 1
+wait 1
+partsstate
+# Several selected parts show the info box. An open event window holds the HUD input, so this runs after it closes.
+select
+selectparts
+wait 1
+partsstate
+expect ux_parts_info > 0
+expect ux_parts_xml == 1
+# The win panel is centered and inside the screen.
+win
+wait 2
+expect ux_win_centered == 1
 quit

@@ -19,7 +19,11 @@ You stole corporate tech. The corporation wants it back. Get it across about 8 s
 
 ![Heat stage alert](docs/screenshots/ux-heat-alert.jpg)
 
+![Choice event](docs/screenshots/ux-event-keys.jpg)
+
 ![Tech delivered](docs/screenshots/ux-win.jpg)
+
+![Run lost](docs/screenshots/ux-loss.jpg)
 
 It also improves some of the base game's UI. You can switch off each change in `tunables.rules`:
 
@@ -30,6 +34,8 @@ It also improves some of the base game's UI. You can switch off each change in `
 - A clearer fame tooltip.
 
 ![Galaxy map tooltip](docs/screenshots/ux-map.jpg)
+
+![Trade tab with sale effects](docs/screenshots/ux-trade.jpg)
 
 ## Install
 

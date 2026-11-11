@@ -1,0 +1,39 @@
+# Dead in Space and the Tow Job (spec 88), and live text tokens (spec 89).
+newgame run
+wait 8
+expectevent getaway
+# {crates} shows the live fleet tech count, not a fixed number.
+expectviewtext Your vault holds 6 crates
+choose 3 1
+# Distress Beacon can turn out to be a broken-down ship (follow-up page).
+event distress_beacon
+choose 1 4
+expectevent broken_down
+eventview
+# The tow needs a tractor beam, and the starter ship has none.
+expectchoice 2 disabled
+expectchoice 3 enabled
+# Stripping the cargo: steel, heat, and reputation loss with the local faction.
+ev_mark
+ev_rep_mark
+choose 3 1
+expect ev_res_steel_gain >= 30
+expect ev_heat_gain >= 9
+expect ev_rep_gain < 0
+# The Tow Job mission, spawned directly (the outcome needs a tractor beam).
+ev_spawn TowJob
+expecttagged hc_ev_towed == 1
+expect ev_tow_state == 0
+expect ev_tow_dist > 2500
+ev_mark
+ev_tow_arrive
+pause off
+wait 2
+expect ev_tow_state == 1
+expect ev_money_gain > 0
+# A second tow: the mission fails when the towed ship is destroyed.
+ev_spawn TowJob
+expect ev_tow_state == 0
+ev_tow_kill
+expect ev_tow_state == 2
+quit

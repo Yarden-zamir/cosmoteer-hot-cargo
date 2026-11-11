@@ -236,7 +236,7 @@ public static class ContractBook
         run.State.Contracts.SoldOut.Add(m.MissionID);
         run.AddHeat(t.InformantHeat, sim);
         if (t.InformantShips > 0)
-            Errors.Guard("informant wave", () => HunterSpawner.SpawnWave(run, sim, new StageResponse { ShipCount = t.InformantShips }, "Informant"));
+            Errors.Guard("informant wave", () => HunterSpawner.SpawnWave(run, sim, t.InformantShips, run.CurrentTier, "Informant", firstOfStage: false));
         string client = StringTools.EscapeForXml(ClientName(m)), contract = StringTools.EscapeForXml(m.Name.Text);
         Log.Info($"contracts: informant sold out {m.MetatypeID} {m.MissionID} ({ClientName(m)})");
         InformantWarnings++;

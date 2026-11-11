@@ -4,3 +4,29 @@
 		Name = HotCargoHunter
 		ToAdd = &<tactics/ai_hunter.rules>
 	}
+	// Smarter vanilla enemies (spec 202): pirates, bounties and ambushes (Normal, Wanderer), station guards, police, Easy.
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_normal.rules>/StrategyModules"
+		ManyToAdd = [&<tactics/ai_vanilla.rules>/Regroup, &<tactics/ai_vanilla.rules>/Call, &<tactics/ai_vanilla.rules>/Flee]
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_easy.rules>/StrategyModules"
+		ManyToAdd = [&<tactics/ai_vanilla.rules>/Regroup, &<tactics/ai_vanilla.rules>/Call, &<tactics/ai_vanilla.rules>/Flee]
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_wanderer.rules>/StrategyModules"
+		ManyToAdd = [&<tactics/ai_vanilla.rules>/Regroup, &<tactics/ai_vanilla.rules>/Call, &<tactics/ai_vanilla.rules>/Flee]
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_station_guard.rules>/StrategyModules"
+		ManyToAdd = [&<tactics/ai_vanilla.rules>/Regroup, &<tactics/ai_vanilla.rules>/Call, &<tactics/ai_vanilla.rules>/Flee]
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_police.rules>/StrategyModules"
+		ManyToAdd = [&<tactics/ai_vanilla.rules>/Regroup, &<tactics/ai_vanilla.rules>/Call, &<tactics/ai_vanilla.rules>/Flee]
+	}
