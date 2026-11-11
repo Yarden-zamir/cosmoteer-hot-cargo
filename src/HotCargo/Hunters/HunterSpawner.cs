@@ -89,7 +89,9 @@ public static class HunterSpawner
         int allegiance = HunterAllegiance(sim, career);
         float waveDirection = sim.Rand.Direction();
         float halfArc = MathF.PI / 180f * t.WaveArcDegrees / 2f;
-        for (int i = 0; i < response.ShipCount; i++)
+        int count = Math.Min(response.ShipCount, Math.Max(0, t.MaxLiveHunters - Hunters(sim).Count()));
+        if (count < response.ShipCount) Log.Info($"hunters: {reason} capped at {count} ships by MaxLiveHunters {t.MaxLiveHunters}");
+        for (int i = 0; i < count; i++)
         {
             var ship = PickShip(sim, t, tier);
             Vector2 loc = SpawnLocation(sim, fleetCenter, waveDirection, halfArc, t);

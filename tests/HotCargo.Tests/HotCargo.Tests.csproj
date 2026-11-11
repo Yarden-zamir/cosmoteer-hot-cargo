@@ -10,6 +10,7 @@
     <!-- Only pure model files, with no game types. Run with dotnet run in this folder. -->
     <Compile Include="../../src/HotCargo/Core/HeatModel.cs" />
     <Compile Include="../../src/HotCargo/Tech/TechModel.cs" />
+    <Compile Include="../../src/HotCargo/Tactics/TacticsModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="xunit.v3" Version="4.0.3" />

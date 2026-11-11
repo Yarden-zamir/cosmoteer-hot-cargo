@@ -32,9 +32,14 @@ internal sealed class KiteTactic(KiteTacticRules rules) : AITacticsModule
 
     public override bool UpdateAttackRadiusAndRotation(AttackCommand ac, ShipAI ai)
     {
-        float? hold = TacticGate.Active(Tactic.Kite) is { } t
-            ? TacticsModel.KiteEdgeDistance(HunterOrders.MaxWeaponRange(ac.Ship), HunterOrders.MaxWeaponRange(ac.Target), t.KiteRangeFraction)
-            : null;
+        float ownRange = 0f, targetRange = 0f;
+        float? hold = null;
+        if (TacticGate.Active(Tactic.Kite) is { } t)
+        {
+            ownRange = HunterOrders.MaxWeaponRange(ac.Ship);
+            targetRange = HunterOrders.MaxWeaponRange(ac.Target);
+            hold = TacticsModel.KiteEdgeDistance(ownRange, targetRange, t.KiteRangeFraction);
+        }
         if (hold is not { } edge)
         {
             if (_kiting) TacticsLog.Event(ac.Ship, Tactic.Kite, "stop");
@@ -45,7 +50,7 @@ internal sealed class KiteTactic(KiteTacticRules rules) : AITacticsModule
         float sightCap = ac.Ship.Sensors.SightRadius - ac.Ship.WorldBoundingRadius * 2f - ac.TargetRadius;
         ac.EdgeToEdgeFollowRadius = Math.Min(edge, sightCap);
         ac.SetBestAttackRotation(useIdealRange: false, onlyWithResources: true, rules.AttackRotationsToCheck, rules.AttackRotationSwitchThresholdFactor);
-        if (!_kiting) TacticsLog.Event(ac.Ship, Tactic.Kite, $"hold {ac.EdgeToEdgeFollowRadius:0} from {ac.Target.Metadata.PlainShipName}");
+        if (!_kiting) TacticsLog.Event(ac.Ship, Tactic.Kite, $"hold {ac.EdgeToEdgeFollowRadius:0} from {ac.Target.Metadata.PlainShipName} (range {ownRange:0} vs {targetRange:0})");
         _kiting = true;
         return true;
     }

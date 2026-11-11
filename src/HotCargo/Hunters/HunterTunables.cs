@@ -25,6 +25,8 @@ public sealed class HunterTunables
     [Serialize(Optional = true)] public string[] ShipTags = ["combat"];
     /// <summary>Shown before the ship name, so players can tell hunters from other ships.</summary>
     [Serialize(Optional = true)] public string ShipNamePrefix = "Corporate";
+    /// <summary>A wave spawns only enough ships to reach this many live hunters in the system. Keeps repeat strike waves from piling up without end.</summary>
+    [Serialize(Optional = true)] public int MaxLiveHunters = 12;
     /// <summary>Spec 34: a player ship with a Tech Vault part counts this many times more as a target.</summary>
     [Serialize(Optional = true)] public float VaultTargetFactor = 3f;
 }
