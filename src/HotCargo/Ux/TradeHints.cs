@@ -85,9 +85,10 @@ static class TradeHints
         var heat = run.T.Heat;
         float before = HeatModel.Multiplier(heat.HeatMultiplierByUnits, held) * heat.HeatPerGameMinute;
         float after = HeatModel.Multiplier(heat.HeatMultiplierByUnits, held - n) * heat.HeatPerGameMinute;
-        // The Journey score rule, with and without these units at the Buyer at today's price. The money term is the same base for both.
+        // The Journey score rule (spec 7): sell now (the refund is money) against keep (the units count as held, at the Buyer price).
+        // The other money and the other held units are the same base for both, so they are left out.
         long price = Buyer.UnitPrice(run);
-        long scoreDelta = Buyer.Score(refund, 0, price) - Buyer.Score(n * price, n, price);
+        long scoreDelta = Buyer.Score(refund, 0, price) - Buyer.Score(0, n, price);
         lines.Add(UxKit.Format("TechSaleFmt", n, before, after, scoreDelta.ToString("N0")));
     }
 
