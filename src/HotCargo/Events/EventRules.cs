@@ -139,8 +139,24 @@ public static class EventLibrary
     public static string EventsPath => Path.Combine(Mod.ModRoot, "events", "events.rules");
     public static string SpawnsPath => Path.Combine(Mod.ModRoot, "events", "spawns.rules");
 
+    /// <summary>Set when loading failed. Events stay off for the rest of the game (spec 78), so the error shows once.</summary>
+    public static string? LoadError { get; private set; }
+
     /// <summary>All events by ID, in file order. Loads and validates on first use; a content error throws.</summary>
-    public static IReadOnlyDictionary<string, EventRules> Events => _events ??= Load();
+    public static IReadOnlyDictionary<string, EventRules> Events
+    {
+        get
+        {
+            if (_events is not null) return _events;
+            if (LoadError is not null) throw new InvalidDataException(LoadError);
+            try { return _events = Load(); }
+            catch (Exception ex)
+            {
+                LoadError = $"{ex.Message} (events are off until the game restarts)";
+                throw;
+            }
+        }
+    }
 
     /// <summary>Events in file order. The order is stable, so weighted picks are deterministic.</summary>
     public static IReadOnlyList<EventRules> InOrder { get { _ = Events; return _ordered; } }

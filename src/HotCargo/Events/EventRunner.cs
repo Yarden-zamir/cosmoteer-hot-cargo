@@ -45,7 +45,7 @@ public static class EventRunner
     {
         var t = run.T.Events;
         var s = State(run);
-        if (!t.Enabled || s.Pending is not null || sim != run.Game.Sim) return;
+        if (!t.Enabled || EventLibrary.LoadError is not null || s.Pending is not null || sim != run.Game.Sim) return;
         double now = run.State.GameSeconds;
         if (s.StartDueSeconds >= 0 && now >= s.StartDueSeconds)
         {
@@ -157,6 +157,7 @@ public static class EventRunner
     public static void Choose(Run run, SimRoot sim, int playerIndex, int serial, int choiceIndex, int forcedOutcome = -1) => Guard(run, "event choice", () =>
     {
         var s = State(run);
+        if (run.State.Result != RunResult.Running) return;
         if (s.Pending is not { } p || p.Serial != serial)
         {
             Log.Info($"event choice ignored: serial {serial} is not the pending page");

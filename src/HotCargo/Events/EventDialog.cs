@@ -42,7 +42,8 @@ internal sealed class EventDialog : WindowBox
         if (_run != run) { _run = run; _resultShown = run.State.Events.LastResult?.Serial ?? 0; _open = null; _pausedByUs = false; }
         var sim = run.Game.Sim;
         if (sim is null) return;
-        var page = EventView.Current(run, sim, run.Game.LocalPlayerIndex, _resultShown);
+        // After a win or a loss, the run-end dialog owns the screen and events no longer apply.
+        var page = run.State.Result == RunResult.Running ? EventView.Current(run, sim, run.Game.LocalPlayerIndex, _resultShown) : null;
         try
         {
             if (page is null) { Close(run); return; }

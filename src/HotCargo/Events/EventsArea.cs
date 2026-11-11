@@ -149,6 +149,8 @@ public static class EventsArea
             Log.Info($"AUTOTEST moved next to station {station.Metadata.PlainShipName}");
             Autotest.Wait(2);
         };
+        // 1 while the sim is paused. Event dialogs must not pause headless test games.
+        Autotest.Fields["ev_paused"] = () => RequireRun().Game.Sim.IsPaused.Confirmed ? 1 : 0;
         Autotest.Fields["ev_pending"] = () => RequireRun().State.Events.Pending is null ? 0 : 1;
         Autotest.Fields["ev_seen"] = () => RequireRun().State.Events.Seen.Values.Sum();
         Autotest.Fields["ev_result"] = () => RequireRun().State.Events.LastResult?.Serial ?? 0;
