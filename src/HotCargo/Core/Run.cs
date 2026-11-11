@@ -52,6 +52,9 @@ public sealed class Run
 
     ObjectID? _nodeBeforeSwitch;
 
+    /// <summary>A new multiplayer run waits for the host to send its tunables (TunablesInput). Local, not saved.</summary>
+    internal bool HostTunablesPending;
+
     Run(GameRoot game, CareerGameModeManager mode, RunState state)
     {
         Game = game;
@@ -78,11 +81,13 @@ public sealed class Run
         {
             if (loaded) Log.Info("save has no Hot Cargo state; a new run starts at this point of the career");
             state = new RunState();
-            var file = TunablesFile.Read();
+            // In multiplayer each machine builds the new game itself and has its own tunables.rules. So every machine starts
+            // with the defaults, and the host sends its file as an MP input on its first frame (TunablesInput).
+            var file = mode.Game.NetManager.IsMultiplayer ? null : TunablesFile.Read();
             if (file is not null) { state.Tunables = file.Values; state.TunablesHash = file.Hash; }
             else state.TunablesHash = "defaults";
         }
-        var run = new Run(mode.Game, mode, state);
+        var run = new Run(mode.Game, mode, state) { HostTunablesPending = newRun && mode.Game.NetManager.IsMultiplayer };
         Current = run;
         // Validates the vanilla tier table now, so that a data problem shows at game start and not mid-run.
         GameData.StandardMissionFame(1);
@@ -206,15 +211,21 @@ public sealed class Run
         Log.Info($"run won: {reason}");
     }
 
+    /// <summary>Replaces the tunables of the run. Deterministic callers only: single-player reload or the host's MP input.</summary>
+    internal void ApplyTunables(TunablesFile.Loaded file)
+    {
+        State.Tunables = file.Values;
+        State.TunablesHash = file.Hash;
+        Log.Info($"tunables in effect: {file.Hash}");
+    }
+
     /// <summary>Single player only: swaps in new tunables from the file.</summary>
     internal void ReloadTunables()
     {
         if (IsMultiplayer) return;
         var file = TunablesFile.Read();
         if (file is null) return;
-        State.Tunables = file.Values;
-        State.TunablesHash = file.Hash;
-        Log.Info($"tunables reloaded: {file.Hash}");
+        ApplyTunables(file);
         Game.Gui.ShowAreaName("Hot Cargo tunables reloaded");
     }
 }
