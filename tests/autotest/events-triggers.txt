@@ -1,5 +1,5 @@
 # Event triggers: Start, Arrival (without a jump), Signal POI and Station.
-newgame last
+newgame run
 wait 8
 expectevent getaway
 ev_set CooldownSeconds 0

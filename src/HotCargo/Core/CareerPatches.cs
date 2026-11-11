@@ -64,17 +64,12 @@ static class CareerPatches
         if (Run.Current is not { } run || run.Mode != __instance) return;
         iHash.AddHash((int)(run.State.Heat * 1000));
         iHash.AddHash(run.State.SectorIndex);
-        iHash.AddHash(run.State.TunablesHash.GetHashCode(StringComparison.Ordinal));
+        // string.GetHashCode is random per process, so it would differ between clients. This hash is stable.
+        int tunables = 0;
+        foreach (char c in run.State.TunablesHash) tunables = tunables * 31 + c;
+        iHash.AddHash(tunables);
     }
 
-    /// <summary>A failure in a lifecycle hook turns the mod off for this game instead of crashing the game.</summary>
-    static void Guard(string what, Action action)
-    {
-        try { action(); }
-        catch (Exception ex)
-        {
-            Log.Error($"{what} failed; Hot Cargo is inactive for this game", ex);
-            Overlay.FatalError = $"{what}: {ex.Message}";
-        }
-    }
+    /// <summary>A failure in a lifecycle hook leaves Hot Cargo inactive for this game instead of crashing the game.</summary>
+    static void Guard(string what, Action action) => Errors.Guard(what, action);
 }

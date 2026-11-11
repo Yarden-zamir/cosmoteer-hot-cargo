@@ -80,11 +80,10 @@ static class TechAutotest
         Log.Info($"AUTOTEST vault {arg}: health {part.Health}/{part.Rules.MaxHealth}, tech in it {grid.Resources}");
     }
 
-    static Ship PlayerShip() =>
-        Vaults.HumanShips(Active().Game.Sim).OrderBy(s => s.Metadata.PlayerIndex).ThenBy(s => s.UniqueID).FirstOrDefault()
-        ?? throw new InvalidOperationException("no player ship");
+    internal static Ship PlayerShip() => SimQueries.FirstHumanShip(Active().Game.Sim) ?? throw new InvalidOperationException("no player ship");
 
-    static Ship NearestStation()
+    /// <summary>The trading station nearest to the first human ship. Throws when the system has none.</summary>
+    internal static Ship NearestStation()
     {
         var ship = PlayerShip();
         return Active().Game.Sim.Ships.AllShips
@@ -98,8 +97,7 @@ static class TechAutotest
     {
         var ship = PlayerShip();
         var station = NearestStation();
-        var offset = new Halfling.Geometry.Vector2(station.WorldBoundingRadius + ship.WorldBoundingRadius + 2f, 0f);
-        ship.WorldCenter = station.WorldCenter + offset;
+        Autotest.Teleport(ship, station.WorldCenter + new Halfling.Geometry.Vector2(station.WorldBoundingRadius + ship.WorldBoundingRadius + 2f, 0f));
         Log.Info($"AUTOTEST moved {ship.Name} next to {station.Name}; trade allowed={Active().Game.Sim.Mode.AllowResourceTrade(ship, station)}");
     }
 

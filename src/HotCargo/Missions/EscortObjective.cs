@@ -17,6 +17,7 @@ using Halfling.PortableHashing;
 using Halfling.Random;
 using Halfling.Serialization;
 using Halfling.Serialization.Generic;
+using HotCargo.Core;
 
 namespace HotCargo.Missions;
 

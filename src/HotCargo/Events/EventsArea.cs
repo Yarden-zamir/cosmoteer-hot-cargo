@@ -132,14 +132,14 @@ public static class EventsArea
             var sim = RequireSim();
             var signal = sim.Doodads.Where(d => d.Tags?.Contains(EventRunner.SignalTag) == true).OrderBy(d => d.UniqueID).FirstOrDefault()
                 ?? throw new InvalidOperationException("no signal POI in this system");
-            foreach (var s in HunterSpawner.HumanShips(sim).ToList()) s.WorldCenter = signal.Location + new Halfling.Geometry.Vector2(300, 0);
+            foreach (var s in sim.Ships.HumanPlayerSignificantShips.ToList()) Autotest.Teleport(s, signal.Location + new Halfling.Geometry.Vector2(300, 0));
             Autotest.Wait(3);
         };
         // ev_tostation: moves the player ships next to the nearest ship tagged trade_station (not any ship that trades).
         Autotest.Commands["ev_tostation"] = _ =>
         {
             var sim = RequireSim();
-            var ships = HunterSpawner.HumanShips(sim).ToList();
+            var ships = sim.Ships.HumanPlayerSignificantShips.ToList();
             var tag = new ID<SimObjectSpawner>("trade_station");
             var station = sim.Ships.Where(s => s.Tags?.Contains(tag) == true && !s.IsJunk)
                 .OrderBy(s => s.DetWorldCenter.DistanceSquaredTo(ships[0].DetWorldCenter)).FirstOrDefault()
@@ -181,9 +181,7 @@ public static class EventsArea
     static int Tagged(SimRoot sim, string tagName)
     {
         var tag = new ID<SimObjectSpawner>(tagName);
-        int live = sim.Ships.Count(s => s.Tags?.Contains(tag) == true && !s.IsJunk);
-        int stasis = sim.Stasis.Count(s => MissionArea.StasisTags(s)?.Contains(tag) == true);
-        return live + stasis;
+        return SimQueries.TaggedShips(sim, tag).Count;
     }
 
     static void SpawnSignal()
@@ -193,7 +191,7 @@ public static class EventsArea
         var tag = new ID<SimObjectSpawner>("hc_group_signal");
         var group = All(mode.SectorType.SystemGenerator.Spawners).OfType<SimObjectSpawner>().FirstOrDefault(s => s.Tags?.Contains(tag) == true)
             ?? throw new InvalidOperationException("signal spawner group not found in the sector generator; are the event rules loaded?");
-        var at = HunterSpawner.FleetCenter(sim) ?? throw new InvalidOperationException("no player ships");
+        var at = SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no player ships");
         // Test values for chance, count and distance, restored after, like the Missions test helper does.
         var saved = (group.SpawnChance, group.Count, group.Distance, group.MinDistanceFromTags);
         try

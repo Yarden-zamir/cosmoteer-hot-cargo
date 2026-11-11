@@ -54,11 +54,16 @@ public class TechModelTests
     }
 
     [Fact]
-    public void Vault_damage_loses_one_unit_per_damage_step_and_keeps_the_rest()
+    public void Vault_damage_loses_one_unit_per_damage_step_below_max_health()
     {
-        Assert.Equal((0, 50f), TechModel.UnitsLostToDamage(50f, 100f));
-        Assert.Equal((2, 30f), TechModel.UnitsLostToDamage(230f, 100f));
-        Assert.Throws<ArgumentOutOfRangeException>(() => TechModel.UnitsLostToDamage(1f, 0f));
+        // Max 1000, one unit per 150 damage: steps at 850, 700, 550, ...
+        Assert.Equal(0, TechModel.UnitsLostToDamage(1000, 1000, 851, 150f));
+        Assert.Equal(1, TechModel.UnitsLostToDamage(1000, 851, 850, 150f));
+        Assert.Equal(2, TechModel.UnitsLostToDamage(1000, 1000, 690, 150f)); // spec test: 31 % damage at 15 % per unit
+        Assert.Equal(0, TechModel.UnitsLostToDamage(1000, 500, 900, 150f)); // repair
+        // After a repair to full, the same damage costs tech again.
+        Assert.Equal(1, TechModel.UnitsLostToDamage(1000, 1000, 800, 150f));
+        Assert.Throws<ArgumentOutOfRangeException>(() => TechModel.UnitsLostToDamage(1000, 1000, 0, 0f));
     }
 }
 

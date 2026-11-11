@@ -51,11 +51,27 @@ public static class TunablesFile
         return File.Exists(FilePath) && File.GetLastWriteTimeUtc(FilePath) != _lastWrite;
     }
 
-    static void Validate(Tunables t)
+    /// <summary>Rejects values that would break sim logic later, so that the last valid values stay in effect (spec 53).</summary>
+    public static void Validate(Tunables t)
     {
-        if (t.Heat.HeatMultiplierByUnits.Length == 0) throw new InvalidDataException("Heat.HeatMultiplierByUnits must not be empty");
+        static void Require(bool ok, string what) { if (!ok) throw new InvalidDataException(what); }
+        var stages = t.Heat.Stages.Select(s => s.Name).ToList();
+        Require(t.Heat.HeatMultiplierByUnits.Length > 0, "Heat.HeatMultiplierByUnits must not be empty");
         for (int i = 1; i < t.Heat.Stages.Length; i++)
-            if (t.Heat.Stages[i].Heat < t.Heat.Stages[i - 1].Heat) throw new InvalidDataException("Heat.Stages must be ordered by Heat");
-        if (t.Heat.HeatCarryOverFraction is < 0 or > 1) throw new InvalidDataException("Heat.HeatCarryOverFraction must be 0 to 1");
+            Require(t.Heat.Stages[i].Heat >= t.Heat.Stages[i - 1].Heat, "Heat.Stages must be ordered by Heat");
+        Require(t.Heat.HeatCarryOverFraction is >= 0 and <= 1, "Heat.HeatCarryOverFraction must be 0 to 1");
+        foreach (string name in stages)
+            Require(t.Hunters.Stages.Any(r => r.Name == name), $"Hunters.Stages has no response for heat stage '{name}'");
+        foreach (var r in t.Hunters.Stages)
+            Require(stages.Contains(r.Name), $"Hunters.Stages names '{r.Name}', which is not a Heat.Stages name");
+        Require(t.Hunters.SpawnDistanceMin > 0 && t.Hunters.SpawnDistanceMax >= t.Hunters.SpawnDistanceMin, "Hunters.SpawnDistanceMin must be above 0 and at most SpawnDistanceMax");
+        foreach (var tactic in Enum.GetValues<Tactics.Tactic>())
+        {
+            string min = Tactics.TacticGate.Settings(t.Tactics, tactic).MinStage;
+            Require(min.Length == 0 || stages.Contains(min), $"Tactics.{tactic}MinStage '{min}' is not a Heat.Stages name");
+        }
+        Require(t.Tech.VaultDamagePerUnitLost > 0, "Tech.VaultDamagePerUnitLost must be above 0");
+        Require(t.Tech.BuyBackFactor >= 1, "Tech.BuyBackFactor must be 1 or more, or players can sell and buy back for profit");
+        Require(t.Journey.RunSectorCount >= 1, "Journey.RunSectorCount must be 1 or more");
     }
 }

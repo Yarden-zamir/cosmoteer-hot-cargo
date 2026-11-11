@@ -6,6 +6,8 @@ expect runmap == 1
 expect nodes >= 45
 expect nodes <= 55
 maptiers
+# No system is more dangerous than the main route at the same jump distance (HotCargoTierCap).
+expect tierovercap == 0
 # The last sector of a direct route (RunSectorCount - 1 jumps) is about FinalSectorTier (12).
 expect finaltier >= 10
 expect finaltier <= 13
@@ -20,8 +22,6 @@ wait 15
 buyer goto
 wait 3
 expect buyertrades == 1
-# steel stands in for the tech resource, which the Tech area defines on another branch.
-buyer resource steel
 expect buyerprice >= 1.49
 expect buyerprice <= 1.51
 save journey
@@ -31,13 +31,14 @@ log loaded
 expect buyers == 1
 # The Buyer mission completed when the ship arrived at the Buyer.
 expect buyermission == 0
-buyer resource steel
 # A real sale: crew carry the units to the Buyer, and the first delivery wins the run.
 buyer goto
 wait 2
 buyer sell 2
 wait 45
 expect won == 1
+expect delivered >= 1
+expect score > 0
 log won
 # Heat stays off after a win.
 heat -100

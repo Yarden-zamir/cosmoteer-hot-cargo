@@ -1,8 +1,17 @@
 # Hot Cargo playtest checklist
 
-Manual checks that the autotests do not cover. Start a new single-player career with the Hot Cargo mod on and debug keys on
-(F9 adds 10 heat, F10 starts the next stage, F11 / Shift+F11 add or remove 1 tech).
-To see each tactic decision in `hot_cargo_log.txt`, put `Tactics { DebugLog = true }` in `tunables.rules`.
+Manual checks that the autotests do not cover. Start a new single-player career with the Hot Cargo mod on and debug keys on.
+Debug keys are off by default. To turn them on, put this in `Mods\hot_cargo\tunables.rules` (the game reloads it while it runs):
+
+```
+Debug
+{
+	DebugKeys = true
+}
+```
+
+Keys: F9 / Shift+F9 add or remove 10 heat, F10 starts the next stage, F11 / Shift+F11 add or remove 1 tech.
+To see each tactic decision in `hot_cargo_log.txt`, also put `TacticsLog = true` in the `Debug` section.
 Mission checks are in [tests/playtest/missions.md](tests/playtest/missions.md).
 
 ## Tech
@@ -32,6 +41,15 @@ Mission checks are in [tests/playtest/missions.md](tests/playtest/missions.md).
 10. Bait (Strike): does one small ship dive in alone and then run back to the group? Is it clear enough that chasing it is a trap?
 11. Save during a fight with hunters, load, and check that the fight continues the same way.
 12. With the Tech area merged: hunters prefer the ship with the Tech Vault (`VaultTargetFactor`). Put the vault on a second ship and check that hunters switch to it.
+
+## Run and UX
+
+1. Open the galaxy map at the start. Check that no system near the start shows a much higher danger tier than the systems on the way out (spec 3).
+2. Hail a station. Check that the game pauses, and that it runs again when you close the comms window.
+3. Pause the game by hand, hail a station and close the window. Check that the game stays paused.
+4. Lose a run (sell the last unit). Check that the game-over lines sit in a readable panel and do not overlap.
+5. Win a run. Check that the win panel shows the score as a big number, and that the heat panel shows the score after the win.
+6. Load a career save from before you turned the mod on. Check that a run starts: a Tech Vault with tech, and the run intro.
 
 ## Events (spec 67-78, EVENTS.md)
 

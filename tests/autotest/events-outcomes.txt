@@ -1,5 +1,5 @@
 # Events (EVENTS.md): forced events, choices and their effects on money, heat, tech, flags and spawns.
-newgame last
+newgame run
 wait 8
 # The Start event opens StartDelaySeconds (3 game s) after a new run.
 expectevent getaway

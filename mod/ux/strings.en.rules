@@ -8,7 +8,7 @@ HotCargoUx
 	NextFmt = "{0} at {1:0}"
 	NextMax = "max"
 	TechFmt = "<fame>{0}</fame> tech held   <gray>worth</gray> <money>{1}</money> <gray>each</gray>"
-	StatusWon = "TECH DELIVERED - heat is off"
+	StatusWonFmt = "TECH DELIVERED   score {0}   heat is off"
 	StatusLost = "TECH LOST"
 	StatusHeatOff = "Heat is off"
 
@@ -25,7 +25,7 @@ HotCargoUx
 	IntroBodyFmt = "You stole corporate tech. The corporation wants it back.\n\n"\
 	               "<fame>Goal</fame>   Sell the tech to the <good>Buyer</good> in sector {0}. Each jump to a new system is one sector.\n"\
 	               "<fame>Heat</fame>   Rises over time and with each mission. It has {1} stages, and each stage sends hunters.\n"\
-	               "<fame>Cool</fame>   A jump to a new system drops heat to a quarter.\n"\
+	               "<fame>Cool</fame>   A jump to a new system drops heat to {2:0%}.\n"\
 	               "<fame>Cargo</fame>  The tech sits in your Tech Vault. Damage destroys it. If all of it is gone, the run ends.\n"\
 	               "<fame>Sell?</fame>  You can sell tech at stations on the way: less heat, more money, a lower final score."
 	IntroButton = "Fly"
@@ -33,6 +33,8 @@ HotCargoUx
 	// Run end
 	WinTitle = "TECH DELIVERED"
 	WinButton = "Keep playing"
+	WinScoreFmt = "<gray>SCORE</gray>\n<s48><money>{0}</money></s48>\n<fame>{1}</fame> tech delivered"
+	ScoreFmt = "Score {0}, {1} tech delivered"
 	WinContinue = "Heat is off. You can keep playing this career."
 	LossTitle = "THE CORPORATION RECOVERED THE TECH"
 	RunStatsFmt = "Sector <fame>{0}</fame> of {1}   ·   Run time <fame>{2}</fame>   ·   Tech held <fame>{3}</fame>   ·   Worth <money>{4}</money> each"

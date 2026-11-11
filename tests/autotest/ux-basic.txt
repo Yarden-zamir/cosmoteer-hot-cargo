@@ -1,6 +1,6 @@
 # UX area: the panels and patches build and run without errors in a headless game (the null graphics device still draws the GUI).
 # Any "ux: ... failed" line is an ERROR line, so a broken UI patch fails this test.
-newgame last
+newgame run
 wait 8
 expect active == 1
 expect ux_panel == 1
@@ -24,6 +24,25 @@ wait 1
 expect ux_panel == 0
 ux HeatPanel on
 closepanel
+# Comms pause: a comms window pauses the game, and closing it unpauses. A pause by hand stays after the close.
+tostation
+wait 2
+comms open
+wait 1
+expect paused == 1
+comms close
+wait 1
+expect paused == 0
+pause on
+wait 1
+comms open
+wait 1
+comms close
+wait 1
+expect paused == 1
+pause off
+wait 1
+expect paused == 0
 # A destroyed own ship gives one ship alert.
 uxlog
 kill

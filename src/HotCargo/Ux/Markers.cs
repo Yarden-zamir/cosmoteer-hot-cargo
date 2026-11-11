@@ -21,7 +21,6 @@ namespace HotCargo.Ux;
 /// </summary>
 static class Markers
 {
-
     static bool ShowBuyer => Run.Current is { } r && r.T.Ux.BuyerMarker;
 
     static string Tag(string? vanilla)
@@ -46,7 +45,8 @@ static class Markers
     {
         static void Postfix(StasisLandmark __instance, ref string? __result)
         {
-            if (__instance.StasisSpawner is StasisShipSpawner s && s.Tags?.Contains(Journey.Buyer.Tag) == true && ShowBuyer) __result = Tag(__result);
+            // A station that was live and went back into stasis has a serialized spawner, not a StasisShipSpawner. HasTag covers both.
+            if (__instance.StasisSpawner is { } s && s.HasTag(Journey.Buyer.Tag) && ShowBuyer) __result = Tag(__result);
         }
     }
 
@@ -92,7 +92,7 @@ static class Markers
         if (now - c.Time < 1.0) return c.Parts;
         c.Time = now;
         c.Parts.Clear();
-        foreach (var part in ship.Parts) if (part.Rules.ID == Tech.Vaults.VaultId) c.Parts.Add(part);
+        c.Parts.AddRange(Tech.Vaults.VaultParts(ship));
         return c.Parts;
     }
 }
