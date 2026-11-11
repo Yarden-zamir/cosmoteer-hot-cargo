@@ -59,7 +59,7 @@ Out of scope for this batch:
 9. **Loss**: when the fleet tech count reaches 0, the run is lost. Any cause counts: vault damage, a destroyed vault, crew that die while they carry tech, or a sale of the last unit. A Buyer delivery is the only exception, because it wins the run first.
 10. A loss shows the game-over screen with the title "The corporation recovered the tech", the reason and the run numbers.
 11. The mod does not delete save files after a loss.
-12. The loss check runs only when the count is certain: no ship jump is in progress, and no friendly ships wait in another system. The count must stay at 0 for `LossGraceSeconds` (default 3 s), so tech that crew carry between ships does not trigger a loss. The run state saves the time at 0, so a load or a client that joins sees the same timer.
+12. The loss check runs only when the count is certain: no ship jump is in progress (no ship in jump limbo; the local jump animation does not count, because it differs between multiplayer machines), and no friendly ships wait in another system. The count must stay at 0 for `LossGraceSeconds` (default 3 s), so tech that crew carry between ships does not trigger a loss. The run state saves the time at 0, so a load or a client that joins sees the same timer.
 
 ## 7. Tech units and the Tech Vault
 
@@ -67,7 +67,7 @@ Out of scope for this batch:
 14. Only the Tech Vault part stores tech.
 15. The Tech Vault is a buildable part. Its rules define its size, health, cost and capacity. Defaults: 2×2, 12,000 health (3 × the vanilla storage bay), 96 steel, capacity 6 units (2 tiles × stack size 3). Rules changes need a game restart.
 16. To move tech between ships, the players build a vault on the other ship. The crew then carry the tech over, like any other resource.
-17. A new run starts with `StartingTechUnits` (default 6) in a Tech Vault on the starting ship. The vault replaces a vanilla 2×2 storage bay of the ship. A ship without one gets the vault on a free spot next to the hull, with a door to a neighbor part where the rules allow one.
+17. A new run starts with `StartingTechUnits` (default 6) in a Tech Vault on the starting ship. In co-op each player commands only their own ships, so the first ship of each player gets a vault and an equal share of the units (6 = 3 + 3 for two players). The vault replaces a vanilla 2×2 storage bay of the ship. A ship without one gets the vault on a free spot next to the hull, with a door to a neighbor part where the rules allow one.
 65. Damage to a Tech Vault destroys tech inside it. Vault health has a step every `VaultDamagePerUnitLost` × its maximum health (default 0.15) below the maximum. Each time damage takes the health past a step, the vault loses one unit. A destroyed vault loses all units inside it.
 66. Repair of a vault does not bring back lost tech. Damage after a repair crosses the steps again and costs tech again.
 
@@ -147,9 +147,9 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 ## 14. Persistence and multiplayer
 
 57. Heat, the stages that already started, the sector index, the run result and the event state (requirement 76) are saved with the career save and loaded with it. Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
-58. All logic that changes simulation state runs in the deterministic simulation tick. It uses the simulation random source, not `System.Random`.
+58. All logic that changes simulation state runs in the deterministic simulation tick. It uses the simulation random source, not `System.Random`. The integrity hash includes heat, sector, stages, result, fleet tech, delivered units, run time, the loss timer, the event serials and the tunables hash, so a divergence starts a resync at once. Each desync that the game detects writes an `MP DESYNC` line to the Hot Cargo log.
 59. The fleet tech count and the loss rule count all human players together. A loss ends the run for everyone.
-60. In multiplayer, the mod does not reload tunables. The heat panel shows a short hash of the tunables file, so players can compare.
+60. In multiplayer, the mod does not reload tunables. A new co-op run starts with the default tunables on every machine. On its first frame the host sends its `tunables.rules` as a multiplayer input (`HotCargoTunables`), and every machine applies it at the same tick. The starting vault and the first system's offers exist before that and use the defaults. A loaded game uses the tunables in the save. The client's file has no effect. The heat panel shows a short hash of the tunables in effect, so players can compare.
 61. Debug keys do not work in multiplayer.
 
 ## 15. Mod activation and loading
@@ -250,7 +250,7 @@ Parallel work: steps 3 and 4 touch separate files and can run at the same time a
 - **Mac**: `dotnet build` and unit tests for `HeatModel` and tunables parsing. These tests are fast and catch silent math errors.
 - **PC smoke runs**: `scripts/run.sh` starts the game minimized. The mod writes a self-check to `hot_cargo_log.txt` at load: tunables parsed, patches applied, rules content found. Scripts read the log.
 - **In game**: a new career in single player with debug keys. Checks: overlay values, heat growth, each stage spawn, sale price, vault loss, Buyer win, save and load.
-- **Multiplayer**: one co-op session with two players. Checks: no desync over 20 minutes with hunters and a sale.
+- **Multiplayer**: co-op autotests (`scripts/autotest-mp.sh`, see CONTRIBUTING.md) run a host and a client on the PC and fail on any desync or state difference. A co-op session with two players checks the rest (PLAYTEST.md, Co-op).
 - **Playtest checklist** for the user, in `PLAYTEST.md`.
 
 ## 20. Risks
@@ -276,7 +276,7 @@ FTL-style choice events. EVENTS.md holds the design and the catalog.
 71. A trigger picks one eligible event by weight: `Weight + WeightPerHeat × heat + WeightPerTech × fleet tech count`, never below 0. Outcomes use the same weight rule. The outcome roll uses a seed from the simulation random source, taken when the page opens.
 72. Outcome effects: money, money in tech value, fame, heat, tech units (through the Tech Vaults), crew, vanilla resources, hull damage, spawned ships, story flags and a follow-up page. Money gains are split between the human players like a mission reward. The chooser pays money costs.
 73. Event money unit: 1 = the middle of a standard mission's pay at the sector tier × the economy money reward factor × `RewardScale` × `MoneyScale`. A fame unit is a standard mission's fame × the economy fame reward factor × `RewardScale` × `FameScale`. Heat effects × `HeatScale`. Money amounts use the tier and the tech value from when the page opened.
-74. A choice goes through a multiplayer input (`HotCargoEventChoice`). The input carries the page serial, so a second click on the same page (by another player) does nothing. The input checks the chooser's need again before it applies the choice.
+74. A choice goes through a multiplayer input (`HotCargoEventChoice`). The input carries the page serial, so a second click on the same page (by another player) does nothing. The input checks the chooser's need again before it applies the choice. If the sim rejects a choice, the buttons work again after 3 seconds. A trigger checks money needs against the human player with the most money, because any player can choose.
 75. After a choice, the window shows the outcome text and one result line per effect. A follow-up page shows the outcome text above its own text.
 76. The event state is saved in the run state: seen counts, flags, the waiting page, the last result, the cooldown and the per-system counts.
 77. In single player, an open event window pauses the game when `PauseOnEvent` is on. Headless test games do not pause.

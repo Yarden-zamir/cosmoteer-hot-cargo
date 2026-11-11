@@ -1,0 +1,17 @@
+# Co-op trade and loss, host side. Each player starts with a vault and half of the tech (3 + 3).
+# Each player sells from their own ship to a station and gets the money. The last sale loses the run for both.
+mphost {PORT}
+mpstart 2
+mp ev_set Enabled false
+expect vaulttech == 6
+mp tostation
+# The client sells its 3 units first.
+waitfor tech == 3 120
+expect money == 10000
+tech sell 3
+waitfor lost == 1 120
+expect tech == 0
+expect moneygain >= 30000
+expect desyncs == 0
+waitfor mpconnected == 0 240
+quit

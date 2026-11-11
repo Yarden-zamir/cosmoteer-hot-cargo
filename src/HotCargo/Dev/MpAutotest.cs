@@ -40,6 +40,10 @@ public static class MpAutotest
 
     const int StateLogTicks = 300;
 
+    /// <summary>Set by "mp mpresync": the next out-of-sync call is a test resync, not a desync.</summary>
+    internal static bool ExpectResync;
+    static int _mark;
+
     internal static void AddCommands()
     {
         Autotest.Commands["mphost"] = arg => Host(int.Parse(arg, CultureInfo.InvariantCulture));
@@ -66,16 +70,32 @@ public static class MpAutotest
             (career._setLoadGameNameRpc ?? throw new InvalidOperationException("career config has no load RPC"))(path.FilenameWithoutExtension);
             career.InvokeReadySettingChanged();
         };
-        // mpresync (host): sends the host's game to the clients and restarts it, the same thing the game does after a desync.
+        // mp mpresync: the resync that the game does after a desync (the host sends its game to the clients, every machine reloads it).
+        // Run it through "mp", so every machine expects the resync and DesyncPatch does not count it. Then: waitfor mpgames >= N.
         Autotest.Commands["mpresync"] = _ =>
         {
-            var game = RequireMpGame();
-            var host = game.NetManager as MPHostManager ?? throw new InvalidOperationException("mpresync is for the host");
-            int before = _mpGames;
-            host.ResyncGame();
-            Autotest.WaitFor(() => _mpGames > before && InGame(), 120, "the resynced game");
+            var mp = RequireMpGame().NetManager as BaseMPManager ?? throw new InvalidOperationException("no MP manager");
+            ExpectResync = true;
+            // A client starts it, as a client does when its integrity hash differs from the host's.
+            if (!mp.IsHost) mp._onOutOfSyncRpc(default);
+        };
+        // mp mpmark <n>: sets a test counter inside the sim on every machine. The other machine waits with "waitfor mpmark >= n".
+        Autotest.Commands["mpmark"] = arg => _mark = int.Parse(arg, CultureInfo.InvariantCulture);
+        Autotest.Fields["mpmark"] = () => _mark;
+
+        // tunablesfile <rules text>: replaces the slot's tunables.rules, before mphost. Test slots only; deploy restores the repo file.
+        Autotest.Commands["tunablesfile"] = arg => File.WriteAllText(TunablesFile.FilePath, arg);
+        // mpchoose <serial> <choice number>: sends an event choice for any page serial, like a click on a page that another player
+        // already answered. The sim must ignore a serial that is not the pending page.
+        Autotest.Commands["mpchoose"] = arg =>
+        {
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length != 2) throw new InvalidOperationException("mpchoose needs: serial choice");
+            RequireMpGame().NetManager.EnqueueInput(new Events.EventChoiceInput(
+                int.Parse(parts[0], CultureInfo.InvariantCulture), int.Parse(parts[1], CultureInfo.InvariantCulture) - 1));
         };
 
+        Autotest.Fields["heatperminute"] = () => Autotest.RequireRun().T.Heat.HeatPerGameMinute;
         Autotest.Fields["desyncs"] = () => Desyncs;
         Autotest.Fields["mpgames"] = () => _mpGames;
         Autotest.Fields["ishost"] = () => RequireMpGame().NetManager.IsHost ? 1 : 0;
@@ -173,8 +193,18 @@ public static class MpAutotest
             Autotest.WaitFor(() => ShipCount(me) > 0, 60, "the client's ship", () => Ready(arg));
             return;
         }
-        gss.OnReadyClicked(null, EventArgs.Empty);
-        Autotest.WaitFor(InGame, 300, "the host to start the game");
+        // A host setting change (for example a loaded save) sets every player to not ready, so the wait clicks ready again.
+        double nextClick = 0;
+        Autotest.WaitFor(() =>
+        {
+            if (InGame()) return true;
+            if (Setup() is { } s && s._playersByID.TryGetValue(GameApp.Messenger.UniqueID, out var p) && !p.IsReady && App.Clock.Time.Seconds >= nextClick)
+            {
+                s.OnReadyClicked(null, EventArgs.Empty);
+                nextClick = App.Clock.Time.Seconds + 3;
+            }
+            return false;
+        }, 300, "the host to start the game");
     }
 
     /// <summary>mpstart [players] (host): waits until that many players are in the setup and all clients are ready, then starts.</summary>
@@ -265,6 +295,12 @@ static class DesyncPatch
     static void Prefix(BaseMPManager __instance)
     {
         if (__instance._isOutOfSync) return;
+        if (MpAutotest.ExpectResync)
+        {
+            MpAutotest.ExpectResync = false;
+            Log.Info($"AUTOTEST test resync at input tick {__instance._curInputTick} (host={__instance.IsHost})");
+            return;
+        }
         MpAutotest.Desyncs++;
         var s = Run.Current?.State;
         Log.Error($"MP DESYNC at input tick {__instance._curInputTick} (host={__instance.IsHost}); the game resyncs from the host. " +

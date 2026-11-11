@@ -75,3 +75,31 @@ To see more events fast, put `Events { ArrivalEventChance = 1  StationEventChanc
 
 1. Convoy Duty: the offer shows a "Heat -15 (convoy cover)" reward line. When you collect the reward at the station, does heat drop? Does the offer text explain why?
 2. Discreet Bounty: when a trap springs, the message "It was a setup. Corporate hunters drop out of the dark!" shows with the wanted alert. Is it clear that the bounty was a trap?
+
+## Co-op (two players)
+
+The co-op autotests (`tests/autotest-mp/`) cover sync, the host's tunables, events, a sale, a loss, a win, missions, save, load and resync. Only two people can check the points below.
+
+Before you start:
+
+- Both players install the same Hot Cargo release and turn the mod on. A different mod version blocks the join.
+- The host's `tunables.rules` applies to the run. The client's file has no effect in co-op. A new co-op run uses the default values for the first seconds, until the host's values arrive. The starting vault and the first system's offers use the defaults.
+- Debug keys do not work in co-op.
+- If the game shows "resyncing", note what happened just before. Both players then send their `Mods\hot_cargo\csharp\hot_cargo_log.txt`. Search it for `MP DESYNC`.
+
+Checks:
+
+1. Host a career, the friend joins. Do both players see the run intro, the same heat panel values and the same tunables hash?
+2. Only the host's starting ship gets the Tech Vault. Is that fine for co-op, or must each player start with a vault? Can the friend's crew take tech from the host's vault?
+3. Play 20 minutes with hunters on screen: at least two stages, a Strike wave and a fight. Does a "resyncing" message show? Do both players see the same hunters in the same places?
+4. Hunters prefer the ship with the Tech Vault. With the vault on one player's ship, does the other player feel useful in the fight?
+5. Each player opens the comms window with a station. The game does not pause in co-op (`PauseOnCommsMultiplayer` is off). Is that right, or must co-op pause too?
+6. An event opens. Do both players see it? The friend picks a choice with a cost. Does the friend pay, and not the host? Does the host's window switch to the result?
+7. Both players click a choice at the same moment. Does only one choice apply, and do both see the same result?
+8. The friend sells tech at a station. Does the friend get the money? Does the tech count and the heat drop for both?
+9. The friend accepts a Hot Cargo mission (escort, assault, shady offer). Does it show in both mission logs? Does the reward pay both players?
+10. Jump to a new system together. Does the heat carry over the same for both? Does the Arrival event come for both?
+11. The host saves. Quit, host again, load the save, and the friend joins. Do heat, stage, the pending event and the missions come back?
+12. The friend leaves mid-run. Does the run continue for the host without errors? The game does not accept a join into a running game. To bring the friend back, use the save and load steps of check 11.
+13. Sell the last unit or lose the vault. Does the loss show for both players at the same time?
+14. Deliver tech to the Buyer. Does the win show for both, with the same score?

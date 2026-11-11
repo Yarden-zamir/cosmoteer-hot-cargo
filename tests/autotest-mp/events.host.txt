@@ -1,0 +1,24 @@
+# Co-op events, host side: the client picks a choice and pays for it, a late second click does nothing,
+# then the host picks a choice with a rolled outcome and both machines get the same result.
+mphost {PORT}
+mpstart 2
+waitfor ev_pending == 1 30
+expectevent getaway
+ev_mark
+# The client buys the forged codes (choice 1, costs the chooser money).
+waitfor ev_result >= 1 60
+expectflag fake_codes 1
+expect ev_money_gain == 0
+# A click on the answered page (serial 1) arrives late. The sim ignores it: no new result, the host pays nothing.
+mpchoose 1 1
+wait 3
+expect ev_result == 1
+expect ev_money_gain == 0
+# The host answers the next event. The outcome roll uses the page seed, so both machines get the same outcome.
+mp event distress_beacon
+waitfor ev_pending == 1 10
+choose 1
+waitfor ev_result >= 2 30
+expect desyncs == 0
+waitfor mpconnected == 0 240
+quit
