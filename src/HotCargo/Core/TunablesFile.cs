@@ -84,5 +84,6 @@ public static class TunablesFile
         Require(t.Tech.VaultDamagePerUnitLost > 0, "Tech.VaultDamagePerUnitLost must be above 0");
         Require(t.Tech.BuyBackFactor >= 1, "Tech.BuyBackFactor must be 1 or more, or players can sell and buy back for profit");
         Require(t.Journey.RunSectorCount >= 1, "Journey.RunSectorCount must be 1 or more");
+        Missions.Mechanics.MechanicsTunables.Validate(t.Mechanics);
     }
 }

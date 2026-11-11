@@ -105,7 +105,7 @@ public static class MissionArea
     static SimRoot RequireSim() => RequireRun().Game.Sim ?? throw new InvalidOperationException("no sim");
 
     /// <summary>All offered missions in the current system: every station list, the system list and the galaxy list.</summary>
-    static IEnumerable<Mission> Offers(SimRoot sim)
+    internal static IEnumerable<Mission> Offers(SimRoot sim)
     {
         foreach (MetaSpaceStation station in SpaceStation.GetStations(sim, onlyOperating: false))
             foreach (Mission m in station.GetProvidedMissions() ?? new MissionList())
@@ -114,24 +114,32 @@ public static class MissionArea
         foreach (Mission m in ((CareerGameModeManager)sim.RequireGame().Mode).GameGlobalAvailableMissions) yield return m;
     }
 
-    /// <summary>
-    /// Runs the Hot Cargo spawner groups now, centered on the first player ship, with SpawnChance forced to 1.
-    /// Arg: escort, assault, shady or all. Single player test helper; it uses sim.Rand from a GUI frame.
-    /// </summary>
+    /// <summary>Runs the Hot Cargo spawner groups now. Arg: escort, assault, shady or all.</summary>
     static void TestGenerate(string arg)
     {
-        var sim = RequireSim();
-        var mode = (CareerSimModeManager)sim.Mode;
         string[] names = arg is "" or "all" ? [.. Metatypes.Keys] : [arg];
-        var groups = new List<SimObjectSpawner>();
         foreach (string name in names)
-        {
             if (!Metatypes.ContainsKey(name)) throw new InvalidOperationException($"unknown group '{name}'");
-            var tag = new ID<SimObjectSpawner>($"hc_group_{name}");
-            groups.Add(AllSpawners(mode.SectorType.SystemGenerator.Spawners)
-                .OfType<SimObjectSpawner>().FirstOrDefault(s => s.Tags?.Contains(tag) == true)
-                ?? throw new InvalidOperationException($"spawner group {tag} not found in the sector generator; are the mission rules loaded?"));
-        }
+        GenerateGroups(RequireSim(), [.. names.Select(n => $"hc_group_{n}")]);
+    }
+
+    /// <summary>The spawner group with the tag in the sector generator. Throws when the mission rules did not load.</summary>
+    internal static SimObjectSpawner FindGroup(SimRoot sim, string groupTag)
+    {
+        var tag = new ID<SimObjectSpawner>(groupTag);
+        return AllSpawners(((CareerSimModeManager)sim.Mode).SectorType.SystemGenerator.Spawners)
+            .OfType<SimObjectSpawner>().FirstOrDefault(s => s.Tags?.Contains(tag) == true)
+            ?? throw new InvalidOperationException($"spawner group {tag} not found in the sector generator; are the mission rules loaded?");
+    }
+
+    /// <summary>
+    /// Runs spawner groups now, centered on the first player ship, with SpawnChance forced to 1.
+    /// Single player test helper; it uses sim.Rand from a GUI frame.
+    /// </summary>
+    internal static void GenerateGroups(SimRoot sim, IReadOnlyList<string> groupTags)
+    {
+        var mode = (CareerSimModeManager)sim.Mode;
+        var groups = groupTags.Select(t => FindGroup(sim, t)).ToList();
         var objects = ExistingSpawnTags(sim);
         var parentTree = new List<SimSpawner.SpawnedObject> { new(sim.Ships.HumanPlayerSignificantShips.First().DetWorldCenter) };
         uint batch = 0, fleet = 0;
@@ -148,7 +156,7 @@ public static class MissionArea
         {
             for (int i = 0; i < groups.Count; i++) groups[i].SpawnChance = saved[i];
         }
-        Log.Info($"AUTOTEST generated Hot Cargo groups: {string.Join(", ", names)}");
+        Log.Info($"AUTOTEST generated groups: {string.Join(", ", groupTags)}");
         Autotest.Wait(2);
     }
 
@@ -177,7 +185,7 @@ public static class MissionArea
         return objects;
     }
 
-    static IEnumerable<SimSpawner> AllSpawners(IEnumerable<SimSpawner> roots)
+    internal static IEnumerable<SimSpawner> AllSpawners(IEnumerable<SimSpawner> roots)
     {
         foreach (SimSpawner s in roots)
         {
@@ -187,11 +195,13 @@ public static class MissionArea
         }
     }
 
-    /// <summary>Accepts the first offered mission of the given kind, like CommMissionsTab.MPAcceptMissionInput does.</summary>
-    static void TestAccept(string arg)
+    static void TestAccept(string arg) =>
+        AcceptOffer(Metatypes.GetValueOrDefault(arg) ?? throw new InvalidOperationException($"unknown mission kind '{arg}'"));
+
+    /// <summary>Accepts the first offered mission of the metatype, like CommMissionsTab.MPAcceptMissionInput does.</summary>
+    internal static Mission AcceptOffer(string metatype)
     {
         var sim = RequireSim();
-        string metatype = Metatypes.GetValueOrDefault(arg) ?? throw new InvalidOperationException($"unknown mission kind '{arg}'");
         var id = new ID<MissionMetatype>(metatype);
         foreach (MetaSpaceStation station in SpaceStation.GetStations(sim, onlyOperating: false))
         {
@@ -200,13 +210,13 @@ public static class MissionArea
             list.RemoveMission(mission);
             RequireRun().Mode.Missions.AddMission(mission, track: true);
             Log.Info($"AUTOTEST accepted {metatype}");
-            return;
+            return mission;
         }
         throw new InvalidOperationException($"no {metatype} offer in this system");
     }
 
     /// <summary>The objective of the given type in the latest accepted mission that has one.</summary>
-    static T? FindObjective<T>() where T : Cosmoteer.Modes.Career.Missions.Objectives.Objective
+    internal static T? FindObjective<T>() where T : Cosmoteer.Modes.Career.Missions.Objectives.Objective
     {
         var found = new List<T>();
         foreach (Mission m in RequireRun().Mode.Missions)
@@ -240,7 +250,7 @@ public static class MissionArea
                  $"dest={o.Destination} dist={ship.DetWorldCenter.DistanceTo(o.Destination):0} player={ship.Metadata.PlayerIndex} players={player} paused={sim.IsPaused.Confirmed} clockPaused={sim.Clock.Paused} scale={sim.Clock.ScaleFactor} t={sim.LogicalTime} runSeconds={RequireRun().State.GameSeconds:0.0}");
     }
 
-    static void TeleportPlayers(Vector2 near)
+    internal static void TeleportPlayers(Vector2 near)
     {
         int i = 0;
         foreach (Ship s in RequireSim().Ships.HumanPlayerSignificantShips.ToList())

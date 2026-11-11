@@ -1,0 +1,894 @@
+// Hot Cargo mechanics missions (spec 130 to 139). Added to the end of the sector system generator by mod/missions/mechanics/actions.rules,
+// so suns, nebulas, stations and asteroid fields exist when these spawners run.
+// Each group has a hc_mech_* tag. Missions/Mechanics/MechanicsArea.cs sets each SpawnChance from the Mechanics tunables
+// before a system generates (spec 131); the values here are only the fallback. The autotest command mech_generate finds the groups by tag.
+// Rewards use the vanilla tier tables, so they scale with the sector tier like vanilla missions (spec 139).
+Type = None
+SubSpawners
+[
+	&~/DroneSiege
+	&~/Prototype
+	&~/SunMining
+	&~/Tow
+	&~/Capture
+	&~/Survey
+	&~/ClaimJumpers
+	&~/ListeningPost
+]
+
+// Spec 132. A faction listening post in open space. Tiny drones attack it in waves for five minutes of guarded time.
+DroneSiege
+{
+	Type = None
+	Tags = [hc_mech_siege]
+	SpawnChance = 20%
+	RootLocation = Tag
+	RootLocationTag = trade_station
+
+	SubSpawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_siege_outpost]
+			Distance = [3000, 4500]
+			MinDistanceFromTags = [[sun, 6000], [station, 2500], [bounty, 2000]]
+			MinDistanceFromNebulas = [[ion_storm, 1000]]
+			SuppressLocationAssertions = true
+			Allegiance = FactionMilitary
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				Tier = [1, 4]
+				AllowTierRangeExpansion = true
+				Tags = [defense]
+			}
+			AI
+			{
+				Type = DefensePlatform
+				ChanceToConsiderSurrenderingToPlayer = 0
+			}
+
+			SubSpawners
+			[
+				{
+					Type = Mission
+					Metatype = HotCargoDroneSiege
+					SpawnAt = Tag
+					SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+					Faction = OwnerOfTag
+					FactionTag = { Mode=Latest; Tag=hc_siege_outpost; }
+					OkayIfFactionTagNotFound = true
+					Objectives
+					[
+						{
+							Type = Sequential
+							SubObjectives
+							[
+								{
+									// The guarded clock pauses while nobody is on station. This cap stops an offer from lasting forever.
+									Type = TimeLimit
+									TimeLimit = 25:00
+									SubObjectives
+									[
+										{
+											Type = HotCargoHoldOut
+											TargetTag = { Mode=Latest; Tag=hc_siege_outpost; }
+											Profile = Siege
+										}
+									]
+								}
+								{
+									Type = ReceiveRewards
+								}
+							]
+						}
+					]
+					// Drones pay no kill fame, so the contract carries it all. 1.5x money for five minutes of guard duty.
+					Rewards
+					[
+						{
+							Type = Money
+							MoneyPerHighTier = &/TIER_TABLES/StandardMoneyPerTier
+							MoneyPerTierMultiplier = 1.5
+							RoundToMultiple = 500
+						}
+						{
+							Type = Fame
+							FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
+							MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+							FamePerTierMultiplier = 1.25
+						}
+						{
+							Type = Reputation
+							ReputationPerHighTier = &/TIER_TABLES/StandardReputationPerTier
+							ReputationPerTierMultiplier = 2
+						}
+						{
+							Type = HotCargoContract
+							AcceptFee = 0
+							FlatHeat = 0
+							TrailWeight = 1
+							InformantChance = 0
+						}
+					]
+				}
+			]
+		}
+	]
+}
+
+// Spec 133. A pirate ship in deep space carries a Prototype Core. The core goes on its hull when it first comes in range after acceptance.
+// RememberPhysicalState keeps the core (and the damage) when the carrier goes into stasis.
+Prototype
+{
+	Type = None
+	Tags = [hc_mech_prototype]
+	SpawnChance = 20%
+	Distance = [0, 19000]
+	MinDistanceFromTags = [[sun, 6000], [station, 4000], [bounty, 3000], [hc_shady, 4000]]
+	MinDistanceFromNebulas = [[ion_storm, 1000]]
+	SuppressLocationAssertions = true
+
+	SubSpawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_proto_carrier]
+			Allegiance = Unique
+			RememberPhysicalState = true
+			FamePerTier = &/TIER_TABLES/StandardFamePerTier
+			MaxFamePerTier = &/TIER_TABLES/StandardMaxFamePerTier
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+				UseEvenShipTypeDistribution = true
+			}
+			// Always willing to consider surrender: a beaten carrier hails the players instead of fighting to the last part.
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 1
+				PatrolRadius = 800
+				TargetAcquireRangeFromOrigin = 2500
+				TargetUnacquireRangeFromOrigin = 3500
+			}
+
+			SubSpawners
+			[
+				{
+					Type = Doodads
+					Distance = [0, 1000]
+					ScaleFactor = 1800
+					Tags = [hc_proto_area, poi_unknown]
+					DoodadType = cosmoteer.poi_target_area
+					ShowOnlyInFog = true
+					Undiscovered = true
+					HideIfUnexplored = true
+				}
+				{
+					Type = Mission
+					Metatype = HotCargoPrototype
+					SpawnAt = Tag
+					SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+					Faction = None
+					Objectives
+					[
+						{
+							Type = Sequential
+							SubObjectives
+							[
+								{
+									Type = HotCargoPrototype
+									CarrierTag = { Mode=Latest; Tag=hc_proto_carrier; }
+									AreaTag = { Mode=Latest; Tag=hc_proto_area; }
+									RecoverRange = 400
+								}
+								{
+									Type = ReceiveRewards
+								}
+							]
+						}
+					]
+					// A careful fight against a ship of the sector tier: 2x money, 1.5x fame. The carrier also pays kill fame when it is wrecked.
+					Rewards
+					[
+						{
+							Type = Money
+							MoneyPerHighTier = &/TIER_TABLES/StandardMoneyPerTier
+							MoneyPerTierMultiplier = 2
+							RoundToMultiple = 500
+						}
+						{
+							Type = Fame
+							FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
+							MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+							FamePerTierMultiplier = 1.5
+						}
+						// The broker sells the carrier's position: a fee up front. Pirates talk, so the corporation may hear of it.
+						{
+							Type = HotCargoContract
+							AcceptFee = 0.3
+							FlatHeat = 5
+							TrailWeight = 1
+							InformantChance = 10%
+						}
+					]
+				}
+			]
+		}
+	]
+}
+
+// Spec 138. Helion Ore asteroids in one seam inside the heat zone of a single sun (binary suns are too small and too close together).
+// Sun scale 3000: instant kill inside 1500, heat damage out to 3750. The seam sits at 2650 from the sun, asteroids within 700 of it.
+// Hooks for other system generators (for example a solar zone archetype): any doodad with the tag "sun" can host the seam;
+// a sector type with the spawn flag hc_no_sun_mining gets none. The seam carries the tags hc_sun_seam and hc_sun_ore.
+SunMining
+{
+	Type = None
+	Tags = [hc_mech_sunmining]
+	SpawnChance = 25%
+	Conditions { ProhibitSpawnFlags = [binary_sun, no_sun, hc_no_sun_mining] }
+	RootLocation = Tag
+	RootLocationTag = sun
+
+	SubSpawners
+	[
+		{
+			Type = None
+			Tags = [hc_sun_seam]
+			Distance = 2650
+			SuppressLocationAssertions = true
+
+			SubSpawners
+			[
+				{
+					Type = Doodads
+					Tags = [hc_sun_ore]
+					Count = [6, 8]
+					Distance = [0, 700]
+					MinDistanceFromTags = [[hc_sun_ore, 350], [rare_asteroid, 250]]
+					SuppressLocationAssertions = true
+					DoodadTypes
+					[
+						{ Type = yarden_zamir.asteroid_helion_m; ChanceWeight = 2; }
+						{ Type = yarden_zamir.asteroid_helion_l; ChanceWeight = 1; }
+					]
+				}
+				{
+					Type = Doodads
+					DoodadType = cosmoteer.poi_target_area
+					ScaleFactor = 900
+					Tags = [hc_sun_ore_area]
+					Undiscovered = true
+					HideIfUnexplored = true
+					ShowOnlyInFog = true
+					SuppressLocationAssertions = true
+				}
+			]
+		}
+		{
+			Type = Mission
+			Metatype = HotCargoSunMining
+			SpawnAt = Tag
+			SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+			Faction = OwnerOfTag
+			FactionTag = { Mode=Nearest; Tag=trade_station; }
+			OkayIfFactionTagNotFound = true
+			Objectives
+			[
+				{
+					Type = Sequential
+					SubObjectives
+					[
+						{
+							Type = TimeLimit
+							TimeLimit = 30:00
+							SubObjectives
+							[
+								{
+									Type = DeliverResources
+									ResourceType = yarden_zamir.helion_ore
+									Amount = [30, 45]
+									DeliveryLocationTag = { Mode=Nearest; Tag=trade_station; }
+									SuggestedCollectionAreaTag = { Mode=Latest; Tag=hc_sun_ore_area; }
+								}
+							]
+						}
+						{
+							Type = ReceiveRewards
+						}
+					]
+				}
+			]
+			// 1.25x money and the ore also sells at the station (50 each at the default refund).
+			Rewards
+			[
+				{
+					Type = Money
+					MoneyPerHighTier = &/TIER_TABLES/StandardMoneyPerTier
+					MoneyPerTierMultiplier = 1.25
+					RoundToMultiple = 500
+				}
+				{
+					Type = Fame
+					FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
+					MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+				}
+				{
+					Type = Reputation
+					ReputationPerHighTier = &/TIER_TABLES/StandardReputationPerTier
+				}
+				// Rival of Claim Jumpers: two mining outfits, one claim.
+				{
+					Type = HotCargoContract
+					AcceptFee = 0
+					FlatHeat = 0
+					TrailWeight = 1
+					RivalGroup = "ore_claims"
+					InformantChance = 5%
+				}
+			]
+		}
+	]
+}
+
+// Spec 134. A derelict freighter drifts away from a station. Bring it in: tractor beams, a push, or a claimed and crewed hulk.
+Tow
+{
+	Type = None
+	Tags = [hc_mech_tow]
+	SpawnChance = 15%
+	RootLocation = Tag
+	RootLocationTag = trade_station
+
+	SubSpawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_tow_hulk]
+			Distance = [3000, 4500]
+			MinDistanceFromTags = [[sun, 5000], [station, 2500], [bounty, 2000]]
+			MinDistanceFromNebulas = [[ion_storm, 1000]]
+			SuppressLocationAssertions = true
+			Allegiance = Junk
+			SpawnCrew = false
+			InitToMax = false
+			RandomHealthRange = [60%, 90%]
+			RememberPhysicalState = true
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [trade]
+			}
+
+			SubSpawners
+			[
+				{
+					Type = Mission
+					Metatype = HotCargoSalvageRights
+					SpawnAt = Tag
+					SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+					Faction = OwnerOfTag
+					FactionTag = { Mode=Nearest; Tag=trade_station; }
+					OkayIfFactionTagNotFound = true
+					Objectives
+					[
+						{
+							Type = Sequential
+							SubObjectives
+							[
+								{
+									Type = TimeLimit
+									TimeLimit = 25:00
+									SubObjectives
+									[
+										{
+											Type = HotCargoSalvageTow
+											HulkTag = { Mode=Latest; Tag=hc_tow_hulk; }
+											StationTag = { Mode=Nearest; Tag=trade_station; }
+										}
+									]
+								}
+								{
+									Type = ReceiveRewards
+								}
+							]
+						}
+					]
+					// No fight, but slow work: 1.25x money, normal fame.
+					Rewards
+					[
+						{
+							Type = Money
+							MoneyPerHighTier = &/TIER_TABLES/StandardMoneyPerTier
+							MoneyPerTierMultiplier = 1.25
+							RoundToMultiple = 500
+						}
+						{
+							Type = Fame
+							FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
+							MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+						}
+						{
+							Type = Reputation
+							ReputationPerHighTier = &/TIER_TABLES/StandardReputationPerTier
+							ReputationPerTierMultiplier = 2
+						}
+						// Rival of Repossession: two salvage firms, one license.
+						{
+							Type = HotCargoContract
+							AcceptFee = 0
+							FlatHeat = 0
+							TrailWeight = 1
+							RivalGroup = "salvage_rights"
+							InformantChance = 0
+						}
+					]
+				}
+			]
+		}
+	]
+}
+
+// Spec 135. A stolen freighter with one or two escorts, all on one hostile side. Take the freighter intact:
+// it surrenders when it is beaten (accept in comms), or the players knock out its crew and claim it with their own.
+Capture
+{
+	Type = None
+	Tags = [hc_mech_capture]
+	SpawnChance = 15%
+	Distance = [0, 19000]
+	MinDistanceFromTags = [[sun, 6000], [station, 4000], [bounty, 3000], [hc_shady, 4000]]
+	MinDistanceFromNebulas = [[ion_storm, 1000]]
+	SuppressLocationAssertions = true
+	SynchronizeAllegiance = true
+
+	SubSpawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_capture_target]
+			Allegiance = Unique
+			RememberPhysicalState = true
+			FamePerTier = &/TIER_TABLES/StandardFamePerTier
+			MaxFamePerTier = &/TIER_TABLES/StandardMaxFamePerTier
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				Tier = 1
+				AllowTierRangeExpansion = true
+				Tags = [trade]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 1
+				PatrolRadius = 600
+				TargetAcquireRangeFromOrigin = 1500
+				TargetUnacquireRangeFromOrigin = 2500
+			}
+		}
+		{
+			Type = Ships
+			Tags = [hc_capture_escort]
+			Count = [1, 2]
+			Distance = [200, 500]
+			Allegiance = Unique
+			SuppressLocationAssertions = true
+			FamePerTier = &/TIER_TABLES/StandardFamePerTier
+			MaxFamePerTier = &/TIER_TABLES/StandardMaxFamePerTier
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				Tier = -1
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 600
+				TargetAcquireRangeFromOrigin = 2500
+				TargetUnacquireRangeFromOrigin = 3500
+			}
+		}
+		{
+			Type = Doodads
+			Distance = [0, 800]
+			ScaleFactor = 1800
+			Tags = [hc_capture_area, poi_unknown]
+			DoodadType = cosmoteer.poi_target_area
+			ShowOnlyInFog = true
+			Undiscovered = true
+			HideIfUnexplored = true
+		}
+		{
+			Type = Mission
+			Metatype = HotCargoCapture
+			SpawnAt = Tag
+			SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+			Faction = None
+			Objectives
+			[
+				{
+					Type = Sequential
+					SubObjectives
+					[
+						{
+							Type = HotCargoCapture
+							TargetTag = { Mode=Latest; Tag=hc_capture_target; }
+							AreaTag = { Mode=Latest; Tag=hc_capture_area; }
+							TierOffset = 1
+						}
+						{
+							Type = ReceiveRewards
+						}
+					]
+				}
+			]
+			// A fight with restraint: 1.75x money, 1.25x fame. The escorts pay kill fame on top.
+			Rewards
+			[
+				{
+					Type = Money
+					MoneyPerHighTier = &/TIER_TABLES/StandardMoneyPerTier
+					MoneyPerTierMultiplier = 1.75
+					RoundToMultiple = 500
+				}
+				{
+					Type = Fame
+					FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
+					MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+					FamePerTierMultiplier = 1.25
+				}
+				// The bank wants a bond up front. Rival of Salvage Rights.
+				{
+					Type = HotCargoContract
+					AcceptFee = 0.4
+					FlatHeat = 4
+					TrailWeight = 1
+					RivalGroup = "salvage_rights"
+					InformantChance = 10%
+				}
+			]
+		}
+	]
+}
+
+// Spec 136. Three markers inside ion storms. Systems without ion storms place no markers, and the objective then drops the offer.
+Survey
+{
+	Type = None
+	Tags = [hc_mech_survey]
+	SpawnChance = 25%
+	RootLocation = Tag
+	RootLocationTag = trade_station
+
+	SubSpawners
+	[
+		{
+			Type = Doodads
+			DoodadType = cosmoteer.poi_target_area
+			ScaleFactor = 400
+			Tags = [hc_survey_marker]
+			Count = 3
+			Distance = [2500, 22000]
+			MinDistanceFromSiblings = 1500
+			MaxDistanceFromNebulas = [[ion_storm, 0]]
+			MinDistanceFromTags = [[sun, 5000], [station, 2000]]
+			Undiscovered = true
+			HideIfUnexplored = true
+			ShowOnlyInFog = true
+			SuppressLocationAssertions = true
+		}
+		{
+			Type = Mission
+			Metatype = HotCargoSurvey
+			SpawnAt = Tag
+			SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+			Faction = OwnerOfTag
+			FactionTag = { Mode=Nearest; Tag=trade_station; }
+			OkayIfFactionTagNotFound = true
+			Objectives
+			[
+				{
+					Type = Sequential
+					SubObjectives
+					[
+						{
+							Type = HotCargoSurvey
+							MarkersTag = { Mode=Latest; Tag=hc_survey_marker; Max=3; LimitToBatch=true; }
+							ScanRadius = 400
+							MinMarkers = 2
+						}
+						{
+							Type = ReceiveRewards
+						}
+					]
+				}
+			]
+			// No enemies, but lightning and travel: normal money, less fame (and so less heat).
+			Rewards
+			[
+				{
+					Type = Money
+					MoneyPerHighTier = &/TIER_TABLES/StandardMoneyPerTier
+					RoundToMultiple = 500
+				}
+				{
+					Type = Fame
+					FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
+					MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+					FamePerTierMultiplier = 0.75
+				}
+				{
+					Type = Reputation
+					ReputationPerHighTier = &/TIER_TABLES/StandardReputationPerTier
+				}
+				{
+					Type = HotCargoContract
+					AcceptFee = 0
+					FlatHeat = 0
+					TrailWeight = 0.5
+					InformantChance = 0
+				}
+			]
+		}
+	]
+}
+
+// Spec 137. A civilian mining barge sits in an asteroid field. Raiders come in small waves for four minutes of guarded time.
+ClaimJumpers
+{
+	Type = None
+	Tags = [hc_mech_guard]
+	SpawnChance = 15%
+	RootLocation = Tag
+	RootLocationTag = asteroid_field
+
+	SubSpawners
+	[
+		// A small unacquire range keeps the barge at its claim. It turns to fight but does not chase.
+		{
+			Type = Ships
+			Tags = [hc_guard_miner]
+			Distance = [0, 600]
+			Allegiance = FactionCivilian
+			SuppressLocationAssertions = true
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [trade]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 100
+				TargetAcquireRangeFromOrigin = 150
+				TargetUnacquireRangeFromOrigin = 150
+			}
+
+			SubSpawners
+			[
+				{
+					Type = Mission
+					Metatype = HotCargoClaimJumpers
+					SpawnAt = Tag
+					SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+					Faction = OwnerOfTag
+					FactionTag = { Mode=Latest; Tag=hc_guard_miner; }
+					OkayIfFactionTagNotFound = true
+					Objectives
+					[
+						{
+							Type = Sequential
+							SubObjectives
+							[
+								{
+									Type = TimeLimit
+									TimeLimit = 20:00
+									SubObjectives
+									[
+										{
+											Type = HotCargoHoldOut
+											TargetTag = { Mode=Latest; Tag=hc_guard_miner; }
+											Profile = Guard
+										}
+									]
+								}
+								{
+									Type = ReceiveRewards
+								}
+							]
+						}
+					]
+					// Raiders from C# waves pay no kill fame. 1.25x money, normal fame.
+					Rewards
+					[
+						{
+							Type = Money
+							MoneyPerHighTier = &/TIER_TABLES/StandardMoneyPerTier
+							MoneyPerTierMultiplier = 1.25
+							RoundToMultiple = 500
+						}
+						{
+							Type = Fame
+							FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
+							MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+						}
+						{
+							Type = Reputation
+							ReputationPerHighTier = &/TIER_TABLES/StandardReputationPerTier
+							ReputationPerTierMultiplier = 2
+						}
+						// Rival of Sun Mining: two mining outfits, one claim.
+						{
+							Type = HotCargoContract
+							AcceptFee = 0
+							FlatHeat = 0
+							TrailWeight = 1
+							RivalGroup = "ore_claims"
+							InformantChance = 5%
+						}
+					]
+				}
+			]
+		}
+	]
+}
+
+// Spec 140. A faction listening post hides in the gas cloud near a hostile base. Its scout must get within Mechanics.ScanRange
+// of the base; the players pick the spot and start the scan from the mission HUD. The scan alerts the base, and waves come from its side.
+// The base is the vanilla military station shape on a hostile side, like the Joint Strike stronghold.
+ListeningPost
+{
+	Type = None
+	Tags = [hc_mech_listening]
+	SpawnChance = 15%
+	Distance = [0, 20000]
+	MinDistanceFromTags = [[sun, 7500], [station, 6000], [ftl_gate, 3000], [bounty, 3000]]
+	MinDistanceFromNebulas = [[electron, 1000], [ion_storm, 1000]]
+	SuppressLocationAssertions = true
+
+	SubSpawners
+	[
+		: <./Data/modes/career/sectors/sysgen_military_stations.rules>/BaseMilitaryStation
+		{
+			Tags = [station, military_station, hc_lp_base]
+			Features = [Landmark, HideUntilDiscovered]
+			Allegiance = Unique
+			Distance = 0
+			MinDistanceFromTags = []
+		}
+
+		// The post and its scout, a few kilometres away inside the gas cloud.
+		{
+			Type = None
+			Tags = [hc_lp_post_area]
+			Distance = [5500, 7000]
+			MaxDistanceFromNebulas = [[cloudy, 0]]
+			MinDistanceFromTags = [[sun, 5000], [station, 2500]]
+			SuppressLocationAssertions = true
+			SynchronizeFactions = true
+
+			SubSpawners
+			[
+				{
+					Type = Ships
+					Tags = [hc_lp_post]
+					Allegiance = FactionMilitary
+					ShipCriteria
+					{
+						UseLocalFactionWeights = true
+						Tier = [1, 4]
+						AllowTierRangeExpansion = true
+						Tags = [defense]
+					}
+					AI
+					{
+						Type = DefensePlatform
+						ChanceToConsiderSurrenderingToPlayer = 0
+					}
+				}
+				// The scout follows the players while they look for a scan spot. A small unacquire range keeps it near its AI origin.
+				{
+					Type = Ships
+					Tags = [hc_lp_scout]
+					Distance = [200, 350]
+					Allegiance = FactionMilitary
+					SuppressLocationAssertions = true
+					ShipCriteria
+					{
+						UseLocalFactionWeights = true
+						Tier = [1, 3]
+						AllowTierRangeExpansion = true
+						Tags = [combat]
+					}
+					AI
+					{
+						Type = Normal
+						ChanceToConsiderSurrenderingToPlayer = 0
+						PatrolRadius = 100
+						TargetAcquireRangeFromOrigin = 300
+						TargetUnacquireRangeFromOrigin = 300
+					}
+				}
+				{
+					Type = Mission
+					Metatype = HotCargoListeningPost
+					SpawnAt = Tag
+					SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+					Faction = OwnerOfTag
+					FactionTag = { Mode=Latest; Tag=hc_lp_scout; }
+					OkayIfFactionTagNotFound = true
+					Objectives
+					[
+						{
+							Type = Sequential
+							SubObjectives
+							[
+								{
+									Type = TimeLimit
+									TimeLimit = 30:00
+									SubObjectives
+									[
+										{
+											Type = HotCargoHoldOut
+											TargetTag = { Mode=Latest; Tag=hc_lp_scout; }
+											BaseTag = { Mode=Latest; Tag=hc_lp_base; }
+											Profile = Scan
+										}
+									]
+								}
+								{
+									Type = ReceiveRewards
+								}
+							]
+						}
+					]
+					// Four waves next to a hostile base: 1.75x money (more with intensive scans), 1.25x fame. Each survived wave keeps its share.
+					Rewards
+					[
+						{
+							Type = Money
+							MoneyPerHighTier = &/TIER_TABLES/StandardMoneyPerTier
+							MoneyPerTierMultiplier = 1.75
+							RoundToMultiple = 500
+						}
+						{
+							Type = Fame
+							FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
+							MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+							FamePerTierMultiplier = 1.25
+						}
+						{
+							Type = Reputation
+							ReputationPerHighTier = &/TIER_TABLES/StandardReputationPerTier
+							ReputationPerTierMultiplier = 2
+						}
+						// Spies talk to spies: a small informant risk, and the scan itself is loud.
+						{
+							Type = HotCargoContract
+							AcceptFee = 0
+							FlatHeat = 3
+							TrailWeight = 1
+							InformantChance = 10%
+						}
+					]
+				}
+			]
+		}
+	]
+}

@@ -21,6 +21,7 @@ public static class Mod
             Journey.JourneyArea.Register();
             Hunters.HunterArea.Register();
             Missions.MissionArea.Register();
+            Missions.Mechanics.MechanicsArea.Register();
             Tactics.TacticsArea.Register();
             Events.EventsArea.Register();
             Ux.UxArea.Register();
