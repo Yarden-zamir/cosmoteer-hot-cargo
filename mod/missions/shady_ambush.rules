@@ -24,9 +24,10 @@ Ambush
 				AllowTierRangeExpansion = true
 				Tags = [combat]
 			}
+			// The corporation springs the trap (spec 40), so ambushers use the hunter AI and its tactics.
 			AI
 			{
-				Type = Normal
+				Type = HotCargoHunter
 				ChanceToConsiderSurrenderingToPlayer = 0
 				PatrolRadius = 800
 				TargetAcquireRangeFromOrigin = 4000
