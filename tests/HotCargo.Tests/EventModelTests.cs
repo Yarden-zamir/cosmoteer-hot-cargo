@@ -107,3 +107,43 @@ public class EventModelTests
         Assert.True(EventModel.CooldownOver(120, 0, 120));
     }
 }
+
+public class EventModelBatch2Tests
+{
+    static readonly Snapshot Fleet = new()
+    {
+        Sector = 5,
+        SectorsLeft = 3,
+        Flags = new HashSet<string> { "magpies_paid", "old" },
+        FlagSectors = new Dictionary<string, int> { ["magpies_paid"] = 3 },
+    };
+
+    [Fact]
+    public void Flag_age_counts_sectors_since_the_flag_was_set()
+    {
+        Assert.Null(EventModel.FirstUnmet(new Need { FlagAges = [("magpies_paid", 2)] }, Fleet));
+        Assert.Equal(UnmetKind.FlagAge, EventModel.FirstUnmet(new Need { FlagAges = [("magpies_paid", 3)] }, Fleet)?.Kind);
+        // A flag that is not set, or set without a recorded sector, never meets an age need.
+        Assert.Equal(UnmetKind.FlagAge, EventModel.FirstUnmet(new Need { FlagAges = [("defector", 0)] }, Fleet)?.Kind);
+        Assert.Equal(UnmetKind.FlagAge, EventModel.FirstUnmet(new Need { FlagAges = [("old", 0)] }, Fleet)?.Kind);
+    }
+
+    [Fact]
+    public void Sectors_left_bounds()
+    {
+        Assert.Null(EventModel.FirstUnmet(new Need { MinSectorsLeft = 1, MaxSectorsLeft = 3 }, Fleet));
+        Assert.Equal(UnmetKind.MaxSectorsLeft, EventModel.FirstUnmet(new Need { MaxSectorsLeft = 2 }, Fleet)?.Kind);
+        Assert.Equal(UnmetKind.MinSectorsLeft, EventModel.FirstUnmet(new Need { MinSectorsLeft = 4 }, Fleet)?.Kind);
+        Assert.Null(EventModel.FirstUnmet(new Need(), Fleet with { SectorsLeft = 99 }));
+    }
+
+    [Fact]
+    public void Heat_scaled_cost_and_buyer_price()
+    {
+        Assert.Equal(0.8f, EventModel.HeatScaledUnits(0.3f, 0.01f, 50f), 4);
+        Assert.Equal(0f, EventModel.HeatScaledUnits(0.3f, -0.1f, 50f));
+        Assert.Equal(0.6f, EventModel.BuyerPriceAfter(0.75f, 0.8f), 4);
+        Assert.Throws<ArgumentOutOfRangeException>(() => EventModel.BuyerPriceAfter(1f, 1.2f));
+        Assert.Throws<ArgumentOutOfRangeException>(() => EventModel.BuyerPriceAfter(1f, 0f));
+    }
+}

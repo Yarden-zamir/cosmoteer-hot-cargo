@@ -1,0 +1,30 @@
+# Courier Job (spec 85): the first trade station in a system puts the offer into its mission list; the contact is far away.
+newgame run
+wait 8
+expectevent getaway
+ev_set CourierChance 1
+ev_set StationEventChance 0
+choose 3 1
+ev_tostation
+wait 2
+expect ev_courier_offers == 1
+# Once per system: coming back does not offer a second job.
+ev_arrive
+wait 2
+ev_tostation
+wait 2
+expect ev_courier_offers == 1
+ev_courier_accept
+expect ev_courier_offers == 0
+expect ev_courier_reached == 0
+# The first teleport loads the contact out of stasis, the second one puts the ships next to its live position.
+ev_courier_goto
+pause off
+ev_courier_goto
+pause off
+wait 5
+log contact
+expect ev_paused == 0
+expect ev_courier_seen == 1
+expect ev_courier_reached == 1
+quit

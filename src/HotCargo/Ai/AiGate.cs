@@ -38,6 +38,12 @@ public static class AiGate
 
     public static bool IsHunterAi(Ship ship) => ship.AI?.Rules.ID == HunterAi;
 
+    /// <summary>
+    /// A hunter of the corporate response (hc_hunter tag). Only these jump out when they flee and pull hunter groups with calls.
+    /// Shady trap and event ambushers run the hunter AI too, but they are mission targets and act like vanilla ships there.
+    /// </summary>
+    public static bool IsCorporateHunter(Ship ship) => ship.HasTag(HunterSpawner.HunterTag);
+
     /// <summary>A ship that surrendered to the players keeps its truce. The behaviors leave it alone.</summary>
     public static bool Surrendered(Ship ship) =>
         ship.Sim?.Mode is CareerSimModeManager career && career.SurrenderedAIs.Contains(ship.UniqueID);

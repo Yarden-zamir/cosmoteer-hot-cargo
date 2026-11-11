@@ -39,6 +39,17 @@ public static class EventText
         return (amount > 0 ? W.GoodTextColor : W.BadTextColor).FormatWithXml($"{r.TextIconXml} {Signed(amount)} {name}");
     }
 
+    public static string Reputation(ID<Cosmoteer.Factions.FactionRules> faction, int amount)
+    {
+        var f = GameApp.Rules.GetFactionRules(faction);
+        return (amount > 0 ? W.GoodTextColor : W.BadTextColor).FormatWithXml($"{f.TextIconXml} {Signed(amount)} reputation with {f.NameKey.Text}");
+    }
+
+    public static string NoFaction() => "<gray>No faction controls this system.</gray>";
+
+    public static string BuyerPrice(float multiplier) =>
+        W.BadTextColor.FormatWithXml($"Buyer price now {multiplier * 100:0}% of normal");
+
     public static string NoVaultRoom(int units) => $"<gray>No vault room for {units} more.</gray>";
 
     public static string NoBunk(int crew) => $"<gray>No free bunk for {crew} more crew.</gray>";
@@ -75,7 +86,8 @@ public static class EventText
         UnmetKind.MaxSector => $"Only up to sector {u.Amount:0}",
         UnmetKind.Resource => $"Needs {ResourceName(u.Id, (int)u.Amount)}",
         UnmetKind.Part => $"Needs a {PartName(u.Id)}",
-        UnmetKind.Flag or UnmetKind.NotFlag => "Not available",
+        UnmetKind.Flag or UnmetKind.NotFlag or UnmetKind.FlagAge => "Not available",
+        UnmetKind.MinSectorsLeft or UnmetKind.MaxSectorsLeft => "Not available here",
         _ => throw new ArgumentOutOfRangeException(nameof(u), u.Kind, null),
     };
 }

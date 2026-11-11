@@ -19,6 +19,7 @@ public static class UxArea
     {
         Run.Hooks.NewRunStarted += run => RunEndUi.IntroPending = run;
         AddAutotestCommands();
+        UxAutotest.Register();
     }
 
     /// <summary>App.Director does not exist yet when Register runs, so frame hooks start at the first title screen.</summary>
@@ -35,6 +36,10 @@ public static class UxArea
             {
                 UxKit.Guard("ship alerts", ShipAlerts.OnFrame);
                 if (Run.Current is { } run) UxKit.Guard("markers", () => Markers.Update(run));
+                if (App.Director.States.OfType<Cosmoteer.Game.GameRoot>().FirstOrDefault() is not { } game) return;
+                UxKit.Guard("damage pings", () => DamagePings.OnFrame(game));
+                UxKit.Guard("low supplies", () => LowSupplies.OnFrame(game));
+                UxKit.Guard("dialogue keys", () => DialogueKeys.OnFrame(game));
             };
         }
     }
@@ -52,15 +57,22 @@ public static class UxArea
             Screenshot.SetForceRender(arg != "off");
         };
         Autotest.Commands["screenshot"] = arg => { Screenshot.Capture(arg); Autotest.Wait(1.5); };
-        // ux <Switch> on|off: sets one UxTunables switch for this run (before/after screenshots).
+        // ux <Field> on|off|<number>: sets one UxTunables field for this run (before/after screenshots, thresholds in tests).
         Autotest.Commands["ux"] = arg =>
         {
             var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length != 2) throw new InvalidOperationException("ux needs: Switch on|off");
+            if (parts.Length != 2) throw new InvalidOperationException("ux needs: Field on|off|number");
             var field = typeof(UxTunables).GetField(parts[0], BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase)
-                ?? throw new InvalidOperationException($"unknown ux switch '{parts[0]}'");
-            if (field.FieldType != typeof(bool)) throw new InvalidOperationException($"ux switch '{parts[0]}' is not a bool");
-            field.SetValue(Autotest.RequireRun().T.Ux, parts[1] == "on");
+                ?? throw new InvalidOperationException($"unknown ux field '{parts[0]}'");
+            object value = field.FieldType == typeof(bool) ? parts[1] switch
+                {
+                    "on" => true,
+                    "off" => false,
+                    _ => throw new InvalidOperationException($"ux field '{parts[0]}' needs on or off"),
+                }
+                : field.FieldType == typeof(float) ? float.Parse(parts[1], CultureInfo.InvariantCulture)
+                : throw new InvalidOperationException($"ux field '{parts[0]}' has type {field.FieldType.Name}");
+            field.SetValue(Autotest.RequireRun().T.Ux, value);
         };
         // damage F: test only, single player. Sets every second part of the first own ship to health fraction F.
         Autotest.Commands["damage"] = arg =>

@@ -22,7 +22,7 @@ namespace HotCargo.Ai;
 [ReflectivePortableHashing(Explicit = true)]
 internal sealed class CallStrategyRules : AIStrategyModuleRules
 {
-    /// <summary>True in the hunter AI. A hunter call brings the next waiting hunter group; a vanilla call brings allies.</summary>
+    /// <summary>True in the hunter AI: the Tactics.CallEnabled switch applies. A corporate hunter call brings the next waiting hunter group; other calls bring allies.</summary>
     [Serialize(Optional = true), PortableHash] public bool ForHunters;
     /// <summary>An answering ally renews its move only when the target moved further than this.</summary>
     [Serialize(Optional = true), PortableHash] public float MoveTolerance = 300f;
@@ -140,7 +140,7 @@ internal sealed class CallStrategy(CallStrategyRules rules) : AIStrategyModule
         _calling = false;
         _cooldownUntil = now + t.CallCooldownSeconds;
         int answered = 0;
-        if (rules.ForHunters)
+        if (AiGate.IsCorporateHunter(ship))
         {
             if (Run.Current is { } run && HunterSpawner.PullNextWave(run)) answered = 1;
         }
@@ -180,7 +180,7 @@ internal sealed class CallStrategy(CallStrategyRules rules) : AIStrategyModule
     }
 
     bool HasListeners(Ship ship, TacticsTunables t) =>
-        rules.ForHunters ? Run.Current?.State.Hunters.Pending.Count > 0 : Listeners(ship, t).Any();
+        AiGate.IsCorporateHunter(ship) ? Run.Current?.State.Hunters.Pending.Count > 0 : Listeners(ship, t).Any();
 
     /// <summary>Allies in call range with this module, outside storms, that are not calling or answering already.</summary>
     static IEnumerable<(Ship Ship, CallStrategy Module)> Listeners(Ship ship, TacticsTunables t)

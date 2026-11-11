@@ -19,7 +19,7 @@ namespace HotCargo.Ai;
 [ReflectivePortableHashing(Explicit = true)]
 internal sealed class FleeStrategyRules : AIStrategyModuleRules
 {
-    /// <summary>True in the hunter AI. A fleeing hunter jumps out of the system; a fleeing vanilla ship repairs and comes back.</summary>
+    /// <summary>True in the hunter AI: the Tactics.FleeEnabled switch applies. A fleeing corporate hunter jumps out of the system; other ships repair and come back.</summary>
     [Serialize(Optional = true), PortableHash] public bool ForHunters;
     [Serialize(Optional = true), PortableHash] public int RepairChecksPerTick = 2;
     [Serialize(Optional = true), PortableHash] public HashSet<ID<SimObjectSpawner>>? AvoidableDoodadTags;
@@ -31,7 +31,7 @@ internal sealed class FleeStrategyRules : AIStrategyModuleRules
 /// <summary>
 /// Spec 193-195. A badly damaged ship may decide to run (one roll each time it drops below the flee health),
 /// and a ship without offensive weapons always runs. It keeps away from the nearest enemy.
-/// A hunter jumps out of the system after FleeJumpSeconds. A vanilla ship repairs when clear and fights again once recovered.
+/// A corporate hunter jumps out of the system after FleeJumpSeconds. Any other ship repairs when clear and fights again once recovered.
 /// Tell: the ship turns its back, the label shows FLEEING and the jump countdown, and the ship jumps out with the FTL effect.
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
@@ -58,11 +58,10 @@ internal sealed class FleeStrategy : AIStrategyModule
     }
 
     public bool Fleeing => _fleeing;
-    public bool JumpsOut => _rules.ForHunters;
 
     /// <summary>Seconds until a fleeing hunter jumps out, or null. For the overlay label.</summary>
     public double? SecondsToJump(Ship ship, TacticsTunables t) =>
-        _fleeing && _rules.ForHunters ? Math.Max(0, t.FleeJumpSeconds - (HunterOrders.Sim(ship).LogicalTime - _since).Seconds) : null;
+        _fleeing && AiGate.IsCorporateHunter(ship) ? Math.Max(0, t.FleeJumpSeconds - (HunterOrders.Sim(ship).LogicalTime - _since).Seconds) : null;
 
     public override void GetIntegrityHash(IntegrityHash iHash)
     {
@@ -89,9 +88,11 @@ internal sealed class FleeStrategy : AIStrategyModule
         }
         float health = HunterOrders.HealthFraction(ship);
         bool hasWeapons = AiGate.HasOffensiveWeapons(ship);
+        // Only corporate hunters jump out. Other ships with the hunter AI (shady trap and event ambushers) are mission targets, so they stay like vanilla ships.
+        bool corporate = AiGate.IsCorporateHunter(ship);
         bool wasRolled = _rolled;
         var next = AiModel.NextFlee(new FleeState(_fleeing, _rolled), hasWeapons, health, t.FleeHealthFraction, t.FleeRecoverFraction,
-            t.FleeChance, canStop: !_rules.ForHunters, () => ship.Rand.Single());
+            t.FleeChance, canStop: !corporate, () => ship.Rand.Single());
         if (next.Rolled && !wasRolled && !next.Fleeing) TacticsLog.Event(ship, AiArea.FleeStay, $"stays at health {health:0.00}");
         if (next.Fleeing != _fleeing)
         {
@@ -106,7 +107,7 @@ internal sealed class FleeStrategy : AIStrategyModule
         (_fleeing, _rolled) = (next.Fleeing, next.Rolled);
         if (!_fleeing) return false;
 
-        if (_rules.ForHunters && (now - _since).Seconds >= t.FleeJumpSeconds)
+        if (corporate && (now - _since).Seconds >= t.FleeJumpSeconds)
         {
             _ = ship.Renderer.AnimateFtlJumpOut(ship.WorldFlightDirection);
             _removeAt = now + ship.Rules.FtlEffects.TotalDuration;
@@ -123,7 +124,7 @@ internal sealed class FleeStrategy : AIStrategyModule
             return true;
         }
         // Clear of enemies. AI crews cannot build near enemies that fire, so a vanilla ship repairs only here.
-        if (!_rules.ForHunters) _repair.OnAITick(ship, ai);
+        if (!corporate) _repair.OnAITick(ship, ai);
         return true;
     }
 

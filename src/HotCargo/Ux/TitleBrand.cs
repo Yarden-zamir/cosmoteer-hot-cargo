@@ -44,7 +44,7 @@ static class TitleBrand
         box.AutoSize.Anchor = new Vector2(0.5f, 0f);
         box.AddChild(Text("HOT CARGO", 96, Ember, y: 0f));
         box.AddChild(Text("You stole corporate tech. Get it to the Buyer.", 24, Color.White, y: 110f));
-        box.AddChild(Text($"Hot Cargo {ModVersion()} is active  ·  New Game → Career", 16, new Color(1f, 1f, 1f, 0.6f), y: 146f));
+        box.AddChild(Text($"Hot Cargo {ModVersion()} is active  -  New Game > Career", 16, new Color(1f, 1f, 1f, 0.6f), y: 146f));
         return box;
     }
 
