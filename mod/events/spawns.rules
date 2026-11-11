@@ -123,6 +123,8 @@ Magpies
 					]
 					Rewards
 					[
+						// Added straight to the log, not offered: no contract fee, heat, trail or informant (economy spec 100+).
+						{ Type = HotCargoContract; AcceptFee = 0; FlatHeat = 0; TrailWeight = 0; InformantChance = 0; }
 						{
 							Type = Money
 							MoneyPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMoneyPerTier
@@ -223,6 +225,8 @@ Siege
 					// Like a fleet bounty plus a rescue bonus: the raiders also pay kill fame.
 					Rewards
 					[
+						// Added straight to the log, not offered: no contract fee, heat, trail or informant (economy spec 100+).
+						{ Type = HotCargoContract; AcceptFee = 0; FlatHeat = 0; TrailWeight = 0; InformantChance = 0; }
 						{
 							Type = Money
 							MoneyPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMoneyPerTier
@@ -361,6 +365,8 @@ Courier
 			// A quiet job: good pay, half the fame of a standard mission, so it adds little heat.
 			Rewards
 			[
+				// A quiet job: free to take, little heat and trail, but the client may talk (economy spec 100+).
+				{ Type = HotCargoContract; AcceptFee = 0; FlatHeat = 3; TrailWeight = 0.5; InformantChance = 0.15; }
 				{
 					Type = Money
 					MoneyPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMoneyPerTier
@@ -429,6 +435,8 @@ BountyHunters
 			]
 			Rewards
 			[
+				// Added straight to the log, not offered: no contract fee, heat, trail or informant (economy spec 100+).
+				{ Type = HotCargoContract; AcceptFee = 0; FlatHeat = 0; TrailWeight = 0; InformantChance = 0; }
 				{
 					Type = Money
 					MoneyPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMoneyPerTier
@@ -490,6 +498,8 @@ MagpiesReturn
 					]
 					Rewards
 					[
+						// Added straight to the log, not offered: no contract fee, heat, trail or informant (economy spec 100+).
+						{ Type = HotCargoContract; AcceptFee = 0; FlatHeat = 0; TrailWeight = 0; InformantChance = 0; }
 						{
 							Type = Money
 							MoneyPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMoneyPerTier

@@ -1,6 +1,6 @@
 # Hot Cargo events
 
-FTL-style choice events for the Hot Cargo run. Spec requirements 67 to 78 (SPEC.md section 22) describe the system. This file holds the design and the catalog.
+FTL-style choice events for the Hot Cargo run. Spec requirements 67 to 86 (SPEC.md section 22) describe the system. This file holds the design and the catalog.
 
 ## 1. Goals
 
@@ -29,7 +29,8 @@ FTL-style choice events for the Hot Cargo run. Spec requirements 67 to 78 (SPEC.
 
 - 1 to 4 choices. Each choice has an optional sure **Cost** (shown on the button and always paid), an optional **Need** (greys the button out with the reason, or hides it), and 1 or more weighted **Outcomes**.
 - The game rolls the outcome when a player chooses. Weight = `Weight + WeightPerHeat × heat + WeightPerTech × fleet tech`, never below 0. The roll seed comes from the sim when the page opens, so all co-op clients get the same result.
-- Outcome effects: money, money in tech value, fame, heat, tech units (through the vaults), crew, vanilla resources, hull damage, spawned ships (from `spawns.rules`, some with a mission), story flags, and a follow-up page (`Next`).
+- Outcome effects: money, money in tech value, fame (gain or loss), heat, reputation with the system's faction, the Buyer price, tech units (through the vaults), crew, vanilla resources, hull damage, spawned ships (from `spawns.rules`, some with a mission), story flags, and a follow-up page (`Next`).
+- Needs can also check how old a flag is (`FlagAges`, in sectors) and how many sectors are left before the Buyer (`MinSectorsLeft`, `MaxSectorsLeft`). A cost can grow with heat (`MoneyPerHeat`).
 - After the choice, the window shows the outcome text and one line per effect, in the colors of vanilla reward lines.
 
 ### Units and balance
@@ -185,17 +186,68 @@ Reads as: FTL's mysterious signal. The only event that can give tech back.
 #### 16. Ghost Signal (Signal fallback; weight 2, no run limit)
 Debris only: sweep it for a little steel, or move on. A signal always shows something.
 
+#### 17. Wanted Broadcast (Arrival, sector 2+, heat 60+; weight 6 + 0.1 × heat)
+Every buoy plays your hull number and a reward. Local bounty hunters: 2 ships with local faction designs, named "Bounty Hunter ...", tag `hc_ev_bounty` (never `hc_hunter`), with a bounty mission that pays 0.75 × a standard mission.
+| Choice | Cost / Need | Outcomes |
+|---|---|---|
+| Pay the broadcaster | 1 money | Heat −10. |
+| Jam the buoy | Sensor Array | 70 %: heat −5. 30 %: bounty hunters. |
+| Let them come | — | Bounty hunters. |
+| Ignore it | — | Weights 50 vs 50 + 0.3 × heat (at heat 80: 40 % vs 60 %). Bad: bounty hunters. |
+
+Reads as: high heat has a local price too, not only corporate waves.
+
+#### 18. The Magpies Return (Arrival, 3+ tech, flag `magpies_paid` set 2+ sectors ago; weight 30)
+Rook is back with two friends and wants two crates. Paying once made you a mark.
+| Choice | Cost / Need | Outcomes |
+|---|---|---|
+| Pay two crates | 2 tech | The flag renews (the event opens once per run, so this ends it). |
+| Hand over a crate that Varga rigged | flag `defector`, 1 tech, hidden without the flag | Rook's ship blows up: 0.5 fame, heat +5, flag cleared. |
+| Pay in credits | 2 money | Nothing more. |
+| Come and take them | — | The Magpies attack: one fleet at the system tier + 1, hunter AI, bounty 1.5 × a standard mission. Flag cleared. |
+
+Reads as: an FTL extortion arc, and a payoff for the Defector chain.
+
+#### 20. Refugee Convoy (Arrival, sector 3+)
+Miners fleeing a corporate company town. The corporation searches every convoy.
+| Choice | Cost | Outcomes |
+|---|---|---|
+| Take some aboard | — | +2 crew (if bunks are free), 0.3 fame, +1 reputation with the system's faction, heat +10. |
+| Give fuel and food | 15 + 3/tier hyperium | 0.3 fame, +1 reputation. |
+| Sell their position | — | 1 money, heat −15, −0.5 fame, −2 reputation. |
+| Fly on | — | Nothing. |
+
+Reads as: a moral choice with a heat cost on the kind side and a fame and reputation cost on the cruel side.
+
+#### 21. Pirate Toll Gate (Arrival, sector 2+)
+The twist: the pirates sell sightings to the corporation, so the toll grows with your heat. A vanilla pirate base wants to be destroyed; this gate wants to be paid, and the price is the bounty on you.
+| Choice | Cost | Outcomes |
+|---|---|---|
+| Pay the toll | 0.3 + 0.01 × heat money (heat 50: 0.8) | Nothing more. |
+| Pay double for a false sighting | 0.6 + 0.02 × heat money | Heat −20. |
+| Run the gate | — | Heat +15, 3 pirates at the system tier (no bounty). |
+
+#### 22. The Buyer's Agent (Arrival, 1 to 2 sectors before the Buyer, 1+ tech; weight 40)
+An advance against the final sale. The run state keeps a Buyer price multiplier; the Buyer price and the score use it (spec 7, 84).
+| Choice | Outcomes |
+|---|---|
+| Small advance | 1.5 × tech value now; the Buyer pays 80 % later. |
+| Large advance | 3 × tech value now; the Buyer pays 60 % later. |
+| Decline | Nothing. |
+
+Reads as: the last hold-or-sell question. Money now buys repairs and escorts for the final jumps; the score pays for it. With 4 units delivered, the small advance costs about 1.2 tech values of score at the end.
+
+#### 23. Courier Job (station mission offer)
+Not an event page: a Hot Cargo mission in the station's mission list (spec 85). The first trade station that the players reach in a system offers it with chance `CourierChance` (50 %), once per system.
+- The job: fly a sealed case to a neutral contact ("Quiet Contact", "The Night Ferry", ...) 8,000 to 12,000 away within 7 minutes, then collect the pay at the station.
+- Pay: 1.25 × a standard mission's money, 0.5 × its fame. A quiet job: good money, little fame, so little heat.
+- Contract terms (economy): free, flat heat 3, trail weight 0.5, informant chance 15 %.
+
 ### Later items (documented, not implemented)
 
-| # | Event | Trigger | Idea | Why later |
+| # | Event | Trigger | Idea | Open question |
 |---|---|---|---|---|
-| 17 | Wanted Broadcast | Arrival, heat 60+ | Every buoy plays your face. Local bounty hunters (vanilla faction ships) join the hunt unless you pay the broadcaster or jam the buoy (Sensor Array). | Needs hostile faction ships that do not count as hunters; tune with the Hunters area. |
-| 18 | The Magpies Return | Arrival, flag `magpies_paid`, 2 sectors later | Rook wants another crate. Paying once makes you a mark. | Needs a "sectors since flag" condition. |
-| 19 | Vault Coolant Leak | Arrival, any | A ship event: the vault overheats. Vent it (−1 tech) or send crew in (crew risk, hull damage). | An unavoidable loss event; playtest first whether players accept one. |
-| 20 | Refugee Convoy | Arrival, sector 3+ | Take refugees (+2 crew, heat +10: the corporation searches convoys) or sell their location (money, fame loss). | Needs a fame-loss effect and faction reputation effects. |
-| 21 | Pirate Toll Gate | Arrival, any | Pay the toll or fight a pirate base guard. | Overlaps with vanilla pirate content. |
-| 22 | The Buyer's Agent | Arrival, last 2 sectors | An advance on delivery: money now, a lower Buyer price later. | Depends on the Journey area's Buyer price; add when Journey is stable. |
-| 23 | Courier Job | Station mission offer | The fence offers a Hot Cargo delivery mission in the station list. | Needs a mission spawner that a C# trigger puts into a station list. |
+| 19 | Vault Coolant Leak | Arrival, any | A ship event: the vault overheats. Vent it (−1 tech) or send crew in (crew risk, hull damage). | Do players accept an unavoidable tech-loss event? The user decides. |
 
 ## 4. Content rules for authors
 

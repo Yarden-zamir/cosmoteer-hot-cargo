@@ -6,6 +6,8 @@
 //   Heat: heat points (a stage every 25).  Tech, Crew: units.  Resources: { ID; Amount; PerTier } with PerTier added per tier above 1.
 // A choice's Cost is paid for sure and is shown on its button. A Need greys the button out with the reason, or hides it (HideIfUnmet).
 // Outcome weights: Weight + WeightPerHeat × heat + WeightPerTech × fleet tech, never below 0.
+// Reputation: × a standard mission's reputation, with the faction that controls the system.  BuyerPrice: multiplies the Buyer price for the run.
+// Need extras: FlagAges = [{ Flag; MinSectors }], MinSectorsLeft / MaxSectorsLeft (sectors before the Buyer).  Cost.MoneyPerHeat: money units per heat point.
 // Spawn names are generators in spawns.rules. Next opens another event as a follow-up page. Flags carry a story between events.
 Events
 [
