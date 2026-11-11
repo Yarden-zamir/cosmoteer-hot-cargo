@@ -1,16 +1,8 @@
-// Spawners of the Hot Cargo system archetypes (WORLDS.md, spec 220 to 229). mod/worlds/actions.rules adds this file to the end
+// Spawners of the Hot Cargo system archetypes (WORLDS.md, spec 220 to 229). mod/worlds/actions.rules adds the four groups to the end
 // of the basic sector generator, so suns, planets, nebulas, stations and gates exist when these spawners run.
 // Each archetype group runs only with its spawn flag (worlds/sectors.rules). Groups with an hc_group_* tag hold a mission;
 // the autotest command "worlds generate" finds them by that tag.
 // Distances fit the smaller Hot Cargo systems: stations at 4000 to 9000 from the center, FTL gates at 13500 to 16000.
-Type = None
-SubSpawners
-[
-	&~/TradeHub
-	&~/MiningBelt
-	&~/SolarZone
-	&~/DeepSpace
-]
 
 // ---- Trade hub (spec 221): a big hub world next to a trade station, and a current that pushes ships one way.
 TradeHub

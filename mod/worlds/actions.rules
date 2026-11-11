@@ -10,10 +10,18 @@
 			&<worlds/sectors.rules>/DeepSpace
 		]
 	}
+	// One group per archetype, each gated by its spawn flag at the top. So basic and vanilla systems run none of them,
+	// and their generation (and its random sequence) stays as it was.
 	{
-		Action = Add
+		Action = AddMany
 		AddTo = "<modes/career/sectors/sector_basic/sector_basic.rules>/Sector/SystemGenerator/Spawners"
-		ToAdd = &<worlds/sysgen_worlds.rules>
+		ManyToAdd
+		[
+			&<worlds/sysgen_worlds.rules>/TradeHub
+			&<worlds/sysgen_worlds.rules>/MiningBelt
+			&<worlds/sysgen_worlds.rules>/SolarZone
+			&<worlds/sysgen_worlds.rules>/DeepSpace
+		]
 	}
 	{
 		Action = Add
