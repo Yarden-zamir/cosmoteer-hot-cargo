@@ -17,6 +17,16 @@ public sealed class HunterTunables
     [Serialize(Optional = true)] public float StrikeWaveIntervalSeconds = 180f;
     [Serialize(Optional = true)] public float SpawnDistanceMin = 2000f;
     [Serialize(Optional = true)] public float SpawnDistanceMax = 3000f;
+    /// <summary>All ships of one wave arrive from one direction, spread over this arc.</summary>
+    [Serialize(Optional = true)] public float WaveArcDegrees = 40f;
+    /// <summary>Faction IDs of the built-in ship pool for hunters. Empty means all factions.</summary>
+    [Serialize(Optional = true)] public string[] ShipFactions = [];
+    /// <summary>Built-in ship tags for hunters. A ship needs at least one of them.</summary>
+    [Serialize(Optional = true)] public string[] ShipTags = ["combat"];
+    /// <summary>Shown before the ship name, so players can tell hunters from other ships.</summary>
+    [Serialize(Optional = true)] public string ShipNamePrefix = "Corporate";
+    /// <summary>Spec 34: a player ship with a Tech Vault part counts this many times more as a target.</summary>
+    [Serialize(Optional = true)] public float VaultTargetFactor = 3f;
 }
 
 [ReflectiveSerialization(Explicit = true)]
