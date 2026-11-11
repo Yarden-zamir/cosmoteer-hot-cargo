@@ -546,3 +546,68 @@ TollGuards
 		}
 	]
 }
+
+// Dead in Space (spec 88): a freighter with a dead drive, 600 to 900 from the fleet. It has no AI, so it moves only when towed or pushed.
+// The mission completes when it is within 1,200 of the nearest trade station at least 3,000 away, and fails if it is destroyed.
+TowJob
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_ev_towed]
+			Distance = [600, 900]
+			Allegiance = FactionCivilian
+			SuppressLocationAssertions = true
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [trade]
+			}
+			SubSpawners
+			[
+				{
+					Type = Mission
+					Metatype = HotCargoEventTow
+					SpawnAt = Player
+					Faction = OwnerOfTag
+					FactionTag = { Mode=Latest; Tag=hc_ev_towed; }
+					OkayIfFactionTagNotFound = true
+					Objectives
+					[
+						{
+							Type = HotCargoTow
+							TowedTag = { Mode=Latest; Tag=hc_ev_towed; }
+							StationTag = trade_station
+							MinStationDistance = 3000
+							ArrivalRadius = 1200
+						}
+					]
+					Rewards
+					[
+						// Added straight to the log, not offered: no contract fee, heat, trail or informant (economy spec 100+).
+						{ Type = HotCargoContract; AcceptFee = 0; FlatHeat = 0; TrailWeight = 0; InformantChance = 0; }
+						{
+							Type = Money
+							MoneyPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMoneyPerTier
+							RoundToMultiple = 500
+						}
+						{
+							Type = Fame
+							FamePerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+							MaxFamePerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+							FamePerTierMultiplier = 0.75
+						}
+						{
+							Type = Reputation
+							ReputationPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardReputationPerTier
+							ReputationPerTierMultiplier = 2
+						}
+					]
+				}
+			]
+		}
+	]
+}
