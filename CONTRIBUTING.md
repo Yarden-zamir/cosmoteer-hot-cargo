@@ -20,3 +20,9 @@ Read SPEC.md first. It holds the design, the numbered requirements and the plan.
 5. Other PC scripts: `deploy.sh`, `run.sh`, `stop.sh`, `logs.sh`, `mod-toggle.sh on|off`.
 
 The game runs on a Windows PC that a person also uses. Scripts start the game minimized. Only one game runs at a time; `autotest.sh` waits for a lock.
+
+## Git
+
+- Push straight to `main`. Do not open pull requests in this repo.
+- Use conventional commits (`feat:`, `fix:`, `docs:`, `chore:`).
+- Feature branches are local only. Merge them into `main`, build, run the tests, then push.
