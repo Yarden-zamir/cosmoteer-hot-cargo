@@ -1,0 +1,70 @@
+# UX batch 2 (UX.md V7 to V15, H8) in a headless game: dialogue keys, watched supplies, damage pings, several parts,
+# low supply alert, trade hints, comms over the map with the comms pause, wanted timer.
+newgame run
+wait 8
+expect active == 1
+# The start event window is open. Key 1 picks its first option.
+expect ev_pending == 1
+uxpick 1
+wait 2
+expect ev_pending == 0
+expect ux_dialogue_picks == 1
+# Watched supplies come from the part rules: battery yes, carbon (factory input only) no.
+expect ux_watched_battery == 1
+expect ux_watched_carbon == 0
+supplies
+# Several selected parts show the info box (the parts card needs the ship selected too).
+select
+selectparts
+wait 1
+expect ux_parts_info > 0
+# Damage to the player ship counts as a hit.
+damage 0.5
+wait 2
+expect ux_damage_hits >= 1
+# An empty watched supply alerts once.
+# A low supply alerts once. The starter ship holds only battery among the watched supplies, and its reactors keep it full,
+# so the test raises the thresholds above 100 % instead of emptying it. The second check does not alert again.
+ux LowSupplyFraction 1.2
+ux CriticalSupplyFraction 1.1
+supplycheck
+expect ux_supply_alerts == 1
+supplycheck
+expect ux_supply_alerts == 1
+ux LowSupplyFraction 0.25
+ux CriticalSupplyFraction 0.1
+# Trade tab hints at a station.
+tostation
+wait 2
+comms open
+wait 1
+commstab trade
+wait 2
+tradehint
+expect ux_trade_hint > 0
+# CommsStayOnMap: the map leaves comms open and paused; a later close unpauses.
+map on
+wait 2
+expect ux_comms_open == 1
+expect paused == 1
+map off
+wait 1
+comms close
+wait 1
+expect ux_comms_open == 0
+expect paused == 0
+# Switch off: the map closes comms again, and the comms pause unpauses on that close.
+ux CommsStayOnMap off
+comms open
+wait 1
+expect paused == 1
+map on
+wait 2
+expect ux_comms_open == 0
+expect paused == 0
+# Wanted (last: it makes the station hostile): the line names the faction and the timer state.
+wanted
+wait 2
+wantedline
+expect ux_wanted_line > 0
+quit

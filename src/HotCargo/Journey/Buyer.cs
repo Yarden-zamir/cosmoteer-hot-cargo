@@ -117,7 +117,7 @@ public static class Buyer
     internal static long Score(long money, int deliveredUnits, long unitPrice) => money + deliveredUnits * unitPrice;
 
     /// <summary>What the Buyer pays for one unit now: the tech value × PriceFactor, as PricePatch computes it.</summary>
-    static long UnitPrice(Run run) => (long)(TechPrice.Sell(run) * PriceFactor(run));
+    internal static long UnitPrice(Run run) => (long)(TechPrice.Sell(run) * PriceFactor(run));
 
     /// <summary>
     /// Spec 7: a sale of tech to the Buyer pays tech value × PriceFactor (BuyerPriceFactor × the run multiplier).

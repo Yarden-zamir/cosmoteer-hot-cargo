@@ -6,6 +6,10 @@ pause off
 wait 2
 screenshot ux-intro
 closepanel
+wait 1
+screenshot ux-event-keys
+uxpick 1
+wait 2
 heat 30
 wait 1.5
 screenshot ux-heat-alert
@@ -24,11 +28,31 @@ ux ShipIntegrity off
 wait 1
 screenshot ux-hull-before
 ux ShipIntegrity on
+selectparts
+wait 1
+screenshot ux-parts
+ux MultiPartInfo off
+wait 1
+screenshot ux-parts-before
+ux MultiPartInfo on
+select
+tostation
+wait 2
+comms open
+wait 1
+commstab trade
+wait 2
+screenshot ux-trade
+comms close
+wait 1
 map on
 wait 3
 screenshot ux-map
 map off
 wait 2
+wanted
+wait 2
+screenshot ux-wanted
 win
 wait 3
 screenshot ux-win
