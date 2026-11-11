@@ -38,8 +38,12 @@ static class LossRule
         if (s.SecondsWithoutTech >= run.T.Tech.LossGraceSeconds) run.Lose(Strings.GetText("HotCargoTech/LossNoTech"));
     }
 
-    /// <summary>The same conditions as the vanilla game-over check in CareerGameModeManager.Update: no jump in progress, no friendly ships in another system.</summary>
+    /// <summary>
+    /// The conditions of the vanilla game-over check in CareerGameModeManager.Update: no jump in progress, no friendly ships in another system.
+    /// It checks ships in jump limbo instead of GameRoot.IsDoingNodeJump: that flag follows local animations and the local FTL autosave
+    /// setting, so it changes at different ticks on each multiplayer machine. Jump limbo changes only at synchronized jump signals.
+    /// </summary>
     static bool CountIsCertain(Run run, SimRoot sim) =>
-        !sim.Ships.IsDoingLocalJump && !run.Game.IsDoingNodeJump &&
+        !sim.Ships.IsDoingLocalJump && run.Game.ShipsInJumpLimbo.Count == 0 &&
         run.Mode._nodeData.All(kv => kv.Key == run.Game.CurrentMapNode || kv.Value.NumFriendlyShips == 0);
 }

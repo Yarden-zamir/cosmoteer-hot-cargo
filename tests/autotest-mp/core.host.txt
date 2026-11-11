@@ -1,0 +1,25 @@
+# Co-op core, host side: the host's tunables reach the client, heat and stages from both players, hunters and tactics, no desync.
+# The host's tunables.rules differs from the client's. Both start with the defaults, then the host's file arrives as an MP input.
+tunablesfile Heat { HeatPerGameMinute = 30 }  Events { Enabled = false }
+mphost {PORT}
+mpstart 2
+waitfor heatperminute == 30 30
+# Test commands that change the sim run through "mp", inside the sim on both machines.
+mp godmode on
+mp maxhunters 4
+mp tacticlog on
+# The client adds heat. The first stage starts and hunters jump in.
+waitfor stages >= 1 60
+waitfor hunters >= 1 60
+# The host forces the next stages.
+mp stage
+mp stage
+waitfor stages >= 3 30
+wait 50
+hunters host
+expect huntershostile == 1
+expect desyncs == 0
+log host-end
+# The client quits first, so it never sees the host leave.
+waitfor mpconnected == 0 240
+quit

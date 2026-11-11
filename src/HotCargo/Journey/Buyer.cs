@@ -68,7 +68,8 @@ public static class Buyer
         int after = Count(sim);
         if (after <= before) throw new InvalidOperationException("the Buyer generator spawned no hc_buyer station (no free location?)");
         Log.Info($"Buyer spawned in {run.Game.CurrentMapNode.Name} (sector {run.State.SectorIndex})");
-        ShowWhereAsync(run);
+        // A co-op launch runs this on a worker thread (Buyer in the first sector), so the GUI part starts on the next frame.
+        Run.OnNextFrame(() => ShowWhereAsync(run));
     }
 
     /// <summary>GUI only: a toast after the jump animation ends, and the Buyer mission tracked on the HUD.</summary>

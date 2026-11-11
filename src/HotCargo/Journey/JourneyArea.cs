@@ -71,25 +71,25 @@ public static class JourneyArea
                 case ["sectors", var count]:
                     run.T.Journey.RunSectorCount = int.Parse(count, CultureInfo.InvariantCulture);
                     break;
-                // Test-only: puts the first human ship next to the Buyer. Run it twice: the first call loads the Buyer
+                // Test-only: puts the acting player's first ship next to the Buyer. Run it twice: the first call loads the Buyer
                 // out of stasis, the second puts the ship within trade distance.
                 case ["goto"]:
                 {
                     var sim = run.Game.Sim;
-                    var ship = SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("no human ship");
+                    var ship = Autotest.ActingShip(sim) ?? throw new InvalidOperationException("no ship of the acting player");
                     var buyers = SimQueries.TaggedShips(sim, Buyer.Tag);
                     if (buyers.Count == 0) throw new InvalidOperationException("no Buyer in this system");
                     var buyer = buyers[0];
                     float gap = buyer.Live is { } loaded ? loaded.DetWorldBoundingCircle.Radius + ship.DetWorldBoundingCircle.Radius + 100f : 1200f;
-                    Autotest.Teleport(ship, buyer.Location + new Vector2(gap, 0f));
+                    Autotest.Teleport(ship, buyer.Location + new Vector2(gap, Autotest.ActingPlayerIndex * (2f * ship.DetWorldBoundingCircle.Radius + 50f)));
                     Log.Info($"AUTOTEST goto: ship {ship.Name} to {ship.WorldCenter}, Buyer at {buyer.Location}, loaded={buyer.Live is not null}");
                     break;
                 }
-                // Test-only: a real sale of tech from the first human ship through the trade input.
+                // Test-only: a real sale of tech from the acting player's first ship through the trade input.
                 case ["sell", var count]:
                 {
                     var sim = run.Game.Sim;
-                    var ship = SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("no human ship");
+                    var ship = Autotest.ActingShip(sim) ?? throw new InvalidOperationException("no ship of the acting player");
                     var buyer = sim.Ships.FirstOrDefault(Buyer.IsBuyer) ?? throw new InvalidOperationException("no loaded Buyer ship");
                     var res = Tech.Vaults.TechId;
                     int units = int.Parse(count, CultureInfo.InvariantCulture);
@@ -157,7 +157,7 @@ public static class JourneyArea
         {
             var sim = Autotest.RequireRun().Game.Sim;
             var buyer = sim.Ships.FirstOrDefault(Buyer.IsBuyer) ?? throw new InvalidOperationException("no loaded Buyer ship");
-            var human = SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("no human ship");
+            var human = Autotest.ActingShip(sim) ?? throw new InvalidOperationException("no ship of the acting player");
             return buyer.AI?.WillTradeWith(human) == true ? 1 : 0;
         };
         Autotest.Fields["nodes"] = () => Autotest.RequireRun().Game.Map.Nodes.NodeCount;

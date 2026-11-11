@@ -1,0 +1,13 @@
+# Co-op trade and loss, client side.
+mpjoin 127.0.0.1:{PORT}
+mpready
+mp tostation
+wait 5
+tech sell 3
+waitfor tech == 3 60
+expect moneygain >= 30000
+expect lost == 0
+waitfor lost == 1 120
+expect tech == 0
+expect desyncs == 0
+quit

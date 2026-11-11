@@ -33,7 +33,10 @@ internal sealed class EventDialog : WindowBox
     readonly LayoutBox<ImageButton, Widget> _buttons;
     EventPage? _page;
     bool _sent;
+    double _sentAt;
     double _nextRefresh;
+    /// <summary>Real seconds after a sent choice before the buttons work again on the same page. Longer than MP input delay.</summary>
+    const double ResendSeconds = 3.0;
 
     /// <summary>Called each frame. Opens, updates or closes the window to match the sim state.</summary>
     internal static void Update(Run run)
@@ -149,9 +152,11 @@ internal sealed class EventDialog : WindowBox
     void Show(EventPage page)
     {
         bool newPage = _page?.Key != page.Key;
-        if (!newPage && App.Clock.Time.Seconds < _nextRefresh) return;
-        _nextRefresh = App.Clock.Time.Seconds + 1.0;
-        if (newPage) _sent = false;
+        double now = App.Clock.Time.Seconds;
+        if (!newPage && now < _nextRefresh) return;
+        _nextRefresh = now + 1.0;
+        // The sim can reject a sent choice (the chooser can no longer pay). The page then stays, so the buttons come back.
+        if (newPage || now > _sentAt + ResendSeconds) _sent = false;
         _page = page;
         TitleText = page.Title;
         _body.Text = page.Body;
@@ -197,6 +202,7 @@ internal sealed class EventDialog : WindowBox
             return;
         }
         _sent = true;
+        _sentAt = App.Clock.Time.Seconds;
         foreach (var b in _buttons.Children) b.SelfInputActive = false;
         _forRun.Game.NetManager.EnqueueInput(new EventChoiceInput(page.Serial, choice.Index));
     }
