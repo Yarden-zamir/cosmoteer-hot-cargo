@@ -82,10 +82,17 @@ static class TechAutotest
 
     internal static Ship PlayerShip() => SimQueries.FirstHumanShip(Active().Game.Sim) ?? throw new InvalidOperationException("no player ship");
 
-    /// <summary>The trading station nearest to the first human ship. Throws when the system has none.</summary>
+    /// <summary>The station that tostation picked.</summary>
+    static Ship? _station;
+
+    /// <summary>
+    /// The station that tostation picked, else the trading ship nearest to the first human ship. Throws when the system has none.
+    /// The pick stays fixed, because a trade ship that docks next to the player can come closer than the station center.
+    /// </summary>
     internal static Ship NearestStation()
     {
         var ship = PlayerShip();
+        if (_station is { IsDisposed: false } picked && picked.Sim == ship.Sim) return picked;
         return Active().Game.Sim.Ships.AllShips
             .Where(s => s != ship && s.AI?.WillTradeWith(ship) == true)
             .OrderBy(s => s.WorldCenter.DistanceSquaredTo(ship.WorldCenter))
@@ -96,7 +103,8 @@ static class TechAutotest
     static void ToStation()
     {
         var ship = PlayerShip();
-        var station = NearestStation();
+        _station = null;
+        var station = _station = NearestStation();
         Autotest.Teleport(ship, station.WorldCenter + new Halfling.Geometry.Vector2(station.WorldBoundingRadius + ship.WorldBoundingRadius + 2f, 0f));
         Log.Info($"AUTOTEST moved {ship.Name} next to {station.Name}; trade allowed={Active().Game.Sim.Mode.AllowResourceTrade(ship, station)}");
     }

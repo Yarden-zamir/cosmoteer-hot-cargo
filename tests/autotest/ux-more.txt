@@ -16,7 +16,8 @@ supplies
 # Several selected parts show the info box (the parts card needs the ship selected too).
 select
 selectparts
-wait 1
+# The parts card slides in after the ships card. In the smaller systems (spec 105) that can take more than 1 s.
+wait 4
 expect ux_parts_info > 0
 # Damage to the player ship counts as a hit.
 damage 0.5
