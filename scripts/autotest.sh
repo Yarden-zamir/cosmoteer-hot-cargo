@@ -6,6 +6,14 @@
 source "$(dirname "$0")/pc.sh"
 SCRIPT="${1:?usage: autotest.sh <script> [timeout]}"
 TIMEOUT="${2:-300}"
+# Only one game can run on the PC. Parallel worktrees on this Mac take turns through this lock.
+LOCK=/tmp/hot_cargo_pc.lock
+until mkdir "$LOCK" 2>/dev/null; do
+  if [[ -f "$LOCK/pid" ]] && ! kill -0 "$(cat "$LOCK/pid")" 2>/dev/null; then rm -rf "$LOCK"; continue; fi
+  echo "waiting for the PC lock (held by $(cat "$LOCK/owner" 2>/dev/null))"; sleep 15
+done
+echo $$ > "$LOCK/pid"; echo "$REPO_ROOT" > "$LOCK/owner"
+trap 'rm -rf "$LOCK"' EXIT
 "$REPO_ROOT/scripts/stop.sh" >/dev/null
 "$REPO_ROOT/scripts/deploy.sh" | tail -1
 "$REPO_ROOT/scripts/mod-toggle.sh" on | tail -1

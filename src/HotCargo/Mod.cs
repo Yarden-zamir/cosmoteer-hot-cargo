@@ -17,6 +17,11 @@ public static class Mod
             var harmony = new Harmony(HarmonyId);
             harmony.PatchAll(typeof(Mod).Assembly);
             Core.TunablesDefaults.WriteFile();
+            Tech.TechArea.Register();
+            Journey.JourneyArea.Register();
+            Hunters.HunterArea.Register();
+            Missions.MissionArea.Register();
+            Tactics.TacticsArea.Register();
             Log.Info($"harmony patched {harmony.GetPatchedMethods().Count()} methods; mod root {ModRoot}");
         }
         catch (Exception ex)
