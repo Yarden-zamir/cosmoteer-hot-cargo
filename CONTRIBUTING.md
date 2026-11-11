@@ -13,7 +13,7 @@ Read SPEC.md first. It holds the design, the numbered requirements and the plan.
 
 ## Build and test
 
-1. Run `scripts/pull-game.sh` once. It copies the game DLLs and rules from the PC to `../.game` and decompiles them to `../.game/decompiled`.
+1. Create `scripts/pc.local.sh` with `PC_MACHINE="<T3 name of the PC>"` (see the top of `scripts/pc.sh`). Then run `scripts/pull-game.sh` once. It copies the game DLLs and rules from the PC to `../.game` and decompiles them to `../.game/decompiled`.
 2. Build: `dotnet build src/HotCargo/HotCargo.csproj -c Release`.
 3. Unit tests (pure math only): `cd tests/HotCargo.Tests && dotnet run`.
 4. Game test on the PC: `scripts/autotest.sh tests/autotest/<name>.txt`. It deploys, turns the mod on, runs the game minimized and prints the log. Commands are in `src/HotCargo/Dev/Autotest.cs`.
@@ -28,3 +28,4 @@ The game runs on a Windows PC that a person also uses. `autotest.sh` runs headle
 - Feature branches are local only. Merge them into `main`, build, run the tests, then push.
 
 Run one autotest at a time per worktree: parallel runs from one worktree build into the same output folder.
+- Never commit personal machine data: user home paths, machine names, Steam IDs. `scripts/check-private.sh` checks this, and CI runs it on every push. Machine settings go in `scripts/pc.local.sh` (git ignores it).
