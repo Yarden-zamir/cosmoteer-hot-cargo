@@ -140,6 +140,13 @@ public static class ContractsArea
             string g = ContractBook.Find(R(), Picked())?.RivalGroup ?? "";
             return g.Length == 0 ? -1 : ContractBook.Offers(Sim()).Count(o => o.Mission != Picked() && ContractBook.Find(R(), o.Mission)?.RivalGroup == g);
         };
+        Autotest.Fields["contract_bonus_payer"] = () => Picked().Rewards.OfType<ContractBonusReward>().Single().PayerIndex;
+        // Gives the picked contract's bonus now, as completion would, and remembers money first (contract_money_change).
+        Autotest.Commands["contract_give_bonus"] = _ =>
+        {
+            _markedMoney = R().Game.LocalPlayerMoney;
+            Picked().Rewards.OfType<ContractBonusReward>().Single().GiveReward(R().Game);
+        };
         Autotest.Fields["contract_has_bonus"] = () => Picked().Rewards.OfType<ContractBonusReward>().Sum(b => b.Money);
         Autotest.Fields["contract_informants_pending"] = () => R().State.Contracts.Informants.Count;
         Autotest.Fields["contract_soldout"] = () => R().State.Contracts.SoldOut.Contains(Picked().MissionID) ? 1 : 0;

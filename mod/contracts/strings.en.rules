@@ -6,10 +6,10 @@ HotCargoContracts
 	NoFee = "No fee"
 	FeeFmt = "<img name='money' colored='true'/> Fee {0:N0}, paid when you accept"
 	FeeShortFmt = "(you have {0:N0})"
-	FeeTipFmt = "The client sells this job. You pay the fee up front and do not get it back. The job pays {0:N0} extra on completion (already in Rewards)."
+	FeeTipFmt = "The client sells this job. You pay the fee up front and do not get it back. On completion you get {0:N0} extra (already in Rewards). In co-op, the player who pays the fee gets this extra pay."
 	FeePaidFmt = "Fee paid: {0:N0}"
 	BonusRewardFmt = "<img name='money' colored='true'/> +{0:N0} (paid contract)"
-	BonusRewardTip = "Extra pay of a paid contract. It makes up for the fee and then some."
+	BonusRewardTip = "Extra pay of a paid contract, for the player who paid the fee. It makes up for the fee and then some."
 
 	FlatHeatFmt = "Heat +{0} when you accept"
 	FlatHeatTip = "A loud job. Corporate scanners notice the moment you take it."

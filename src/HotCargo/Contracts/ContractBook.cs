@@ -185,6 +185,13 @@ public static class ContractBook
         if (Ensure(run, m) is not { } terms) return;
         var contracts = run.State.Contracts;
         if (terms.Fee > 0) run.Game.GetPlayerState(playerIndex, deterministic: true).AddMoney(-terms.Fee);
+        // The payer collects the bonus (spec 102). An offer that the scan never saw gets its bonus reward here.
+        if (terms.Bonus > 0)
+        {
+            var bonus = m.Rewards.OfType<ContractBonusReward>().FirstOrDefault();
+            if (bonus is null) m.AddReward(bonus = new ContractBonusReward(terms.Bonus));
+            bonus.PayerIndex = playerIndex;
+        }
         if (terms.FlatHeat != 0) run.AddHeat(terms.FlatHeat, sim);
         var dismissed = new List<string>();
         if (terms.RivalGroup.Length > 0)
