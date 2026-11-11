@@ -164,3 +164,20 @@ The autotests cover assignment, offers, results (success, abandoned, lost, timeo
 9. Mara's standing offer: does it show on each visit and stay away inside one visit? Is 1.33 × the tech value worth a detour?
 10. Frequency: with every station holding a chain, are there too many offers per system? If yes, lower `Chains.StationChance` (for example 0.5) in `tunables.rules`.
 11. Multiplayer (co-op): both players see the chain offer and the chain pages. One player chooses. Does the chain advance the same for both?
+
+## System archetypes (spec 220-229, WORLDS.md)
+
+The autotests cover the archetype mix on the map, the hazard tooltip, the current drift, the belt passes, the pass hold win and loss, heat depth, the sundive, lair discovery, save and load, and the current in co-op. Only a person can judge the points below.
+
+1. Open the galaxy map at the start. Hover a few systems. Is the gray hazard line under the system type easy to read? Do you plan your route around it?
+2. Jump into a new system. Does the toast and chat line ("Trade Hub. A current runs ...") show after the system name, not over it?
+3. Trade Hub: find the current (teal band with drifting arrows). Fly with it and against it. Is the push felt but not annoying? Is the direction clear from the arrows? Tune `Worlds.CurrentAccel` (9) and `Worlds.CurrentFlowSpeed` (45).
+4. Trade Hub: is the hub world visible from the station, and does the system feel different from a basic one? If not, say what is missing.
+5. Mining Belt: fly a large ship into the belt. Is it hard to cross outside a pass? With a small ship, can you thread it? Do the pass rings show on the map? Watch the frame rate near the belt (about 1,800 rocks).
+6. Hold the Pass: clear the campers, then hold. Is 2 minutes with a wave every 35 s fun or a chore? Is the "pass is empty" warning clear before the mission fails?
+7. Solar Zone: fly toward the sun. Does the HEAT ZONE line show the right ship and turn red at about half depth?
+8. Sundive: the heat burns Tech Vaults fast (a quick dive at depth 0.2 cost 3 of 6 units in a test). Is that a fair tension ("move the tech to another ship first"), or does it make the mission a trap? Options: a shallower site, a shorter salvage (`Worlds.SundiveSalvageSeconds`), or a hint in the offer.
+9. Sundive with shields up: do shields make the dive safe enough to be the clear answer?
+10. Deep Space: is the lair search circle a fair size? Do the storms around the lair make the approach tense without killing the ship?
+11. Mix: in one run of 8 sectors, did you meet each archetype at least once? Did any feel like extra travel? The weights are in `mod/worlds/archetypes.rules` (restart needed).
+12. Co-op: both players see the current push and the same pass hold clock.
