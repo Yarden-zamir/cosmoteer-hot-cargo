@@ -115,31 +115,16 @@ static class DialogueKeys
         static void Postfix(CommDialogueTab __instance) => UxKit.Guard("dialogue keys", () => Number(__instance._dialogueButtonsBox.Children));
     }
 
-    /// <summary>
-    /// The event view writes "1. " at the start of each choice text (EventView.ChoiceText), so that the number shows without
-    /// this feature. With DialogueKeys on, the gold number replaces it: this strips the text number after each refresh.
-    /// </summary>
+    /// <summary>The event view writes no number into the choice text (EventView.ChoiceText), so only the gold number shows.</summary>
     [HarmonyPatch(typeof(EventDialog), "Show")]
     static class NumberEventButtons
     {
-        static void Postfix(EventDialog __instance) => UxKit.Guard("dialogue keys", () =>
-        {
-            var buttons = EventButtons(__instance).Children;
-            if (UxKit.On(s => s.DialogueKeys))
-                for (int i = 0; i < buttons.Count; i++) buttons[i].Text = StripNumber(buttons[i].Text ?? "", i + 1);
-            Number(buttons);
-        });
+        static void Postfix(EventDialog __instance) => UxKit.Guard("dialogue keys", () => Number(EventButtons(__instance).Children));
     }
 
-    /// <summary>Removes a leading "N. " (also inside a leading gray tag). Text without it stays as it is.</summary>
-    internal static string StripNumber(string text, int n)
-    {
-        string plain = $"{n}. ";
-        const string gray = "<gray>";
-        if (text.StartsWith(plain, StringComparison.Ordinal)) return text[plain.Length..];
-        if (text.StartsWith(gray + plain, StringComparison.Ordinal)) return gray + text[(gray.Length + plain.Length)..];
-        return text;
-    }
+    /// <summary>True when a text starts with "N. " (also inside a leading gray tag): a second number next to the gold one.</summary>
+    static bool HasNumber(string text, int n) =>
+        text.StartsWith($"{n}. ", StringComparison.Ordinal) || text.StartsWith($"<gray>{n}. ", StringComparison.Ordinal);
 
     /// <summary>Event buttons whose text still starts with its number. For autotests.</summary>
     internal static int EventTextNumbers()
@@ -148,7 +133,7 @@ static class DialogueKeys
         var buttons = EventButtons(ev).Children;
         int count = 0;
         for (int i = 0; i < buttons.Count; i++)
-            if (StripNumber(buttons[i].Text ?? "", i + 1) != (buttons[i].Text ?? "")) count++;
+            if (HasNumber(buttons[i].Text ?? "", i + 1)) count++;
         return count;
     }
 }

@@ -5,7 +5,7 @@ wait 8
 expect active == 1
 # The start event window stays open until the end of the test: its choice can move the ship.
 expect ev_pending == 1
-# Only the gold key number shows: the "1. " text prefix of the event view is stripped.
+# Only the gold key number shows: no choice text starts with its number.
 expect ux_event_text_numbers == 0
 # Watched supplies come from the part rules: battery yes, carbon (factory input only) no.
 expect ux_watched_battery == 1
