@@ -1,49 +1,79 @@
 #!/usr/bin/env bash
-# Build the mod on this Mac and install it on the PC.
-# - Copies mod/ (rules content) and the C# build into <Cosmoteer Mods>/hot_cargo.
-# - Keeps a backup of the PC tunables file when it differs from the repo copy.
-# - Adds the .NET startup hook to Cosmoteer.runtimeconfig.json (backup kept as .hot_cargo_orig).
+# Build the mod on this Mac and install it on the PC, in the slot that SLOT selects (see pc.sh).
+# - Assembles mod/ (rules content) and copies the C# build into <slot Mods>/hot_cargo.
+# - Keeps a backup of the slot's tunables file when it differs from the repo copy.
+# - Installs the startup hook loader into the game Bin folder (only when it changed) and points
+#   Cosmoteer.runtimeconfig.json at it (backup kept as .hot_cargo_orig). Writes Bin/steam_appid.txt.
+# - Test slots get their own settings.rules that turns the mod on.
 source "$(dirname "$0")/pc.sh"
 
 dotnet build "$REPO_ROOT/src/HotCargo/HotCargo.csproj" -c Release -nologo -v quiet
+dotnet build "$REPO_ROOT/src/HotCargo.Loader/HotCargo.Loader.csproj" -c Release -nologo -v quiet
 BUILD="$REPO_ROOT/src/HotCargo/bin/Release/net10.0-windows"
+LOADER="$REPO_ROOT/src/HotCargo.Loader/bin/Release/net10.0/HotCargo.Loader.dll"
 
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
-mkdir -p "$STAGE/hot_cargo/csharp"
 "$REPO_ROOT/scripts/assemble-mod.sh" "$STAGE/hot_cargo"
+mkdir -p "$STAGE/hot_cargo/csharp" "$STAGE/loader"
 cp "$BUILD/HotCargo.dll" "$BUILD/HotCargo.pdb" "$BUILD/0Harmony.dll" "$STAGE/hot_cargo/csharp/"
+cp "$LOADER" "$REPO_ROOT/src/HotCargo.Loader/VERSION" "$STAGE/loader/"
 # The tunables file is staged under a temporary name. The PC side decides if it overwrites the live copy.
 if [[ -f "$STAGE/hot_cargo/tunables.rules" ]]; then mv "$STAGE/hot_cargo/tunables.rules" "$STAGE/hot_cargo/tunables.rules.deploy"; fi
 
-COPYFILE_DISABLE=1 tar -cf - -C "$STAGE" hot_cargo | pc "$PS_PATHS"'
+COPYFILE_DISABLE=1 tar -cf - -C "$STAGE" hot_cargo loader | pc "$PS_PATHS"'
 $ErrorActionPreference = "Stop"
-if (Get-Process Cosmoteer -ErrorAction SilentlyContinue) { throw "Cosmoteer is running. Close it before deploy." }
-$tmp = Join-Path $env:TEMP "hot_cargo_deploy.tar"
-$in = [Console]::OpenStandardInput(); $out = [IO.File]::Create($tmp); $in.CopyTo($out); $out.Close()
-$keep = Join-Path $env:TEMP "hot_cargo_tunables_keep.rules"
-if (Test-Path (Join-Path $modDir "tunables.rules")) { Copy-Item (Join-Path $modDir "tunables.rules") $keep -Force }
-# Remove the old deploy, but keep the live tunables and their backups.
-if (Test-Path $modDir) { Get-ChildItem $modDir | Where-Object { $_.Name -notlike "tunables.rules*" } | Remove-Item -Recurse -Force }
-tar.exe -xf $tmp -C $mods
+if (Get-SlotProcess) { throw "Cosmoteer is running in slot $slot. Stop it before deploy (scripts/stop.sh)." }
+New-Item -ItemType Directory -Force $mods | Out-Null
+$tmpDir = Join-Path $env:TEMP ("hot_cargo_deploy_" + $slot); if (Test-Path $tmpDir) { Remove-Item $tmpDir -Recurse -Force }
+New-Item -ItemType Directory $tmpDir | Out-Null
+$tar = Join-Path $tmpDir "deploy.tar"
+$in = [Console]::OpenStandardInput(); $out = [IO.File]::Create($tar); $in.CopyTo($out); $out.Close()
+tar.exe -xf $tar -C $tmpDir
 if ($LASTEXITCODE -ne 0) { throw "tar failed" }
-$new = Join-Path $modDir "tunables.rules.deploy"
-$live = Join-Path $modDir "tunables.rules"
+
+# Mod folder: replace everything but the live tunables and their backups.
+$keep = Join-Path $tmpDir "tunables_keep.rules"
+if (Test-Path (Join-Path $modDir "tunables.rules")) { Copy-Item (Join-Path $modDir "tunables.rules") $keep -Force }
+if (Test-Path $modDir) { Get-ChildItem $modDir | Where-Object { $_.Name -notlike "tunables.rules*" } | Remove-Item -Recurse -Force }
+Copy-Item (Join-Path $tmpDir "hot_cargo") $mods -Recurse -Force
+$new = Join-Path $modDir "tunables.rules.deploy"; $live = Join-Path $modDir "tunables.rules"
 if (Test-Path $new) {
   if ((Test-Path $keep) -and ((Get-FileHash $keep).Hash -ne (Get-FileHash $new).Hash)) {
     $bak = Join-Path $modDir ("tunables.rules.bak-" + (Get-Date -Format "yyyyMMdd-HHmmss"))
-    Copy-Item $keep $bak; "tunables on PC differed from repo; backup: $bak"
+    Copy-Item $keep $bak; "tunables in slot $slot differed from repo; backup: $bak"
   }
   Move-Item $new $live -Force
 }
-$rc = Join-Path $game "Bin\Cosmoteer.runtimeconfig.json"
-$orig = "$rc.hot_cargo_orig"
+
+# Startup hook loader. A running game locks it, and every worktree builds different bytes,
+# so the loader is replaced only when src/HotCargo.Loader/VERSION changes. Bump VERSION when the loader code changes.
+$loaderDir = Join-Path $game "Bin\HotCargoLoader"; New-Item -ItemType Directory -Force $loaderDir | Out-Null
+$loaderDll = Join-Path $loaderDir "HotCargo.Loader.dll"; $newLoader = Join-Path $tmpDir "loader\HotCargo.Loader.dll"
+$verFile = Join-Path $loaderDir "VERSION"; $newVer = (Get-Content (Join-Path $tmpDir "loader\VERSION") -Raw).Trim()
+$oldVer = if (Test-Path $verFile) { (Get-Content $verFile -Raw).Trim() } else { "" }
+if (-not (Test-Path $loaderDll) -or $oldVer -ne $newVer) {
+  try { Copy-Item $newLoader $loaderDll -Force; [IO.File]::WriteAllText($verFile, $newVer) }
+  catch {
+    # Version 1 was installed before VERSION files existed. Same code, so keep it.
+    if ($oldVer -eq "" -and $newVer -eq "1") { "loader in use; keeping the installed copy (same code)"; [IO.File]::WriteAllText($verFile, $newVer) }
+    else { throw "HotCargo.Loader.dll version $newVer must replace $oldVer, but a running game uses it. Stop all Cosmoteer instances once, then deploy again." }
+  }
+}
+[IO.File]::WriteAllText((Join-Path $loaderDir "hot_cargo_default.txt"), (Join-Path $mainMods "hot_cargo\csharp\HotCargo.dll"))
+$rc = Join-Path $game "Bin\Cosmoteer.runtimeconfig.json"; $orig = "$rc.hot_cargo_orig"
 if (-not (Test-Path $orig)) { Copy-Item $rc $orig }
-$hook = Join-Path $modDir "csharp\HotCargo.dll"
 $json = Get-Content $orig -Raw | ConvertFrom-Json
-$json.runtimeOptions.configProperties | Add-Member -NotePropertyName STARTUP_HOOKS -NotePropertyValue $hook -Force
+$json.runtimeOptions.configProperties | Add-Member -NotePropertyName STARTUP_HOOKS -NotePropertyValue $loaderDll -Force
 [IO.File]::WriteAllText($rc, ($json | ConvertTo-Json -Depth 10))
-# Without this file, Steamworks restarts the game through Steam when scripts/run.sh starts the exe directly.
+# Without this file, Steamworks restarts the game through Steam when a script starts the exe directly.
 [IO.File]::WriteAllText((Join-Path $game "Bin\steam_appid.txt"), "799600")
-"deployed to $modDir"
+
+# Test slots: own settings with the mod on.
+if ($slot -ne "main") {
+  $entry = [char]34 + ($modDir -replace "\\", "/") + [char]34
+  [IO.File]::WriteAllText((Join-Path $root "settings.rules"), "GameSettings`r`n{`r`n`tEnabledMods [$entry]`r`n`tAutoDisableMods = false`r`n`tShowNewsOnStartup = false`r`n`tShowTipsOnStartup = false`r`n`tIsFirstBoot = false`r`n}`r`n")
+}
+Remove-Item $tmpDir -Recurse -Force
+"deployed to $modDir (slot $slot)"
 '
