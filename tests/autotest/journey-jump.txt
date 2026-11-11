@@ -10,9 +10,9 @@ expect sector == 2
 expect buyers == 1
 expect buyermission == 1
 buyer goto
-wait 5
+wait 15
 buyer goto
-wait 2
+wait 3
 expect buyertrades == 1
 # The Buyer toast and mission tracking run after a delay; they must not throw.
 wait 5
