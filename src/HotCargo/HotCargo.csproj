@@ -21,7 +21,7 @@
   <ItemGroup>
     <PackageReference Include="Lib.Harmony" Version="2.4.3" />
     <PackageReference Include="Krafs.Publicizer" Version="2.3.2" PrivateAssets="all" />
-    <Publicize Include="Cosmoteer" />
-    <Publicize Include="HalflingCore" />
+    <Publicize Include="Cosmoteer" IncludeCompilerGeneratedMembers="false" />
+    <Publicize Include="HalflingCore" IncludeCompilerGeneratedMembers="false" />
   </ItemGroup>
 </Project>

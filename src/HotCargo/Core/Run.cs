@@ -1,0 +1,199 @@
+using Cosmoteer.Game;
+using Cosmoteer.Modes.Career;
+using Cosmoteer.Simulation;
+using Halfling.Events;
+
+namespace HotCargo.Core;
+
+/// <summary>
+/// The Hot Cargo state of the running career game. One instance for each game.
+/// Simulation logic runs only from deterministic sources: sim ticks, fame changes and system switches.
+/// </summary>
+public sealed class Run
+{
+    public static Run? Current { get; private set; }
+
+    /// <summary>Area hooks. Each area sets its hook in its Register method, called from Mod.Boot.</summary>
+    public static class Hooks
+    {
+        /// <summary>Counts tech units that human players hold in the current simulation. Set by the Tech area.</summary>
+        public static Func<SimRoot, int> CountFleetTech = _ => 0;
+        /// <summary>Runs inside the sim tick when heat crosses a stage threshold. Arguments: run, sim, stage index.</summary>
+        public static event Action<Run, SimRoot, int>? StageStarted;
+        /// <summary>Runs inside the sim tick for each repeat wave of the last stage.</summary>
+        public static event Action<Run, SimRoot>? StrikeWave;
+        /// <summary>Runs after the players switch to another system. Argument firstVisit.</summary>
+        public static event Action<Run, bool>? SystemEntered;
+        /// <summary>Runs once per new career, after the starting ship exists.</summary>
+        public static event Action<Run>? NewRunStarted;
+
+        internal static void RaiseStageStarted(Run r, SimRoot s, int i) => StageStarted?.Invoke(r, s, i);
+        internal static void RaiseStrikeWave(Run r, SimRoot s) => StrikeWave?.Invoke(r, s);
+        internal static void RaiseSystemEntered(Run r, bool first) => SystemEntered?.Invoke(r, first);
+        internal static void RaiseNewRunStarted(Run r) => NewRunStarted?.Invoke(r);
+    }
+
+    public GameRoot Game { get; }
+    public CareerGameModeManager Mode { get; }
+    public RunState State { get; }
+    public Tunables T => State.Tunables;
+    public bool IsMultiplayer => Game.NetManager.IsMultiplayer;
+
+    ObjectID? _nodeBeforeSwitch;
+
+    Run(GameRoot game, CareerGameModeManager mode, RunState state)
+    {
+        Game = game;
+        Mode = mode;
+        State = state;
+    }
+
+    /// <summary>State read from the save by the load constructor patch, waiting for OnGameStarting.</summary>
+    internal static RunState? PendingLoadedState;
+
+    internal static void Start(CareerGameModeManager mode, bool loaded)
+    {
+        Current = null;
+        RunState? state = loaded ? PendingLoadedState : null;
+        PendingLoadedState = null;
+        if (!Activation.IsModEnabled())
+        {
+            Log.Info("Hot Cargo mod is not enabled in the game's mod list; staying inactive");
+            return;
+        }
+        if (state is null)
+        {
+            if (loaded) Log.Info("save has no Hot Cargo state; starting a new run state for this career");
+            state = new RunState();
+            var file = TunablesFile.Read();
+            if (file is not null) { state.Tunables = file.Values; state.TunablesHash = file.Hash; }
+            else state.TunablesHash = "defaults";
+        }
+        var run = new Run(mode.Game, mode, state);
+        Current = run;
+        // Validates the vanilla tier table now, so that a data problem shows at game start and not mid-run.
+        GameData.StandardMissionFame(1);
+        run.State.VisitedNodes.Add(mode.Game.CurrentMapNode.UniqueID);
+        mode.Game.EventHub.Tick += run.OnTick;
+        mode.Game.EventHub.PlayerFameChanged += run.OnFameChanged;
+        mode.Game.Popping += (_, _) => Stop(mode.Game);
+        Log.Info($"run active: loaded={loaded} sector={state.SectorIndex} heat={state.Heat:0.0} tunables={state.TunablesHash} mp={run.IsMultiplayer}");
+        if (!loaded) Hooks.RaiseNewRunStarted(run);
+    }
+
+    internal static void Stop(GameRoot game)
+    {
+        if (Current?.Game != game) return;
+        game.EventHub.Tick -= Current.OnTick;
+        game.EventHub.PlayerFameChanged -= Current.OnFameChanged;
+        Current = null;
+    }
+
+    public bool PressureActive => State.Result == RunResult.Running && State.HeatEnabled;
+
+    public int CurrentTier => Mode.CurrentMapNodeData.TierRange?.Min ?? 1;
+
+    void OnTick(object? sender, SimRoot sim)
+    {
+        if (sim != Game.Sim || State.Result != RunResult.Running) return;
+        double dt = sim.FixedUpdater.Interval.Seconds;
+        State.GameSeconds += dt;
+        State.FleetTech = Hooks.CountFleetTech(sim);
+        if (!State.HeatEnabled) return;
+        float mult = HeatModel.Multiplier(T.Heat.HeatMultiplierByUnits, State.FleetTech);
+        AddHeat(HeatModel.TimeHeat(T.Heat.HeatPerGameMinute, mult, dt), sim);
+        TickStrikeWaves(sim, dt);
+    }
+
+    void OnFameChanged(object? sender, ValueChangedEventArgs<int> e)
+    {
+        if (!PressureActive) return;
+        int gained = e.NewValue - e.OldValue;
+        if (gained <= 0) return;
+        float mult = HeatModel.Multiplier(T.Heat.HeatMultiplierByUnits, State.FleetTech);
+        AddHeat(HeatModel.FameHeat(T.Heat.HeatPerStandardMission, mult, gained, GameData.StandardMissionFame(CurrentTier)), Game.Sim);
+    }
+
+    /// <summary>Adds heat and starts any stages it crosses. Call only from simulation logic (or single-player debug keys).</summary>
+    public void AddHeat(float amount, SimRoot sim)
+    {
+        State.Heat = HeatModel.Clamp(State.Heat + amount);
+        int reached = HeatModel.StagesReached(State.Heat, T.Heat.Thresholds());
+        while (State.StagesStarted < reached)
+        {
+            int stage = State.StagesStarted++;
+            Log.Info($"stage {stage} ({T.Heat.Stages[stage].Name}) at heat {State.Heat:0.0}");
+            Hooks.RaiseStageStarted(this, sim, stage);
+        }
+        // Heat can drop below thresholds (debug keys). Stages then re-arm.
+        if (State.StagesStarted > reached) State.StagesStarted = reached;
+    }
+
+    /// <summary>Starts the next stage at once, by raising heat to its threshold.</summary>
+    public void ForceNextStage(SimRoot sim)
+    {
+        if (State.StagesStarted >= T.Heat.Stages.Length) { Hooks.RaiseStrikeWave(this, sim); return; }
+        AddHeat(Math.Max(0f, T.Heat.Stages[State.StagesStarted].Heat - State.Heat), sim);
+    }
+
+    void TickStrikeWaves(SimRoot sim, double dt)
+    {
+        bool atTop = T.Heat.Stages.Length > 0 && State.StagesStarted == T.Heat.Stages.Length && State.Heat >= HeatModel.MaxHeat;
+        if (!atTop) { State.SecondsSinceStrikeWave = 0; return; }
+        State.SecondsSinceStrikeWave += dt;
+        if (State.SecondsSinceStrikeWave < T.Hunters.StrikeWaveIntervalSeconds) return;
+        State.SecondsSinceStrikeWave = 0;
+        Log.Info("strike wave");
+        Hooks.RaiseStrikeWave(this, sim);
+    }
+
+    internal void BeforeSystemSwitch() => _nodeBeforeSwitch = Game.CurrentMapNode?.UniqueID;
+
+    internal void AfterSystemSwitch()
+    {
+        ObjectID newNode = Game.CurrentMapNode.UniqueID;
+        if (_nodeBeforeSwitch is not { } oldNode || oldNode.Equals(newNode)) return;
+        _nodeBeforeSwitch = null;
+        State.NodeHeat[oldNode] = State.Heat;
+        bool firstVisit = State.VisitedNodes.Add(newNode);
+        if (firstVisit) State.SectorIndex++;
+        float stored = State.NodeHeat.TryGetValue(newNode, out float h) ? h : 0f;
+        State.Heat = HeatModel.OnEnterSystem(State.Heat, stored, T.Heat.HeatCarryOverFraction);
+        // Stages below the entry heat do not fire again on arrival. This gives the players a moment after each jump.
+        State.StagesStarted = HeatModel.StagesReached(State.Heat, T.Heat.Thresholds());
+        State.SecondsSinceStrikeWave = 0;
+        Log.Info($"entered system {Game.CurrentMapNode.Name}: sector={State.SectorIndex} first={firstVisit} heat={State.Heat:0.0}");
+        Hooks.RaiseSystemEntered(this, firstVisit);
+    }
+
+    /// <summary>Ends the run as lost. Deterministic callers only (sim logic).</summary>
+    public void Lose(string reason)
+    {
+        if (State.Result != RunResult.Running) return;
+        State.Result = RunResult.Lost;
+        State.EndReason = reason;
+        Log.Info($"run lost: {reason}");
+    }
+
+    /// <summary>Ends the run as won. Heat stops; the career can continue.</summary>
+    public void Win(string reason)
+    {
+        if (State.Result != RunResult.Running) return;
+        State.Result = RunResult.Won;
+        State.HeatEnabled = false;
+        State.EndReason = reason;
+        Log.Info($"run won: {reason}");
+    }
+
+    /// <summary>Single player only: swaps in new tunables from the file.</summary>
+    internal void ReloadTunables()
+    {
+        if (IsMultiplayer) return;
+        var file = TunablesFile.Read();
+        if (file is null) return;
+        State.Tunables = file.Values;
+        State.TunablesHash = file.Hash;
+        Log.Info($"tunables reloaded: {file.Hash}");
+        Game.Gui.ShowAreaName("Hot Cargo tunables reloaded");
+    }
+}

@@ -1,0 +1,8 @@
+// Hot Cargo tunables. The game reloads this file while it runs (single player).
+// Put only the values you want to change here. All values and their defaults are in tunables.defaults.rules,
+// which the mod writes at game start.
+// Example:
+// Heat
+// {
+// 	HeatPerGameMinute = 3
+// }

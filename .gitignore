@@ -4,3 +4,5 @@ obj/
 /game
 *.user
 .vs/
+tests/**/bin/
+tests/**/obj/

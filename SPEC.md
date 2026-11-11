@@ -15,7 +15,7 @@ A run is short, like FTL: about 8 sectors and 2 to 3 hours.
 
 - **Hold or sell.** Every tech unit you hold makes the chase harder. Every unit you sell makes the run easier now and poorer at the end.
 - **Move on or burn.** Missions earn fame, and fame brings the hunters faster. A sector supports only a few missions before you must leave.
-- **Protect the cargo.** The tech is a physical thing in your ship. If you lose it, the run ends.
+- **Protect the cargo.** The tech is a physical thing in your ship. If you lose it, the run ends when the last unit is gone.
 - **Tune live.** All numbers are in one file. The game picks up changes without a restart.
 
 ## 3. Scope
@@ -55,11 +55,11 @@ Out of scope for this batch:
 
 6. **Win**: the players dock at the Buyer and deliver at least one tech unit.
 7. When the players win, a dialog shows the score. Score = money + delivered units × tech value × `BuyerPriceFactor` (default 1.5).
-8. After a win, the players can end the run or continue the career with heat turned off.
-9. **Loss**: if the fleet tech count goes down for any reason other than a sale or a Buyer delivery, the run is lost. Examples: a vault with tech is destroyed, or crew that carry tech die.
-10. A loss shows a dialog: "The corporation recovered the tech." The game then returns to the main menu.
+8. After a win, heat turns off. A dialog shows the score, and the players can continue the career.
+9. **Loss**: when the fleet tech count reaches 0, the run is lost. Any cause counts: vault damage, a destroyed vault, crew that die while they carry tech, or a sale of the last unit. A Buyer delivery is the only exception, because it wins the run first.
+10. A loss shows a dialog: "The corporation recovered the tech." The game then shows the game-over screen.
 11. The mod does not delete save files after a loss.
-12. If the fleet tech count reaches 0 through sales, the run continues. The players can no longer win through the Buyer, but they can keep playing. The heat multiplier then uses table entry 0.
+12. The loss check runs only when the count is certain: no ship jump is in progress, and no friendly ships wait in another system. The count must stay at 0 for `LossGraceSeconds` (default 3 s), so tech that crew carry between ships does not trigger a loss.
 
 ## 7. Tech units and the Tech Vault
 
@@ -68,6 +68,8 @@ Out of scope for this batch:
 15. The Tech Vault is a buildable part. Its rules define its size, health, cost and capacity. Defaults: 2×2, high health, capacity 6 units. Rules changes need a game restart.
 16. To move tech between ships, the players build a vault on the other ship. The crew then carry the tech over, like any other resource.
 17. A new run starts with `StartingTechUnits` (default 6) in a Tech Vault on the starting ship.
+65. Damage to a Tech Vault destroys tech inside it. Each time a vault takes damage equal to `VaultDamagePerUnitLost` × its maximum health (default 0.15), it loses one unit. A destroyed vault loses all units inside it.
+66. Repair of a vault does not bring back lost tech.
 
 ## 8. Tech value and selling
 
@@ -132,7 +134,7 @@ New mission types appear in the normal mission lists, next to the vanilla ones.
 
 ## 13. Tunables, debug and live tuning
 
-50. The C# code reads all numbers in requirements 1, 3, 4, 7, 17, 19 and 23 to 48 from `tunables.rules`.
+50. The C# code reads all numbers in requirements 1, 3, 4, 7, 12, 17, 19, 23 to 48 and 65 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
 51. The file uses the game's `.rules` format.
 52. The mod watches the file. When the file changes, the mod reloads it on the next frame, without a game restart.
 53. If the file has an error, the mod keeps the last valid values and shows the error in game.
@@ -163,6 +165,8 @@ New mission types appear in the normal mission lists, next to the vanilla ones.
 | `RewardScale` | 2.0 | 4 |
 | `BuyerPriceFactor` | 1.5 | 7 |
 | `StartingTechUnits` | 6 | 17 |
+| `VaultDamagePerUnitLost` | 0.15 | 65 |
+| `LossGraceSeconds` | 3 s | 12 |
 | `TechBaseValue` | 10000 | 19 |
 | `TechGrowthPerSector` | 0.35 | 19 |
 | `TechGrowthPerGameHour` | 0.10 | 19 |
@@ -255,3 +259,4 @@ Parallel work: steps 3 and 4 touch separate files and can run at the same time a
 
 - Strike stage: survivable waves (default) or a hard fail (requirement 35).
 - Tech Vault defaults: one vault holds all 6 units, or each vault holds fewer units, so that the cargo spreads over several vaults (requirement 15).
+- Sale of the last unit: it ends the run under requirement 9. The alternative is to block the sale of the last unit (requirement 9).

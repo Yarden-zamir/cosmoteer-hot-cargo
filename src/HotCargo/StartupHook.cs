@@ -19,6 +19,6 @@ internal static class StartupHook
         };
         HotCargo.Log.Init(modDir);
         HotCargo.Log.Info($"startup hook loaded in {Environment.ProcessPath}");
-        HotCargo.Mod.Boot();
+        HotCargo.Mod.Boot(modDir);
     }
 }

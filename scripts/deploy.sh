@@ -11,7 +11,7 @@ BUILD="$REPO_ROOT/src/HotCargo/bin/Release/net10.0-windows"
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
 mkdir -p "$STAGE/hot_cargo/csharp"
-cp -R "$REPO_ROOT/mod/." "$STAGE/hot_cargo/"
+"$REPO_ROOT/scripts/assemble-mod.sh" "$STAGE/hot_cargo"
 cp "$BUILD/HotCargo.dll" "$BUILD/HotCargo.pdb" "$BUILD/0Harmony.dll" "$STAGE/hot_cargo/csharp/"
 # The tunables file is staged under a temporary name. The PC side decides if it overwrites the live copy.
 if [[ -f "$STAGE/hot_cargo/tunables.rules" ]]; then mv "$STAGE/hot_cargo/tunables.rules" "$STAGE/hot_cargo/tunables.rules.deploy"; fi
@@ -23,7 +23,8 @@ $tmp = Join-Path $env:TEMP "hot_cargo_deploy.tar"
 $in = [Console]::OpenStandardInput(); $out = [IO.File]::Create($tmp); $in.CopyTo($out); $out.Close()
 $keep = Join-Path $env:TEMP "hot_cargo_tunables_keep.rules"
 if (Test-Path (Join-Path $modDir "tunables.rules")) { Copy-Item (Join-Path $modDir "tunables.rules") $keep -Force }
-if (Test-Path (Join-Path $modDir "csharp")) { Remove-Item (Join-Path $modDir "csharp") -Recurse -Force }
+# Remove the old deploy, but keep the live tunables and their backups.
+if (Test-Path $modDir) { Get-ChildItem $modDir | Where-Object { $_.Name -notlike "tunables.rules*" } | Remove-Item -Recurse -Force }
 tar.exe -xf $tmp -C $mods
 if ($LASTEXITCODE -ne 0) { throw "tar failed" }
 $new = Join-Path $modDir "tunables.rules.deploy"

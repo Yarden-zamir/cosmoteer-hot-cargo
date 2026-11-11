@@ -1,0 +1,9 @@
+ID = yarden_zamir.hot_cargo
+Name = "Hot Cargo"
+Version = 0.1.0
+CompatibleGameVersions = ["0.30.5a"]
+ModifiesGameplay = true
+Author = "Yarden-zamir"
+StringsFolder = "strings"
+Description = "You stole corporate tech. The corporation wants it back.\n\n"\
+              "Needs the Hot Cargo C# part, installed by scripts/deploy.sh."

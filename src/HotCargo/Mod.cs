@@ -4,15 +4,20 @@ namespace HotCargo;
 
 public static class Mod
 {
-    public const string HarmonyId = "yarden-zamir.hot_cargo";
+    public const string HarmonyId = "yarden_zamir.hot_cargo";
 
-    public static void Boot()
+    /// <summary>Folder that holds mod.rules and tunables.rules. The DLL lives in its csharp subfolder.</summary>
+    public static string ModRoot { get; private set; } = "";
+
+    public static void Boot(string dllDir)
     {
+        ModRoot = Path.GetFullPath(Path.Combine(dllDir, ".."));
         try
         {
             var harmony = new Harmony(HarmonyId);
             harmony.PatchAll(typeof(Mod).Assembly);
-            Log.Info($"harmony patched {harmony.GetPatchedMethods().Count()} methods");
+            Core.TunablesDefaults.WriteFile();
+            Log.Info($"harmony patched {harmony.GetPatchedMethods().Count()} methods; mod root {ModRoot}");
         }
         catch (Exception ex)
         {
@@ -20,10 +25,4 @@ public static class Mod
             throw;
         }
     }
-}
-
-[HarmonyPatch(typeof(Cosmoteer.Gui.TitleScreen), MethodType.Constructor)]
-static class HelloTitleScreenPatch
-{
-    static void Postfix() => Log.Info("title screen constructed — hello from Hot Cargo");
 }
