@@ -13,7 +13,7 @@ for ((i = 0; i < MINUTES; i++)); do
   git fetch -q origin main 2>/dev/null
   want="$(git rev-parse origin/main)"
   if [[ "$want" != "$(cat "$STATE" 2>/dev/null)" ]]; then
-    state="$(SLOT=main bash -c 'source scripts/pc.sh; pc "$PS_PATHS""if (Get-SlotProcess) { \"RUNNING\" } else { \"CLOSED\" }"' 2>/dev/null | tail -1)"
+    state="$(SLOT=main bash -c 'source scripts/pc.sh; pc "$PS_PATHS""if (Get-SlotProcess) { \"RUNNING\" } else { \"CLOSED\" }"' 2>/dev/null | tail -1 | tr -d '\r')"
     if [[ "$state" == CLOSED ]]; then
       git -C "$WT" checkout -q --detach "$want"
       if (cd "$WT" && SLOT=main ./scripts/deploy.sh >/tmp/hot_cargo_keep_installed.log 2>&1 && SLOT=main ./scripts/mod-toggle.sh on >>/tmp/hot_cargo_keep_installed.log 2>&1); then
