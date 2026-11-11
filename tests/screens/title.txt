@@ -1,0 +1,5 @@
+# Main menu screenshot with the Hot Cargo title. Main slot only (needs graphics).
+render on
+wait 3
+screenshot title
+quit
