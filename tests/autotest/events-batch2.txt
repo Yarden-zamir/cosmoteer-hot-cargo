@@ -1,0 +1,58 @@
+# Events batch 2 (spec 79-86): Wanted Broadcast, The Magpies Return, Refugee Convoy, Pirate Toll Gate, The Buyer's Agent.
+newgame run
+wait 8
+expectevent getaway
+choose 3 1
+eventviewall
+# Wanted Broadcast: local bounty hunters spawn with their own tag, and the Hunters area does not count them.
+event wanted_broadcast
+choose 3 1
+expecttagged hc_ev_bounty >= 2
+expect hunters == 0
+# The Magpies Return needs the magpies_paid flag set at least 2 sectors ago.
+expectneed magpies_return unmet
+event rival_crew
+choose 1 1
+expectflag magpies_paid 1
+expectneed magpies_return unmet
+ev_sector 3
+expectneed magpies_return met
+event magpies_return
+# The rigged-crate option needs the defector flag and stays hidden without it.
+expectchoice 2 hidden
+choose 4 1
+expecttagged hc_ev_magpie >= 1
+expectflag magpies_paid 0
+# Refugee Convoy: selling the convoy pays, cools the trail, and costs fame and reputation with the local faction.
+# Some fame to lose. Fame adds heat (spec 25), so heat goes back to 0 for the toll checks below.
+fame 20
+event refugee_convoy
+ev_mark
+ev_rep_mark
+choose 3 1
+expect ev_money_gain > 0
+expect ev_fame_gain < 0
+expect ev_rep_gain < 0
+expect ev_heat_gain <= -10
+# Pirate Toll Gate: the toll grows with heat (0.3 + 0.01 x heat money units; 1 unit is 10,000 at tier 1).
+heat -100
+event toll_gate
+ev_mark
+choose 1 1
+expect ev_money_gain < 0
+expect ev_money_gain > -4000
+heat 50
+event toll_gate
+ev_mark
+choose 1 1
+expect ev_money_gain < -7000
+# The Buyer's Agent: credits now, a lower Buyer price later (spec 7 x the run multiplier).
+expect buyerprice >= 1.49
+event buyers_agent
+ev_mark
+choose 1 1
+expect ev_buyer_mult == 0.8
+expect buyerprice <= 1.21
+expect buyerprice >= 1.19
+expect ev_money_gain > 0
+quit

@@ -70,4 +70,34 @@ HotCargoUx
 	ShipLostFmt = "SHIP LOST: {0}"
 	ShipDerelictFmt = "SHIP DERELICT: {0}"
 	ShipNoControlFmt = "{0} LOST CONTROL ({1}/{2} command)"
+
+	// Damage pings
+	UnderFire = "UNDER FIRE"
+
+	// Several selected parts
+	PartsSameFmt = "{0} x {1}"
+	PartsMixedFmt = "{0} parts"
+	PartsHealthFmt = "{0} / {1}   <gray>{2} damaged</gray>"
+
+	// Low supplies
+	SupplyLowFmt = "{0}: {1} LOW ({2:0}%)"
+
+	// Station badges
+	BadgeTrade = "Trade"
+	BadgeCrew = "Crew"
+	BadgeTechs = "Techs"
+	BadgeMissionsFmt = "{0} missions"
+	BadgeRewardsFmt = "<good>{0} reward ready</good>"
+
+	// Trade tab
+	TechSaleFmt = "<fame>Sell {0} tech:</fame> heat per minute <bad>+{1:0.0}</bad> to <good>+{2:0.0}</good>.   Final score <bad>{3}</bad> <gray>(at today's price)</gray>"
+	TechSaleBuyer = "The Buyer. Sell tech here to win the run."
+	TradePricesFmt = "<gray>{0}, {1}: buy prices x{2:0.00}, sale refund x{3:0.00}</gray>"
+	DeliveryAcceptedFmt = "<fame>Delivery</fame> {0}: {1} / {2}, pays <money>{3}</money>. Sales here count."
+	DeliveryOfferedFmt = "<gray>Offered delivery</gray> {0}: {1} / {2}, pays <money>{3}</money>"
+
+	// Wanted
+	WantedSeenFmt = "{0}   <bad>seen: the timer waits</bad>"
+	WantedByFmt = "{0}"
+	WantedLeftFmt = "{0}   search ends in <fame>{1}</fame>"
 }

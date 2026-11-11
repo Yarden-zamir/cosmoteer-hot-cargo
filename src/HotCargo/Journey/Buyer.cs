@@ -85,6 +85,9 @@ public static class Buyer
             missions.TrackMission(mission);
     }
 
+    /// <summary>Spec 7: BuyerPriceFactor × the run's Buyer price multiplier (an advance from the Buyer's agent event lowers it).</summary>
+    public static float PriceFactor(Run run) => run.T.Journey.BuyerPriceFactor * run.State.BuyerPriceMultiplier;
+
     public static bool IsBuyer(Ship ship) => ship.HasTag(Tag);
 
     /// <summary>Buyer stations in the sim, loaded or in stasis.</summary>
@@ -113,11 +116,11 @@ public static class Buyer
     /// </summary>
     internal static long Score(long money, int deliveredUnits, long unitPrice) => money + deliveredUnits * unitPrice;
 
-    /// <summary>What the Buyer pays for one unit now: the tech value × BuyerPriceFactor, as PricePatch computes it.</summary>
-    static long UnitPrice(Run run) => (long)(TechPrice.Sell(run) * run.T.Journey.BuyerPriceFactor);
+    /// <summary>What the Buyer pays for one unit now: the tech value × PriceFactor, as PricePatch computes it.</summary>
+    internal static long UnitPrice(Run run) => (long)(TechPrice.Sell(run) * PriceFactor(run));
 
     /// <summary>
-    /// Spec 7: a sale of tech to the Buyer pays tech value × BuyerPriceFactor.
+    /// Spec 7: a sale of tech to the Buyer pays tech value × PriceFactor (BuyerPriceFactor × the run multiplier).
     /// Runs after the Tech area's general tech price postfix (lower priority), so it multiplies the final tech price.
     /// The Buyer is the only trading ship with the Neutral player index (see buyer.rules).
     /// Limit: a mod that adds other Neutral trade stations gets the Buyer price too. Revisit if such a mod is in use.
@@ -130,7 +133,7 @@ public static class Buyer
         {
             if (destPlayerIndex != PlayerIndexes.Neutral || resourceType != Vaults.TechId) return;
             if (Run.Current is not { } run || run.Game.Sim != __instance.Sim) return;
-            __result = (int)(__result * run.T.Journey.BuyerPriceFactor);
+            __result = (int)(__result * PriceFactor(run));
         }
     }
 

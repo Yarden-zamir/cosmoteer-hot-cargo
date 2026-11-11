@@ -4,6 +4,8 @@ A career mod for [Cosmoteer](https://store.steampowered.com/app/799600/Cosmoteer
 
 You stole corporate tech. The corporation wants it back. Get it across about 8 systems to the Buyer before the hunters catch you.
 
+![Main menu](docs/screenshots/title.jpg)
+
 ![Run intro](docs/screenshots/ux-intro.jpg)
 
 ## How it plays

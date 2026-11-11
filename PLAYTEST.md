@@ -76,6 +76,15 @@ To see more events fast, put `Events { ArrivalEventChance = 1  StationEventChanc
 1. Convoy Duty: the offer shows a "Heat -15 (convoy cover)" reward line. When you collect the reward at the station, does heat drop? Does the offer text explain why?
 2. Discreet Bounty: when a trap springs, the message "It was a setup. Corporate hunters drop out of the dark!" shows with the wanted alert. Is it clear that the bounty was a trap?
 
+## Events batch 2 (spec 79-86)
+
+1. Wanted Broadcast (heat 60+): do the "Bounty Hunter ..." ships read as local hunters, different from corporate hunters? Does their bounty mission appear in the log?
+2. The Magpies Return: pay Rook a crate in sector 2 or later, then go 2 more sectors. Does Rook come back? With Dr. Varga aboard, does the rigged-crate option show, and does the payoff feel earned?
+3. Refugee Convoy: do the reputation and fame lines read clearly in the result? Is selling the convoy tempting, given the heat drop?
+4. Pirate Toll Gate: compare the toll at low and high heat. Does the button cost make the twist clear ("the hotter you are, the more you pay")?
+5. The Buyer's Agent (1 to 2 sectors before the Buyer): is the advance tempting? After a deal, does the trade window at the Buyer show the lower price?
+6. Courier Job: look for "Courier Job" in a station's mission list. Is the contact easy to find (target area on the map)? Is 7 minutes too short or too long? Does it feel different from a vanilla delivery?
+7. Vault Coolant Leak (at most one per run): does an event with no free choice feel fair, or punishing? Is the choice between a crate, crew and money a real decision?
 ## Mechanics missions (spec 130-141, MISSIONS.md)
 
 The autotests cover offers, completion, failure, leave early, intensive scans and save and load. They do not fight for real. To see the missions fast, put `Mechanics { DroneSiegeChance = 1  PrototypeChance = 1  SunMiningChance = 1  TowChance = 1  CaptureChance = 1  SurveyChance = 1  MiningGuardChance = 1  ListeningPostChance = 1 }` in `tunables.rules`, then jump to a new system.
