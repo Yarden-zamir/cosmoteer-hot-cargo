@@ -89,6 +89,7 @@ public static class JourneyArea
                     float gap = loaded is null ? 1200f : loaded.DetWorldBoundingCircle.Radius + ship.DetWorldBoundingCircle.Radius + 100f;
                     ship.WorldCenter = loc + new Vector2(gap, 0f);
                     ship.Physics.PhysicsWrapper.LinearVelocity = Vector2.Zero;
+                    Log.Info($"AUTOTEST goto: ship {ship.Name} to {ship.WorldCenter} (det {ship.DetWorldCenter}), Buyer at {loc}, loaded={loaded is not null}, humans={sim.Ships.HumanPlayerShips.Count()}");
                     break;
                 }
                 // Test-only: a real sale through the trade input. Adds the units to the first human ship first.
