@@ -75,3 +75,20 @@ To see more events fast, put `Events { ArrivalEventChance = 1  StationEventChanc
 
 1. Convoy Duty: the offer shows a "Heat -15 (convoy cover)" reward line. When you collect the reward at the station, does heat drop? Does the offer text explain why?
 2. Discreet Bounty: when a trap springs, the message "It was a setup. Corporate hunters drop out of the dark!" shows with the wanted alert. Is it clear that the bounty was a trap?
+
+## Mechanics missions (spec 130-141, MISSIONS.md)
+
+The autotests cover offers, completion, failure, leave early, intensive scans and save and load. They do not fight for real. To see the missions fast, put `Mechanics { DroneSiegeChance = 1  PrototypeChance = 1  SunMiningChance = 1  TowChance = 1  CaptureChance = 1  SurveyChance = 1  MiningGuardChance = 1  ListeningPostChance = 1 }` in `tunables.rules`, then jump to a new system.
+
+1. Drone Siege: build a platform with **Build New Ship** next to the post. It needs a reactor, a gun and a crew. Fly away. Does the clock keep running? Do the drones kill the platform too fast or too slowly? Are tier-1 to tier-3 drones "small" enough, or should drones be tier 1 only (`Siege { ShipTierMax = 1 }`)?
+2. Drone Siege: without a platform, is five minutes of waiting too long, or fine? Does "No ship on station: the clock is stopped" make sense?
+3. Leave early: does the "[Click] Leave now and keep X credits" line work in the HUD and in the mission log? Is the amount clear?
+4. Prototype Retrieval: can you see the core (magenta storage bay) on the carrier's hull? Can you target the reactors and bridge with part targeting without hitting the core? Does the carrier offer surrender when it is beaten? Does a carrier that was damaged before you arrived heal when the core goes on (known limit)?
+5. Sunside Ore: is the heat zone dangerous but survivable for a small mining ship? Are 30 to 45 units too many or too few for 30 minutes? Can you sell Helion Ore at the station (it needs free untyped storage)?
+6. Salvage Rights: can a starter-size ship tow the hulk with tractor beams in 25 minutes? Is 800 from the station hull a fair finish line?
+7. Repossession: do the escorts die before the freighter? Does the freighter offer surrender? Does claiming the wreck with crew work in the real UI (select crew, set the wreck as home ship)?
+8. Storm Survey: is 15 s per marker inside an ion storm fair? Does the starter ship have a working sensor?
+9. Listening Post: does the scout follow you well? Is the "[Click] Start the scan here" line easy to find? Do intensive scans feel worth the extra pay? Is the base close enough to be a threat?
+10. Frequency: with the economy area's mission limits per system, do mechanics missions show up about once every two systems?
+11. Multiplayer (co-op): one player clicks an order. Does the other player see the same result?
+

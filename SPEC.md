@@ -136,7 +136,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 13. Tunables, debug and live tuning
 
-50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65 and 67 to 78 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
+50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78 and 130 to 141 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
 51. The file uses the game's `.rules` format.
 52. The mod watches the file. When the file changes, the mod reloads it on the next frame, without a game restart.
 53. If the file has an error, the mod keeps the last valid values and shows the error in game. Errors include values that break sim logic later, for example a stage name that `Hunters.Stages` or a tactic does not match (`TunablesFile.Validate`).
@@ -192,6 +192,11 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `KiteRangeFraction` | 0.9 | 44 |
 | `PincerAngleDegrees` | 120° | 45 |
 | `FallBackHealthFraction` | 0.35 | 47 |
+| `Mechanics.<Mission>Chance` | 0.15 to 0.25 | 131 |
+| `Mechanics.Siege`, `Guard`, `Scan` (hold-out profiles) | see MISSIONS.md | 132, 137, 140 |
+| `Mechanics.DeliveryRadius` | 800 | 134 |
+| `Mechanics.SurveyScanSeconds` | 15 s | 136 |
+| `Mechanics.ScanRange`, `IntensivePayBonus`, `MaxIntensivePerWave` | 3500, 0.25, 2 | 140 |
 
 The defaults are first guesses. Live tuning sets the real values.
 
@@ -206,6 +211,7 @@ mod/                       rules content; scripts/assemble-mod.sh builds mod.rul
   tech/                    Stolen Tech resource, Tech Vault part
   journey/                 run map (galaxy.rules), Buyer station
   missions/                mission spawners, shady ambush
+  missions/mechanics/      mechanics missions (sysgen_mechanics.rules), Helion Ore, Prototype Core
   tactics/ai_hunter.rules  hunter AI (HotCargoHunter)
   events/                  choice events (events.rules), outcome spawns (spawns.rules), signal POIs
 src/HotCargo.Loader/       startup hook entry point, assembly resolve
@@ -223,7 +229,7 @@ scripts/                   pull-game, deploy, run, stop, logs, autotest, release
 
 Rules:
 
-- The model files (`HeatModel`, `TechModel`, `MissionModel`, `TacticsModel`, `EventModel`) have no game types, so that they are testable on the Mac without the game.
+- The model files (`HeatModel`, `TechModel`, `MissionModel`, `MechanicsModel`, `TacticsModel`, `EventModel`) have no game types, so that they are testable on the Mac without the game.
 - Patches stay thin. They call into the mod classes.
 - One tunables record type. The overlay and the code read the same values.
 
@@ -282,3 +288,19 @@ FTL-style choice events. EVENTS.md holds the design and the catalog.
 77. In single player, an open event window pauses the game when `PauseOnEvent` is on. Headless test games do not pause.
 78. A content error in an event (a missing spawn, an unknown resource, a bad reference) shows in the overlay at the first event and turns off events for that game. An error while an outcome applies drops the page and shows the error; the game keeps running.
 
+## 23. Mechanics missions
+
+Missions that use game mechanics, not only combat. MISSIONS.md describes how each one plays. Code: `src/HotCargo/Missions/Mechanics/`. Rules: `mod/missions/mechanics/`.
+
+130. Eight mission types use game mechanics: Drone Siege, Prototype Retrieval, Sunside Ore, Salvage Rights, Repossession, Storm Survey, Claim Jumpers and Listening Post. Their objectives are the rules types `HotCargoHoldOut`, `HotCargoPrototype`, `HotCargoTow`, `HotCargoCapture` and `HotCargoSurvey`, plus the vanilla `DeliverResources` and `TimeLimit`. Accepted missions are saved with the career and load with it.
+131. Each mission type has one spawner group with a `hc_mech_<name>` tag. Before a system generates, the mod sets the group's spawn chance from `Mechanics.<Mission>Chance` (defaults 0.15 to 0.25). Rewards use the vanilla tier tables. Each mission carries contract terms (`HotCargoContract`) for the economy area (requirement 100 onward).
+132. **Drone Siege**: drones attack a faction listening post. The objective completes after `Siege.Seconds` (300 s) of guarded time. Guarded means that a human ship, of any kind, is within `GuardRadius` (1,500) of the post. A player-built platform counts. Waves come only while the post is guarded: the first after `FirstWaveSeconds`, then one every `WaveSeconds`. Ships per wave = `ShipsBase` + `ShipsPerTier` × tier, capped at `MaxLiveShips` live wave ships. Wave ships are built-in combat ships of tier `ShipTierBase` + `ShipTierPerTier` × tier, in 1 to `ShipTierMax` (3), on one hostile side of their own. The mission fails when the post dies. The offer text hints at building a separate gun platform.
+133. **Prototype Retrieval**: the Prototype Core part (`yarden_zamir.prototype_core`, 8,000 health) goes on the carrier's outer hull the first time the carrier is live after acceptance. The mission is recovered when the carrier surrenders to the players. It is also recovered when the ship that holds the core is a wreck or a player ship and a human ship is within `RecoverRange` (400) of the core. The core part then goes away. The mission fails when the core part is destroyed or the ship that holds it is gone. A split moves the core to the piece that has it.
+134. **Salvage Rights**: the mission completes when the hull of a crewless freighter is within `Mechanics.DeliveryRadius` (800) of the station's hull. The players tow it, push it, or claim it with crew and fly it. It fails when the hulk is gone, the station dies or 25 minutes pass.
+135. **Repossession**: the mission completes when the target ship surrenders to the players or becomes a player ship. It fails when the target is gone. A wreck that nobody claims yet is not a failure.
+136. **Storm Survey**: three markers sit inside ion storms. A marker counts scan time while a human ship with a working sensor part is within 400 of it. The mission completes when every marker has `Mechanics.SurveyScanSeconds` (15 s). A system with fewer than two markers offers no survey.
+137. **Claim Jumpers**: it works like requirement 132, with the `Guard` profile (240 s, raiders of the sector tier − 1), around a civilian mining barge in an asteroid field.
+138. **Sunside Ore**: Helion Ore (`yarden_zamir.helion_ore`) forms only on Helion asteroids. The asteroids sit in one seam 2,000 to 3,300 from a single sun, inside its heat zone. The players sell 30 to 45 units to the nearest station within 30 minutes. Binary suns and sector types with the spawn flag `hc_no_sun_mining` get no seam.
+139. A mechanics mission pays a multiple of a standard mission at its tier. MISSIONS.md lists the multiples. Wave ships that the C# code spawns pay no kill fame, so the mission reward holds all of the fame.
+140. **Listening Post**: a scout of a faction listening post follows the nearest player ship. The players start the scan from the mission panel when the scout is within `Mechanics.ScanRange` (3,500) of a hostile base. Then it works like requirement 132, with the `Scan` profile (180 s, waves every 45 s from the base side). Before each wave the players can order up to `MaxIntensivePerWave` (2) intensive scans. Each scan gives the next wave `IntensiveExtraShips` more ships and `IntensiveExtraTier` more tiers, and adds `IntensivePayBonus` (0.25) to the money factor.
+141. **Leave early** (requirements 132, 137, 140): after the first whole wave interval, the players can leave from the mission panel. The objective completes at once. The money rewards become the earned share × the money factor, and the fame rewards become the earned share. The earned share is the whole `WaveSeconds` intervals guarded ÷ the intervals in `Seconds`. Orders go through the MP input `HotCargoHoldOutOrder`. The input checks the order again when it runs.
