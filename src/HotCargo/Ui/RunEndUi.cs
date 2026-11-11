@@ -1,27 +1,65 @@
+using Cosmoteer.Gui;
 using Cosmoteer.Modes.Career;
 using Halfling.Gui.Dialogs;
 using HotCargo.Core;
+using HotCargo.Tech;
+using HotCargo.Ux;
 
 namespace HotCargo.Ui;
 
-/// <summary>Shows the win or loss UI once per game, from the frame update (not from sim logic).</summary>
+/// <summary>
+/// Shows the run intro, and the win or loss UI once per game. Runs from the frame update, never from sim logic.
+/// Ux.RunEndPanel on: a win panel, and the loss on the game-over screen (see GameOverPatch). Off: plain dialogs.
+/// </summary>
 public static class RunEndUi
 {
     static Run? _shownFor;
+    static Run? _introFor;
+
+    /// <summary>Set by the NewRunStarted hook. The intro shows on the next frame, when the HUD exists.</summary>
+    internal static Run? IntroPending;
 
     internal static void Update(Run run)
     {
+        ShowIntro(run);
         if (run.State.Result == RunResult.Running || _shownFor == run) return;
         _shownFor = run;
+        bool panel = run.T.Ux.RunEndPanel;
         if (run.State.Result == RunResult.Lost)
         {
             var gui = new GameOverGui(run.Game);
             run.Game.Gui.RootWidget.Children.InsertBelow(run.Game.Gui.FloatingWindows, gui);
-            _ = OneButtonDialog.Show($"The corporation recovered the tech.\n\n{run.State.EndReason}");
+            if (!panel) _ = OneButtonDialog.Show($"The corporation recovered the tech.\n\n{run.State.EndReason}");
+        }
+        else if (panel)
+        {
+            string body = $"<s24>{run.State.EndReason}</s24>\n\n{StatsLine(run)}\n<gray>{UxKit.Text("WinContinue")}</gray>";
+            CenterPanel.Show(run.Game, UxKit.Text("WinTitle"), WidgetRules.Instance.GoodTextColor, body, UxKit.Text("WinButton"));
         }
         else
         {
             _ = OneButtonDialog.Show($"You got the tech out.\n\n{run.State.EndReason}\n\nHeat is off. You can keep playing this career.");
         }
+    }
+
+    static void ShowIntro(Run run)
+    {
+        if (IntroPending != run || _introFor == run) return;
+        IntroPending = null;
+        _introFor = run;
+        if (!run.T.Ux.RunIntro) return;
+        var t = run.T;
+        string body = UxKit.Format("IntroBodyFmt", t.Journey.RunSectorCount, t.Heat.Stages.Length);
+        CenterPanel.Show(run.Game, UxKit.Text("IntroTitle"), WidgetRules.Instance.FameTextColor, body, UxKit.Text("IntroButton"));
+    }
+
+    /// <summary>One line of run numbers for the end screens.</summary>
+    internal static string StatsLine(Run run)
+    {
+        var s = run.State;
+        var time = TimeSpan.FromSeconds(s.GameSeconds);
+        long value = run.T.Tech.Value(s.SectorIndex, s.GameSeconds);
+        return UxKit.Format("RunStatsFmt", s.SectorIndex, run.T.Journey.RunSectorCount, $"{(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}",
+            s.FleetTech, value.ToString("N0"));
     }
 }

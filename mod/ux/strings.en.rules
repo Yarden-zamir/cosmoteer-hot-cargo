@@ -1,0 +1,71 @@
+HotCargoUx
+{
+	// Heat panel
+	Title = "HOT CARGO"
+	SectorFmt = "SECTOR {0} / {1}"
+	Calm = "CALM"
+	StatusFmt = "{0}   <gray>next {1}   +{2:0.0}/min</gray>"
+	NextFmt = "{0} at {1:0}"
+	NextMax = "max"
+	TechFmt = "<fame>{0}</fame> tech held   <gray>worth</gray> <money>{1}</money> <gray>each</gray>"
+	StatusWon = "TECH DELIVERED - heat is off"
+	StatusLost = "TECH LOST"
+	StatusHeatOff = "Heat is off"
+
+	// Stage alerts: one line for each stage name in Heat.Stages
+	StageWarning = "Corporate scouts found your trail."
+	StagePatrol = "A corporate patrol is closing in."
+	StageHunt = "Hunters are here for the tech."
+	StageStrike = "Strike force inbound. Leave this system."
+	StageGeneric = "The corporation sends more ships."
+	StageChatFmt = "<bad>{0}</bad>: {1}"
+
+	// Run intro
+	IntroTitle = "HOT CARGO"
+	IntroBodyFmt = "You stole corporate tech. The corporation wants it back.\n\n"\
+	               "<fame>Goal</fame>   Sell the tech to the <good>Buyer</good> in sector {0}. Each jump to a new system is one sector.\n"\
+	               "<fame>Heat</fame>   Rises over time and with each mission. It has {1} stages, and each stage sends hunters.\n"\
+	               "<fame>Cool</fame>   A jump to a new system drops heat to a quarter.\n"\
+	               "<fame>Cargo</fame>  The tech sits in your Tech Vault. Damage destroys it. If all of it is gone, the run ends.\n"\
+	               "<fame>Sell?</fame>  You can sell tech at stations on the way: less heat, more money, a lower final score."
+	IntroButton = "Fly"
+
+	// Run end
+	WinTitle = "TECH DELIVERED"
+	WinButton = "Keep playing"
+	WinContinue = "Heat is off. You can keep playing this career."
+	LossTitle = "THE CORPORATION RECOVERED THE TECH"
+	RunStatsFmt = "Sector <fame>{0}</fame> of {1}   ·   Run time <fame>{2}</fame>   ·   Tech held <fame>{3}</fame>   ·   Worth <money>{4}</money> each"
+	CareerStatsFmt = "Fame <fame>{0}</fame>   ·   Missions completed <fame>{1}</fame>   ·   Systems visited <fame>{2}</fame>"
+	WaitingForHost = "Waiting for the host to load or quit."
+
+	// Markers
+	BuyerTag = "BUYER"
+
+	// Galaxy map tooltip
+	MapJumpsFmt = "<fame>{0}</fame> jumps ({1})"
+	MapNoRoute = "No known route: jump through unvisited systems first"
+	MapUnvisited = "Not visited"
+	MapMissionsFmt = "<fame>{0}</fame> of your missions here"
+	MapHeatFmt = "Heat when you left: <bad>{0:0}</bad>"
+	MapSectorFmt = "First visit: sector {0} of {1}"
+	MapBuyerHere = "First visit: the Buyer waits here"
+
+	// Mission HUD
+	DistanceJumpsFmt = "{0}, {1} jumps"
+
+	// Fame tooltip
+	FameTitleFmt = "Fame <fame>{0}</fame>: {1}"
+	FameNextFmt = "Next title: {0} in <fame>{1}</fame> fame"
+	FameCrewFmt = "Crew {0} of {1} allowed by your fame"
+
+	// Hull integrity
+	Hull = "hull"
+	HullFmt = "Hull {0}"
+	HullTip = "Hull integrity: health of all parts, destroyed parts included."
+
+	// Ship alerts
+	ShipLostFmt = "SHIP LOST: {0}"
+	ShipDerelictFmt = "SHIP DERELICT: {0}"
+	ShipNoControlFmt = "{0} LOST CONTROL ({1}/{2} command)"
+}
