@@ -101,17 +101,17 @@ public static class Buyer
         s.DeliveredUnits += units;
         var players = new List<PlayerState>();
         run.Game.GetHumanPlayerStates(players, deterministic: true);
-        s.Score = Score(players.Sum(p => (long)p.Money), s.DeliveredUnits, UnitPrice(run));
-        Log.Info($"Buyer delivery: {units} units, {s.DeliveredUnits} in total, score {s.Score}");
+        int held = Run.Hooks.CountFleetTech(run.Game.Sim);
+        s.Score = Score(players.Sum(p => (long)p.Money), held, UnitPrice(run));
+        Log.Info($"Buyer delivery: {units} units, {s.DeliveredUnits} in total, {held} still held, score {s.Score}");
         run.Win(Strings.GetText("HotCargoJourney/WinReason"));
     }
 
     /// <summary>
-    /// Spec 7, as written: money + delivered units × the Buyer price of one unit.
-    /// Open decision: the money already includes the Buyer payment, so delivered units count twice.
-    /// To count them once, return money. To score only the tech, return deliveredUnits × unitPrice.
+    /// Spec 7: money + units still held × the Buyer price of one unit. Delivered units are already in the money (at the Buyer price),
+    /// so each unit counts once, and an unsold unit is worth what the Buyer would pay for it.
     /// </summary>
-    internal static long Score(long money, int deliveredUnits, long unitPrice) => money + deliveredUnits * unitPrice;
+    internal static long Score(long money, int heldUnits, long unitPrice) => money + heldUnits * unitPrice;
 
     /// <summary>What the Buyer pays for one unit now: the tech value × BuyerPriceFactor, as PricePatch computes it.</summary>
     static long UnitPrice(Run run) => (long)(TechPrice.Sell(run) * run.T.Journey.BuyerPriceFactor);

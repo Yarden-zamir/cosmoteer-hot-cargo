@@ -15,7 +15,7 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 	]
 	Size = [2, 2]
 	IsRotateable = false
-	// Three times the vanilla storage bay. Spec 65: each 15% of this in damage destroys one unit.
+	// Three times the vanilla storage bay. Spec 65: each 11% of this in damage destroys one unit.
 	MaxHealth = 12000
 	TypeCategories = [storage]
 	ReceivableBuffs : ^/0/ReceivableBuffs []
@@ -38,14 +38,14 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 			Type = CommandToggle
 		}
 
-		// 2 tiles x MaxStackSize 3 = 6 units. The tiles use the top row of the part; the inset moves their sprites to the middle.
+		// 4 tiles x MaxStackSize 2 = 8 units. The grid covers the whole part, like the vanilla storage bay.
 		Storage
 		{
 			Type = TypedResourceGrid
 			ResourceType = yarden_zamir.stolen_tech
-			GridRect = [0, 0, 2, 1]
+			GridRect = [0, 0, 2, 2]
 			Layer = "doodads_low"
-			SpriteInset = [8/64, 0.5 + 8/64, 8/64, -0.5 + 8/64]
+			SpriteInset = 8/64
 			// The part cost counts InitToMaxResources x BuyPrice, and a new ship spawns filled to it. Tech comes only from the run start.
 			InitToMaxResources = 0
 			IsDrainable = false

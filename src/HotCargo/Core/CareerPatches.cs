@@ -66,6 +66,8 @@ static class CareerPatches
         iHash.AddHash(run.State.SectorIndex);
         iHash.AddHash((int)(run.State.Notoriety * 100));
         iHash.AddHash(run.State.PeakTier);
+        iHash.AddHash(run.State.Contracts.Terms.Count);
+        iHash.AddHash(run.State.Contracts.Informants.Count);
         // string.GetHashCode is random per process, so it would differ between clients. This hash is stable.
         int tunables = 0;
         foreach (char c in run.State.TunablesHash) tunables = tunables * 31 + c;

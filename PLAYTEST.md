@@ -16,7 +16,7 @@ Mission checks are in [tests/playtest/missions.md](tests/playtest/missions.md).
 
 ## Tech
 
-1. Look at the starting ship. Check that a tinted 2×2 Tech Vault replaces one storage bay, and that its stacks show 6 units.
+1. Look at the starting ship. Check that a tinted 2×2 Tech Vault replaces one storage bay, and that its 4 tiles show 2 units each (8 units).
 2. Start a career with the Model-M starter ship. Check that the vault is outside the hull with a door, and that crew can walk to it.
 3. Open the build menu, Storage group. Check that "Tech Vault" is there with its name, description and tinted icon.
 4. Dock at a trade station and open the trade window. Check that "Stolen Tech" shows the overlay tech value as its sell price.
@@ -26,6 +26,20 @@ Mission checks are in [tests/playtest/missions.md](tests/playtest/missions.md).
 8. Let an enemy shoot the vault. Check that the stacks shrink as it takes damage, and that repair does not bring them back.
 9. Sell the last unit. Check that the loss dialog "The corporation recovered the tech." shows about 3 seconds after the delivery.
 10. Press F11 and Shift+F11. Check that the overlay tech count goes up and down by 1.
+
+## Economy and contracts (spec 19, 100-108)
+
+To see sell-outs fast, put `Contracts { InformantShare = 1  InformantChanceMin = 1  InformantChanceMax = 1  InformantDelayMin = 10  InformantDelayMax = 10 }` in `tunables.rules`.
+
+1. Hail a station and open the missions tab. Select offers. Each one shows a "Contract terms" section under the rewards: fee or "No fee", flat heat, trail, rival, informant risk or "Discreet client". Is it readable at a glance? Does it look like the rest of the window?
+2. Select a paid offer. The accept button reads "Accept (pay N)", and the rewards show an extra "(paid contract)" money line. Accept it. Check that the money drops by the fee.
+3. With less money than a fee, the button reads "Fee N: not enough money" and does nothing.
+4. Find an offer with "Rival offer: accepting dismisses ...". Accept it. Check that the named offer is gone and that a chat line says why.
+5. Accept 4 or more contracts. Check that the heat panel shows "N contracts open, trail +X/min" and that the heat rate in the status line rises.
+6. Wait for a sell-out (see the tunables above). Check that the banner names the client and the contract, that hunters jump in, and that the mission log shows "... sold you out on this contract".
+7. Balance: are fees worth paying? Does a 4th contract feel like a real choice? Is the informant risk scary but not run-ending?
+8. Tech value: watch the heat panel price over a sector. It goes up with time and heat and never down, also when convoy cover lowers heat. Mid-run, do 2 units buy roughly a ship of the current tier?
+9. Systems are smaller: is the travel between stations, bounties and gates noticeably shorter? Do systems look too crowded or too empty?
 
 ## Hunters and tactics (spec 30-35, 43-49)
 

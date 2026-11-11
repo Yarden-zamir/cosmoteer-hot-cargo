@@ -54,7 +54,7 @@ Out of scope for this batch:
 ## 6. Win and loss
 
 6. **Win**: the players sell at least one tech unit to the Buyer. The run is won when the crew deliver the first units of the sale.
-7. When the players win, a win panel shows the score. Score = money + delivered units × tech value × `BuyerPriceFactor` (default 1.5). A sale to the Buyer pays tech value × `BuyerPriceFactor` for each unit. Delivered units are the units of all crew deliveries to the Buyer; a delivery after the win raises the score again. The run state saves the score and the delivered units. **Open decision:** the money already includes the Buyer payment, so delivered units count twice. `Buyer.Score` holds the formula.
+7. When the players win, a win panel shows the score. Score = money + units still held × tech value × `BuyerPriceFactor` (default 4). A sale to the Buyer pays tech value × `BuyerPriceFactor` for each unit, so delivered units are in the money once, and an unsold unit counts as much as a sold one. The players go to the Buyer instead of a station because of this factor. Delivered units are the units of all crew deliveries to the Buyer; a delivery after the win sets the score again. The run state saves the score and the delivered units. `Buyer.Score` holds the formula.
 8. After a win, heat turns off. The win panel shows the score and the run numbers, and the players can continue the career.
 9. **Loss**: when the fleet tech count reaches 0, the run is lost. Any cause counts: vault damage, a destroyed vault, crew that die while they carry tech, or a sale of the last unit. A Buyer delivery is the only exception, because it wins the run first.
 10. A loss shows the game-over screen with the title "The corporation recovered the tech", the reason and the run numbers.
@@ -65,17 +65,21 @@ Out of scope for this batch:
 
 13. Tech is a new resource: "Stolen Tech". It uses the normal resource systems: storage, crew carrying, transfer between ships, and trade.
 14. Only the Tech Vault part stores tech.
-15. The Tech Vault is a buildable part. Its rules define its size, health, cost and capacity. Defaults: 2×2, 12,000 health (3 × the vanilla storage bay), 96 steel, capacity 6 units (2 tiles × stack size 3). Rules changes need a game restart.
+15. The Tech Vault is a buildable part. Its rules define its size, health, cost and capacity. Defaults: 2×2, 12,000 health (3 × the vanilla storage bay), 96 steel, capacity 8 units (4 tiles × stack size 2). Rules changes need a game restart.
 16. To move tech between ships, the players build a vault on the other ship. The crew then carry the tech over, like any other resource.
-17. A new run starts with `StartingTechUnits` (default 6) in a Tech Vault on the starting ship. The vault replaces a vanilla 2×2 storage bay of the ship. A ship without one gets the vault on a free spot next to the hull, with a door to a neighbor part where the rules allow one.
-65. Damage to a Tech Vault destroys tech inside it. Vault health has a step every `VaultDamagePerUnitLost` × its maximum health (default 0.15) below the maximum. Each time damage takes the health past a step, the vault loses one unit. A destroyed vault loses all units inside it.
+17. A new run starts with `StartingTechUnits` (default 8) in a Tech Vault on the starting ship. The vault replaces a vanilla 2×2 storage bay of the ship. A ship without one gets the vault on a free spot next to the hull, with a door to a neighbor part where the rules allow one.
+65. Damage to a Tech Vault destroys tech inside it. Vault health has a step every `VaultDamagePerUnitLost` × its maximum health (default 0.11) below the maximum. Each time damage takes the health past a step, the vault loses one unit. A destroyed vault loses all units inside it.
 66. Repair of a vault does not bring back lost tech. Damage after a repair crosses the steps again and costs tech again.
 
 ## 8. Tech value and selling
 
 18. Players sell tech through the normal station trade screen. The mod adds no special sell screen.
-19. Tech value = `TechBaseValue` × (1 + `TechGrowthPerSector` × (sector index − 1) + `TechGrowthPerGameHour` × game hours).
-    Defaults: base 10,000, +35 % for each sector, +10 % for each game hour.
+19. Tech value = ship value × (`TechShipFraction` + `TechShipFractionPerGameHour` × game hours + `TechShipFractionPer100Notoriety` × notoriety ÷ 100), rounded to 100.
+    - Ship value = the vanilla `TierValueMaximums` entry (`Data/modes/career/tier_tables.rules`) of the peak tier: the highest low tier of a system that the players were in. It is the most that a ship of that tier is worth.
+    - Notoriety = the sum of every heat gain in the run (time, fame, contracts, events, debug keys). Heat losses do not lower it. The run state saves it.
+    - Game time, notoriety and the peak tier never go down, so the tech value never goes down. Time and notoriety count in whole steps (`PriceStepMinutes` 1 min, `NotorietyStep` 5), so a sale in flight sees one price.
+    - Defaults 0.25, 0.10 and 0.05. Purpose: 1 or 2 units pay for a ship of even power for the current stage. Examples: start (tier 1) 15,000, a quarter of a tier 1 ship. Mid-run (tier 7, 1.2 h, 250 notoriety) about 114,000 = 0.5 × 230,000, so 2 units buy a full tier 7 ship. Late (tier 12, 2.5 h, 600 notoriety) 640,000 = 0.8 × 800,000. A later sale pays more.
+    - Against rewards: a standard mission pays 0.05 × the tier's ship value × the difficulty money factor × `RewardScale`. On the default Fast economy (2×) with `RewardScale` 2 that is 0.2 × ship value, so one unit mid-run is worth about 2.5 standard missions. Ship prices do not change with difficulty, so the tech value does not use the money factors.
 20. The trade screen shows the current tech value as the resource price.
 21. Trade stations buy tech. Stations do not sell tech. A station stocks only the resources in the `StationResourceTradeDeltas` lists of the sector rules, and tech is in none of them. Stations take sold tech into free untyped storage tiles. Players can buy back tech that they sold, at `BuyBackFactor` (default 1.5) × the tech value.
 22. Tech value is computed from simulation state only, so it is the same on all multiplayer clients.
@@ -83,15 +87,15 @@ Out of scope for this batch:
 ## 9. Heat
 
 23. Heat belongs to the current sector and starts at 0 in sector 1.
-24. Each simulation tick, heat increases by heat multiplier × `HeatPerGameMinute` × elapsed game minutes. Default: 2 heat per minute.
+24. Each simulation tick, heat increases by heat multiplier × `HeatPerGameMinute` × elapsed game minutes. Default: 2 heat per minute. Open contracts add a trail on top (requirement 101).
 25. When the players earn fame, heat increases by heat multiplier × `HeatPerStandardMission` × (fame earned ÷ standard mission fame of the sector tier). Default: 15 heat for each standard mission. The standard mission fame includes the same factors as the payout: the difficulty fame factor and `RewardScale`.
     The division keeps "heat per mission" stable across tiers, so that the tunable reads as "missions per sector".
-26. Heat multiplier = `HeatMultiplierByUnits[fleet tech count]`. Default table for 0 to 6 units: `[0.25, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2]`. A count above the table uses the last entry.
+26. Heat multiplier = `HeatMultiplierByUnits[fleet tech count]`. Default table for 0 to 8 units: `[0.25, 0.4, 0.52, 0.64, 0.76, 0.88, 1.0, 1.1, 1.2]`. A count above the table uses the last entry.
 27. Heat does not increase while the game is paused. Game speed changes the rate, as it does for all game time.
 28. When the players enter a new sector, heat = old heat × `HeatCarryOverFraction` (default 0.25).
 29. Heat stays in the range 0 to 100.
 
-With defaults and 6 units held, a sector reaches the top stage after about 6 missions, or after about 40 minutes with no missions.
+With defaults and 8 units held (no contract trail), a sector reaches the top stage after about 6 missions, or after about 40 minutes with no missions.
 
 ## 10. Corporate response
 
@@ -136,17 +140,17 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 13. Tunables, debug and live tuning
 
-50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65 and 67 to 78 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
+50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78 and 100 to 104 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
 51. The file uses the game's `.rules` format.
 52. The mod watches the file. When the file changes, the mod reloads it on the next frame, without a game restart.
 53. If the file has an error, the mod keeps the last valid values and shows the error in game. Errors include values that break sim logic later, for example a stage name that `Hunters.Stages` or a tactic does not match (`TunablesFile.Validate`).
 54. Part, resource and mission definitions are mod `.rules` content. A change to them needs a game restart.
-55. A heat panel shows heat as a bar with a mark for each stage, the heat rate, the fleet tech count, the tech value, the stage, the next stage and the sector index. After a win it shows the score. With debug keys on, it also shows the heat value, the heat multiplier and the tunables hash. F8 toggles it. With `Ux.HeatPanel = false`, a text overlay shows the same values. UI switches are in UX.md.
+55. A heat panel shows heat as a bar with a mark for each stage, the heat rate (time heat plus the contract trail), the open contracts and the trail rate when any are open, the fleet tech count, the tech value, the stage, the next stage and the sector index. After a win it shows the score. With debug keys on, it also shows the heat value, the heat multiplier and the tunables hash. F8 toggles it. With `Ux.HeatPanel = false`, a text overlay shows the same values. UI switches are in UX.md.
 56. When `Debug.DebugKeys = true` (default false), debug keys work: add or remove heat, set the stage, add or remove tech units (F11 / Shift+F11, one unit), and spawn the next stage.
 
 ## 14. Persistence and multiplayer
 
-57. Heat, the stages that already started, the sector index, the run result and the event state (requirement 76) are saved with the career save and loaded with it. Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
+57. Heat, the stages that already started, the sector index, the run result, notoriety and the peak tier (requirement 19), the contract state (requirement 107) and the event state (requirement 76) are saved with the career save and loaded with it. Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
 58. All logic that changes simulation state runs in the deterministic simulation tick. It uses the simulation random source, not `System.Random`.
 59. The fleet tech count and the loss rule count all human players together. A loss ends the run for everyone.
 60. In multiplayer, the mod does not reload tunables. The heat panel shows a short hash of the tunables file, so players can compare.
@@ -165,16 +169,17 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `RunSectorCount` | 8 | 1 |
 | `FinalSectorTier` | 12 (rules value in `mod/journey/galaxy.rules`, restart needed) | 3 |
 | `RewardScale` | 2.0 | 4 |
-| `BuyerPriceFactor` | 1.5 | 7 |
-| `StartingTechUnits` | 6 | 17 |
-| `VaultDamagePerUnitLost` | 0.15 | 65 |
+| `BuyerPriceFactor` | 4 | 7 |
+| `StartingTechUnits` | 8 | 17 |
+| `VaultDamagePerUnitLost` | 0.11 | 65 |
 | `LossGraceSeconds` | 3 s | 12 |
-| `TechBaseValue` | 10000 | 19 |
-| `TechGrowthPerSector` | 0.35 | 19 |
-| `TechGrowthPerGameHour` | 0.10 | 19 |
+| `TechShipFraction` | 0.25 | 19 |
+| `TechShipFractionPerGameHour` | 0.10 | 19 |
+| `TechShipFractionPer100Notoriety` | 0.05 | 19 |
+| `NotorietyStep` | 5 | 19 |
 | `HeatPerGameMinute` | 2 | 24 |
 | `HeatPerStandardMission` | 15 | 25 |
-| `HeatMultiplierByUnits` | [0.25, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2] | 26 |
+| `HeatMultiplierByUnits` | [0.25, 0.4, 0.52, 0.64, 0.76, 0.88, 1.0, 1.1, 1.2] | 26 |
 | `HeatCarryOverFraction` | 0.25 | 28 |
 | `HeatStages` | see section 10 | 30 |
 | `StrikeWaveIntervalSeconds` | 180 s | 30 |
@@ -189,6 +194,11 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `Events.SignalTriggerDistance` | 900 | 69 |
 | `Events.CooldownSeconds`, `MaxEventsPerSystem` | 120 s, 2 | 70 |
 | `Events.MoneyScale`, `FameScale`, `HeatScale` | 1, 1, 1 | 73 |
+| `Contracts.TrailFreeContracts`, `TrailHeatPerContractMinute` | 3, 1 | 101 |
+| `Contracts.FeeChance`, `FeeMin`, `FeeMax`, `PaidBonusFactor` | 0.5, 0.3, 0.8, 2 | 102 |
+| `Contracts.RivalPairChance` | 0.2 | 103 |
+| `Contracts.InformantShare`, `InformantChanceMin`, `InformantChanceMax` | 0.75, 0.05, 0.15 | 104 |
+| `Contracts.InformantDelayMin`, `InformantDelayMax`, `InformantHeat`, `InformantShips` | 45 s, 150 s, 15, 2 | 104 |
 | `KiteRangeFraction` | 0.9 | 44 |
 | `PincerAngleDegrees` | 120° | 45 |
 | `FallBackHealthFraction` | 0.35 | 47 |
@@ -281,4 +291,20 @@ FTL-style choice events. EVENTS.md holds the design and the catalog.
 76. The event state is saved in the run state: seen counts, flags, the waiting page, the last result, the cooldown and the per-system counts.
 77. In single player, an open event window pauses the game when `PauseOnEvent` is on. Headless test games do not pause.
 78. A content error in an event (a missing spawn, an unknown resource, a bad reference) shows in the overlay at the first event and turns off events for that game. An error while an outcome applies drops the page and shows the error; the game keeps running.
+
+## 23. Contract economy
+
+A contract is a mission offer that a client gives: every offer in the station comms missions tab and the system and galaxy lists. Code: `src/HotCargo/Contracts`. Numbers: the `Contracts` tunables section.
+
+100. **Terms.** Each contract has terms (`ContractTerms`): accept fee, completion bonus, flat heat on accept, trail weight, rival group and informant chance. Rules terms come first: a mission definition can put `{ Type = HotCargoContract; AcceptFee; FlatHeat; TrailWeight; RivalGroup; InformantChance }` in its Rewards list, and a missing field uses the default. Then `Contracts.Metatypes` gives terms for vanilla mission types. The rest comes from a roll seeded by the mission ID, so every client gets the same terms. The sim tick saves the terms of new offers once per second. Missions of a category in `ExcludedCategories` (default: exploration) are not contracts. Per rule:
+     - Hot Cargo missions: Convoy Duty leaves half a trail (0.5) and rolls the rest. Joint Strike has flat heat 5, no fee and no informant. Discreet Bounty has a fee of 0.5, flat heat 4 and no informant (its trap is its own sell-out).
+     - Vanilla missions: fee, trail and informant use the roll. Pirate and faction base attacks have flat heat 5.
+101. **Trail.** Open contracts (accepted, in progress, with terms) leave a trail. Heat per game minute = (sum of trail weights − `TrailFreeContracts`) × `TrailHeatPerContractMinute`, never below 0. Defaults: 3 free, 1 heat per minute for each contract above 3. The trail ignores the tech multiplier.
+102. **Fees.** About half of the contracts (`FeeChance` 0.5) cost a fee. Model: purchase. The player who accepts pays the fee and does not get it back. A fee is `FeeMin` to `FeeMax` (0.3 to 0.8) standard mission pays at the mission tier, with the difficulty money factor and `RewardScale`, rounded to 500. A paid contract pays a bonus of fee × `PaidBonusFactor` (2) on completion, split between the human players like vanilla money. So a paid contract nets one fee more than a free one, and a failed one loses the fee. The bonus is a reward line on the offer (`HotCargoContractBonus`). A player with less money than the fee cannot accept: the accept button shows the fee and does not react, and the accept input refuses.
+103. **Rivals.** Offers in one system with the same rival group are rivals. Accepting one dismisses the others, and a chat line names them. The scan pairs a new offer with an earlier offer of another client (another faction or another station): always when one offer targets the other's faction, otherwise with chance `RivalPairChance` (0.2). A new offer in the group of an open contract is dismissed.
+104. **Informants.** `InformantShare` (75 %) of contracts carry an informant chance of 5 to 15 %. The accept rolls it with the simulation random source. On a hit, `InformantDelayMin` to `InformantDelayMax` (45 to 150) game seconds later, if the contract is still open, the client sells the players out: heat + `InformantHeat` (15) and a hunter wave of `InformantShips` (2) at the sector tier. A banner and a chat line name the client and the contract, and the mission log shows "<client> sold you out on this contract".
+105. **Smaller systems.** For shorter in-system travel, gameplay spawns move in to about 70 % of the vanilla radius: stations (2 to 3 per system, was 2 to 4), military stations, bounties, wanderers and pirates, asteroid fields and belts, discoverables, beacons and the jump gates. Counts drop with the area. Fewer missions: 2 to 4 bounties (was as many as fit), 1 delivery per station (was 2), Convoy Duty 45 % (was 60 %), Joint Strike 30 % (was 40 %), one Discreet Bounty at 60 % (was 1 to 2 at 70 %). Scenery (suns, planets, nebulas, fog) keeps the vanilla size. These are rules in `mod/contracts/actions.rules` and `mod/missions/sysgen_hotcargo.rules`; they change the shared sector rules, so they apply to every map size while the mod is on, and need a game restart.
+106. **Contract UI.** The mission info panel (comms missions tab and mission log) has a "Contract terms" section under the rewards. Before the accept it shows the fee (and the player's money when it is too low), the flat heat, the trail ("counts as N; open X → Y; trail +a/min → +b/min"), the rival offer that the accept dismisses, and the informant risk or "Discreet client". After the accept it shows the fee paid, the open count and trail rate, the informant risk, and a sell-out. The accept button reads "Accept (pay N)". Accepting and paying go through the game's own accept input (`MPAcceptMissionInput`), so they are deterministic in multiplayer.
+107. The run state saves the terms, the pending sell-outs and the sold-out contracts. Accepted contracts with a bonus keep a `HotCargoContractBonus` reward, so like other Hot Cargo missions such a save needs the mod.
+108. After a win, the contract economy stops: no fees, no flat heat, no trail and no sell-outs.
 

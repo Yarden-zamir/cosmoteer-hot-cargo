@@ -36,7 +36,7 @@ public sealed class HeatTunables
     [Serialize(Optional = true)] public float HeatPerGameMinute = 2f;
     [Serialize(Optional = true)] public float HeatPerStandardMission = 15f;
     /// <summary>Index = fleet tech count. A count above the table uses the last entry.</summary>
-    [Serialize(Optional = true)] public float[] HeatMultiplierByUnits = [0.25f, 0.45f, 0.6f, 0.75f, 0.9f, 1.05f, 1.2f];
+    [Serialize(Optional = true)] public float[] HeatMultiplierByUnits = [0.25f, 0.4f, 0.52f, 0.64f, 0.76f, 0.88f, 1.0f, 1.1f, 1.2f];
     [Serialize(Optional = true)] public float HeatCarryOverFraction = 0.25f;
     /// <summary>Ordered by Heat. Hunters/HunterTunables.Stages has the response for each stage, matched by Name.</summary>
     [Serialize(Optional = true)] public StageThreshold[] Stages =

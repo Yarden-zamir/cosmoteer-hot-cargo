@@ -5,7 +5,7 @@ namespace HotCargo.Tech;
 [ReflectiveSerialization(Explicit = true)]
 public sealed class TechTunables
 {
-    [Serialize(Optional = true)] public int StartingTechUnits = 6;
+    [Serialize(Optional = true)] public int StartingTechUnits = 8;
     /// <summary>
     /// Spec 19: tech value in fractions of the highest ship value of the peak tier (vanilla TierValueMaximums).
     /// Defaults: 0.25 of a ship at the start, about 0.5 mid-run (1.2 h, 250 notoriety), so 2 units buy a full ship of the tier.
@@ -20,7 +20,7 @@ public sealed class TechTunables
     /// <summary>Station buy-back price = sell price × this factor. Must be above 1 to stop a sell-and-buy-back money loop.</summary>
     [Serialize(Optional = true)] public float BuyBackFactor = 1.5f;
     /// <summary>Spec 65: one unit is lost each time a vault takes this fraction of its max health in damage.</summary>
-    [Serialize(Optional = true)] public float VaultDamagePerUnitLost = 0.15f;
+    [Serialize(Optional = true)] public float VaultDamagePerUnitLost = 0.11f;
     /// <summary>Spec 12: the fleet tech count must stay at 0 this long before the run is lost.</summary>
     [Serialize(Optional = true)] public float LossGraceSeconds = 3f;
 }
