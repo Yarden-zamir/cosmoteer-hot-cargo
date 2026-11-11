@@ -164,7 +164,7 @@ public static class MissionArea
     /// Spawn tags of the objects that already exist, with their IDs.
     /// SimulationGenerator's addExistingSpawnTags leaves out the IDs of objects in stasis, and missions that spawn at a station need them.
     /// </summary>
-    static SpawnedObjectCollection ExistingSpawnTags(SimRoot sim)
+    internal static SpawnedObjectCollection ExistingSpawnTags(SimRoot sim)
     {
         var objects = new SpawnedObjectCollection();
         void Add(HashSet<ID<SimObjectSpawner>>? tags, SimSpawner.SpawnedObject so)

@@ -226,7 +226,14 @@ public static class EventRunner
         {
             s.LastResult = new EventResult { Serial = serial, Title = e.Title, Text = outcomeText, Lines = [.. lines] };
         }
+        OutcomeChosen?.Invoke(run, sim, serial, playerIndex, outcome);
     });
+
+    /// <summary>
+    /// Runs inside Choose after an outcome applied. Arguments: run, sim, serial of the page that was chosen on, the choosing player, the outcome.
+    /// A follow-up page (Next) is already pending. The Chains area reads ChainResult here.
+    /// </summary>
+    public static event Action<Run, SimRoot, int, int, OutcomeRules>? OutcomeChosen;
 
     static int RollOutcome(Run run, ChoiceRules choice, ulong seed, int choiceIndex)
     {
@@ -324,7 +331,8 @@ public static class EventRunner
         foreach (var r in cost.Resources) ChangeResource(sim, r.ID, -r.At(p.Tier), lines);
     }
 
-    static void ApplyOutcome(Run run, SimRoot sim, int playerIndex, OutcomeRules o, PendingEvent p, List<string> lines)
+    /// <summary>Applies the effects of an outcome and adds one result line per effect. Also used by the Chains area for stage results.</summary>
+    internal static void ApplyOutcome(Run run, SimRoot sim, int playerIndex, OutcomeRules o, PendingEvent p, List<string> lines)
     {
         int credits = Credits(run, o.Money, o.MoneyTech, p.Tier, p.TechValue);
         if (credits != 0) ChangeMoney(run, playerIndex, credits, lines);

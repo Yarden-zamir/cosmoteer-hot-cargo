@@ -16,6 +16,7 @@ You stole corporate tech. The corporation wants it back. Get it across about 8 s
 - **Deliver.** The Buyer waits in the last sector. Sell it your tech to win.
 - **New missions.** Convoy escorts, joint strikes with allied fleets, and shady bounties that may be corporate traps.
 - **FTL-style events.** Distress beacons, corporate checkpoints, fences, rival thieves and more: choices with risks, costs and rewards.
+- **Story chains.** Each station has a story in parts: a fence, a defector, a rival crew, a dark station. What you do in one part decides the next, and some choices come back to find you later.
 
 ![Heat stage alert](docs/screenshots/ux-heat-alert.jpg)
 
@@ -57,6 +58,7 @@ All numbers live in `Mods\hot_cargo\tunables.rules`. The game reloads the file w
 - [SPEC.md](SPEC.md): the design and the numbered requirements.
 - [CONTRIBUTING.md](CONTRIBUTING.md): the build, the test setup (headless game instances on a Windows PC) and releases.
 - [PLAYTEST.md](PLAYTEST.md): manual checks.
+- [CHAINS.md](CHAINS.md): the story chains and their graphs.
 
 ## License
 

@@ -148,3 +148,19 @@ The autotests cover offers, completion, failure, leave early, intensive scans an
 9. Listening Post: does the scout follow you well? Is the "[Click] Start the scan here" line easy to find? Do intensive scans feel worth the extra pay? Is the base close enough to be a threat?
 10. Frequency: with the economy area's mission limits per system, do mechanics missions show up about once every two systems?
 11. Multiplayer (co-op): one player clicks an order. Does the other player see the same result?
+
+## Story chains (spec 160-175, CHAINS.md)
+
+The autotests cover assignment, offers, results (success, abandoned, lost, timeout), choice pages, loops, Return and Arrival stages, rewards, reputation and save and load. Only a person can judge the points below.
+
+1. Open a station's comms in the first system. Is the "[Chain] ..." offer easy to tell apart from the other offers? Does the "Story Chains" category make sense in the list and in the mission log?
+2. Read a stage offer. Is the briefing short enough? After a few stages, does the "So far:" line help you remember the story, or is it noise?
+3. Finish a stage at the station. Does the choice window open at a good moment (near the station, after the payment)? Does the result text read well above the page?
+4. Escort and careful-targeting stages: do they play well with the default ships? Is seven minutes enough for "Extraction"? Can you keep the transport alive while you kill its escorts, or do your turrets kill it by accident?
+5. "Reactor Shielding": is 40 to 60 iron in 15 minutes fair at sector 1? Is buying the iron at the station too easy a way out?
+6. "Salvage Race": can you find the pod and haul 3 processors in 8 minutes? Do the Magpie ships make it a race?
+7. Return stages: refuse Mara's bill, leave the system and come back. Do the collectors appear about 8 seconds after you arrive? Does the result read as a consequence of your refusal?
+8. Arrival stages: take Okafor aboard or sell her. Do "Old Schedules" or "Okafor's Friends" come at a fair moment in the next system or the one after?
+9. Mara's standing offer: does it show on each visit and stay away inside one visit? Is 1.33 × the tech value worth a detour?
+10. Frequency: with every station holding a chain, are there too many offers per system? If yes, lower `Chains.StationChance` (for example 0.5) in `tunables.rules`.
+11. Multiplayer (co-op): both players see the chain offer and the chain pages. One player chooses. Does the chain advance the same for both?

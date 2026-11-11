@@ -24,6 +24,7 @@ public static class Mod
             Missions.Mechanics.MechanicsArea.Register();
             Tactics.TacticsArea.Register();
             Events.EventsArea.Register();
+            Chains.ChainsArea.Register();
             Ux.UxArea.Register();
             Log.Info($"harmony patched {harmony.GetPatchedMethods().Count()} methods; mod root {ModRoot}");
         }

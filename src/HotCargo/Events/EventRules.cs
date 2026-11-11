@@ -114,6 +114,8 @@ public sealed class OutcomeRules
     [Serialize(Optional = true)] public string Next = "";
     [Serialize(Optional = true)] public string[] SetFlags = [];
     [Serialize(Optional = true)] public string[] ClearFlags = [];
+    /// <summary>On a chain page (mod/chains/pages.rules): the result that this outcome gives the chain stage. Empty elsewhere.</summary>
+    [Serialize(Optional = true)] public string ChainResult = "";
 }
 
 [ReflectiveSerialization(Explicit = true)]
@@ -164,6 +166,8 @@ public static class EventLibrary
     static readonly Dictionary<string, SimulationGenerator> Spawns = new(StringComparer.Ordinal);
 
     public static string EventsPath => Path.Combine(Mod.ModRoot, "events", "events.rules");
+    /// <summary>More event files in the events.rules format, added by other areas in Register (the Chains area adds its pages).</summary>
+    public static readonly List<string> ExtraFiles = [];
     public static string SpawnsPath => Path.Combine(Mod.ModRoot, "events", "spawns.rules");
 
     /// <summary>Set when loading failed. Events stay off for the rest of the game (spec 78), so the error shows once.</summary>
@@ -203,14 +207,18 @@ public static class EventLibrary
 
     static Dictionary<string, EventRules> Load()
     {
-        var file = App.ObjectTextSerializer.Read<EventFile>(new OTFile(EventsPath))
-            ?? throw new InvalidDataException($"{EventsPath} is empty");
         var map = new Dictionary<string, EventRules>(StringComparer.Ordinal);
-        foreach (var e in file.Events)
-            if (!map.TryAdd(e.ID, e)) throw new InvalidDataException($"event ID '{e.ID}' is used twice in {EventsPath}");
-        foreach (var e in file.Events) Validate(e, map);
+        var ordered = new List<EventRules>();
+        foreach (string path in ExtraFiles.Prepend(EventsPath))
+        {
+            var file = App.ObjectTextSerializer.Read<EventFile>(new OTFile(path)) ?? throw new InvalidDataException($"{path} is empty");
+            foreach (var e in file.Events)
+                if (!map.TryAdd(e.ID, e)) throw new InvalidDataException($"event ID '{e.ID}' in {path} is used twice");
+            ordered.AddRange(file.Events);
+        }
+        foreach (var e in ordered) Validate(e, map);
         Spawn(EventRunner.CourierSpawn);
-        _ordered = file.Events;
+        _ordered = [.. ordered];
         Log.Info($"events loaded: {map.Count} events, {map.Values.Count(e => e.Trigger != EventTrigger.None)} with a trigger");
         return map;
     }

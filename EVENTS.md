@@ -32,6 +32,7 @@ FTL-style choice events for the Hot Cargo run. Spec requirements 67 to 87 (SPEC.
 - Outcome effects: money, money in tech value, fame (gain or loss), heat, reputation with the system's faction, the Buyer price, tech units (through the vaults), crew, vanilla resources, hull damage, spawned ships (from `spawns.rules`, some with a mission), story flags, and a follow-up page (`Next`).
 - Needs can also check how old a flag is (`FlagAges`, in sectors) and how many sectors are left before the Buyer (`MinSectorsLeft`, `MaxSectorsLeft`). A cost can grow with heat (`MoneyPerHeat`).
 - After the choice, the window shows the outcome text and one line per effect, in the colors of vanilla reward lines.
+- Story chains (CHAINS.md) use the same window for their pages. Chain pages live in `mod/chains/pages.rules`, have no trigger, and each outcome gives a `ChainResult` that the chain stage handles.
 
 ### Units and balance
 

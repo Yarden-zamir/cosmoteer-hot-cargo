@@ -1,0 +1,729 @@
+// Chain stage missions (Mission = <name> in chains.rules). C# reads this file (Chains/ChainRules.cs) on first use; a change needs a game restart.
+// It is not part of the game rules tree, so "&/" references do not work here. Use "&<./Data/...>" paths, and "~/" for this file.
+// The root location is the chain's station for Station stages, and the station or the player fleet for Return and Arrival stages.
+// Each generator holds one Mission spawner with Metatype = HotCargoChain. The stage gives the mission its name and briefing.
+// Station stages: SpawnAt = Tag (nearest station = the chain's station), so the offer shows in that station's comms.
+// Return and Arrival stages: SpawnAt = Player, so the mission goes straight into the log.
+// Tags start with hc_ch_. Enemies that a DefeatShips objective counts carry hc_ch_enemy (the autotest command chain_kill removes them).
+// Mission generators of other areas' objective types (for example the gameplay mechanics) work here too: add a generator and name it in a stage.
+
+// ---- Shared parts
+
+Tables
+{
+	Money = &<./Data/modes/career/tier_tables.rules>/StandardMoneyPerTier
+	Fame = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+	MaxFame = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+	Reputation = &<./Data/modes/career/tier_tables.rules>/StandardReputationPerTier
+	FleetRemap = &<./Data/modes/career/fleet_tier_remap_table.rules>/FleetTierRemapTable
+}
+
+// A standard mission's pay, fame and reputation with the station's faction.
+StandardRewards
+[
+	{
+		Type = Money
+		MoneyPerHighTier = &~/Tables/Money
+		RoundToMultiple = 500
+	}
+	{
+		Type = Fame
+		FamePerHighTier = &~/Tables/Fame
+		MaxFamePerHighTier = &~/Tables/MaxFame
+	}
+	{
+		Type = Reputation
+		ReputationPerHighTier = &~/Tables/Reputation
+	}
+]
+
+// Pay and fame without reputation: no faction stands behind Return and Arrival missions.
+// They go straight into the log, so they carry zero contract terms, like event missions (spec 86).
+BountyRewards
+[
+	{
+		Type = Money
+		MoneyPerHighTier = &~/Tables/Money
+		RoundToMultiple = 500
+	}
+	{
+		Type = Fame
+		FamePerHighTier = &~/Tables/Fame
+		MaxFamePerHighTier = &~/Tables/MaxFame
+	}
+	{ Type = HotCargoContract; AcceptFee = 0; FlatHeat = 0; TrailWeight = 0; InformantChance = 0; }
+]
+
+StationMission
+{
+	Type = Mission
+	Metatype = HotCargoChain
+	SpawnAt = Tag
+	SpawnAtTag = { Mode=Nearest; Tag=station; }
+	Faction = OwnerOfTag
+	FactionTag = { Mode=Nearest; Tag=station; }
+	OkayIfFactionTagNotFound = true
+}
+
+PlayerMission
+{
+	Type = Mission
+	Metatype = HotCargoChain
+	SpawnAt = Player
+	Faction = None
+}
+
+// Raiders one tier below the system: the escorts of a transport, or the gang at a jump point.
+LightRaiders
+{
+	Type = Ships
+	Tags = [hc_ch_enemy]
+	Count = 2
+	Distance = [400, 800]
+	Allegiance = Unique
+	SuppressLocationAssertions = true
+	FamePerTier = &~/Tables/Fame
+	MaxFamePerTier = &~/Tables/MaxFame
+	ShipCriteria
+	{
+		UseLocalFactionWeights = true
+		UseTierField = true
+		Tier = -1
+		AllowTierRangeExpansion = true
+		Tags = [combat]
+	}
+	AI
+	{
+		Type = Normal
+		ChanceToConsiderSurrenderingToPlayer = 0
+		PatrolRadius = 600
+		TargetAcquireRangeFromOrigin = 2500
+		TargetUnacquireRangeFromOrigin = 3500
+	}
+}
+
+// Corporate ships at the system tier with the hunter AI: they go for the ships that carry Tech Vaults.
+CorporateShips
+{
+	Type = Ships
+	Tags = [hc_ch_enemy]
+	Count = 2
+	Distance = [1800, 2400]
+	Allegiance = Unique
+	SynchronizeAllegiance = true
+	SuppressLocationAssertions = true
+	FamePerTier = &~/Tables/Fame
+	MaxFamePerTier = &~/Tables/MaxFame
+	ShipCriteria
+	{
+		UseLocalFactionWeights = true
+		UseTierField = true
+		AllowTierRangeExpansion = true
+		Tags = [combat]
+	}
+	AI
+	{
+		Type = HotCargoHunter
+		ChanceToConsiderSurrenderingToPlayer = 0
+		PatrolRadius = 800
+		TargetAcquireRangeFromOrigin = 5000
+		TargetUnacquireRangeFromOrigin = 7000
+	}
+}
+
+// A target area marker for DefeatShips objectives.
+TargetPoi
+{
+	Type = Doodads
+	DoodadType = cosmoteer.poi_target_area
+	ScaleFactor = 1200
+	Tags = [hc_ch_poi]
+	ShowOnlyInFog = true
+	Undiscovered = true
+	HideIfUnexplored = true
+}
+
+// ---- Escort: a freighter must reach a jump point past raiders (HotCargoEscort, spec 36).
+
+ChainEscort
+{
+	Spawners
+	[
+		{
+			Type = Doodads
+			DoodadType = cosmoteer.poi_target_area
+			ScaleFactor = 500
+			Tags = [hc_ch_dest]
+			Distance = [4500, 6500]
+			MinDistanceFromTags = [[sun, 6000], [station, 3000]]
+			MinDistanceFromNebulas = [[ion_storm, 1000]]
+			Undiscovered = true
+			HideIfUnexplored = true
+			ShowOnlyInFog = true
+			SuppressLocationAssertions = true
+			SubSpawners
+			[
+				: ~/LightRaiders
+				{
+					Count = [2, 3]
+					Distance = [900, 1400]
+					SynchronizeAllegiance = true
+					AI
+					{
+						Type = Normal
+						ChanceToConsiderSurrenderingToPlayer = 0
+						PatrolRadius = 500
+						TargetAcquireRangeFromOrigin = 2500
+						TargetUnacquireRangeFromOrigin = 3500
+					}
+				}
+			]
+		}
+		{
+			Type = Ships
+			Tags = [hc_ch_escort]
+			Distance = [500, 800]
+			Allegiance = FactionCivilian
+			SuppressLocationAssertions = true
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [trade]
+			}
+			// A small unacquire range keeps the freighter flying to its origin. The escort objective moves the origin to the jump point.
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 100
+				TargetAcquireRangeFromOrigin = 150
+				TargetUnacquireRangeFromOrigin = 150
+			}
+		}
+		: ~/StationMission
+		{
+			Objectives
+			[
+				{
+					Type = Sequential
+					SubObjectives
+					[
+						{
+							Type = AnyOrder
+							SubObjectives
+							[
+								{
+									Type = HotCargoEscort
+									EscortTag = { Mode=Latest; Tag=hc_ch_escort; }
+									DestinationTag = { Mode=Latest; Tag=hc_ch_dest; }
+									ArrivalRadius = 400
+								}
+								{
+									Type = ProtectShips
+									TargetsTag = { Tag=hc_ch_escort; Max=1; }
+								}
+							]
+						}
+						{
+							Type = ReceiveRewards
+						}
+					]
+				}
+			]
+			Rewards = &~/StandardRewards
+		}
+	]
+}
+
+// ---- Careful targeting: a hostile transport and two escorts. Destroy the escorts, keep the transport whole, before time runs out.
+
+CarefulTargets
+{
+	Type = None
+	Distance = [3500, 5000]
+	MinDistanceFromTags = [[sun, 6000], [station, 3000]]
+	MinDistanceFromNebulas = [[ion_storm, 1000]]
+	SuppressLocationAssertions = true
+	SynchronizeAllegiance = true
+	SubSpawners
+	[
+		&~/TargetPoi
+		{
+			Type = Ships
+			Tags = [hc_ch_cargo]
+			Distance = [0, 200]
+			Allegiance = Unique
+			SuppressLocationAssertions = true
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [trade]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 300
+				TargetAcquireRangeFromOrigin = 900
+				TargetUnacquireRangeFromOrigin = 1200
+			}
+		}
+		&~/LightRaiders
+	]
+}
+
+CarefulObjective
+{
+	Type = TimeLimit
+	TimeLimit = 420
+	SubObjectives
+	[
+		{
+			Type = DefeatShips
+			TargetsTag = { Tag=hc_ch_enemy; }
+			TargetAreaTag = { Mode=Latest; Tag=hc_ch_poi; }
+			AutoDiscoverTargetArea = true
+			TierCombineMode = ValueSum
+			AllowSurrender = false
+		}
+		{
+			Type = ProtectShips
+			TargetsTag = { Tag=hc_ch_cargo; Max=1; }
+		}
+	]
+}
+
+ChainCarefulTarget
+{
+	Spawners
+	[
+		&~/CarefulTargets
+		: ~/StationMission
+		{
+			Objectives
+			[
+				{
+					Type = Sequential
+					SubObjectives
+					[
+						&~/CarefulObjective
+						{
+							Type = ReceiveRewards
+						}
+					]
+				}
+			]
+			Rewards = &~/StandardRewards
+		}
+	]
+}
+
+// Arrival version: the transport crosses the players' path in a new system.
+ChainCourierHit
+{
+	Spawners
+	[
+		: ~/CarefulTargets
+		{
+			Distance = [2500, 3500]
+			MinDistanceFromTags = [[sun, 4000]]
+		}
+		: ~/PlayerMission
+		{
+			Objectives [ &~/CarefulObjective ]
+			Rewards = &~/BountyRewards
+		}
+	]
+}
+
+// ---- Mining: deliver ore to the station before time runs out. Asteroids hold it; stations sell it too.
+
+ChainMine
+{
+	Spawners
+	[
+		: ~/StationMission
+		{
+			Objectives
+			[
+				{
+					Type = Sequential
+					SubObjectives
+					[
+						{
+							Type = TimeLimit
+							TimeLimit = 900
+							SubObjectives
+							[
+								{
+									Type = DeliverResources
+									ResourceType = iron
+									Amount = [40, 60]
+									DeliveryLocationTag = { Mode=Nearest; Tag=station; }
+								}
+							]
+						}
+						{
+							Type = ReceiveRewards
+						}
+					]
+				}
+			]
+			Rewards = &~/StandardRewards
+		}
+	]
+}
+
+// ---- Salvage race: a corporate cargo pod drifts in open space and a rival crew wants it too. Haul its processors to the station first.
+
+ChainSalvageRace
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_ch_pod]
+			Distance = [3500, 5000]
+			MinDistanceFromTags = [[sun, 6000], [station, 3000]]
+			MinDistanceFromNebulas = [[ion_storm, 1000]]
+			SuppressLocationAssertions = true
+			Allegiance = Junk
+			RememberPhysicalState = true
+			RememberResourcesAndCrew = true
+			ShipCriteria
+			{
+				Tags = [storage_pod]
+			}
+			ResourceLoadout
+			[
+				{ ResourceType=processor; RandomWeight=1; Quantity=[4, 4]; }
+			]
+			SubSpawners
+			[
+				: ~/TargetPoi
+				{
+					ScaleFactor = 800
+					Undiscovered = false
+					HideIfUnexplored = false
+				}
+				: ~/LightRaiders
+				{
+					Tags = [hc_ch_enemy, hc_ch_rival]
+					Distance = [900, 1300]
+					SynchronizeAllegiance = true
+					AI
+					{
+						Type = HotCargoHunter
+						ChanceToConsiderSurrenderingToPlayer = 0
+						PatrolRadius = 600
+						TargetAcquireRangeFromOrigin = 2500
+						TargetUnacquireRangeFromOrigin = 3500
+					}
+				}
+			]
+		}
+		: ~/StationMission
+		{
+			Objectives
+			[
+				{
+					Type = Sequential
+					SubObjectives
+					[
+						{
+							Type = TimeLimit
+							TimeLimit = 480
+							SubObjectives
+							[
+								{
+									Type = DeliverResources
+									ResourceType = processor
+									Amount = [3, 3]
+									DeliveryLocationTag = { Mode=Nearest; Tag=station; }
+									SuggestedCollectionAreaTag = { Mode=Latest; Tag=hc_ch_poi; }
+								}
+							]
+						}
+						{
+							Type = ReceiveRewards
+						}
+					]
+				}
+			]
+			Rewards = &~/StandardRewards
+		}
+	]
+}
+
+// ---- Clear the lane: raiders at the system tier sit in open space near the station.
+
+ChainClearRaiders
+{
+	Spawners
+	[
+		: ~/TargetPoi
+		{
+			ScaleFactor = 1500
+			Distance = [3500, 5500]
+			MinDistanceFromTags = [[sun, 6000], [station, 3000]]
+			MinDistanceFromNebulas = [[ion_storm, 1000]]
+			SuppressLocationAssertions = true
+			SubSpawners
+			[
+				: ~/LightRaiders
+				{
+					Count = [2, 3]
+					Distance = [0, 800]
+					SynchronizeAllegiance = true
+					ShipCriteria
+					{
+						UseLocalFactionWeights = true
+						UseTierField = true
+						AllowTierRangeExpansion = true
+						Tags = [combat]
+					}
+				}
+			]
+		}
+		: ~/StationMission
+		{
+			Objectives
+			[
+				{
+					Type = Sequential
+					SubObjectives
+					[
+						{
+							Type = DefeatShips
+							TargetsTag = { Tag=hc_ch_enemy; }
+							TargetAreaTag = { Mode=Latest; Tag=hc_ch_poi; }
+							AutoDiscoverTargetArea = true
+							TierCombineMode = ValueSum
+							AllowSurrender = false
+						}
+						{
+							Type = ReceiveRewards
+						}
+					]
+				}
+			]
+			Rewards = &~/StandardRewards
+		}
+	]
+}
+
+// ---- A guarded wreck: a corporate security drone (sector tier + 1, hunter AI) guards a hunter wreck. Destroy the drone.
+
+ChainBlackBox
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_ch_wreck]
+			Distance = [3500, 5000]
+			MinDistanceFromTags = [[sun, 6000], [station, 3000]]
+			MinDistanceFromNebulas = [[ion_storm, 1000]]
+			SuppressLocationAssertions = true
+			Allegiance = Junk
+			InitToMax = false
+			SpawnCrew = false
+			RandomHealthRange = [20%, 50%]
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+			}
+			SubSpawners
+			[
+				: ~/TargetPoi
+				{
+					ScaleFactor = 1000
+				}
+				: ~/LightRaiders
+				{
+					Count = 1
+					Distance = [500, 800]
+					ShipCriteria
+					{
+						UseLocalFactionWeights = true
+						UseTierField = true
+						Tier = 1
+						AllowTierRangeExpansion = true
+						Tags = [combat]
+					}
+					AI
+					{
+						Type = HotCargoHunter
+						ChanceToConsiderSurrenderingToPlayer = 0
+						PatrolRadius = 600
+						TargetAcquireRangeFromOrigin = 2500
+						TargetUnacquireRangeFromOrigin = 3500
+					}
+				}
+			]
+		}
+		: ~/StationMission
+		{
+			Objectives
+			[
+				{
+					Type = Sequential
+					SubObjectives
+					[
+						{
+							Type = DefeatShips
+							TargetsTag = { Tag=hc_ch_enemy; Max=1; }
+							TargetAreaTag = { Mode=Latest; Tag=hc_ch_poi; }
+							AutoDiscoverTargetArea = true
+							AllowSurrender = false
+						}
+						{
+							Type = ReceiveRewards
+						}
+					]
+				}
+			]
+			Rewards = &~/StandardRewards
+		}
+	]
+}
+
+// ---- Return stage: corporate ships wait at the station and go for the vault. Defeat them.
+
+ChainStationRaid
+{
+	Spawners
+	[
+		&~/CorporateShips
+		: ~/PlayerMission
+		{
+			Objectives
+			[
+				{
+					Type = DefeatShips
+					TargetsTag = { Tag=hc_ch_enemy; }
+					AutoDiscoverTargetArea = true
+					TierCombineMode = ValueSum
+					AllowSurrender = false
+				}
+			]
+			Rewards = &~/BountyRewards
+		}
+	]
+}
+
+// ---- Arrival stage: a fleet drops in near the players (hunter AI, it goes for the vault). Defeat it.
+
+ChainAmbush
+{
+	Spawners
+	[
+		: ~/CorporateShips
+		{
+			Count = 1
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+				FleetTierRemapTable = &~/Tables/FleetRemap
+			}
+		}
+		: ~/PlayerMission
+		{
+			Objectives
+			[
+				{
+					Type = DefeatShips
+					TargetsTag = { Tag=hc_ch_enemy; LimitToFleet=true; }
+					AutoDiscoverTargetArea = true
+					TierCombineMode = ValueSum
+					AllowSurrender = false
+				}
+			]
+			Rewards = &~/BountyRewards
+		}
+	]
+}
+
+// ---- Arrival stage: a corporate supply depot (defense platforms and a guard ship) in a new system. Destroy it.
+
+ChainDepot
+{
+	Spawners
+	[
+		{
+			Type = None
+			Distance = [3000, 4000]
+			MinDistanceFromTags = [[sun, 4000]]
+			MinDistanceFromNebulas = [[ion_storm, 1000]]
+			SuppressLocationAssertions = true
+			SynchronizeAllegiance = true
+			SubSpawners
+			[
+				: ~/TargetPoi
+				{
+					Undiscovered = false
+					HideIfUnexplored = false
+				}
+				{
+					Type = Ships
+					Tags = [hc_ch_enemy]
+					Count = 2
+					Distance = [200, 600]
+					Allegiance = Unique
+					SuppressLocationAssertions = true
+					FamePerTier = &~/Tables/Fame
+					MaxFamePerTier = &~/Tables/MaxFame
+					ShipCriteria
+					{
+						UseLocalFactionWeights = true
+						UseTierField = true
+						AllowTierRangeExpansion = true
+						Tags = [defense]
+					}
+					AI
+					{
+						Type = DefensePlatform
+						ChanceToConsiderSurrenderingToPlayer = 0
+					}
+				}
+				: ~/LightRaiders
+				{
+					Count = 1
+					Distance = [300, 700]
+					ShipCriteria
+					{
+						UseLocalFactionWeights = true
+						UseTierField = true
+						AllowTierRangeExpansion = true
+						Tags = [combat]
+					}
+				}
+			]
+		}
+		: ~/PlayerMission
+		{
+			Objectives
+			[
+				{
+					Type = DefeatShips
+					TargetsTag = { Tag=hc_ch_enemy; }
+					TargetAreaTag = { Mode=Latest; Tag=hc_ch_poi; }
+					AutoDiscoverTargetArea = true
+					TierCombineMode = ValueSum
+					AllowSurrender = false
+				}
+			]
+			Rewards = &~/BountyRewards
+		}
+	]
+}
