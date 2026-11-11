@@ -1,6 +1,6 @@
 # UX screenshots. Main slot only (needs graphics): see UX.md "Screenshots" for the steps.
 render on
-newgame last
+newgame run
 wait 10
 pause off
 wait 2
@@ -33,7 +33,7 @@ win
 wait 3
 screenshot ux-win
 closepanel
-newgame last
+newgame run
 wait 10
 closepanel
 lose

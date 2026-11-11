@@ -85,17 +85,23 @@ public static class Autotest
 
     public static Run RequireRun() => Run.Current ?? throw new InvalidOperationException("no Hot Cargo run is active");
 
+    /// <summary>Moves a ship and stops it. Test only: it changes sim state from a GUI frame, so single player only.</summary>
+    public static void Teleport(Ship ship, Halfling.Geometry.Vector2 location)
+    {
+        ship.WorldCenter = location;
+        ship.Physics.PhysicsWrapper.LinearVelocity = Halfling.Geometry.Vector2.Zero;
+    }
+
     static void AddBaseCommands()
     {
         Commands["wait"] = arg => Wait(double.Parse(arg, CultureInfo.InvariantCulture));
         Commands["newgame"] = arg =>
         {
-            // arg: [map size index, or "last" / nothing for the Hot Cargo run map] [starter ship index, default 0].
-            // "last" stays as an alias of the run map because older test scripts use it.
+            // arg: [map size index, or "run" / nothing for the Hot Cargo run map] [starter ship index, default 0].
             var rules = GameApp.Rules.CareerMode;
             var args = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            string map = args.Length > 0 ? args[0] : "last";
-            int mapSize = map == "last" ? Journey.JourneyArea.RunMapSizeIndex() : int.Parse(map, CultureInfo.InvariantCulture);
+            string map = args.Length > 0 ? args[0] : "run";
+            int mapSize = map == "run" ? Journey.JourneyArea.RunMapSizeIndex() : int.Parse(map, CultureInfo.InvariantCulture);
             ShipFile ship = rules.StarterShips[args.Length > 1 ? int.Parse(args[1], CultureInfo.InvariantCulture) : 0].Ship;
             // The game's default levels, not the player's saved choices: test slots start with an empty settings file.
             int combat = Array.FindIndex(rules.CombatDifficultyLevels, l => l.IsDefault);
@@ -124,7 +130,7 @@ public static class Autotest
             App.Director.PushState(game);
             Wait(5);
         };
-        Commands["pause"] = arg => Game?.NetManager.EnqueueInput(new MPSetPausedInput(arg != "off"));
+        Commands["pause"] = arg => (Game ?? throw new InvalidOperationException("no game")).NetManager.EnqueueInput(new MPSetPausedInput(arg != "off"));
         Commands["heat"] = arg => { var r = RequireRun(); r.AddHeat(float.Parse(arg, CultureInfo.InvariantCulture), r.Game.Sim); };
         Commands["stage"] = _ => { var r = RequireRun(); r.ForceNextStage(r.Game.Sim); };
         Commands["fame"] = arg => { var r = RequireRun(); r.Mode.PlayerFame += int.Parse(arg, CultureInfo.InvariantCulture); };
@@ -184,6 +190,7 @@ public static class Autotest
         ["fame"] = () => RequireRun().Mode.PlayerFame,
         ["tier"] = () => RequireRun().CurrentTier,
         ["active"] = () => Run.Current is null ? 0 : 1,
+        ["paused"] = () => (Game ?? throw new InvalidOperationException("no game")).Sim.IsPaused.Confirmed ? 1 : 0,
     };
 
     static double Field(string name) =>

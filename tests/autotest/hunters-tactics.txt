@@ -1,5 +1,5 @@
 # Hunter AI tactics: modules load, act, and log. Strike stage turns on every tactic (Disable at Hunt, Bait at Strike).
-newgame last
+newgame run
 wait 8
 # Nine strike-stage hunters destroy a sector-1 starter ship before the tactics can be observed.
 godmode on

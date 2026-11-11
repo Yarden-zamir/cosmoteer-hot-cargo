@@ -1,5 +1,5 @@
 # Hunter waves: stage spawns, distance, tier, hostility, approach, strike waves, save and load.
-newgame last
+newgame run
 wait 8
 log start
 expect hunters == 0
