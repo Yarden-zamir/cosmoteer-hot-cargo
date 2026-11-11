@@ -7,7 +7,12 @@
 # - any other name, for example "t1": a test instance with its own save folder %USERPROFILE%\HotCargoSlots\<SLOT>.
 #   It runs headless (no window, no graphics, no audio) with --nosteam, so several can run at the same time.
 set -euo pipefail
-PC_MACHINE="${PC_MACHINE:-windows 2}"
+# Machine-specific values (PC_MACHINE, optional PC_GAME_DIR) live in scripts/pc.local.sh, which git ignores.
+# Put it in ../_shared/scripts/pc.local.sh so every worktree gets it. Example content:
+#   PC_MACHINE="my-pc"   # the T3 name of the PC that runs Cosmoteer
+LOCAL_CONFIG="$(dirname "${BASH_SOURCE[0]}")/pc.local.sh"
+if [[ -f "$LOCAL_CONFIG" ]]; then source "$LOCAL_CONFIG"; fi
+PC_MACHINE="${PC_MACHINE:?set PC_MACHINE in scripts/pc.local.sh (see the top of scripts/pc.sh)}"
 PC_GAME_DIR="${PC_GAME_DIR:-C:\\Program Files (x86)\\Steam\\steamapps\\common\\Cosmoteer}"
 SLOT="${SLOT:-main}"
 T3="${T3:-$HOME/.t3/bin/t3}"
