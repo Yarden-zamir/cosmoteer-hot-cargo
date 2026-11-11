@@ -9,7 +9,6 @@ using Cosmoteer.Modes.Career.Missions;
 using Cosmoteer.Modes.Career.Missions.Rewards;
 using Cosmoteer.Resources;
 using Cosmoteer.Ships.Crew.Jobs;
-using Cosmoteer.Simulation.Stasis;
 using Halfling.Geometry;
 using HotCargo.Core;
 using HotCargo.Dev;
@@ -68,10 +67,6 @@ public static class JourneyArea
                 case ["deliver", var units]:
                     Buyer.OnDelivered(run, int.Parse(units, CultureInfo.InvariantCulture));
                     break;
-                // Test-only switch: treat a vanilla resource as the tech, so the Buyer price runs without the Tech area.
-                case ["resource", var id]:
-                    Buyer.TechResource = new ID<ResourceRules>(id);
-                    break;
                 // Test-only: changes the live tunable, so that a short jump test reaches the Buyer sector.
                 case ["sectors", var count]:
                     run.T.Journey.RunSectorCount = int.Parse(count, CultureInfo.InvariantCulture);
@@ -81,26 +76,23 @@ public static class JourneyArea
                 case ["goto"]:
                 {
                     var sim = run.Game.Sim;
-                    var ship = sim.Ships.HumanPlayerShips.FirstOrDefault() ?? throw new InvalidOperationException("no human ship");
-                    var loaded = sim.Ships.FirstOrDefault(Buyer.IsBuyer);
-                    Vector2 loc = loaded?.DetWorldCenter
-                        ?? sim.Stasis.OfType<StasisShipSpawner>().FirstOrDefault(s => s.Tags?.Contains(Buyer.Tag) == true)?.Location
-                        ?? throw new InvalidOperationException("no Buyer in this system");
-                    float gap = loaded is null ? 1200f : loaded.DetWorldBoundingCircle.Radius + ship.DetWorldBoundingCircle.Radius + 100f;
-                    ship.WorldCenter = loc + new Vector2(gap, 0f);
-                    ship.Physics.PhysicsWrapper.LinearVelocity = Vector2.Zero;
-                    Log.Info($"AUTOTEST goto: ship {ship.Name} to {ship.WorldCenter} (det {ship.DetWorldCenter}), Buyer at {loc}, loaded={loaded is not null}, humans={sim.Ships.HumanPlayerShips.Count()}");
+                    var ship = SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("no human ship");
+                    var buyers = SimQueries.TaggedShips(sim, Buyer.Tag);
+                    if (buyers.Count == 0) throw new InvalidOperationException("no Buyer in this system");
+                    var buyer = buyers[0];
+                    float gap = buyer.Live is { } loaded ? loaded.DetWorldBoundingCircle.Radius + ship.DetWorldBoundingCircle.Radius + 100f : 1200f;
+                    Autotest.Teleport(ship, buyer.Location + new Vector2(gap, 0f));
+                    Log.Info($"AUTOTEST goto: ship {ship.Name} to {ship.WorldCenter}, Buyer at {buyer.Location}, loaded={buyer.Live is not null}");
                     break;
                 }
-                // Test-only: a real sale through the trade input. Adds the units to the first human ship first.
+                // Test-only: a real sale of tech from the first human ship through the trade input.
                 case ["sell", var count]:
                 {
                     var sim = run.Game.Sim;
-                    var ship = sim.Ships.HumanPlayerShips.FirstOrDefault() ?? throw new InvalidOperationException("no human ship");
+                    var ship = SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("no human ship");
                     var buyer = sim.Ships.FirstOrDefault(Buyer.IsBuyer) ?? throw new InvalidOperationException("no loaded Buyer ship");
-                    var res = Buyer.TechResource;
+                    var res = Tech.Vaults.TechId;
                     int units = int.Parse(count, CultureInfo.InvariantCulture);
-                    ship.Resources.AddResources(res, units);
                     var source = ship.Resources.GetBestSendingSource(res, MPValueType.Confirmed, out int have)
                         ?? throw new InvalidOperationException($"no {res} on the ship");
                     var sink = buyer.Resources.GetBestReceivingSink(res, units, MPValueType.Confirmed, out int capacity,
@@ -114,7 +106,7 @@ public static class JourneyArea
                     break;
                 }
                 default:
-                    throw new InvalidOperationException("buyer needs: spawn | deliver <units> | resource <id> | sectors <count> | goto | sell <units>");
+                    throw new InvalidOperationException("buyer needs: spawn | deliver <units> | sectors <count> | goto | sell <units>");
             }
         };
         // Single player only: jumps the human ships to an unvisited neighbor system, without the FTL animation or fuel.
@@ -165,10 +157,10 @@ public static class JourneyArea
         {
             var sim = Autotest.RequireRun().Game.Sim;
             var buyer = sim.Ships.FirstOrDefault(Buyer.IsBuyer) ?? throw new InvalidOperationException("no loaded Buyer ship");
-            var human = sim.Ships.HumanPlayerShips.FirstOrDefault() ?? throw new InvalidOperationException("no human ship");
+            var human = SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("no human ship");
             return buyer.AI?.WillTradeWith(human) == true ? 1 : 0;
         };
-        Autotest.Fields["nodes"] =() => Autotest.RequireRun().Game.Map.Nodes.NodeCount;
+        Autotest.Fields["nodes"] = () => Autotest.RequireRun().Game.Map.Nodes.NodeCount;
         Autotest.Fields["runmap"] = () => Autotest.RequireRun().Mode.Init is Cosmoteer.Modes.Career.CareerInit init && init.MapSizeIndex == RunMapSizeIndex() ? 1 : 0;
         // Highest low tier among systems that are RunSectorCount - 1 jumps from the start: the last sector of a direct route.
         Autotest.Fields["finaltier"] = () =>
@@ -182,9 +174,21 @@ public static class JourneyArea
         Autotest.Fields["buyerprice"] = () =>
         {
             var sim = Autotest.RequireRun().Game.Sim;
-            double toBuyer = sim.Mode.GetResourceSellRefund(Buyer.TechResource, PlayerIndexes.Neutral);
-            double plain = sim.Mode.GetResourceSellRefund(Buyer.TechResource, null);
-            return plain > 0 ? toBuyer / plain : throw new InvalidOperationException($"resource {Buyer.TechResource} has no sell price");
+            double toBuyer = sim.Mode.GetResourceSellRefund(Tech.Vaults.TechId, PlayerIndexes.Neutral);
+            double plain = sim.Mode.GetResourceSellRefund(Tech.Vaults.TechId, null);
+            return plain > 0 ? toBuyer / plain : throw new InvalidOperationException("tech has no sell price");
+        };
+        Autotest.Fields["delivered"] = () => Autotest.RequireRun().State.DeliveredUnits;
+        Autotest.Fields["score"] = () => Autotest.RequireRun().State.Score;
+        // Systems whose low tier is above the HotCargoTierCap limit for their jump distance. Expect 0.
+        Autotest.Fields["tierovercap"] = () =>
+        {
+            var run = Autotest.RequireRun();
+            var cap = GameApp.Rules.CareerMode.MapSizes[RunMapSizeIndex()].MapGenerator.Spawners.OfType<TierCapSpawner>().Single();
+            var start = run.Game.Map.Nodes.Single(n => run.Mode.GetMapNodeData(n).IsInitNode);
+            int startTier = LowTier(run, start);
+            return TierCapSpawner.JumpDistances(start).Count(kv =>
+                LowTier(run, kv.Key) is int tier && tier <= cap.MaxChangeableLowTier && tier > cap.Cap(startTier, kv.Value));
         };
     }
 }
