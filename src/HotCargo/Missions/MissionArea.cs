@@ -40,6 +40,15 @@ public static class MissionArea
         Autotest.Commands["hc_accept"] = TestAccept;
         Autotest.Commands["hc_escort_goto"] = _ => TeleportPlayers(RequireEscort().Escort.Location ?? throw new InvalidOperationException("escort is not in this system"));
         Autotest.Commands["hc_escort_arrive"] = _ => TestEscortArrive();
+        Autotest.Commands["hc_escort_diag"] = arg => LogEscort(arg);
+        // Test slots start with empty settings, so tutorial codex pages are unseen. The combat tutorial pauses the game
+        // the first time an enemy is in sight without a station in sight, which freezes the escort. Tests turn that off.
+        Autotest.Commands["hc_no_codex_pause"] = _ =>
+        {
+            int n = 0;
+            foreach (var page in Cosmoteer.GameApp.Rules.Codex.CodexPages.Where(p => p.AutoPause)) { page.AutoPause = false; n++; }
+            Log.Info($"AUTOTEST codex auto-pause off on {n} pages");
+        };
         Autotest.Commands["hc_assault_goto"] = _ => TeleportPlayers(TaggedShips(RequireSim(), "hc_assault_ally").First().Location);
         Autotest.Commands["hc_shady_spring"] = _ => TestShadySpring();
         Autotest.Commands["hc_kill_ambush"] = _ => TestKillAmbush();
@@ -205,6 +214,26 @@ public static class MissionArea
 
     static EscortObjective RequireEscort() => RequireObjective<EscortObjective>();
     static ShadyTrapObjective RequireTrap() => RequireObjective<ShadyTrapObjective>();
+
+    /// <summary>Logs the escort state: stasis, position, speed, command, AI origin and target, distance to the destination.</summary>
+    static void LogEscort(string label)
+    {
+        var o = RequireEscort();
+        var sim = RequireSim();
+        Ship? ship = o.Escort.TargetShip;
+        string player = string.Join(" ", sim.Ships.HumanPlayerSignificantShips.Select(s => $"{s.DetWorldCenter}"));
+        if (ship is null)
+        {
+            Log.Info($"AUTOTEST ESCORT {label}: not live; location={o.Escort.Location} spawner={o.Escort.TargetSpawner?.GetType().Name} dest={o.Destination} players={player} paused={sim.IsPaused.Confirmed} clockPaused={sim.Clock.Paused} scale={sim.Clock.ScaleFactor} t={sim.LogicalTime} runSeconds={RequireRun().State.GameSeconds:0.0}");
+            return;
+        }
+        var ai = ship.AI;
+        Log.Info($"AUTOTEST ESCORT {label}: live name={ship.Metadata.PlainShipName} pos={ship.DetWorldCenter} vel={ship.Physics.Body?.LinearVelocity} " +
+                 $"cmd={ship.Commands.CurConfirmedCommand?.GetType().Name} canExec={ship.Commands.CanExecuteCommands} " +
+                 $"ai={ai?.Rules.ID} origin={ai?.PreferredOrigin} unacq={ai?.Parameters?.TargetUnacquireRangeFromOrigin} " +
+                 $"modules={string.Join(",", ai?.StrategyModules.Select(m => m.GetType().Name) ?? [])} crew={ship.Crew.TotalMoneyValue} " +
+                 $"dest={o.Destination} dist={ship.DetWorldCenter.DistanceTo(o.Destination):0} player={ship.Metadata.PlayerIndex} players={player} paused={sim.IsPaused.Confirmed} clockPaused={sim.Clock.Paused} scale={sim.Clock.ScaleFactor} t={sim.LogicalTime} runSeconds={RequireRun().State.GameSeconds:0.0}");
+    }
 
     static void TeleportPlayers(Vector2 near)
     {
