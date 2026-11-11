@@ -86,11 +86,12 @@ public static class Autotest
         Commands["wait"] = arg => Wait(double.Parse(arg, CultureInfo.InvariantCulture));
         Commands["newgame"] = arg =>
         {
-            // arg: [map size index, or "last" for the last map size (the Hot Cargo short map is appended last)] [starter ship index, default 0].
+            // arg: [map size index, or "last" / nothing for the Hot Cargo run map] [starter ship index, default 0].
+            // "last" stays as an alias of the run map because older test scripts use it.
             var rules = GameApp.Rules.CareerMode;
             var args = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             string map = args.Length > 0 ? args[0] : "last";
-            int mapSize = map == "last" ? rules.MapSizes.Length - 1 : int.Parse(map, CultureInfo.InvariantCulture);
+            int mapSize = map == "last" ? Journey.JourneyArea.RunMapSizeIndex() : int.Parse(map, CultureInfo.InvariantCulture);
             ShipFile ship = rules.StarterShips[args.Length > 1 ? int.Parse(args[1], CultureInfo.InvariantCulture) : 0].Ship;
             // The game's default levels, not the player's saved choices: test slots start with an empty settings file.
             int combat = Array.FindIndex(rules.CombatDifficultyLevels, l => l.IsDefault);

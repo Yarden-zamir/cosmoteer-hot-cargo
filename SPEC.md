@@ -31,8 +31,8 @@ Out of scope for this batch:
 ## 4. Terms
 
 - **Run**: one career from start to win or loss.
-- **Sector**: a group of systems on the career map. The run moves through sectors in order. **[verify]** the engine meaning of sector.
-- **Sector index**: the number of the current sector in the run. The first sector is 1.
+- **Sector**: one star system, that is one node of the galaxy map.
+- **Sector index**: the number of distinct systems that the players visited in the run. The first system is 1. A return to a visited system does not change it.
 - **Tech unit**: one unit of the stolen technology. It is a resource.
 - **Tech Vault**: a ship part. It is the only part that can store tech units.
 - **Fleet tech count**: the tech units that all human players hold, in vaults and in crew hands. Station crew that carry a sale that is not paid yet also count.
@@ -40,21 +40,21 @@ Out of scope for this batch:
 - **Heat**: how close the corporation is in the current sector. Range 0 to 100.
 - **Heat multiplier**: a factor that comes from the fleet tech count.
 - **Stage**: a level of corporate response. Heat thresholds start each stage.
-- **Buyer**: a special station in the last sector. You deliver the tech there to win.
+- **Buyer**: a special station in the last sector. You sell the tech there to win.
 - **Tunables file**: `tunables.rules` in the mod folder. It holds all numbers that C# code reads.
 
 ## 5. Run structure and length
 
-1. A run has `RunSectorCount` sectors (default 8). The Buyer is in the last sector.
-2. The career map is small enough that a direct route crosses all sectors in about `RunSectorCount` sector jumps. **[verify]** which galaxy size settings and map rules control this.
-3. The danger tier of a sector rises with the sector index. Sector 1 is tier 1. The last sector is about tier `FinalSectorTier` (default 12).
-4. Fame and money rewards are scaled by `RewardScale` (default 2.0), so that ship growth keeps up with the shorter run.
+1. A run has `RunSectorCount` sectors (default 8). The Buyer appears when the players first enter the system with sector index = `RunSectorCount`. A mission in the log points to it, and a message shows it.
+2. The career map is small enough that a direct route crosses all sectors in about `RunSectorCount` sector jumps. The mod adds the map size "Hot Cargo run" (`mod/journey/galaxy.rules`, 50 systems, about 7 jumps from the start to the far edge). It is first in the map size list, so it is the default while the mod is on. The player can still choose Standard. These are rules values: a change needs a game restart and applies to new careers only.
+3. The danger tier of a sector rises with the sector index. Sector 1 is tier 1. The last sector is about tier `FinalSectorTier` (default 12). On the main route the tier rises by 2 for each jump. `FinalSectorTier` is a rules value in `mod/journey/galaxy.rules`, not a live tunable. Side systems keep the vanilla faction tiers, so a dangerous system can be next to the start.
+4. Fame and money rewards are scaled by `RewardScale` (default 2.0), so that ship growth keeps up with the shorter run. The scale multiplies the difficulty reward factors. So it applies to mission rewards, fame for defeated ships and the reward text in the UI.
 5. The new career screen keeps the vanilla difficulty options. The mod does not add its own difficulty screen.
 
 ## 6. Win and loss
 
-6. **Win**: the players dock at the Buyer and deliver at least one tech unit.
-7. When the players win, a dialog shows the score. Score = money + delivered units × tech value × `BuyerPriceFactor` (default 1.5).
+6. **Win**: the players sell at least one tech unit to the Buyer. The run is won when the crew deliver the first units of the sale.
+7. When the players win, a dialog shows the score. Score = money + delivered units × tech value × `BuyerPriceFactor` (default 1.5). A sale to the Buyer pays tech value × `BuyerPriceFactor` for each unit. Delivered units are the units of the first crew delivery. The money already includes the payment for them.
 8. After a win, heat turns off. A dialog shows the score, and the players can continue the career.
 9. **Loss**: when the fleet tech count reaches 0, the run is lost. Any cause counts: vault damage, a destroyed vault, crew that die while they carry tech, or a sale of the last unit. A Buyer delivery is the only exception, because it wins the run first.
 10. A loss shows a dialog: "The corporation recovered the tech." The game then shows the game-over screen.
@@ -136,7 +136,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 13. Tunables, debug and live tuning
 
-50. The C# code reads all numbers in requirements 1, 3, 4, 7, 12, 17, 19, 23 to 48 and 65 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
+50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48 and 65 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
 51. The file uses the game's `.rules` format.
 52. The mod watches the file. When the file changes, the mod reloads it on the next frame, without a game restart.
 53. If the file has an error, the mod keeps the last valid values and shows the error in game.
@@ -163,7 +163,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | Tunable | Default | Requirement |
 |---|---|---|
 | `RunSectorCount` | 8 | 1 |
-| `FinalSectorTier` | 12 | 3 |
+| `FinalSectorTier` | 12 (rules value in `mod/journey/galaxy.rules`, restart needed) | 3 |
 | `RewardScale` | 2.0 | 4 |
 | `BuyerPriceFactor` | 1.5 | 7 |
 | `StartingTechUnits` | 6 | 17 |
@@ -254,7 +254,7 @@ Parallel work: steps 3 and 4 touch separate files and can run at the same time a
 
 - **Game updates** can break Harmony patches. `scripts/pull-game.sh` refreshes the game files and decompiled code for a fix.
 - **Desync** in co-op if any logic leaves the simulation tick or uses a non-simulation random source. Requirement 58 covers this, and the multiplayer test checks it.
-- **Short career** depends on how much the map rules allow. If the map cannot be made small through rules, step 4 needs C# map patches.
+- **Short career**: the map size and tier ramp come from rules only (requirement 2). A game update that changes `base_galaxy.rules` can need a matching change in `mod/journey/galaxy.rules`.
 - **The startup hook loads into every Cosmoteer start.** Requirement 63 keeps the game vanilla when the rules mod is off.
 
 ## 21. Open decisions

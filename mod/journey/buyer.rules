@@ -1,0 +1,56 @@
+// The Buyer station (spec requirements 1 and 6).
+// Journey/Buyer.cs reads this file on its own, outside the game rules tree, and spawns it into the current system.
+// So references to the game rules root (&/...) do not work here. Use file references (&<./Data/...>) instead.
+// A change to this file needs a game restart.
+Buyer
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_buyer, station]
+			Features = [Station, OperationalStation, FtlPoint]
+			// Neutral (player index -1) is friends with every ship, and no other trading ship uses it.
+			// Journey/Buyer.cs uses this index to tell a sale to the Buyer from a sale to a normal station.
+			Allegiance = Neutral
+			RememberResourcesAndCrew = true
+			Distance = [5000, 10000]
+			MinDistanceFromTags = [[sun, 5000], [station, 3000], [ftl_gate, 2000]]
+			NameGenerator
+			{
+				Type = NameList
+				Names = ["The Buyer"]
+			}
+
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseLocalTier = true
+				AllowTierRangeExpansion = true
+				Tags = [trade_station]
+			}
+
+			AI
+			{
+				Type = SpaceStation
+			}
+
+			SubSpawners
+			[
+				// A mission in the players' log that points to the Buyer.
+				{
+					Type = Mission
+					Metatype = HotCargoBuyer
+					SpawnAt = Player
+					Objectives
+					[
+						{
+							Type = GotoShip
+							DestinationShipTag = { Mode=Nearest; Tag=hc_buyer; }
+						}
+					]
+				}
+			]
+		}
+	]
+}
