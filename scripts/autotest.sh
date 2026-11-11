@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Run an autotest script in a headless test instance of the game on the PC and print the result.
 # Usage: autotest.sh tests/autotest/<name>.txt [timeout-seconds]
-# Takes a free test slot (t1..tN, N = HOT_CARGO_SLOTS, default 3), so several autotests run at the same time.
+# Takes a free test slot (t1..tN, N = HOT_CARGO_SLOTS, default 4), so several autotests run at the same time.
 # Exit code 0 only if the log has AUTOTEST DONE and no AUTOTEST FAIL or ERROR line.
 SCRIPT="${1:?usage: autotest.sh <script> [timeout]}"
 TIMEOUT="${2:-300}"
-SLOTS="${HOT_CARGO_SLOTS:-3}"
+SLOTS="${HOT_CARGO_SLOTS:-4}"
 
 # Take a slot. A lock whose owner process is gone is stale and is taken over.
 while :; do
