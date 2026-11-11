@@ -29,11 +29,19 @@ public sealed class Run
         /// <summary>Runs inside each sim tick while the run is Running, after FleetTech is updated. Arguments: run, sim, tick seconds.</summary>
         public static event Action<Run, SimRoot, double>? Tick;
 
-        internal static void RaiseStageStarted(Run r, SimRoot s, int i) => StageStarted?.Invoke(r, s, i);
-        internal static void RaiseStrikeWave(Run r, SimRoot s) => StrikeWave?.Invoke(r, s);
-        internal static void RaiseSystemEntered(Run r, bool first) => SystemEntered?.Invoke(r, first);
-        internal static void RaiseNewRunStarted(Run r) => NewRunStarted?.Invoke(r);
-        internal static void RaiseTick(Run r, SimRoot s, double dt) => Tick?.Invoke(r, s, dt);
+        internal static void RaiseStageStarted(Run r, SimRoot s, int i) => Each(StageStarted, h => h(r, s, i));
+        internal static void RaiseStrikeWave(Run r, SimRoot s) => Each(StrikeWave, h => h(r, s));
+        internal static void RaiseSystemEntered(Run r, bool first) => Each(SystemEntered, h => h(r, first));
+        internal static void RaiseNewRunStarted(Run r) => Each(NewRunStarted, h => h(r));
+        internal static void RaiseTick(Run r, SimRoot s, double dt) => Each(Tick, h => h(r, s, dt));
+
+        /// <summary>Calls each handler on its own, so a failure in one area does not skip the hooks of the other areas.</summary>
+        static void Each<T>(T? hooks, Action<T> call) where T : Delegate
+        {
+            if (hooks is null) return;
+            foreach (T h in hooks.GetInvocationList().Cast<T>())
+                Errors.Guard($"hook {h.Method.DeclaringType?.Name}.{h.Method.Name}", () => call(h));
+        }
     }
 
     public GameRoot Game { get; }
@@ -64,9 +72,11 @@ public sealed class Run
             Log.Info("Hot Cargo mod is not enabled in the game's mod list; staying inactive");
             return;
         }
+        // A save from before the mod was enabled has no state. The run then starts at this point of the career, like a new run.
+        bool newRun = state is null;
         if (state is null)
         {
-            if (loaded) Log.Info("save has no Hot Cargo state; starting a new run state for this career");
+            if (loaded) Log.Info("save has no Hot Cargo state; a new run starts at this point of the career");
             state = new RunState();
             var file = TunablesFile.Read();
             if (file is not null) { state.Tunables = file.Values; state.TunablesHash = file.Hash; }
@@ -81,7 +91,7 @@ public sealed class Run
         mode.Game.EventHub.PlayerFameChanged += run.OnFameChanged;
         mode.Game.Popping += (_, _) => Stop(mode.Game);
         Log.Info($"run active: loaded={loaded} sector={state.SectorIndex} heat={state.Heat:0.0} tunables={state.TunablesHash} mp={run.IsMultiplayer}");
-        if (!loaded) Hooks.RaiseNewRunStarted(run);
+        if (newRun) Hooks.RaiseNewRunStarted(run);
     }
 
     internal static void Stop(GameRoot game)
@@ -115,8 +125,15 @@ public sealed class Run
         int gained = e.NewValue - e.OldValue;
         if (gained <= 0) return;
         float mult = HeatModel.Multiplier(T.Heat.HeatMultiplierByUnits, State.FleetTech);
-        AddHeat(HeatModel.FameHeat(T.Heat.HeatPerStandardMission, mult, gained, GameData.StandardMissionFame(CurrentTier)), Game.Sim);
+        AddHeat(HeatModel.FameHeat(T.Heat.HeatPerStandardMission, mult, gained, StandardMissionFamePaid()), Game.Sim);
     }
+
+    /// <summary>
+    /// Fame that a standard mission of the current tier pays: the vanilla table value times the same factors as the payout
+    /// (difficulty fame factor and RewardScale, see Journey/RewardScale.cs). So "heat per standard mission" holds on every difficulty.
+    /// </summary>
+    int StandardMissionFamePaid() =>
+        (int)Math.Round(GameData.StandardMissionFame(CurrentTier) * Mode.EconDifficulty.FameRewardFactor * T.Journey.RewardScale);
 
     /// <summary>Adds heat and starts any stages it crosses. Call only from simulation logic (or single-player debug keys).</summary>
     public void AddHeat(float amount, SimRoot sim)

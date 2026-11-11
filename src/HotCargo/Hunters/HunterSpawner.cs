@@ -25,47 +25,29 @@ public static class HunterSpawner
     /// <summary>Waves spawned since game start. For autotest fields only; not sim state.</summary>
     public static int WavesSpawned { get; private set; }
 
-    public static bool IsHunter(Ship ship) => ship.Tags?.Contains(HunterTag) == true;
-
     /// <summary>Live hunters. Wreck pieces keep the tag but belong to the junk player, so they do not count.</summary>
-    public static IEnumerable<Ship> Hunters(SimRoot sim) => sim.Ships.Where(s => IsHunter(s) && !s.IsJunk);
+    public static IEnumerable<Ship> Hunters(SimRoot sim) => sim.Ships.Where(s => s.HasTag(HunterTag) && !s.IsJunk);
 
-    /// <summary>Human ships that hunters chase, in the stable order of the sim ship list.</summary>
-    public static IEnumerable<Ship> HumanShips(SimRoot sim) => sim.Ships.Where(s => s.IsHumanPlayerShip && !s.IsJunk && s.IsSignificant);
-
-    internal static void OnStageStarted(Run run, SimRoot sim, int stageIndex) => Guard(() =>
+    // A spawn error must not crash the sim tick. Errors.Guard skips the wave and shows the error.
+    internal static void OnStageStarted(Run run, SimRoot sim, int stageIndex) => Errors.Guard("hunter spawn", () =>
     {
         string name = run.T.Heat.Stages[stageIndex].Name;
-        SpawnWave(run, sim, Response(run, name), $"stage {name}");
+        SpawnWave(run, sim, Response(run, name), name);
     });
 
-    internal static void OnStrikeWave(Run run, SimRoot sim) => Guard(() =>
+    internal static void OnStrikeWave(Run run, SimRoot sim) => Errors.Guard("hunter spawn", () =>
     {
         var stages = run.T.Heat.Stages;
         if (stages.Length == 0) throw new InvalidOperationException("strike wave without heat stages");
-        SpawnWave(run, sim, Response(run, stages[^1].Name), "strike wave");
+        SpawnWave(run, sim, Response(run, stages[^1].Name), stages[^1].Name);
     });
 
-    /// <summary>
-    /// A spawn error (for example a stage name in tunables.rules with no response) must not crash the sim tick.
-    /// It skips the wave and shows the error. Every client fails the same way, so the sim stays in sync.
-    /// </summary>
-    static void Guard(Action spawn)
-    {
-        try { spawn(); }
-        catch (Exception ex)
-        {
-            Log.Error("hunter spawn failed", ex);
-            Ui.Overlay.FatalError = $"hunters: {ex.Message}";
-        }
-    }
-
-    /// <summary>Mean position of the human ships, or null when there are none.</summary>
+    /// <summary>Mean position of the significant human ships, or null when there are none.</summary>
     public static Vector2? FleetCenter(SimRoot sim)
     {
         Vector2 sum = Vector2.Zero;
         int count = 0;
-        foreach (var h in HumanShips(sim)) { sum += h.DetWorldCenter; count++; }
+        foreach (var h in sim.Ships.HumanPlayerSignificantShips) { sum += h.DetWorldCenter; count++; }
         return count == 0 ? null : sum / count;
     }
 
@@ -74,8 +56,9 @@ public static class HunterSpawner
         ?? throw new InvalidOperationException($"Hunters.Stages has no response for heat stage '{stageName}'");
 
     /// <summary>Spawns one wave near the human fleet. Each ship spawns physically at once, so the AI owns it from the first tick.</summary>
-    public static void SpawnWave(Run run, SimRoot sim, StageResponse response, string reason)
+    public static void SpawnWave(Run run, SimRoot sim, StageResponse response, string stageName)
     {
+        string reason = $"stage {stageName}";
         if (sim != run.Game.Sim) return;
         if (sim.Mode is not CareerSimModeManager career) throw new InvalidOperationException("hunters need a career simulation");
         var t = run.T.Hunters;
@@ -110,7 +93,7 @@ public static class HunterSpawner
                      $"(wanted {tier}) at {loc.DistanceTo(in fleetCenter):0} from the fleet, player index {allegiance}");
         }
         WavesSpawned++;
-        ShowAlert(run, response.Message);
+        ShowAlert(run, stageName);
     }
 
     /// <summary>
@@ -153,9 +136,9 @@ public static class HunterSpawner
         Hunters(sim).FirstOrDefault()?.Metadata.PlayerIndex ?? career.AllocUniquePlayerIndex();
 
     /// <summary>UI and audio only. It changes no sim state, so it is safe in the sim tick on every client.</summary>
-    static void ShowAlert(Run run, string message)
+    static void ShowAlert(Run run, string stageName)
     {
-        if (message.Length > 0) run.Game.Gui.ShowAreaName(message);
+        run.Game.Gui.ShowAreaName(Ux.UxKit.StageText(stageName));
         App.Audio.Play(GameApp.Rules.CareerMode.Wanted.WantedAlertSound, AudioGroups.Interface);
     }
 }
