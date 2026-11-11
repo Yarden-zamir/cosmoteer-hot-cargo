@@ -118,7 +118,7 @@ public static class EventRunner
             Log.Info($"events: {trigger} skipped, {t.MaxEventsPerSystem} events in this system already");
             return;
         }
-        var snapshot = Snap(run, sim, FirstHumanMoney(run), run.CurrentTier, CurrentTechValue(run));
+        var snapshot = Snap(run, sim, RichestHumanMoney(run), run.CurrentTier, CurrentTechValue(run));
         var candidates = EventLibrary.InOrder
             .Where(e => e.Trigger == trigger && EventModel.UnderRunLimit(s.Seen.GetValueOrDefault(e.ID), e.MaxPerRun))
             .Where(e => EventModel.FirstUnmet(ToNeed(run, e.Need, run.CurrentTier, CurrentTechValue(run)), snapshot) is null)
@@ -206,8 +206,9 @@ public static class EventRunner
 
     public static long CurrentTechValue(Run run) => run.T.Tech.Value(run.State.SectorIndex, run.State.GameSeconds);
 
-    static int FirstHumanMoney(Run run) =>
-        run.Game.GetPlayerState(run.Game.HumanPlayersIndexes.Min(), deterministic: true).Money;
+    /// <summary>The most money one human player has. In co-op each player has own money and any player can pick a choice.</summary>
+    static int RichestHumanMoney(Run run) =>
+        run.Game.HumanPlayersIndexes.Max(i => run.Game.GetPlayerState(i, deterministic: true).Money);
 
     /// <summary>Credits of an amount in event money units at a tier, with the economy and Hot Cargo reward factors.</summary>
     public static int Credits(Run run, float units, float techUnits, int tier, long techValue)
