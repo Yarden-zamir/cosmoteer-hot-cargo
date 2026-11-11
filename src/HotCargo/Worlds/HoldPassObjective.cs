@@ -91,8 +91,6 @@ internal sealed class HoldPassObjective : Objective
         reader.ReflectiveRead(this);
     }
 
-    WorldsTunables T => Current.Tunables(Mission?.Game.Sim ?? throw new InvalidOperationException("objective has no mission"));
-
     public override void GetIntegrityHash(IntegrityHash iHash)
     {
         base.GetIntegrityHash(iHash);
@@ -112,7 +110,7 @@ internal sealed class HoldPassObjective : Objective
 
     public override void GetDisplayLinesImpl(List<DisplayLine> lines, GameRoot game, CompletionState parentState)
     {
-        var t = T;
+        var t = Current.Tunables(game.Sim);
         string left = Clock(t.PassHoldSeconds - HeldSeconds);
         lines.Add(new DisplayLine
         {
@@ -143,11 +141,13 @@ internal sealed class HoldPassObjective : Objective
 
     public override void UnregisterEvents(GameRoot game) => game.EventHub.Tick -= OnTick;
 
-    void OnTick(object? sender, SimRoot sim)
+    void OnTick(object? sender, SimRoot sim) => Errors.Guard("hold pass tick", () => Tick(sim));
+
+    void Tick(SimRoot sim)
     {
         if (Mission is null || Completion != CompletionState.InProgress || sim != Mission.Game.Sim) return;
         if (sim.MapNode?.UniqueID != NodeID) return;
-        var t = T;
+        var t = Current.Tunables(sim);
         bool inside = sim.Ships.HumanPlayerSignificantShips.Any(s => s.DetWorldCenter.DistanceTo(Center) <= Radius);
         float before = HeldSeconds;
         var (state, outcome) = WorldsModel.PassStep(new PassState(HeldSeconds, EmptySeconds, Started), inside,

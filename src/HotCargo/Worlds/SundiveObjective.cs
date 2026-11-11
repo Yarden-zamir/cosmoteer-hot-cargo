@@ -76,7 +76,7 @@ internal sealed class SundiveObjective : Objective
     [GenericConstructor]
     SundiveObjective(GenericSerialReader reader) => reader.ReflectiveRead(this);
 
-    float NeededSeconds => Current.Tunables(Mission?.Game.Sim ?? throw new InvalidOperationException("objective has no mission")).SundiveSalvageSeconds;
+    static float NeededSeconds(SimRoot? sim) => Current.Tunables(sim).SundiveSalvageSeconds;
 
     public override void GetIntegrityHash(IntegrityHash iHash)
     {
@@ -108,7 +108,7 @@ internal sealed class SundiveObjective : Objective
         float depth = game.Sim?.MapNode?.UniqueID == NodeID ? HeatZone.Depth(game.Sim, Site) * 100f : 0f;
         lines.Add(new DisplayLine { Text = Strings.KeyStringFmt("HotCargoWorlds/SundiveDiveFmt", depth), State = Completion });
         if (SalvageSeconds > 0f)
-            lines.Add(new DisplayLine { Text = Strings.KeyStringFmt("HotCargoWorlds/SundiveSalvageFmt", SalvageSeconds, NeededSeconds), State = CompletionState.InProgress });
+            lines.Add(new DisplayLine { Text = Strings.KeyStringFmt("HotCargoWorlds/SundiveSalvageFmt", SalvageSeconds, NeededSeconds(game.Sim)), State = CompletionState.InProgress });
     }
 
     public override void RegisterEvents(GameRoot game, bool isLoading)
@@ -132,7 +132,9 @@ internal sealed class SundiveObjective : Objective
         Fail();
     }
 
-    void OnTick(object? sender, SimRoot sim)
+    void OnTick(object? sender, SimRoot sim) => Errors.Guard("sundive tick", () => Tick(sim));
+
+    void Tick(SimRoot sim)
     {
         if (Mission is null || Completion != CompletionState.InProgress || sim != Mission.Game.Sim) return;
         if (sim.MapNode?.UniqueID != NodeID) return;
@@ -150,7 +152,7 @@ internal sealed class SundiveObjective : Objective
             .OrderBy(s => s.UniqueID).FirstOrDefault();
         if (salvager is null) return;
         SalvageSeconds += (float)sim.FixedUpdater.Interval.Seconds;
-        if (SalvageSeconds >= NeededSeconds)
+        if (SalvageSeconds >= NeededSeconds(sim))
         {
             Carrier = new ObjectiveTargetShip(sim.RequireGame(), salvager);
             Carrier.Killed += OnCarrierKilled;

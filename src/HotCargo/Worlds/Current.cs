@@ -27,7 +27,7 @@ public static class Current
     /// Tunables for sim code. The first system of a new career generates before the run starts, and a sim can tick
     /// before Run.Start; those use the defaults.
     /// </summary>
-    internal static WorldsTunables Tunables(SimRoot sim) => Run.Current is { } run && run.Game.Sim == sim ? run.T.Worlds : Defaults;
+    internal static WorldsTunables Tunables(SimRoot? sim) => Run.Current is { } run && sim is not null && run.Game.Sim == sim ? run.T.Worlds : Defaults;
 
     /// <summary>The flow direction index of the system of a sim. It comes from the map node seed, so it is the same after a load and on every client.</summary>
     public static int FlowIndex(SimRoot sim) =>

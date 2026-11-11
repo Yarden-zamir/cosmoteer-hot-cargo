@@ -1,0 +1,42 @@
+# Mining belt and Hold the Pass (spec 222): the dense belt has passes that are clear of rocks. A hold completes after
+# PassHoldSeconds in the pass, with raider waves. A second hold fails when the pass stays empty for PassLostSeconds.
+newgame run
+wait 8
+godmode
+worlds jumpto hc_mining_belt
+pause off
+worlds type hc_mining_belt
+expect worlds_belt_rocks >= 1500
+expect worlds_passes >= 3
+expect worlds_pass_rocks == 0
+worlds set PassHoldSeconds 12
+worlds set PassWaveSeconds 5
+worlds set PassLostSeconds 4
+worlds generate pass
+expect worlds_offers_pass >= 1
+worlds accept pass
+expect worlds_state_pass == 0
+worlds goto pass
+pause off
+wait 3
+worlds kill hc_pass_raider
+wait 3
+expect worlds_pass_held > 0
+wait 14
+expect worlds_pass_waves >= 1
+expect worlds_pass_done == 1
+# Failure: hold, then leave the pass.
+worlds generate pass
+worlds accept pass
+worlds goto pass
+pause off
+wait 3
+worlds kill hc_pass_raider
+wait 3
+expect worlds_pass_held > 0
+expect worlds_pass_done == 0
+worlds goto away
+wait 7
+expect worlds_pass_done == -1
+expect worlds_state_pass == -1
+quit

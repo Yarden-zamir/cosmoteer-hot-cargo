@@ -90,6 +90,8 @@ public static class Autotest
     {
         ship.WorldCenter = location;
         ship.Physics.PhysicsWrapper.LinearVelocity = Halfling.Geometry.Vector2.Zero;
+        // A forced move must update the ship lookup tree, or area queries (sun heat, nebula tracking) miss the ship until it moves.
+        ship.Sim?.Ships.RefreshShipPosition(ship);
     }
 
     static void AddBaseCommands()

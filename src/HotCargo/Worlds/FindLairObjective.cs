@@ -93,7 +93,9 @@ internal sealed class FindLairObjective : Objective
 
     public override void UnregisterEvents(GameRoot game) => game.EventHub.Tick -= OnTick;
 
-    void OnTick(object? sender, SimRoot sim)
+    void OnTick(object? sender, SimRoot sim) => Errors.Guard("find lair tick", () => Tick(sim));
+
+    void Tick(SimRoot sim)
     {
         if (Mission is null || Completion != CompletionState.InProgress || sim != Mission.Game.Sim) return;
         if (sim.MapNode?.UniqueID != Lair.MapNodeID) return;

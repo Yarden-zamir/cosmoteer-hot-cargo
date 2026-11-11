@@ -1,0 +1,21 @@
+# Deep space and Raid the Lair (spec 224): the lair hides in a storm eye; a ship far away does not find it, a ship near it does.
+newgame run
+wait 8
+godmode
+worlds jumpto hc_deep_space
+pause off
+worlds type hc_deep_space
+worlds generate lair
+expect worlds_lairs >= 1
+expect worlds_offers_lair >= 1
+worlds accept lair
+expect worlds_state_lair == 0
+worlds goto lair 4000
+pause off
+wait 3
+expect worlds_lair_found == 0
+worlds goto lair 1200
+wait 3
+expect worlds_lair_found == 1
+expect worlds_state_lair == 0
+quit
