@@ -107,31 +107,60 @@ public static class MissionArea
     static void TestGenerate(string arg)
     {
         var sim = RequireSim();
+        var mode = (CareerSimModeManager)sim.Mode;
         string[] names = arg is "" or "all" ? [.. Metatypes.Keys] : [arg];
-        var groups = new List<SimSpawner>();
+        var groups = new List<SimObjectSpawner>();
         foreach (string name in names)
         {
             if (!Metatypes.ContainsKey(name)) throw new InvalidOperationException($"unknown group '{name}'");
             var tag = new ID<SimObjectSpawner>($"hc_group_{name}");
-            var found = AllSpawners(((CareerSimModeManager)sim.Mode).SectorType.SystemGenerator.Spawners)
+            groups.Add(AllSpawners(mode.SectorType.SystemGenerator.Spawners)
                 .OfType<SimObjectSpawner>().FirstOrDefault(s => s.Tags?.Contains(tag) == true)
-                ?? throw new InvalidOperationException($"spawner group {tag} not found in the sector generator; are the mission rules loaded?");
-            groups.Add(found);
+                ?? throw new InvalidOperationException($"spawner group {tag} not found in the sector generator; are the mission rules loaded?"));
         }
-        Ship player = sim.Ships.HumanPlayerSignificantShips.First();
-        var saved = groups.Cast<SimObjectSpawner>().Select(g => g.SpawnChance).ToList();
+        var objects = ExistingSpawnTags(sim);
+        var parentTree = new List<SimSpawner.SpawnedObject> { new(sim.Ships.HumanPlayerSignificantShips.First().DetWorldCenter) };
+        uint batch = 0, fleet = 0;
+        var saved = groups.Select(g => g.SpawnChance).ToList();
         try
         {
-            foreach (SimObjectSpawner g in groups) g.SpawnChance = 1f;
-            new SimulationGenerator { Spawners = [.. groups] }
-                .Generate(sim, sim.Rand, loadInstantly: true, rootLoc: player.DetWorldCenter, addExistingSpawnTags: true);
+            foreach (var g in groups)
+            {
+                g.SpawnChance = 1f;
+                g.Spawn(sim, sim.Rand, parentTree, 0, ref batch, ref fleet, loadInstantly: true, [], objects, mode.GetSpawnFlags(), 0f);
+            }
         }
         finally
         {
-            for (int i = 0; i < groups.Count; i++) ((SimObjectSpawner)groups[i]).SpawnChance = saved[i];
+            for (int i = 0; i < groups.Count; i++) groups[i].SpawnChance = saved[i];
         }
         Log.Info($"AUTOTEST generated Hot Cargo groups: {string.Join(", ", names)}");
         Autotest.Wait(2);
+    }
+
+    /// <summary>
+    /// Spawn tags of the objects that already exist, with their IDs.
+    /// SimulationGenerator's addExistingSpawnTags leaves out the IDs of objects in stasis, and missions that spawn at a station need them.
+    /// </summary>
+    static SpawnedObjectCollection ExistingSpawnTags(SimRoot sim)
+    {
+        var objects = new SpawnedObjectCollection();
+        void Add(HashSet<ID<SimObjectSpawner>>? tags, SimSpawner.SpawnedObject so)
+        {
+            foreach (var tag in tags ?? [])
+            {
+                if (!objects.TryGetValue(tag, out var list)) objects.Add(tag, list = []);
+                list.Add(so);
+            }
+        }
+        for (int i = 0; i < sim.Ships.Count; i++) Add(sim.Ships[i].Tags, new(sim.Ships[i], null, null));
+        foreach (StasisSpawner s in sim.Stasis.OrderBy(s => s.ReservedObjectID))
+        {
+            var tags = s is StasisDoodadSpawner d ? d.Tags : StasisTags(s);
+            Add(tags, new(new Circle(s.Location, 0f), s.ReservedObjectID, s, playerIndex: s.ObjectAllegiance));
+        }
+        foreach (var d in sim.Doodads) Add(d.Tags, new(new Circle(d.Location, d.Rules.SpawnRadius), d.UniqueID));
+        return objects;
     }
 
     static IEnumerable<SimSpawner> AllSpawners(IEnumerable<SimSpawner> roots)
