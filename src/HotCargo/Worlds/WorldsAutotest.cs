@@ -70,6 +70,7 @@ static class WorldsAutotest
         Autotest.Fields["worlds_pass_done"] = () => State(Objective<HoldPassObjective>());
         Autotest.Fields["worlds_sundive_done"] = () => State(Objective<SundiveObjective>());
         Autotest.Fields["worlds_lair_found"] = () => State(Objective<FindLairObjective>());
+        Autotest.Fields["worlds_sundive_salvage"] = () => Objective<SundiveObjective>().SalvageSeconds;
         Autotest.Fields["worlds_sundive_carrier"] = () => Objective<SundiveObjective>().Carrier is null ? 0 : 1;
         foreach (var (name, metatype) in Metatypes)
         {
@@ -108,6 +109,16 @@ static class WorldsAutotest
                 run.Game.JumpToNode(next, doFtlAnimation: false, run.Game.Sim.Ships.HumanPlayerShips.ToList())
                     .ContinueWith(t => Log.Error("AUTOTEST jumpto failed", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
                 Autotest.Wait(8);
+                break;
+            }
+            // paint: paints the trade hub current (the HotCargoCurrent spawner of the hc_trade_hub rules) centered on the first
+            // own ship. For co-op tests, which cannot jump: run it as "mp worlds paint", so it changes the sim on every machine.
+            case ["paint"]:
+            {
+                var sim = Sim();
+                var spawner = MissionArea.AllSpawners(GameApp.Rules.CareerMode.SectorTypesByID[new ID<SectorTypeRules>("hc_trade_hub")].SystemGenerator.Spawners)
+                    .OfType<CurrentSpawner>().FirstOrDefault() ?? throw new InvalidOperationException("the trade hub rules have no HotCargoCurrent spawner");
+                spawner.DoSpawn(sim, sim.Rand, 0, 0, 1, null, Ship().DetWorldCenter, [], new SpawnedObjectCollection(), 0f, loadInstantly: true, []);
                 break;
             }
             case ["type", var type]:
@@ -231,7 +242,7 @@ static class WorldsAutotest
                 break;
             }
             default:
-                throw new InvalidOperationException("worlds needs: set F V | jumpto TYPE | type TYPE | map | hazard | generate K | accept K | reselect K | mark | cool | keep | "
+                throw new InvalidOperationException("worlds needs: set F V | jumpto TYPE | paint | type TYPE | map | hazard | generate K | accept K | reselect K | mark | cool | keep | "
                     + "goto current|sun D|pass|away|sundive|outside|lair D | kill TAG");
         }
     }

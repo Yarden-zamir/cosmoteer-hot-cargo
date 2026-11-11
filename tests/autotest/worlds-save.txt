@@ -1,15 +1,12 @@
-# Worlds objectives in a save (spec 226): a pass hold in progress and a sundive with a carrier keep their state after a load.
+# Worlds objectives in a save (spec 226): a pass hold and a sundive salvage in progress keep their state after a load.
 newgame run
 wait 8
 godmode
 worlds jumpto hc_mining_belt
 pause off
 worlds set PassHoldSeconds 600
-worlds generate sundive
-worlds accept sundive
-worlds goto sundive
-wait 10
-expect worlds_sundive_carrier == 1
+worlds set PassLostSeconds 600
+worlds set SundiveSalvageSeconds 600
 worlds generate pass
 worlds accept pass
 worlds goto pass
@@ -17,15 +14,20 @@ wait 3
 worlds kill hc_pass_raider
 wait 4
 expect worlds_pass_held > 2
+# The sun of the belt system. The heat cooks the vault, so the save happens early in the salvage.
+worlds generate sundive
+worlds accept sundive
+worlds goto sundive
+expect worlds_sundive_salvage > 1
 save worlds
 load worlds
 wait 3
 pause off
+worlds reselect sundive
+expect worlds_sundive_salvage > 1
+expect worlds_sundive_done == 0
 worlds reselect pass
 expect worlds_pass_held > 2
 expect worlds_pass_done == 0
-worlds reselect sundive
-expect worlds_sundive_carrier == 1
-expect worlds_sundive_done == 0
 expect sector == 2
 quit
