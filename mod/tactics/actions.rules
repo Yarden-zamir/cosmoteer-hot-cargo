@@ -1,0 +1,6 @@
+	{
+		Action = Add
+		AddTo = "<ai/ai.rules>"
+		Name = HotCargoHunter
+		ToAdd = &<tactics/ai_hunter.rules>
+	}

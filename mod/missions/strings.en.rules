@@ -1,0 +1,20 @@
+HotCargoMissions
+{
+	Escort = "Convoy Duty"
+	EscortDesc = "The freighter {escort_ship} must reach a jump point in the {mission_location} system, and word is that raiders know the route. "\
+	             "The convoy master will not send it out alone. Fly with it, keep it in one piece, and the {faction_name} pays {money} when it reaches the jump point. "\
+	             "The freighter waits for its escort, so stay close."
+	FleetAssault = "Joint Strike"
+	FleetAssaultDesc = "The {faction_name} navy has found a raider stronghold in the {mission_location} system and has sent a strike group to take it apart. "\
+	                   "The navy wants a Cosmoteer on the line when the shooting starts. Meet the strike group near the stronghold and destroy it together. "\
+	                   "The navy pays {money} when the station is gone."
+	ShadyBounty = "Discreet Bounty"
+	ShadyBountyDesc = "A client who does not give a name wants the <b>{target_ship}</b> class vessel in the {mission_location} system gone. "\
+	                  "No faction seal, no paperwork, no questions. The client pays {money}, well above the going rate, and says that you will want to come alone."
+}
+
+HotCargoObjectives
+{
+	EscortFmt = "Escort {0} to the jump point"
+	SurviveAmbush = "Survive the ambush"
+}

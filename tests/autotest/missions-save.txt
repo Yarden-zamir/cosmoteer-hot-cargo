@@ -1,0 +1,27 @@
+# Save and load with active Hot Cargo missions: the custom objectives (HotCargoEscort, HotCargoShadyTrap) are saved in the mission log.
+newgame last
+wait 8
+hc_generate all
+hc_accept escort
+hc_accept shady
+hc_shady_spring
+expect hc_trap_state == 2
+save missions
+wait 3
+load missions
+wait 3
+expect hc_active_escort == 1
+expect hc_active_shady == 1
+expect hc_trap_state == 2
+expect hc_ambushers == 2
+hc_mark
+hc_kill_ambush
+expect hc_trap_done == 1
+expect hc_money_gain > 0
+hc_escort_goto
+wait 5
+expect hc_escort_steering == 1
+hc_escort_arrive
+wait 3
+expect hc_escort_done == 1
+quit

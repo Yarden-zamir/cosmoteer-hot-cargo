@@ -1,0 +1,418 @@
+// Hot Cargo mission offers. Added to the end of the sector system generator by mod/missions/actions.rules,
+// so all vanilla stations, bases and bounties exist when these spawners run.
+// Each group has a hc_group_* tag. The autotest command hc_generate finds the groups by that tag.
+Type = None
+SubSpawners
+[
+	&~/Escort
+	&~/FleetAssault
+	&~/ShadyBounty
+]
+
+// Spec 36. A civilian freighter waits next to a station. After the players accept, it flies to a jump point in open space.
+// Raiders wait near the jump point. The freighter moves only while a player is near it (ships far from players are in stasis).
+Escort
+{
+	Type = None
+	Tags = [hc_group_escort]
+	SpawnChance = 60%
+	RootLocation = Tag
+	RootLocationTag = trade_station
+
+	SubSpawners
+	[
+		// The jump point. The escort objective reveals it on acceptance.
+		{
+			Type = Doodads
+			DoodadType = cosmoteer.poi_target_area
+			ScaleFactor = 500
+			Tags = [hc_escort_dest]
+			Distance = [4500, 6500]
+			MinDistanceFromTags = [[sun, 6000], [station, 3000], [bounty, 2000]]
+			MinDistanceFromNebulas = [[ion_storm, 1000]]
+			Undiscovered = true
+			HideIfUnexplored = true
+			ShowOnlyInFog = true
+			SuppressLocationAssertions = true
+
+			SubSpawners
+			[
+				// Raiders. Unique allegiance, so they are hostile to everyone, the freighter included.
+				{
+					Type = Ships
+					Tags = [hc_escort_raider]
+					Count = [2, 3]
+					Distance = [900, 1400]
+					Allegiance = Unique
+					SynchronizeAllegiance = true
+					SuppressLocationAssertions = true
+					FamePerTier = &/TIER_TABLES/StandardFamePerTier
+					MaxFamePerTier = &/TIER_TABLES/StandardMaxFamePerTier
+					ShipCriteria
+					{
+						UseLocalFactionWeights = true
+						UseTierField = true
+						Tier = -1
+						AllowTierRangeExpansion = true
+						Tags = [combat]
+					}
+					AI
+					{
+						Type = Normal
+						ChanceToConsiderSurrenderingToPlayer = 0
+						PatrolRadius = 500
+						TargetAcquireRangeFromOrigin = 2500
+						TargetUnacquireRangeFromOrigin = 3500
+					}
+				}
+			]
+		}
+
+		// The freighter. A small unacquire range makes AggroEnemies fly it to its AI origin all the time,
+		// turning to fight on the way. The escort objective moves the origin to the jump point.
+		{
+			Type = Ships
+			Tags = [hc_escort_ship]
+			Distance = [500, 800]
+			Allegiance = FactionCivilian
+			SuppressLocationAssertions = true
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [trade]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 100
+				TargetAcquireRangeFromOrigin = 150
+				TargetUnacquireRangeFromOrigin = 150
+			}
+
+			SubSpawners
+			[
+				{
+					Type = Mission
+					Metatype = HotCargoEscort
+					SpawnAt = Tag
+					SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+					Faction = OwnerOfTag
+					FactionTag = { Mode=Latest; Tag=hc_escort_ship; }
+					OkayIfFactionTagNotFound = true
+					Objectives
+					[
+						{
+							Type = Sequential
+							SubObjectives
+							[
+								{
+									// ProtectShips starts completed and only fails, so it must sit next to real work.
+									Type = AnyOrder
+									SubObjectives
+									[
+										{
+											Type = HotCargoEscort
+											EscortTag = { Mode=Latest; Tag=hc_escort_ship; }
+											DestinationTag = { Mode=Latest; Tag=hc_escort_dest; }
+											ArrivalRadius = 400
+										}
+										{
+											Type = ProtectShips
+											TargetsTag = { Tag=hc_escort_ship; Max=1; }
+										}
+									]
+								}
+								{
+									Type = ReceiveRewards
+								}
+							]
+						}
+					]
+					// Like a fleet bounty (the raiders also pay kill fame), plus 50% for the babysitting.
+					Rewards
+					[
+						{
+							Type = Money
+							MoneyPerHighTier = &/TIER_TABLES/StandardMoneyPerTier
+							MoneyPerTierMultiplier = 1.5
+							RoundToMultiple = 500
+						}
+						{
+							Type = Fame
+							FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
+							MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+							FamePerTierMultiplier = 1.5
+						}
+						{
+							Type = Reputation
+							ReputationPerHighTier = &/TIER_TABLES/StandardReputationPerTier
+							ReputationPerTierMultiplier = 2
+						}
+					]
+				}
+			]
+		}
+	]
+}
+
+// Spec 37. A raider stronghold (the vanilla pirate base shape) and an allied faction strike group that attacks it.
+// The strike group is a sibling of the stronghold, not a child, because the stronghold synchronizes allegiance to its children.
+FleetAssault
+{
+	Type = None
+	Tags = [hc_group_assault]
+	SpawnChance = 40%
+
+	SubSpawners
+	[
+		: <./Data/modes/career/sectors/sysgen_military_stations.rules>/BaseMilitaryStation
+		{
+			Tags = [station, military_station, hc_assault_station]
+			Features = [Landmark, HideUntilDiscovered]
+			Allegiance = Unique
+		}
+
+		// Rally point of the strike group, away from the stronghold.
+		{
+			Type = None
+			Tags = [hc_assault_rally]
+			RootLocation = Tag
+			RootLocationTag = hc_assault_station
+			Distance = [2800, 3400]
+			MinDistanceFromTags = [[sun, 5000]]
+			MinDistanceFromNebulas = [[ion_storm, 1000]]
+			SuppressLocationAssertions = true
+			SynchronizeFactions = true
+
+			SubSpawners
+			[
+				// Faction military: friendly to the players, hostile to the Unique stronghold.
+				// Their AI origin is the stronghold. Out of stasis, they fly in and attack it.
+				{
+					Type = Ships
+					Tags = [hc_assault_ally]
+					Count = [2, 3]
+					Distance = [0, 250]
+					Allegiance = FactionMilitary
+					SuppressLocationAssertions = true
+					ShipCriteria
+					{
+						UseLocalFactionWeights = true
+						UseTierField = true
+						AllowTierRangeExpansion = true
+						Tags = [combat]
+					}
+					AI
+					{
+						Type = Normal
+						ChanceToConsiderSurrenderingToPlayer = 0
+						PatrolOriginTag = { Mode=Latest; Tag=hc_assault_station; }
+						PatrolRadius = 600
+						TargetAcquireRangeFromOrigin = 1800
+						TargetUnacquireRangeFromOrigin = 2600
+					}
+				}
+			]
+		}
+
+		// The contract. It runs after the strike group, so the mission takes the strike group's faction.
+		{
+			Type = None
+			RootLocation = Tag
+			RootLocationTag = hc_assault_station
+
+			SubSpawners
+			[
+				{
+					Type = Mission
+					Metatype = HotCargoFleetAssault
+					SpawnAt = Tag
+					SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+					Faction = OwnerOfTag
+					FactionTag = { Mode=Latest; Tag=hc_assault_ally; }
+					OkayIfFactionTagNotFound = true
+					Objectives
+					[
+						{
+							Type = Sequential
+							SubObjectives
+							[
+								{
+									Type = DefeatShips
+									TargetsTag = { Tag=hc_assault_station; Max=1; }
+									TargetAreaTag = { Mode=Nearest; Tag=poi_unknown; }
+									TierOffset = 1
+									AutoDiscoverTargetArea = true
+									AllowSurrender = false
+								}
+								{
+									Type = ReceiveRewards
+								}
+							]
+						}
+					]
+					// A vanilla pirate base pays 2x. The strike group carries part of the fight, so this pays 1.5x.
+					Rewards
+					[
+						{
+							Type = Money
+							MoneyPerHighTier = &/TIER_TABLES/StandardMoneyPerTier
+							MoneyPerTierMultiplier = 1.5
+							RoundToMultiple = 1000
+						}
+						{
+							Type = Fame
+							FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
+							MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+							FamePerTierMultiplier = 1.5
+						}
+						{
+							Type = Reputation
+							ReputationPerHighTier = &/TIER_TABLES/StandardReputationPerTier
+							ReputationPerTierMultiplier = 3
+						}
+					]
+				}
+			]
+		}
+	]
+}
+
+// Spec 38 to 40. Looks like a vanilla fugitive bounty, with these tells: no faction seal (no reputation),
+// money x ShadyRewardFactor, and odd wording. The trap objective rolls when the players reach the target.
+ShadyBounty
+{
+	Type = None
+	Tags = [hc_shady, hc_group_shady]
+	SpawnChance = 70%
+	Count = [1, 2]
+	Distance = [0, 19000]
+	MinDistanceFromTags = [[sun, 6000], [station, 4000], [bounty, 3000], [hc_shady, 6000]]
+	MinDistanceFromNebulas = [[ion_storm, 1000]]
+	SuppressLocationAssertions = true
+
+	SubSpawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_shady_ship]
+			Allegiance = Unique
+			FamePerTier = &/TIER_TABLES/StandardFamePerTier
+			MaxFamePerTier = &/TIER_TABLES/StandardMaxFamePerTier
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+				UseEvenShipTypeDistribution = true
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 1000
+				TargetAcquireRangeFromOrigin = 3000
+				TargetUnacquireRangeFromOrigin = 4000
+			}
+
+			SubSpawners
+			[
+				{
+					Type = Doodads
+					Distance = [0, (&../ScaleFactor) - (&../../../AI/PatrolRadius)]
+					ScaleFactor = 2250
+					Tags = [hc_shady_area, poi_unknown]
+					DoodadType = cosmoteer.poi_target_area
+					ShowOnlyInFog = true
+					Undiscovered = true
+					HideIfUnexplored = true
+					AutoRemoveWhenTagDestroyed = hc_shady_ship
+				}
+				{
+					Type = Mission
+					Metatype = HotCargoShadyBounty
+					SpawnAt = Tag
+					SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+					Faction = None
+					Objectives
+					[
+						{
+							Type = Sequential
+							SubObjectives
+							[
+								{
+									Type = AnyOrder
+									SubObjectives
+									[
+										{
+											Type = DefeatShips
+											TargetsTag = { Tag=hc_shady_ship; Max=1; }
+											TargetAreaTag = { Mode=Latest; Tag=hc_shady_area; }
+											AutoDiscoverTargetArea = true
+											AllowSurrender = false
+										}
+										{
+											Type = HotCargoShadyTrap
+											SiteShipTag = { Mode=Latest; Tag=hc_shady_ship; }
+											TriggerDistance = 2500
+											SurvivalRewards
+											[
+												{
+													Type = HotCargoScaled
+													Tunable = ShadyTrapSurvivalReward
+													RoundToMultiple = 500
+													Reward
+													{
+														Type = Money
+														MoneyPerHighTier = &/TIER_TABLES/StandardMoneyPerTier
+														RoundToMultiple = 500
+													}
+												}
+												{
+													Type = HotCargoScaled
+													Tunable = ShadyTrapSurvivalReward
+													Reward
+													{
+														Type = Fame
+														FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
+														MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+													}
+												}
+											]
+										}
+									]
+								}
+								{
+									Type = ReceiveRewards
+								}
+							]
+						}
+					]
+					Rewards
+					[
+						{
+							Type = HotCargoScaled
+							Tunable = ShadyRewardFactor
+							RoundToMultiple = 500
+							Reward
+							{
+								Type = Money
+								MoneyPerHighTier = &/TIER_TABLES/StandardMoneyPerTier
+								RoundToMultiple = 500
+							}
+						}
+						{
+							Type = Fame
+							FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
+							MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+						}
+					]
+				}
+			]
+		}
+	]
+}
