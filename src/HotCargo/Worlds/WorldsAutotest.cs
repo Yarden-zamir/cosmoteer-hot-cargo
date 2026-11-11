@@ -140,6 +140,14 @@ static class WorldsAutotest
             case ["accept", var kind]:
                 _accepted = MissionArea.AcceptOffer(Metatypes[Kind(kind)]);
                 break;
+            // reselect <kind>: after a load, the newest accepted mission of that kind becomes the one that the fields read.
+            case ["reselect", var kind]:
+            {
+                var id = new ID<MissionMetatype>(Metatypes[Kind(kind)]);
+                _accepted = Autotest.RequireRun().Mode.Missions.LastOrDefault(m => m.MetatypeID.Equals(id))
+                    ?? throw new InvalidOperationException($"no {kind} mission in the log");
+                break;
+            }
             case ["mark"]:
                 _markedHeat = Heat(Ship());
                 break;
@@ -223,7 +231,7 @@ static class WorldsAutotest
                 break;
             }
             default:
-                throw new InvalidOperationException("worlds needs: set F V | jumpto TYPE | type TYPE | map | hazard | generate K | accept K | mark | cool | keep | "
+                throw new InvalidOperationException("worlds needs: set F V | jumpto TYPE | type TYPE | map | hazard | generate K | accept K | reselect K | mark | cool | keep | "
                     + "goto current|sun D|pass|away|sundive|outside|lair D | kill TAG");
         }
     }

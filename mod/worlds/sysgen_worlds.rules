@@ -235,28 +235,16 @@ BeltRockTypes
 	{ Type=cosmoteer.megaroid_xl;          ChanceWeight=1/32; }
 ]
 
-// ---- Solar zone (spec 223): the vanilla sun and its heat zone, rich rocks deep in the heat, and a sundive mission.
+// ---- Solar zone (spec 223): the vanilla sun and its heat zone, and a sundive mission.
 // A sun of the default scale 3000 kills inside 1500 and burns out to 3750 from its center (doodad_planet_sun.rules).
-// Spawn hooks for other missions: the spawn flag hc_solar_zone, and the tag hc_deep_ore on the deep rocks.
+// The rich minerals in the heat are the vanilla rare rocks and the Helion seams of the Sunside Ore mission (gameplay area),
+// which sit on any single sun. Other missions can target this archetype with the spawn flag hc_solar_zone.
 SolarZone
 {
 	Type = None
 	Conditions { RequireSpawnFlags = [hc_solar_zone] }
 	SubSpawners
 	[
-		// Rich minerals deep in the heat, on top of the vanilla rare rocks at 1875 to 3375.
-		{
-			Type = Doodads
-			Tags = [rare_asteroid, hc_deep_ore]
-			RootLocation = Tag
-			RootLocationTag = sun
-			Count = [20, 30]
-			Distance = [1700, 2500]
-			MinDistanceFromTags = [[rare_asteroid, 400]]
-			SuppressLocationAssertions = true
-			DoodadTypes = &<./Data/modes/career/sectors/sysgen_suns.rules>/SunAsteroidTypes
-		}
-
 		// Sundive: a flight recorder in the wreck of a ship that fell toward the sun. Get to it, stay for the salvage, get out.
 		{
 			Type = None
@@ -271,7 +259,10 @@ SolarZone
 					DoodadType = cosmoteer.poi_target_area
 					ScaleFactor = &~/SundiveRadius
 					Tags = [hc_sundive_site]
-					Distance = [1900, 2300]
+					// Depth 0.15 to 0.25 of the heat zone. The vanilla heat is harsh on an unshielded ship: at depth 0.5 a Tech Vault
+					// loses all its tech in about 2 s; at depth 0.33 the starting ship loses its control room in about 8 s.
+					// Shields take a tenth of the heat.
+					Distance = [3200, 3420]
 					SuppressLocationAssertions = true
 					Undiscovered = true
 					HideIfUnexplored = true

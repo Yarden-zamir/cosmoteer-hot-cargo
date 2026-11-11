@@ -26,7 +26,7 @@ public sealed class WorldsTunables
     [Serialize(Optional = true)] public float PassWaveDistance = 2500f;
 
     /// <summary>Spec 223: seconds a player ship must stay at the sundive wreck.</summary>
-    [Serialize(Optional = true)] public float SundiveSalvageSeconds = 8f;
+    [Serialize(Optional = true)] public float SundiveSalvageSeconds = 5f;
     /// <summary>Spec 223: heat zone depth (0 = edge, 1 = kill radius) above which the HUD line turns red.</summary>
     [Serialize(Optional = true)] public float HeatWarnDepth = 0.5f;
 

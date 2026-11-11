@@ -26,7 +26,6 @@ HotCargoWorlds
 
 	// Heat zone line on the HUD.
 	HeatZoneFmt = "HEAT ZONE  {0}  depth {1:0}%"
-	HeatZoneShipFmt = "{0}"
 
 	// Missions.
 	HoldPass = "Hold the Pass"
@@ -38,7 +37,7 @@ HotCargoWorlds
 	PassLost = "The raiders took the pass back."
 
 	Sundive = "Sundive"
-	SundiveDesc = "A courier fell toward the star. Its flight recorder still sends from deep in the heat. Dive in, stay with the wreck until the data is out, and get clear of the heat. Shields help."
+	SundiveDesc = "A courier fell toward the star. Its flight recorder still sends from deep in the heat. Dive in, stay with the wreck until the data is out, and get clear of the heat. The heat cooks cargo: a Tech Vault loses units within seconds. Dive fast, raise shields, or move the tech to another ship first."
 	SundiveDiveFmt = "Dive to the wreck (depth {0:0}%)"
 	SundiveSalvageFmt = "Salvage the recorder: {0:0}/{1:0} s"
 	SundiveEscapeFmt = "Get {0} out of the heat"
