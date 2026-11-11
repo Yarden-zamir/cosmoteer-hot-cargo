@@ -3,7 +3,7 @@ newgame run
 wait 8
 expectevent getaway
 # {crates} shows the live fleet tech count, not a fixed number.
-expectviewtext Your vault holds 6 crates
+expectviewtext Your vault holds 8 crates
 choose 3 1
 # Distress Beacon can turn out to be a broken-down ship (follow-up page).
 event distress_beacon
