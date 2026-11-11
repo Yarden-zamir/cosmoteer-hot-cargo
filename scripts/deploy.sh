@@ -17,7 +17,7 @@ trap 'rm -rf "$STAGE"' EXIT
 "$REPO_ROOT/scripts/assemble-mod.sh" "$STAGE/hot_cargo"
 mkdir -p "$STAGE/hot_cargo/csharp" "$STAGE/loader"
 cp "$BUILD/HotCargo.dll" "$BUILD/HotCargo.pdb" "$BUILD/0Harmony.dll" "$STAGE/hot_cargo/csharp/"
-cp "$LOADER" "$STAGE/loader/"
+cp "$LOADER" "$REPO_ROOT/src/HotCargo.Loader/VERSION" "$STAGE/loader/"
 # The tunables file is staged under a temporary name. The PC side decides if it overwrites the live copy.
 if [[ -f "$STAGE/hot_cargo/tunables.rules" ]]; then mv "$STAGE/hot_cargo/tunables.rules" "$STAGE/hot_cargo/tunables.rules.deploy"; fi
 
@@ -46,11 +46,19 @@ if (Test-Path $new) {
   Move-Item $new $live -Force
 }
 
-# Startup hook loader. A running game locks it, so copy it only when it changed.
+# Startup hook loader. A running game locks it, and every worktree builds different bytes,
+# so the loader is replaced only when src/HotCargo.Loader/VERSION changes. Bump VERSION when the loader code changes.
 $loaderDir = Join-Path $game "Bin\HotCargoLoader"; New-Item -ItemType Directory -Force $loaderDir | Out-Null
 $loaderDll = Join-Path $loaderDir "HotCargo.Loader.dll"; $newLoader = Join-Path $tmpDir "loader\HotCargo.Loader.dll"
-if (-not (Test-Path $loaderDll) -or (Get-FileHash $loaderDll).Hash -ne (Get-FileHash $newLoader).Hash) {
-  try { Copy-Item $newLoader $loaderDll -Force } catch { throw "HotCargo.Loader.dll changed but a running game uses it. Stop all Cosmoteer instances once, then deploy again." }
+$verFile = Join-Path $loaderDir "VERSION"; $newVer = (Get-Content (Join-Path $tmpDir "loader\VERSION") -Raw).Trim()
+$oldVer = if (Test-Path $verFile) { (Get-Content $verFile -Raw).Trim() } else { "" }
+if (-not (Test-Path $loaderDll) -or $oldVer -ne $newVer) {
+  try { Copy-Item $newLoader $loaderDll -Force; [IO.File]::WriteAllText($verFile, $newVer) }
+  catch {
+    # Version 1 was installed before VERSION files existed. Same code, so keep it.
+    if ($oldVer -eq "" -and $newVer -eq "1") { "loader in use; keeping the installed copy (same code)"; [IO.File]::WriteAllText($verFile, $newVer) }
+    else { throw "HotCargo.Loader.dll version $newVer must replace $oldVer, but a running game uses it. Stop all Cosmoteer instances once, then deploy again." }
+  }
 }
 [IO.File]::WriteAllText((Join-Path $loaderDir "hot_cargo_default.txt"), (Join-Path $mainMods "hot_cargo\csharp\HotCargo.dll"))
 $rc = Join-Path $game "Bin\Cosmoteer.runtimeconfig.json"; $orig = "$rc.hot_cargo_orig"
