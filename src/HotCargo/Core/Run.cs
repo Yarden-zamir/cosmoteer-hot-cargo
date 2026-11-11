@@ -196,6 +196,7 @@ public sealed class Run
     public void Lose(string reason)
     {
         if (State.Result != RunResult.Running) return;
+        if (Dev.Autotest.GodMode) { Log.Info($"run loss blocked by autotest godmode: {reason}"); return; }
         State.Result = RunResult.Lost;
         State.EndReason = reason;
         Log.Info($"run lost: {reason}");
