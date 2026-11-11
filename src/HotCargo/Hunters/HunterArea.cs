@@ -40,6 +40,8 @@ public static class HunterArea
 
         Autotest.Fields["hunterwaves"] = () => HunterSpawner.WavesSpawned;
         // strikeinterval <seconds>: sets Hunters.StrikeWaveIntervalSeconds for this run. Test only.
+        // maxhunters <count>: sets Hunters.MaxLiveHunters for this run. Test only.
+        Autotest.Commands["maxhunters"] = arg => Autotest.RequireRun().T.Hunters.MaxLiveHunters = int.Parse(arg, CultureInfo.InvariantCulture);
         Autotest.Commands["strikeinterval"] = arg => Autotest.RequireRun().T.Hunters.StrikeWaveIntervalSeconds = float.Parse(arg, CultureInfo.InvariantCulture);
         Autotest.Commands["markhunters"] = _ =>
         {
