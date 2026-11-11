@@ -2,9 +2,11 @@
 # Run every tests/autotest/*.txt one after another (one worktree runs one autotest at a time), then every co-op test
 # (scripts/autotest-mp-all.sh), and print a summary.
 # Usage: autotest-all.sh [timeout-per-test]
-# Exit code 0 only if every test passed. Full logs go to /tmp/hot_cargo_autotest_<name>.log.
+# Exit code 0 only if every test passed. Full logs go to /tmp/hot_cargo_autotest_<worktree>_<name>.log.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+# Each worktree writes its own logs, so parallel runs from different worktrees do not mix.
+WT="$(basename "$(pwd)")"
 TIMEOUT="${1:-400}"
 FAILED=()
 # A clean tree that stays on the same commit gets a pass marker, which scripts/release.sh requires.
@@ -12,7 +14,7 @@ START_SHA="$(git rev-parse HEAD)"
 CLEAN_AT_START="$([[ -z "$(git status --porcelain)" ]] && echo yes || echo no)"
 for t in tests/autotest/*.txt; do
   name="$(basename "$t" .txt)"
-  if scripts/autotest.sh "$t" "$TIMEOUT" > "/tmp/hot_cargo_autotest_$name.log" 2>&1; then echo "PASS $name"; else echo "FAIL $name"; FAILED+=("$name"); fi
+  if scripts/autotest.sh "$t" "$TIMEOUT" > "/tmp/hot_cargo_autotest_${WT}_$name.log" 2>&1; then echo "PASS $name"; else echo "FAIL $name"; FAILED+=("$name"); fi
 done
 # Co-op tests take two slots each. They are part of a full pass, so a release is checked in multiplayer too.
 if ! scripts/autotest-mp-all.sh; then FAILED+=("co-op"); fi
