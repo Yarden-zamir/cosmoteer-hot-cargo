@@ -38,6 +38,7 @@ public static class MechanicsArea
         new("capture", "HotCargoCapture", t => t.CaptureChance),
         new("survey", "HotCargoSurvey", t => t.SurveyChance),
         new("guard", "HotCargoClaimJumpers", t => t.MiningGuardChance),
+        new("listening", "HotCargoListeningPost", t => t.ListeningPostChance),
     ];
 
     static readonly ID<ResourceRules> OreId = new("yarden_zamir.helion_ore");
@@ -50,12 +51,14 @@ public static class MechanicsArea
         {
             var id = new ID<MissionMetatype>(kind.Metatype);
             Autotest.Fields[$"mech_offers_{kind.Name}"] = () => MissionArea.Offers(RequireSim()).Count(m => m.MetatypeID.Equals(id));
-            Autotest.Fields[$"mech_active_{kind.Name}"] = () => Missions(kind).Count(m => m.Completion == CompletionState.InProgress);
-            Autotest.Fields[$"mech_completed_{kind.Name}"] = () => Missions(kind).Count(m => m.Completion == CompletionState.Completed);
-            Autotest.Fields[$"mech_failed_{kind.Name}"] = () => Missions(kind).Count(m => m.Completion == CompletionState.Failed);
+            Autotest.Fields[$"mech_active_{kind.Name}"] = () => RequireRun().Mode.Missions.Count(m => m.MetatypeID.Equals(id) && m.Completion == CompletionState.InProgress);
+            // Completion of the last accepted mission of the kind: 0 in progress, 1 completed, 2 failed. The game drops failed missions from the log,
+            // so the test keeps the mission object. A mission waits in progress for its rewards after the main goal completes.
+            Autotest.Fields[$"mech_state_{kind.Name}"] = () => (int)Accepted(kind).Completion;
+            Autotest.Fields[$"mech_goal_{kind.Name}"] = () => (int)Goal(Accepted(kind)).Completion;
         }
         Autotest.Commands["mech_generate"] = TestGenerate;
-        Autotest.Commands["mech_accept"] = arg => MissionArea.AcceptOffer(Find(arg).Metatype);
+        Autotest.Commands["mech_accept"] = arg => _accepted.Add((Find(arg), MissionArea.AcceptOffer(Find(arg).Metatype)));
         Autotest.Commands["mech_expire"] = TestExpire;
         Autotest.Fields["mech_chance_siege"] = () => MissionArea.FindGroup(RequireSim(), Find("siege").GroupTag).SpawnChance;
 
@@ -63,6 +66,27 @@ public static class MechanicsArea
         Autotest.Commands["mech_hold_goto"] = _ => MissionArea.TeleportPlayers(Hold().Target.Location ?? throw new InvalidOperationException("hold-out target is not in this system"));
         Autotest.Commands["mech_hold_skip"] = arg => Hold().GuardedSeconds += double.Parse(arg, CultureInfo.InvariantCulture);
         Autotest.Commands["mech_hold_kill"] = _ => RemoveShip(Hold().Target.TargetShip ?? throw new InvalidOperationException("hold-out target is not live"));
+        Autotest.Commands["mech_order"] = arg =>
+        {
+            var o = Hold();
+            o.Order(RequireSim(), Enum.Parse<HoldOutOrder>(arg, ignoreCase: true), RequireRun().Game.LocalPlayerIndex);
+            Autotest.Wait(1);
+        };
+        Autotest.Commands["mech_scan_range"] = _ =>
+        {
+            var o = Hold();
+            Vector2 b = o.BaseLocation ?? throw new InvalidOperationException("hold-out has no base");
+            Ship scout = o.Target.TargetShip ?? throw new InvalidOperationException("scout is not live; run mech_hold_goto and wait");
+            Vector2 away = scout.DetWorldCenter - b;
+            Vector2 at = b + away / away.Length * (TunablesFor(RequireRun().Game).ScanRange - 500f);
+            Autotest.Teleport(scout, at);
+            MissionArea.TeleportPlayers(at);
+        };
+        Autotest.Fields["mech_hold_phase"] = () => (int)Hold().Phase;
+        Autotest.Fields["mech_hold_pay"] = () => Hold().PayFactor;
+        Autotest.Fields["mech_hold_earned"] = () => Hold().EarnedFraction(RequireRun().Game);
+        Autotest.Fields["mech_hold_settled"] = () => Hold().Settled ?? -1f;
+        Autotest.Fields["mech_reward_money"] = () => Hold().Mission?.Rewards.OfType<Cosmoteer.Modes.Career.Missions.Rewards.MoneyReward>().Sum(m => m.Money) ?? -1;
         Autotest.Fields["mech_hold_seconds"] = () => Hold().GuardedSeconds;
         Autotest.Fields["mech_hold_guarded"] = () => Hold().Guarded ? 1 : 0;
         Autotest.Fields["mech_hold_tier"] = () => Hold().Tier;
@@ -79,6 +103,7 @@ public static class MechanicsArea
         Autotest.Commands["mech_proto_goto"] = _ => MissionArea.TeleportPlayers(Proto().Holder.Location(RequireSim()) ?? throw new InvalidOperationException("carrier is not in this system"));
         Autotest.Commands["mech_proto_break"] = arg => { var core = Core(out var holder); core.OnHit(core.Health); };
         Autotest.Commands["mech_proto_wreck"] = arg => { Core(out var holder); Wreck(holder); };
+        Autotest.Commands["mech_proto_surrender"] = arg => { Core(out var holder); ((CareerSimModeManager)RequireSim().Mode).SurrenderedAIs.Add(holder.UniqueID); Autotest.Wait(1); };
         Autotest.Commands["mech_proto_near"] = _ => MissionArea.TeleportPlayers(Proto().LastCoreLocation ?? throw new InvalidOperationException("core is not installed"));
         Autotest.Fields["mech_proto_core"] = () => Proto() is { CoreCell: not null } && TryCore() is not null ? 1 : 0;
 
@@ -104,6 +129,7 @@ public static class MechanicsArea
 
         // Sun mining (spec 138): helion ore deposits on live asteroids, and their distance to the nearest sun.
         Autotest.Commands["mech_sun_goto"] = _ => MissionArea.TeleportPlayers(SunOreShips().FirstOrDefault()?.DetWorldCenter ?? SunOreStasis().First());
+        Autotest.Commands["mech_deliver_goto"] = _ => MissionArea.TeleportPlayers(Deliver().ToShip.Location ?? throw new InvalidOperationException("delivery station is not in this system"));
         Autotest.Commands["mech_deliver"] = arg => TestDeliver(int.Parse(arg, CultureInfo.InvariantCulture));
         Autotest.Fields["mech_sun_ore_asteroids"] = () => SunOreShips().Count() + SunOreStasis().Count();
         Autotest.Fields["mech_sun_ore_units"] = () => SunOreShips().Sum(s => s.Parts.Where(p => p.Rules.Resources.Any(r => r.Type == OreId)).Sum(p => p.Rules.Resources.First(r => r.Type == OreId).Quantity));
@@ -147,14 +173,36 @@ public static class MechanicsArea
     static Run RequireRun() => Autotest.RequireRun();
     static SimRoot RequireSim() => RequireRun().Game.Sim ?? throw new InvalidOperationException("no sim");
 
-    static IEnumerable<Mission> Missions(Kind kind)
+    /// <summary>Missions that mech_accept accepted, in order. Test state only.</summary>
+    static readonly List<(Kind Kind, Mission Mission)> _accepted = [];
+
+    static Mission Accepted(Kind kind) =>
+        _accepted.LastOrDefault(a => a.Kind == kind).Mission ?? throw new InvalidOperationException($"no {kind.Name} mission accepted in this test");
+
+    /// <summary>The objective that holds the mission's real work (not the Sequential, TimeLimit or ReceiveRewards around it).</summary>
+    static Objective Goal(Mission m)
     {
-        var id = new ID<MissionMetatype>(kind.Metatype);
-        return RequireRun().Mode.Missions.Where(m => m.MetatypeID.Equals(id));
+        var all = new List<Objective>();
+        foreach (var o in m.Objectives) o.GetObjectives(all);
+        return all.FirstOrDefault(o => o is HoldOutObjective or PrototypeObjective or TowObjective or CaptureObjective or SurveyObjective or DeliverResourcesObjective)
+            ?? throw new InvalidOperationException($"{m.MetatypeID} has no mechanics objective");
     }
 
-    static T Require<T>() where T : Objective =>
-        MissionArea.FindObjective<T>() ?? throw new InvalidOperationException($"no accepted mission has a {typeof(T).Name}");
+    /// <summary>
+    /// The objective of the type in the latest mission in the log that has one (this also works after a load), else in the last mission
+    /// that mech_accept accepted (the game drops failed missions from the log).
+    /// </summary>
+    static T Require<T>() where T : Objective
+    {
+        if (MissionArea.FindObjective<T>() is { } inLog) return inLog;
+        for (int i = _accepted.Count - 1; i >= 0; i--)
+        {
+            var found = new List<T>();
+            foreach (var o in _accepted[i].Mission.Objectives) o.GetObjectives(found);
+            if (found.Count > 0) return found[0];
+        }
+        throw new InvalidOperationException($"no accepted mission has a {typeof(T).Name}");
+    }
 
     static HoldOutObjective Hold() => Require<HoldOutObjective>();
     static PrototypeObjective Proto() => Require<PrototypeObjective>();
@@ -164,8 +212,8 @@ public static class MechanicsArea
     static DeliverResourcesObjective Deliver() => Require<DeliverResourcesObjective>();
 
     /// <summary>
-    /// Runs one mechanics group with SpawnChance 1. Arg: kind name, then "nostorm" for the survey: the start system has no ion storm,
-    /// so the test lifts the in-storm rule of the markers for this one run.
+    /// Runs one mechanics group with SpawnChance 1. Arg: kind name, then "nonebula" to lift the in-nebula rules of the group for this one run
+    /// (the start system has no ion storm, and its gas cloud may not reach a free spot).
     /// </summary>
     static void TestGenerate(string arg)
     {
@@ -173,7 +221,7 @@ public static class MechanicsArea
         var kind = Find(parts.Length > 0 ? parts[0] : "");
         var sim = RequireSim();
         var lifted = new List<(SimObjectSpawner Spawner, List<(ID<Cosmoteer.Nebulas.NebulaTypeRules>, float)>? Old)>();
-        if (parts.Contains("nostorm"))
+        if (parts.Contains("nonebula"))
             foreach (var s in MissionArea.AllSpawners([MissionArea.FindGroup(sim, kind.GroupTag)]).OfType<SimObjectSpawner>().Where(s => s.MaxDistanceFromNebulas is not null))
             {
                 lifted.Add((s, s.MaxDistanceFromNebulas));
@@ -186,7 +234,7 @@ public static class MechanicsArea
     /// <summary>Moves the start of the time limit of the latest mission of the kind into the past, so it expires on the next tick.</summary>
     static void TestExpire(string arg)
     {
-        var mission = Missions(Find(arg)).LastOrDefault() ?? throw new InvalidOperationException($"no accepted {arg} mission");
+        var mission = Accepted(Find(arg));
         var limits = new List<TimeLimitObjective>();
         foreach (var o in mission.Objectives) o.GetObjectives(limits);
         var limit = limits.FirstOrDefault() ?? throw new InvalidOperationException($"{arg} has no time limit");
@@ -215,15 +263,18 @@ public static class MechanicsArea
         return TryCore() ?? throw new InvalidOperationException("the core is not on the carrier");
     }
 
+    /// <summary>
+    /// Puts the live hulk next to the station, then the players there. The station may be in stasis, so the spot uses only its center:
+    /// 700 past the hulk's own radius is inside DeliveryRadius for any station radius.
+    /// </summary>
     static void TestTowDeliver()
     {
         var o = Tow();
         Ship hulk = o.Hulk.Live(RequireSim()) ?? throw new InvalidOperationException("hulk is not live; run mech_tow_goto and wait");
-        Ship station = o.Station.TargetShip ?? throw new InvalidOperationException("station is not live");
-        Circle s = station.DetWorldBoundingCircle;
-        Vector2 at = s.Center + new Vector2(s.Radius + hulk.DetWorldBoundingCircle.Radius + 200f, 0f);
+        Vector2 station = o.Station.Location ?? throw new InvalidOperationException("station is not in this system");
+        Vector2 at = station + new Vector2(hulk.DetWorldBoundingCircle.Radius + 700f, 0f);
         Autotest.Teleport(hulk, at);
-        MissionArea.TeleportPlayers(at + new Vector2(0f, 600f));
+        MissionArea.TeleportPlayers(at + new Vector2(0f, 800f));
     }
 
     /// <summary>The capture path through crew: the target becomes a wreck, then the first player's crew claim it.</summary>

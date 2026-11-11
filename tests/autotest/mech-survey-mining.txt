@@ -1,0 +1,39 @@
+# Storm survey (spec 136) and sun mining (spec 138).
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+# The start system has no ion storm, so the test lifts the in-storm rule of the markers.
+mech_generate survey nonebula
+mech_accept survey
+expect mech_survey_markers == 3
+log sensor
+expect mech_survey_done == 0
+mech_survey_next
+pause off
+wait 20
+expect mech_survey_done >= 1
+mech_survey_next
+wait 20
+mech_survey_next
+wait 20
+expect mech_goal_survey == 1
+# Sun mining: ore deposits sit on the seam asteroids; a sale to the station counts; the time limit fails it.
+mech_generate sunmining
+mech_accept sunmining
+mech_sun_goto
+wait 5
+expect mech_sun_ore_units >= 30
+expect mech_deliver_target >= 30
+mech_deliver_goto
+wait 3
+mech_deliver 20
+expect mech_deliver_count == 20
+expect mech_goal_sunmining == 0
+mech_deliver 30
+expect mech_goal_sunmining == 1
+mech_generate sunmining
+mech_accept sunmining
+mech_expire sunmining
+expect mech_state_sunmining == 2
+quit

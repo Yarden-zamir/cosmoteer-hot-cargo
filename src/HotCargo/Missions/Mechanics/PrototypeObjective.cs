@@ -25,8 +25,8 @@ namespace HotCargo.Missions.Mechanics;
 /// <summary>
 /// Rules type "HotCargoPrototype" (spec 133): a pirate ship carries a Prototype Core part. Recover it intact.
 /// The core goes onto the carrier's hull the first time the carrier is live after the players accept (ships in stasis have no parts).
-/// Recovered: the ship that holds the core is a wreck, has surrendered to the players, or belongs to a player,
-/// and a human ship is within RecoverRange of the core. The crew then lift the core out (the part goes away).
+/// Recovered: the ship that holds the core surrenders to the players (they hand the core over at once), or it is a wreck or a
+/// player ship and a human ship is within RecoverRange of the core. The crew then lift the core out (the part goes away).
 /// Failed: the core part is destroyed, or the ship that holds it is gone.
 /// When the carrier breaks apart, the core moves to a new ship with the same cell; the objective follows it.
 /// </summary>
@@ -146,16 +146,17 @@ internal sealed class PrototypeObjective : Objective
         if (core is null) { Lose("the core part was destroyed"); return; }
         Vector2 at = holder.DetTransformPointToWorld(core.LocalCenter);
         LastCoreLocation = at;
-        if (!IsSecured(sim, holder)) return;
-        if (!sim.Ships.HumanPlayerSignificantShips.Any(s => s != holder && MechanicsModel.Gap(s.DetWorldCenter.DistanceTo(at), s.DetWorldBoundingCircle.Radius, 0f) <= RecoverRange)) return;
-        Log.Info($"prototype core recovered from {holder.Metadata.PlainShipName} (junk={holder.IsJunk}, player={holder.Metadata.PlayerIndex})");
+        // A carrier that surrendered hands the core over at once: without a faction it leaves the system soon after (AIExitSectorModule).
+        bool surrendered = ((CareerSimModeManager)sim.Mode).SurrenderedAIs.Contains(holder.UniqueID);
+        if (!surrendered)
+        {
+            if (!holder.IsJunk && !holder.IsHumanPlayerShip) return;
+            if (!sim.Ships.HumanPlayerSignificantShips.Any(s => s != holder && MechanicsModel.Gap(s.DetWorldCenter.DistanceTo(at), s.DetWorldBoundingCircle.Radius, 0f) <= RecoverRange)) return;
+        }
+        Log.Info($"prototype core recovered from {holder.Metadata.PlainShipName} (surrendered={surrendered}, junk={holder.IsJunk}, player={holder.Metadata.PlayerIndex})");
         holder.Parts.RemovePart(core, PartsManager.CrewAction.None, destroyed: false, removeDoors: true);
         Complete();
     }
-
-    /// <summary>The holder is out of the fight: a wreck, surrendered to the players, or a player ship (claimed with crew).</summary>
-    static bool IsSecured(SimRoot sim, Ship holder) =>
-        holder.IsJunk || holder.IsHumanPlayerShip || ((CareerSimModeManager)sim.Mode).SurrenderedAIs.Contains(holder.UniqueID);
 
     /// <summary>
     /// Puts the core on the carrier's hull. A carrier that is already a wreck (the players broke it before they accepted) cannot take it,

@@ -1,0 +1,39 @@
+# Listening Post (spec 140, 141): the scout follows the players, the scan starts only near the base, intensive scans raise the pay,
+# and leaving early pays per survived wave.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+# The start system's gas cloud may not reach a free spot near the new base, so the test lifts the in-cloud rule.
+mech_generate listening nonebula
+mech_accept listening
+expect mech_hold_phase == 0
+mech_hold_goto
+pause off
+wait 4
+# Far from the base: the scan cannot start, and the clock does not run.
+mech_order startscan
+expect mech_hold_phase == 0
+expect mech_hold_seconds == 0
+mech_scan_range
+wait 3
+mech_order startscan
+expect mech_hold_phase == 1
+wait 8
+expect mech_hold_guarded == 1
+expect mech_wave_ships >= 1
+mech_order intensive
+expect mech_hold_pay >= 1.25
+mech_order intensive
+mech_order intensive
+# Spec 140 default: at most two intensive scans before each wave.
+expect mech_hold_pay <= 1.51
+expect mech_hold_pay >= 1.49
+mech_hold_skip 90
+wait 1
+# 180 s in 45 s waves: 4 intervals. About 100 s held: 2 intervals.
+expect mech_hold_earned == 0.5
+mech_order leave
+expect mech_goal_listening == 1
+expect mech_hold_settled == 0.5
+quit

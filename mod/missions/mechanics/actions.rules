@@ -1,4 +1,4 @@
-// Hot Cargo mechanics missions (spec 130 to 139): drone siege, prototype retrieval, sun mining, tow, capture, storm survey, claim jumpers.
+// Hot Cargo mechanics missions (spec 130 to 139): drone siege, prototype retrieval, sun mining, tow, capture, storm survey, claim jumpers, listening post.
 {
 	Action = Add
 	AddTo = "<modes/career/sectors/sector_basic/sector_basic.rules>/Sector/SystemGenerator/Spawners"
@@ -85,6 +85,12 @@
 			NameKey = "HotCargoMechanics/ClaimJumpers"
 			DescriptionKey = "HotCargoMechanics/ClaimJumpersDesc"
 			CategoryID = stations
+		}
+		HotCargoListeningPost
+		{
+			NameKey = "HotCargoMechanics/ListeningPost"
+			DescriptionKey = "HotCargoMechanics/ListeningPostDesc"
+			CategoryID = faction_wars
 		}
 	}
 }

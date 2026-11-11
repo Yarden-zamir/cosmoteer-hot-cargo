@@ -13,6 +13,7 @@ SubSpawners
 	&~/Capture
 	&~/Survey
 	&~/ClaimJumpers
+	&~/ListeningPost
 ]
 
 // Spec 132. A faction listening post in open space. Tiny drones attack it in waves for five minutes of guarded time.
@@ -223,12 +224,14 @@ Prototype
 
 // Spec 138. Helion Ore asteroids in one seam inside the heat zone of a single sun (binary suns are too small and too close together).
 // Sun scale 3000: instant kill inside 1500, heat damage out to 3750. The seam sits at 2650 from the sun, asteroids within 700 of it.
+// Hooks for other system generators (for example a solar zone archetype): any doodad with the tag "sun" can host the seam;
+// a sector type with the spawn flag hc_no_sun_mining gets none. The seam carries the tags hc_sun_seam and hc_sun_ore.
 SunMining
 {
 	Type = None
 	Tags = [hc_mech_sunmining]
 	SpawnChance = 25%
-	Conditions { ProhibitSpawnFlags = [binary_sun, no_sun] }
+	Conditions { ProhibitSpawnFlags = [binary_sun, no_sun, hc_no_sun_mining] }
 	RootLocation = Tag
 	RootLocationTag = sun
 
@@ -738,6 +741,150 @@ ClaimJumpers
 							TrailWeight = 1
 							RivalGroup = "ore_claims"
 							InformantChance = 5%
+						}
+					]
+				}
+			]
+		}
+	]
+}
+
+// Spec 140. A faction listening post hides in the gas cloud near a hostile base. Its scout must get within Mechanics.ScanRange
+// of the base; the players pick the spot and start the scan from the mission HUD. The scan alerts the base, and waves come from its side.
+// The base is the vanilla military station shape on a hostile side, like the Joint Strike stronghold.
+ListeningPost
+{
+	Type = None
+	Tags = [hc_mech_listening]
+	SpawnChance = 15%
+	Distance = [0, 20000]
+	MinDistanceFromTags = [[sun, 7500], [station, 6000], [ftl_gate, 3000], [bounty, 3000]]
+	MinDistanceFromNebulas = [[electron, 1000], [ion_storm, 1000]]
+	SuppressLocationAssertions = true
+
+	SubSpawners
+	[
+		: <./Data/modes/career/sectors/sysgen_military_stations.rules>/BaseMilitaryStation
+		{
+			Tags = [station, military_station, hc_lp_base]
+			Features = [Landmark, HideUntilDiscovered]
+			Allegiance = Unique
+			Distance = 0
+			MinDistanceFromTags = []
+		}
+
+		// The post and its scout, a few kilometres away inside the gas cloud.
+		{
+			Type = None
+			Tags = [hc_lp_post_area]
+			Distance = [5500, 7000]
+			MaxDistanceFromNebulas = [[cloudy, 0]]
+			MinDistanceFromTags = [[sun, 5000], [station, 2500]]
+			SuppressLocationAssertions = true
+			SynchronizeFactions = true
+
+			SubSpawners
+			[
+				{
+					Type = Ships
+					Tags = [hc_lp_post]
+					Allegiance = FactionMilitary
+					ShipCriteria
+					{
+						UseLocalFactionWeights = true
+						Tier = [1, 4]
+						AllowTierRangeExpansion = true
+						Tags = [defense]
+					}
+					AI
+					{
+						Type = DefensePlatform
+						ChanceToConsiderSurrenderingToPlayer = 0
+					}
+				}
+				// The scout follows the players while they look for a scan spot. A small unacquire range keeps it near its AI origin.
+				{
+					Type = Ships
+					Tags = [hc_lp_scout]
+					Distance = [200, 350]
+					Allegiance = FactionMilitary
+					SuppressLocationAssertions = true
+					ShipCriteria
+					{
+						UseLocalFactionWeights = true
+						Tier = [1, 3]
+						AllowTierRangeExpansion = true
+						Tags = [combat]
+					}
+					AI
+					{
+						Type = Normal
+						ChanceToConsiderSurrenderingToPlayer = 0
+						PatrolRadius = 100
+						TargetAcquireRangeFromOrigin = 300
+						TargetUnacquireRangeFromOrigin = 300
+					}
+				}
+				{
+					Type = Mission
+					Metatype = HotCargoListeningPost
+					SpawnAt = Tag
+					SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+					Faction = OwnerOfTag
+					FactionTag = { Mode=Latest; Tag=hc_lp_scout; }
+					OkayIfFactionTagNotFound = true
+					Objectives
+					[
+						{
+							Type = Sequential
+							SubObjectives
+							[
+								{
+									Type = TimeLimit
+									TimeLimit = 30:00
+									SubObjectives
+									[
+										{
+											Type = HotCargoHoldOut
+											TargetTag = { Mode=Latest; Tag=hc_lp_scout; }
+											BaseTag = { Mode=Latest; Tag=hc_lp_base; }
+											Profile = Scan
+										}
+									]
+								}
+								{
+									Type = ReceiveRewards
+								}
+							]
+						}
+					]
+					// Four waves next to a hostile base: 1.75x money (more with intensive scans), 1.25x fame. Each survived wave keeps its share.
+					Rewards
+					[
+						{
+							Type = Money
+							MoneyPerHighTier = &/TIER_TABLES/StandardMoneyPerTier
+							MoneyPerTierMultiplier = 1.75
+							RoundToMultiple = 500
+						}
+						{
+							Type = Fame
+							FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
+							MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+							FamePerTierMultiplier = 1.25
+						}
+						{
+							Type = Reputation
+							ReputationPerHighTier = &/TIER_TABLES/StandardReputationPerTier
+							ReputationPerTierMultiplier = 2
+						}
+						// Spies talk to spies: a small informant risk, and the scan itself is loud.
+						{
+							Type = HotCargoContract
+							AcceptFee = 0
+							FlatHeat = 3
+							TrailWeight = 1
+							InformantChance = 10%
 						}
 					]
 				}

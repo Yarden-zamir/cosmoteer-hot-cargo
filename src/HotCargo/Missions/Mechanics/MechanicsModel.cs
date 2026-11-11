@@ -24,6 +24,19 @@ public static class MechanicsModel
         return Math.Max(0, Count(after, firstWave, interval) - Count(before, firstWave, interval));
     }
 
+    /// <summary>Wave intervals in a hold of total seconds: total ÷ interval, rounded up, at least 1.</summary>
+    public static int Intervals(double total, double interval)
+    {
+        if (interval <= 0) throw new ArgumentOutOfRangeException(nameof(interval), interval, "must be above 0");
+        return Math.Max(1, (int)Math.Ceiling(total / interval));
+    }
+
+    /// <summary>
+    /// Spec 141: the share of the pay that leaving early keeps. One share for each whole wave interval survived, out of Intervals(total, interval).
+    /// </summary>
+    public static float EarnedFraction(double guarded, double total, double interval) =>
+        Math.Clamp((float)Math.Floor(Math.Max(0, guarded) / interval) / Intervals(total, interval), 0f, 1f);
+
     /// <summary>Gap between two circles, 0 when they touch or overlap.</summary>
     public static float Gap(float centerDistance, float radiusA, float radiusB) => Math.Max(0f, centerDistance - radiusA - radiusB);
 

@@ -19,8 +19,10 @@ mech_generate tow
 expect mech_offers_tow >= 1
 mech_generate capture
 expect mech_offers_capture >= 1
-mech_generate survey nostorm
+mech_generate survey nonebula
 expect mech_offers_survey >= 1
 mech_generate guard
 expect mech_offers_guard >= 1
+mech_generate listening nonebula
+expect mech_offers_listening >= 1
 quit

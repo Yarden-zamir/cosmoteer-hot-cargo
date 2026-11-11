@@ -4,11 +4,12 @@ HotCargoMechanics
 	DroneSiegeDesc = "Someone parked a drone carrier near the {faction_name} listening post <b>{target_ship}</b> in the {mission_location} system, and the drones keep coming. "\
 	                 "Hold the post for {hold_minutes} minutes and the {faction_name} pays {money}. "\
 	                 "The clock only runs while one of your ships is near the post. Any crewed ship counts: "\
-	                 "use <b>Build New Ship</b> next to the post, give it a reactor, a few guns and a crew of its own, and let it stand watch while you get on with your day."
+	                 "use <b>Build New Ship</b> next to the post, give it a reactor, a few guns and a crew of its own, and let it stand watch while you get on with your day. "\
+	                 "Had enough? Leave early from the mission panel and keep the pay for the waves you held off."
 	Prototype = "Prototype Retrieval"
 	PrototypeDesc = "Pirates aboard the <b>{target_ship}</b> in the {mission_location} system lifted a prototype core from a corporate yard and bolted it to their hull. "\
-	                "A broker wants it back in one piece and pays {money}. Pick your targets: cripple their reactors, bridge or crew until the ship is a dead hulk, "\
-	                "or beat them until they hail you to surrender, and accept. Then bring a ship alongside the core and your crew lift it out. "\
+	                "A broker wants it back in one piece and pays {money}. Pick your targets: cripple their reactors, bridge or crew until the ship is a dead hulk "\
+	                "and bring a ship alongside the core so your crew can lift it out. Or beat them until they hail you to surrender, and accept: they hand it over. "\
 	                "If the core breaks, there is no deal."
 	SunMining = "Sunside Ore"
 	SunMiningDesc = "Helion ore only forms on rocks that bake in a sun's glare, and there is a seam of it in the {mission_location} system. "\
@@ -29,7 +30,13 @@ HotCargoMechanics
 	ClaimJumpers = "Claim Jumpers"
 	ClaimJumpersDesc = "The mining barge <b>{target_ship}</b> works a rich claim in the {mission_location} system, and raiders want it. "\
 	                   "Keep the barge alive for {hold_minutes} minutes and the {faction_name} pays {money}. "\
-	                   "The clock only runs while one of your ships is near the barge, so a gun platform of your own can stand watch in your place."
+	                   "The clock only runs while one of your ships is near the barge, so a gun platform of your own can stand watch in your place. "\
+	                   "You can leave early and keep the pay for the waves you held off."
+	ListeningPost = "Listening Post"
+	ListeningPostDesc = "A {faction_name} listening post hides in the gas cloud of the {mission_location} system, a few kilometres from a hostile base. "\
+	                    "Its handler needs the scout <b>{target_ship}</b> taken within {scan_km} km of the base. Pick your spot and start the scan from the mission panel. "\
+	                    "The scan lights you up, and the base sends {wave_count} waves. Each wave you survive earns its share of {money}. "\
+	                    "Before a wave you can order an intensive scan: a harder wave, {intensive_percent}% more pay. If it gets too hot, leave early and keep what you earned."
 
 	HoldFmt = "Defend {0}: {1}:{2} left"
 	HoldPaused = "No ship on station: the clock is stopped"
@@ -38,6 +45,10 @@ HotCargoMechanics
 	TowFmt = "Bring {0} in to {1}"
 	CaptureFmt = "Capture {0} intact"
 	SurveyLine = "Scan storm markers"
+	ScanEscortFmt = "Take {0} within {1} km of the base"
+	OrderStartScan = "<b>[Click]</b> Start the scan here"
+	OrderIntensiveFmt = "<b>[Click]</b> Intensive scan: harder next wave, +{0}% pay (now x{1})"
+	OrderLeaveFmt = "<b>[Click]</b> Leave now and keep {0} credits"
 	ScanFmt = "Scanning: {0}%"
 
 	PrototypeCore = "Prototype Core"

@@ -14,6 +14,7 @@ public sealed class MechanicsTunables
     [Serialize(Optional = true)] public float CaptureChance = 0.15f;
     [Serialize(Optional = true)] public float SurveyChance = 0.25f;
     [Serialize(Optional = true)] public float MiningGuardChance = 0.15f;
+    [Serialize(Optional = true)] public float ListeningPostChance = 0.15f;
 
     /// <summary>Spec 132: Drone Siege. Tier-1 to tier-3 drones, many of them, for five minutes.</summary>
     [Serialize(Optional = true)] public HoldOutTunables Siege = new()
@@ -31,7 +32,23 @@ public sealed class MechanicsTunables
         ShipTierBase = -1f, ShipTierPerTier = 1f, ShipTierMax = 99, ShipTags = ["combat"],
     };
 
-    /// <summary>Spec 133, 135: a hulk counts as delivered when its hull is this close to the station hull.</summary>
+    /// <summary>Spec 140: Listening Post. Four waves, one tier below the sector, from the base side.</summary>
+    [Serialize(Optional = true)] public HoldOutTunables Scan = new()
+    {
+        Seconds = 180f, GuardRadius = 1500f, WaveSeconds = 45f, FirstWaveSeconds = 5f,
+        ShipsBase = 1f, ShipsPerTier = 0.15f, MaxLiveShips = 6,
+        ShipTierBase = -1f, ShipTierPerTier = 1f, ShipTierMax = 99, ShipTags = ["combat"],
+    };
+
+    /// <summary>Spec 140: the scan can start within this distance of the hostile base.</summary>
+    [Serialize(Optional = true)] public float ScanRange = 3500f;
+    /// <summary>Spec 140: each intensive scan adds this to the money factor, and the next wave gets extra ships and tiers.</summary>
+    [Serialize(Optional = true)] public float IntensivePayBonus = 0.25f;
+    [Serialize(Optional = true)] public float IntensiveExtraShips = 1f;
+    [Serialize(Optional = true)] public float IntensiveExtraTier = 1f;
+    [Serialize(Optional = true)] public int MaxIntensivePerWave = 2;
+
+    /// <summary>Spec 134: a hulk counts as delivered when its hull is this close to the station hull.</summary>
     [Serialize(Optional = true)] public float DeliveryRadius = 800f;
 
     /// <summary>Spec 136: seconds that a ship with a working sensor must stay at each storm marker.</summary>
@@ -43,13 +60,14 @@ public sealed class MechanicsTunables
         static void Require(bool ok, string what) { if (!ok) throw new InvalidDataException($"Mechanics.{what}"); }
         foreach (var (name, chance) in MechanicsArea.Kinds.Select(k => (k.Name, k.Chance(t))))
             Require(chance is >= 0f and <= 1f, $"chance of '{name}' must be 0 to 1");
-        foreach (var (name, h) in new[] { ("Siege", t.Siege), ("Guard", t.Guard) })
+        foreach (var (name, h) in new[] { ("Siege", t.Siege), ("Guard", t.Guard), ("Scan", t.Scan) })
         {
             Require(h.Seconds > 0f && h.GuardRadius > 0f && h.WaveSeconds > 0f && h.FirstWaveSeconds >= 0f, $"{name}: Seconds, GuardRadius and WaveSeconds must be above 0");
             Require(h.ShipsBase >= 0f && h.ShipsPerTier >= 0f && h.MaxLiveShips >= 0 && h.ShipTierMax >= 1, $"{name}: ship counts must not be negative and ShipTierMax must be 1 or more");
             Require(h.ShipTags.Length > 0, $"{name}.ShipTags must not be empty");
         }
         Require(t.DeliveryRadius > 0f, "DeliveryRadius must be above 0");
+        Require(t.ScanRange > 0f && t.IntensivePayBonus >= 0f && t.IntensiveExtraShips >= 0f && t.MaxIntensivePerWave >= 0, "ScanRange must be above 0 and the intensive scan values must not be negative");
         Require(t.SurveyScanSeconds > 0f, "SurveyScanSeconds must be above 0");
     }
 }
