@@ -44,6 +44,19 @@ public static class AiGate
     /// </summary>
     public static bool IsCorporateHunter(Ship ship) => ship.HasTag(HunterSpawner.HunterTag);
 
+    /// <summary>
+    /// True when the ship is an enemy of at least one human player right now (wanted states included).
+    /// Flee, call and regroup are enemy behaviors, so friendly and neutral ships (escorts, allies, traders) keep their vanilla AI.
+    /// </summary>
+    public static bool HostileToPlayers(Ship ship)
+    {
+        if (Run.Current is not { } run || ship.Sim?.Mode is not { } mode) return false;
+        int index = ship.Metadata.PlayerIndex;
+        foreach (int human in run.Game.HumanPlayersIndexes)
+            if (mode.AreEnemies(index, human)) return true;
+        return false;
+    }
+
     /// <summary>A ship that surrendered to the players keeps its truce. The behaviors leave it alone.</summary>
     public static bool Surrendered(Ship ship) =>
         ship.Sim?.Mode is CareerSimModeManager career && career.SurrenderedAIs.Contains(ship.UniqueID);
