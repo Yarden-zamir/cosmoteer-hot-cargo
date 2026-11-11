@@ -6,7 +6,7 @@ The autotests cover offers, sides of the AI ships, escort steering and arrival, 
 
 1. Start a new career with the mod on.
 2. Open the station mission lists in the first systems. Look for "Convoy Duty", "Joint Strike" and "Discreet Bounty".
-3. If a system has none, jump on. Spawn chances: escort 60 %, assault 40 %, shady 70 % (1 to 2 offers).
+3. If a system has none, jump on. Spawn chances: escort 45 %, assault 30 %, shady 60 % (1 offer).
 
 ## Escort ("Convoy Duty")
 
