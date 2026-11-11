@@ -37,22 +37,23 @@ public static class EventView
             var c = e.Choices[i];
             var unmet = EventModel.FirstUnmet(EventRunner.ChoiceNeed(run, c, p), snapshot);
             if (unmet is not null && c.HideIfUnmet) continue;
-            choices.Add(new ChoiceView(i, ChoiceText(run, c, p, choices.Count + 1, unmet), unmet is null));
+            choices.Add(new ChoiceView(i, ChoiceText(run, c, p, unmet), unmet is null));
         }
-        string body = p.Lead.Length > 0 ? $"{p.Lead}\n\n{e.Text}" : e.Text;
+        string body = EventText.Fill(p.Lead.Length > 0 ? $"{p.Lead}\n\n{e.Text}" : e.Text, run.State.FleetTech);
         return new EventPage($"event {p.Serial}", p.Serial, e.Title, body, choices);
     }
 
     /// <summary>"2. [Sensor Array] Scan it first. (-5,000)" with the requirement tag in FTL blue, or all grey with the reason.</summary>
-    static string ChoiceText(Run run, ChoiceRules c, PendingEvent p, int number, Unmet? unmet)
+    /// <summary>No number prefix: the UX area draws the key numbers next to the buttons (Ux/DialogueKeys).</summary>
+    static string ChoiceText(Run run, ChoiceRules c, PendingEvent p, Unmet? unmet)
     {
         string tag = RequirementTag(c.Need);
         string cost = CostText(run, c.Cost, p);
         if (unmet is not null)
-            return $"<gray>{number}. {(tag.Length > 0 ? $"[{tag}] " : "")}{c.Text}{(cost.Length > 0 ? $" ({cost})" : "")}  - {EventText.Reason(unmet)}</gray>";
+            return $"<gray>{(tag.Length > 0 ? $"[{tag}] " : "")}{EventText.Fill(c.Text, run.State.FleetTech)}{(cost.Length > 0 ? $" ({cost})" : "")}  - {EventText.Reason(unmet)}</gray>";
         string tagXml = tag.Length > 0 ? EventText.Unlocked.FormatWithXml($"[{tag}]") + " " : "";
         string costXml = cost.Length > 0 ? $" <gray>({cost})</gray>" : "";
-        return $"{number}. {tagXml}{c.Text}{costXml}";
+        return $"{tagXml}{EventText.Fill(c.Text, run.State.FleetTech)}{costXml}";
     }
 
     /// <summary>

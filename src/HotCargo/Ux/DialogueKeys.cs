@@ -115,9 +115,25 @@ static class DialogueKeys
         static void Postfix(CommDialogueTab __instance) => UxKit.Guard("dialogue keys", () => Number(__instance._dialogueButtonsBox.Children));
     }
 
+    /// <summary>The event view writes no number into the choice text (EventView.ChoiceText), so only the gold number shows.</summary>
     [HarmonyPatch(typeof(EventDialog), "Show")]
     static class NumberEventButtons
     {
         static void Postfix(EventDialog __instance) => UxKit.Guard("dialogue keys", () => Number(EventButtons(__instance).Children));
+    }
+
+    /// <summary>True when a text starts with "N. " (also inside a leading gray tag): a second number next to the gold one.</summary>
+    static bool HasNumber(string text, int n) =>
+        text.StartsWith($"{n}. ", StringComparison.Ordinal) || text.StartsWith($"<gray>{n}. ", StringComparison.Ordinal);
+
+    /// <summary>Event buttons whose text still starts with its number. For autotests.</summary>
+    internal static int EventTextNumbers()
+    {
+        if (OpenEvent() is not { Parent: not null } ev) throw new InvalidOperationException("no event window is open");
+        var buttons = EventButtons(ev).Children;
+        int count = 0;
+        for (int i = 0; i < buttons.Count; i++)
+            if (HasNumber(buttons[i].Text ?? "", i + 1)) count++;
+        return count;
     }
 }

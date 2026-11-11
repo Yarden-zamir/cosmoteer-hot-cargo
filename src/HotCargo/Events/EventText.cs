@@ -73,6 +73,10 @@ public static class EventText
         return id;
     }
 
+    /// <summary>Fills text tokens: {crates} becomes the fleet tech count, for example "1 crate" or "7 crates".</summary>
+    public static string Fill(string text, int fleetTech) =>
+        text.Replace("{crates}", fleetTech == 1 ? "1 crate" : $"{fleetTech} crates", StringComparison.Ordinal);
+
     /// <summary>Short reason text for a need that is not met. Shown on a greyed choice.</summary>
     public static string Reason(Unmet u) => u.Kind switch
     {

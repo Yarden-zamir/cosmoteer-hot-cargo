@@ -8,6 +8,7 @@ using Cosmoteer.Ships;
 using Cosmoteer.Simulation;
 using Halfling.Random;
 using Halfling.Serialization;
+using Halfling.Geometry;
 using HotCargo.Core;
 using HotCargo.Dev;
 using HotCargo.Hunters;
@@ -228,6 +229,47 @@ public static class EventsArea
             return RequireRun().Mode.GetFactionReputation(faction);
         };
         Autotest.Commands["ev_rep_mark"] = _ => { double at = Autotest.Fields["ev_rep"](); Autotest.Fields["ev_rep_gain"] = () => Autotest.Fields["ev_rep"]() - at; };
+        // Tow Job (spec 88): state of the latest tow (0 in progress, 1 done, 2 failed), and moves that skip the actual towing.
+        Autotest.Fields["ev_tow_state"] = () => RequireTow().Completion switch
+        {
+            CompletionState.InProgress => 0,
+            CompletionState.Completed => 1,
+            CompletionState.Failed => 2,
+            var c => throw new InvalidOperationException($"unexpected tow state {c}"),
+        };
+        Autotest.Fields["ev_tow_dist"] = () => RequireTow() is var o && o.Towed.Location is { } at ? at.DistanceTo(o.Destination) : -1;
+        // ev_spawn <generator>: runs a generator from spawns.rules around the fleet, like a Spawn outcome. Test only.
+        Autotest.Commands["ev_spawn"] = arg =>
+        {
+            var sim = RequireSim();
+            var at = SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no player ships");
+            EventLibrary.Spawn(arg).Generate(sim, new Halfling.Random.FastRand(4321UL), loadInstantly: true, rootLoc: at, addExistingSpawnTags: true);
+            Autotest.Wait(2);
+        };
+        // expectviewtext <text>: the page that the dialog shows now contains the text (tags removed).
+        Autotest.Commands["expectviewtext"] = arg =>
+        {
+            var page = CurrentView() ?? throw new InvalidOperationException("no event page");
+            string plain = EventView.Plain(page.Body) + "\n" + string.Join("\n", page.Choices.Select(c => EventView.Plain(c.Text)));
+            Autotest.Check(plain.Contains(arg, StringComparison.Ordinal), $"event page shows '{arg}'");
+        };
+        // ev_tow_arrive: puts the towed ship and the player ships next to the destination station.
+        Autotest.Commands["ev_tow_arrive"] = _ =>
+        {
+            var o = RequireTow();
+            var towed = o.Towed.TargetShip ?? throw new InvalidOperationException("the towed ship is not live");
+            var sim = RequireSim();
+            Vector2 at = o.Destination + new Vector2(o.ArrivalRadius * 0.5f, 0);
+            Autotest.Teleport(towed, at);
+            foreach (var s in sim.Ships.HumanPlayerSignificantShips.ToList()) Autotest.Teleport(s, at + new Vector2(towed.WorldBoundingRadius + s.WorldBoundingRadius + 100f, 0));
+            Autotest.Wait(2);
+        };
+        Autotest.Commands["ev_tow_kill"] = _ =>
+        {
+            var towed = RequireTow().Towed.TargetShip ?? throw new InvalidOperationException("the towed ship is not live");
+            RequireSim().Ships.Remove(towed, dispose: true, handleLostShip: false);
+            Autotest.Wait(2);
+        };
         Autotest.Fields["ev_buyer_mult"] = () => RequireRun().State.BuyerPriceMultiplier;
         Autotest.Fields["ev_pending"] = () => RequireRun().State.Events.Pending is null ? 0 : 1;
         Autotest.Fields["ev_seen"] = () => RequireRun().State.Events.Seen.Values.Sum();
@@ -245,6 +287,18 @@ public static class EventsArea
             if (station.GetProvidedMissions() is { } list)
                 foreach (Mission m in list)
                     if (m.MetatypeID.Equals(CourierType)) yield return (list, m);
+    }
+
+    static TowObjective? _lastTow;
+
+    /// <summary>The latest tow objective in the mission log, or the last one seen: a completed mission leaves the log when it pays.</summary>
+    static TowObjective RequireTow()
+    {
+        var found = new List<TowObjective>();
+        foreach (Mission m in RequireRun().Mode.Missions)
+            foreach (var o in m.Objectives) o.GetObjectives(found);
+        _lastTow = found.LastOrDefault() ?? _lastTow;
+        return _lastTow ?? throw new InvalidOperationException("no accepted mission has a HotCargoTow objective");
     }
 
     static EventPage? CurrentView()

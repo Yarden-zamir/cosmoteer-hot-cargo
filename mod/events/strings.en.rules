@@ -5,6 +5,9 @@ HotCargoEventMissions
 	Siege = "Freighter Under Fire"
 	Bounty = "Bounty Hunters"
 	BountyDesc = "Local bounty hunters want the reward on your hull. Every one you put down has a price of its own in the {mission_location} system: {money}."
+	Tow = "Tow Job"
+	TowDesc = "A freighter with a dead drive needs a tow to the nearest station in the {mission_location} system. Pull it in with a tractor beam and keep it in one piece. The crew pays {money} when it arrives."
+	TowFmt = "Tow {0} to the nearest station"
 	Courier = "Courier Job"
 	CourierDesc = "A sealed case, no questions. Fly it to the contact on the far side of the {mission_location} system within {time_limit_minutes} minutes, then come back to collect {money}. "\
 	              "The pay is good and the job is quiet: little fame, little attention."
