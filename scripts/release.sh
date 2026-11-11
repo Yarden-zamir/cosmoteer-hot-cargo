@@ -13,7 +13,18 @@ SHA="$(git rev-parse HEAD)"
 [[ -z "$(git status --porcelain)" ]] || { echo "release: tree is not clean"; exit 1; }
 git fetch -q origin main
 [[ "$SHA" == "$(git rev-parse origin/main)" ]] || { echo "release: HEAD is not origin/main; push first"; exit 1; }
-[[ -f "/tmp/hot_cargo_autotest_pass_$SHA" || "${FORCE:-}" == 1 ]] || { echo "release: run scripts/autotest-all.sh on this commit first"; exit 1; }
+# A pass marker on HEAD, or on an ancestor when only docs (*.md, docs/) changed since then.
+tested() {
+  local marker sha
+  for marker in /tmp/hot_cargo_autotest_pass_*; do
+    [[ -f "$marker" ]] || continue
+    sha="${marker##*_}"
+    git merge-base --is-ancestor "$sha" HEAD 2>/dev/null || continue
+    if [[ -z "$(git diff --name-only "$sha" HEAD | grep -v -E '\.md$|^docs/' || true)" ]]; then return 0; fi
+  done
+  return 1
+}
+tested || [[ "${FORCE:-}" == 1 ]] || { echo "release: run scripts/autotest-all.sh on this commit first"; exit 1; }
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && { echo "release: tag $TAG exists"; exit 1; }
 scripts/check-private.sh
 
