@@ -54,10 +54,10 @@ Out of scope for this batch:
 ## 6. Win and loss
 
 6. **Win**: the players sell at least one tech unit to the Buyer. The run is won when the crew deliver the first units of the sale.
-7. When the players win, a dialog shows the score. Score = money + delivered units × tech value × `BuyerPriceFactor` (default 1.5). A sale to the Buyer pays tech value × `BuyerPriceFactor` for each unit. Delivered units are the units of the first crew delivery. The money already includes the payment for them.
-8. After a win, heat turns off. A dialog shows the score, and the players can continue the career.
+7. When the players win, a win panel shows the score. Score = money + delivered units × tech value × `BuyerPriceFactor` (default 1.5). A sale to the Buyer pays tech value × `BuyerPriceFactor` for each unit. Delivered units are the units of the first crew delivery. The money already includes the payment for them.
+8. After a win, heat turns off. The win panel shows the score and the run numbers, and the players can continue the career.
 9. **Loss**: when the fleet tech count reaches 0, the run is lost. Any cause counts: vault damage, a destroyed vault, crew that die while they carry tech, or a sale of the last unit. A Buyer delivery is the only exception, because it wins the run first.
-10. A loss shows a dialog: "The corporation recovered the tech." The game then shows the game-over screen.
+10. A loss shows the game-over screen with the title "The corporation recovered the tech", the reason and the run numbers.
 11. The mod does not delete save files after a loss.
 12. The loss check runs only when the count is certain: no ship jump is in progress, and no friendly ships wait in another system. The count must stay at 0 for `LossGraceSeconds` (default 3 s), so tech that crew carry between ships does not trigger a loss.
 
@@ -141,7 +141,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 52. The mod watches the file. When the file changes, the mod reloads it on the next frame, without a game restart.
 53. If the file has an error, the mod keeps the last valid values and shows the error in game.
 54. Part, resource and mission definitions are mod `.rules` content. A change to them needs a game restart.
-55. An overlay shows heat, the heat rate, the heat multiplier, the fleet tech count, the tech value, the stage and the sector index. F8 toggles it.
+55. A heat panel shows heat as a bar with a mark for each stage, the heat rate, the fleet tech count, the tech value, the stage, the next stage and the sector index. With debug keys on, it also shows the heat value, the heat multiplier and the tunables hash. F8 toggles it. With `Ux.HeatPanel = false`, a text overlay shows the same values. UI switches are in UX.md.
 56. When `DebugKeys = true`, debug keys work: add or remove heat, set the stage, add or remove tech units (F11 / Shift+F11, one unit), and spawn the next stage.
 
 ## 14. Persistence and multiplayer
@@ -149,7 +149,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 57. Heat, the stages that already started, the sector index, the run result and the event state (requirement 76) are saved with the career save and loaded with it. **[verify]** the save hook.
 58. All logic that changes simulation state runs in the deterministic simulation tick. It uses the simulation random source, not `System.Random`.
 59. The fleet tech count and the loss rule count all human players together. A loss ends the run for everyone.
-60. In multiplayer, the mod does not reload tunables. The overlay shows a short hash of the tunables file, so players can compare.
+60. In multiplayer, the mod does not reload tunables. The heat panel shows a short hash of the tunables file, so players can compare.
 61. Debug keys do not work in multiplayer.
 
 ## 15. Mod activation and loading

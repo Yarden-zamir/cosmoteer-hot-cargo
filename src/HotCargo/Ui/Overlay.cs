@@ -1,21 +1,27 @@
 using Cosmoteer.Gui;
 using Cosmoteer.Modes.Career;
 using Halfling;
+using Halfling.Geometry;
 using Halfling.Graphics.Text;
 using Halfling.Gui;
 using Halfling.Input;
 using HotCargo.Core;
 using HotCargo.Tech;
+using HotCargo.Ux;
 
 namespace HotCargo.Ui;
 
-/// <summary>Always-visible Hot Cargo status text (spec requirement 55). F8 toggles it.</summary>
+/// <summary>
+/// Hot Cargo status on the HUD (spec requirement 55). F8 toggles it.
+/// Ux.HeatPanel on: the heat panel at the top of the left HUD column. Off: the plain text block, top right.
+/// The text block also shows lifecycle and tunables errors, so that a failure is never silent.
+/// </summary>
 public static class Overlay
 {
     /// <summary>Set when a lifecycle hook failed. Shown in red so the failure is not silent.</summary>
     public static string? FatalError;
 
-    static bool _visible = true;
+    internal static bool Visible = true;
 
     internal static void Attach(CareerGameModeManager mode)
     {
@@ -35,14 +41,23 @@ public static class Overlay
         label.TextRenderer.Clip = false;
         label.AutoSize.AutoWidthMode = AutoSizeMode.Enable;
         label.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
-        label.AutoSize.Anchor = new Halfling.Geometry.Vector2(1f, 0f);
+        label.AutoSize.Anchor = new Vector2(1f, 0f);
         label.BeforeFrameDraw += (_, _) =>
         {
-            if (App.Keyboard.HotkeyPressed(ViKey.F8)) _visible = !_visible;
-            label.SelfActive = _visible && mode.Game.MapDisplayFactor < 1f;
-            if (label.SelfActive) label.Text = Text(mode);
+            if (App.Keyboard.HotkeyPressed(ViKey.F8)) Visible = !Visible;
+            bool panel = Run.Current is { } r && r.Mode == mode && r.T.Ux.HeatPanel;
+            bool error = FatalError is not null || TunablesFile.LastError is not null;
+            label.SelfActive = (error || (Visible && !panel)) && mode.Game.MapDisplayFactor < 1f;
+            if (label.SelfActive) label.Text = panel ? ErrorText() : Text(mode);
         };
         mode.Game.Gui.RootWidget.AddChild(label);
+        mode.Game.Gui.TopLeftHudBox.Children.Insert(0, new HeatPanel(mode));
+    }
+
+    static string ErrorText()
+    {
+        if (FatalError is not null) return $"HOT CARGO ERROR\n{FatalError}";
+        return TunablesFile.LastError is { } e ? $"tunables error: {e}" : "";
     }
 
     static string Text(CareerGameModeManager mode)

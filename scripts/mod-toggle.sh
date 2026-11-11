@@ -8,7 +8,7 @@ source "$(dirname "$0")/pc.sh"
 MODE="${1:?usage: mod-toggle.sh on|off}"
 pc "$PS_PATHS"'
 $ErrorActionPreference = "Stop"
-if (Get-Process Cosmoteer -ErrorAction SilentlyContinue) { throw "Cosmoteer is running. Close it first." }
+if (Get-SlotProcess) { throw "Cosmoteer is running in slot $slot. Close it first." }
 $settings = Join-Path (Split-Path $mods) "settings.rules"
 if (-not (Test-Path "$settings.hot_cargo_bak")) { Copy-Item $settings "$settings.hot_cargo_bak" }
 $lines = [Collections.Generic.List[string]](Get-Content $settings)

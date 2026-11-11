@@ -5,6 +5,7 @@ using HotCargo.Journey;
 using HotCargo.Missions;
 using HotCargo.Tactics;
 using HotCargo.Tech;
+using HotCargo.Ux;
 
 namespace HotCargo.Core;
 
@@ -23,6 +24,7 @@ public sealed class Tunables
     [Serialize(Optional = true)] public MissionTunables Missions = new();
     [Serialize(Optional = true)] public TacticsTunables Tactics = new();
     [Serialize(Optional = true)] public EventsTunables Events = new();
+    [Serialize(Optional = true)] public UxTunables Ux = new();
     [Serialize(Optional = true)] public DebugTunables Debug = new();
 }
 

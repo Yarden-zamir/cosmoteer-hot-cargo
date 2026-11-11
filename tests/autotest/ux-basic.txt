@@ -1,0 +1,36 @@
+# UX area: the panels and patches build and run without errors in a headless game (the null graphics device still draws the GUI).
+# Any "ux: ... failed" line is an ERROR line, so a broken UI patch fails this test.
+newgame last
+wait 8
+expect active == 1
+expect ux_panel == 1
+# Two stage starts: the heat panel names each one.
+heat 30
+wait 2
+heat 30
+wait 2
+expect stages == 2
+expect ux_stage_alerts == 2
+select
+damage 0.3
+wait 2
+expect ux_integrity < 0.9
+expect ux_integrity > 0.2
+map on
+wait 2
+map off
+ux HeatPanel off
+wait 1
+expect ux_panel == 0
+ux HeatPanel on
+closepanel
+# A destroyed own ship gives one ship alert.
+uxlog
+kill
+wait 1
+uxlog
+wait 3
+uxlog
+wait 4
+expect ux_ship_alerts >= 1
+quit

@@ -15,7 +15,9 @@ pause off
 wait 5
 expect hc_escort_steering == 1
 hc_mark
+hc_escort_diag before_flight
 wait 15
+hc_escort_diag after_flight
 expect hc_escort_progress > 100
 expect hc_escort_done == 0
 hc_escort_arrive
