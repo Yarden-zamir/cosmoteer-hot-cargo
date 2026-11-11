@@ -140,11 +140,14 @@ public static class MechanicsArea
     }
 
     /// <summary>
-    /// Mechanics tunables for code that runs in a game. The first system of a new career generates before the run starts,
-    /// so it reads the tunables file like Run.Start does.
+    /// Mechanics tunables for code that runs in a game. Without an active run (the first system of a new career generates before
+    /// the run starts) it uses the defaults: in co-op each machine can have a different tunables file, and a file value here would desync
+    /// system generation. Limit: a tuned spawn chance does not apply to the first system. Revisit if Core shares the host's tunables before the run starts.
     /// </summary>
     internal static MechanicsTunables TunablesFor(GameRoot? game) =>
-        Run.Current is { } run && run.Game == game ? run.T.Mechanics : (TunablesFile.Read()?.Values ?? new Tunables()).Mechanics;
+        Run.Current is { } run && run.Game == game ? run.T.Mechanics : Defaults;
+
+    static readonly MechanicsTunables Defaults = new();
 
     /// <summary>
     /// Spec 131: sets the spawn chance of each mechanics group from the tunables before a system generates.
