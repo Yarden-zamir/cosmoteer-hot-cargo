@@ -27,7 +27,7 @@ HotCargoRun
 			&~/StartingNodePicker
 			&~/ProgressionTiers
 			&~/TierCap
-			&<./Data/galaxy_map/map_generators/base_galaxy.rules>/SectorTypes
+			&<../worlds/archetypes.rules>/SectorTypes // System archetypes (spec 220), instead of the vanilla weights.
 		]
 	}
 }

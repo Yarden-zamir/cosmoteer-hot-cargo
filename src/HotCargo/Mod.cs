@@ -24,6 +24,7 @@ public static class Mod
             Tactics.TacticsArea.Register();
             Events.EventsArea.Register();
             Ux.UxArea.Register();
+            Worlds.WorldsArea.Register();
             Log.Info($"harmony patched {harmony.GetPatchedMethods().Count()} methods; mod root {ModRoot}");
         }
         catch (Exception ex)

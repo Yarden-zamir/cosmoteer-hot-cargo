@@ -6,6 +6,7 @@ using HotCargo.Missions;
 using HotCargo.Tactics;
 using HotCargo.Tech;
 using HotCargo.Ux;
+using HotCargo.Worlds;
 
 namespace HotCargo.Core;
 
@@ -25,6 +26,7 @@ public sealed class Tunables
     [Serialize(Optional = true)] public TacticsTunables Tactics = new();
     [Serialize(Optional = true)] public EventsTunables Events = new();
     [Serialize(Optional = true)] public UxTunables Ux = new();
+    [Serialize(Optional = true)] public WorldsTunables Worlds = new();
     [Serialize(Optional = true)] public DebugTunables Debug = new();
 }
 

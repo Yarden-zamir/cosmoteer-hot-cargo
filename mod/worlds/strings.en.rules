@@ -1,0 +1,52 @@
+HotCargoWorlds
+{
+	// Sector type names (galaxy map label and tooltip).
+	TradeHub = "Trade Hub"
+	MiningBelt = "Mining Belt"
+	SolarZone = "Solar Zone"
+	DeepSpace = "Deep Space"
+
+	// One line per sector type ID: the hazard on the galaxy map tooltip and on arrival. A type without a line shows none.
+	Hazard_hc_trade_hub = "A current runs through the system. Ships in it drift downstream."
+	Hazard_hc_mining_belt = "A dense rock belt. Big ships go through the passes."
+	Hazard_hc_solar_zone = "The star is close. Its heat burns hulls that dive deep."
+	Hazard_hc_deep_space = "Dense clouds and ion storms. Pirates hide in the eyes of the storms."
+	Hazard_basic = "Quiet space."
+	Hazard_binary = "Two suns. Their heat zones overlap."
+	Hazard_high_density_nebula = "Dense clouds. Sensors go blind inside."
+	Hazard_supernova = "Supernova remnant. Many rock belts and no star."
+	Hazard_electron = "Electron clouds. Shields fail and reactors sag, but energy weapons hit harder."
+
+	HazardTipFmt = "<gray>{0}</gray>"
+	ArrivalFmt = "<b>{0}.</b> {1}"
+
+	// The current nebula.
+	CurrentTip = "<b>Current</b>\nA stream of charged gas. Ships inside drift with the flow. Fly with it to move fast, or burn hard against it."
+	CurrentHudFmt = "<s14><color r='120' g='230' b='235'>{0:0.}%</color></s14>\n<s12><gray>current</gray></s12>"
+
+	// Heat zone line on the HUD.
+	HeatZoneFmt = "HEAT ZONE  {0}  depth {1:0}%"
+	HeatZoneShipFmt = "{0}"
+
+	// Missions.
+	HoldPass = "Hold the Pass"
+	HoldPassDesc = "Raiders camp in a pass through the belt and tax every ship that passes. Clear them out, then hold the pass until the convoy is through. Keep a ship in the pass: if the pass stays empty, the raiders take it back."
+	ClearPassFmt = "Clear the raiders from the pass"
+	HoldPassFmt = "Hold the pass: {0} left"
+	HoldPassWaitFmt = "Hold the pass ({0}): fly into the ring"
+	HoldPassEmptyFmt = "<bad>The pass is empty! {0} to get back</bad>"
+	PassLost = "The raiders took the pass back."
+
+	Sundive = "Sundive"
+	SundiveDesc = "A courier fell toward the star. Its flight recorder still sends from deep in the heat. Dive in, stay with the wreck until the data is out, and get clear of the heat. Shields help."
+	SundiveDiveFmt = "Dive to the wreck (depth {0:0}%)"
+	SundiveSalvageFmt = "Salvage the recorder: {0:0}/{1:0} s"
+	SundiveEscapeFmt = "Get {0} out of the heat"
+	SundiveLost = "The recorder burned with the ship."
+
+	LairRaid = "Raid the Lair"
+	LairRaidDesc = "A pirate gang runs its business from the eye of an ion storm. Find the lair in the storm and destroy it."
+	FindLairFmt = "Find the pirate lair in the storm"
+	LairFound = "Pirate lair found."
+	RaidLairFmt = "Destroy the pirate lair"
+}

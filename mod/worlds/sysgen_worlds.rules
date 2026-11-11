@@ -1,0 +1,466 @@
+// Spawners of the Hot Cargo system archetypes (WORLDS.md, spec 220 to 229). mod/worlds/actions.rules adds this file to the end
+// of the basic sector generator, so suns, planets, nebulas, stations and gates exist when these spawners run.
+// Each archetype group runs only with its spawn flag (worlds/sectors.rules). Groups with an hc_group_* tag hold a mission;
+// the autotest command "worlds generate" finds them by that tag.
+// Distances fit the smaller Hot Cargo systems: stations at 4000 to 9000 from the center, FTL gates at 13500 to 16000.
+Type = None
+SubSpawners
+[
+	&~/TradeHub
+	&~/MiningBelt
+	&~/SolarZone
+	&~/DeepSpace
+]
+
+// ---- Trade hub (spec 221): a big hub world next to a trade station, and a current that pushes ships one way.
+TradeHub
+{
+	Type = None
+	Conditions { RequireSpawnFlags = [hc_trade_hub] }
+	SubSpawners
+	[
+		// The hub world. Twice the size of a vanilla inner planet, next to a trade station.
+		{
+			Type = Doodads
+			Tags = [planet, hc_hub_planet]
+			RootLocation = Tag
+			RootLocationTag = trade_station
+			Distance = [2600, 3200]
+			MinDistanceFromTags = [[sun, 4500], [station, 1800]]
+			ScaleFactor = 1.5
+			SuppressLocationAssertions = true
+			DoodadTypes
+			[
+				cosmoteer.planet_terra
+				cosmoteer.planet_water
+				cosmoteer.planet_alien
+			]
+		}
+
+		// The current: a straight band of hc_current cloud (worlds/current.rules). Hot Cargo C# type (Worlds/Current.cs).
+		// The band runs along the flow direction of the system, so it reads like a river. Each sim tick it pushes ships inside it.
+		{
+			Conditions { ProhibitSpawnFlags = [disable_nebulas] }
+			Type = HotCargoCurrent
+			Tags = [hc_current]
+			NebulaType = hc_current
+			Length = 18000
+			Width = 4500
+			Distance = [2000, 6000]
+			MinDistanceFromTags = [[sun, 3000]]
+			MaxDistanceFromWorldOrigin = &<./Data/modes/career/career.rules>/Exploration/UnexploredRadius
+			SuppressLocationAssertions = true
+		}
+	]
+}
+
+// ---- Mining belt (spec 222): a dense belt that is hard to cross, with a few cleared passes, and a mission to hold a pass.
+MiningBelt
+{
+	Type = None
+	Conditions { RequireSpawnFlags = [hc_mining_belt] }
+	SubSpawners
+	[
+		// A point on the belt orbit. Its children use RootLocation = Grandparent and AddDistance = ParentToGrandparent,
+		// like the vanilla AsteroidBelt, so they spread around the system center at this radius.
+		{
+			Type = None
+			Tags = [hc_belt]
+			Distance = [10000, 11500]
+			SubSpawners
+			[
+				// The passes first, so the rocks keep clear of them. A pass is a ring on the map. A ring POI's scale is its radius.
+				{
+					Type = Doodads
+					DoodadType = cosmoteer.poi_target_area
+					ScaleFactor = &~/PassRadius
+					Tags = [hc_pass]
+					Count = [3, 4]
+					RootLocation = Grandparent
+					AddDistance = ParentToGrandparent
+					Distance = 0
+					SpawnsPerSlice = 1
+					SpawnSlicePadding = 30%
+					SuppressLocationAssertions = true
+				}
+
+				// The dense belt: about one large rock every 180 units along a band 900 wide. Small ships can thread it.
+				// Big ships hit rocks. The number of rocks is the main performance cost of this archetype.
+				{
+					Type = Doodads
+					Count = [1700, 1900]
+					Distance = [-450, 450]
+					Tags = [asteroid, hc_belt_rock]
+					RootLocation = Grandparent
+					AddDistance = ParentToGrandparent
+					MinDistanceFromTags = [[station, 0], [asteroid, 0], [bounty, 0], [ftl_gate, 600], [hc_pass, &~/PassRadius]]
+					SuppressLocationAssertions = true
+					DoodadTypes = &~/BeltRockTypes
+				}
+
+				// The vanilla belt ring on the map.
+				{
+					Type = Doodads
+					RootLocation = Grandparent
+					ScaleMode = ParentToGrandparent
+					DoodadType = cosmoteer.poi_ring
+					ShowOnlyInFog = true
+				}
+			]
+		}
+
+		// Hold the pass: clear the raiders who camp in a pass, then hold it while more raiders come.
+		{
+			Type = None
+			Tags = [hc_group_pass]
+			SpawnChance = 75%
+			RootLocation = Tag
+			RootLocationTag = hc_pass
+			SubSpawners
+			[
+				{
+					Type = Ships
+					Tags = [hc_pass_raider]
+					Count = 2
+					Distance = [0, 400]
+					Allegiance = Unique
+					SynchronizeAllegiance = true
+					SuppressLocationAssertions = true
+					FamePerTier = &/TIER_TABLES/StandardFamePerTier
+					MaxFamePerTier = &/TIER_TABLES/StandardMaxFamePerTier
+					ShipCriteria
+					{
+						UseLocalFactionWeights = true
+						UseTierField = true
+						Tier = -1
+						AllowTierRangeExpansion = true
+						Tags = [combat]
+					}
+					AI
+					{
+						Type = Normal
+						ChanceToConsiderSurrenderingToPlayer = 0
+						PatrolRadius = 400
+						TargetAcquireRangeFromOrigin = 2500
+						TargetUnacquireRangeFromOrigin = 3500
+					}
+				}
+				{
+					Type = Mission
+					Metatype = HotCargoHoldPass
+					SpawnAt = Tag
+					SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+					Faction = OwnerOfTag
+					FactionTag = &SpawnAtTag
+					OkayIfFactionTagNotFound = true
+					Objectives
+					[
+						{
+							Type = Sequential
+							SubObjectives
+							[
+								{
+									Type = DefeatShips
+									TargetsTag = { Tag=hc_pass_raider; LimitToBatch=true; }
+									TargetAreaTag = { Mode=Nearest; Tag=hc_pass; }
+									AutoDiscoverTargetArea = true
+									OverrideDisplayFormatKey = "HotCargoWorlds/ClearPassFmt"
+								}
+								{
+									Type = HotCargoHoldPass
+									PassTag = { Mode=Nearest; Tag=hc_pass; }
+									Radius = &~/PassRadius
+									Wave = PassRaiders
+								}
+								{
+									Type = ReceiveRewards
+								}
+							]
+						}
+					]
+					Rewards
+					[
+						{
+							Type = Money
+							MoneyPerHighTier = &/TIER_TABLES/StandardMoneyPerTier
+							MoneyPerTierMultiplier = 2
+							RoundToMultiple = 500
+						}
+						{
+							Type = Fame
+							FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
+							MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+							FamePerTierMultiplier = 2
+						}
+						{
+							Type = Reputation
+							ReputationPerHighTier = &/TIER_TABLES/StandardReputationPerTier
+							ReputationPerTierMultiplier = 3
+						}
+						// Contract terms (Contracts/ContractTerms.cs): free, but a pass fight is loud and the raiders have friends.
+						{
+							Type = HotCargoContract
+							AcceptFee = 0
+							FlatHeat = 6
+							TrailWeight = 1
+							InformantChance = 10%
+						}
+					]
+				}
+			]
+		}
+	]
+}
+
+PassRadius = 800
+SundiveRadius = 300
+
+// Bigger rocks than the vanilla belt, and some megaroids, so the belt blocks big ships.
+BeltRockTypes
+[
+	{ Type=cosmoteer.asteroid_m;           ChanceWeight=1; }
+	{ Type=cosmoteer.asteroid_iron_m;      ChanceWeight=1; }
+	{ Type=cosmoteer.asteroid_copper_m;    ChanceWeight=1; }
+	{ Type=cosmoteer.asteroid_l;           ChanceWeight=1; }
+	{ Type=cosmoteer.asteroid_iron_l;      ChanceWeight=1; }
+	{ Type=cosmoteer.asteroid_copper_l;    ChanceWeight=1; }
+	{ Type=cosmoteer.asteroid_sulfur_l;    ChanceWeight=1/2; }
+	{ Type=cosmoteer.asteroid_hyperium_l;  ChanceWeight=1/2; }
+	{ Type=cosmoteer.asteroid_xl;          ChanceWeight=1/2; }
+	{ Type=cosmoteer.asteroid_iron_xl;     ChanceWeight=1/2; }
+	{ Type=cosmoteer.asteroid_copper_xl;   ChanceWeight=1/2; }
+	{ Type=cosmoteer.asteroid_xxl;         ChanceWeight=1/4; }
+	{ Type=cosmoteer.asteroid_iron_xxl;    ChanceWeight=1/4; }
+	{ Type=cosmoteer.megaroid_l;           ChanceWeight=1/16; }
+	{ Type=cosmoteer.megaroid_xl;          ChanceWeight=1/32; }
+]
+
+// ---- Solar zone (spec 223): the vanilla sun and its heat zone, rich rocks deep in the heat, and a sundive mission.
+// A sun of the default scale 3000 kills inside 1500 and burns out to 3750 from its center (doodad_planet_sun.rules).
+// Spawn hooks for other missions: the spawn flag hc_solar_zone, and the tag hc_deep_ore on the deep rocks.
+SolarZone
+{
+	Type = None
+	Conditions { RequireSpawnFlags = [hc_solar_zone] }
+	SubSpawners
+	[
+		// Rich minerals deep in the heat, on top of the vanilla rare rocks at 1875 to 3375.
+		{
+			Type = Doodads
+			Tags = [rare_asteroid, hc_deep_ore]
+			RootLocation = Tag
+			RootLocationTag = sun
+			Count = [20, 30]
+			Distance = [1700, 2500]
+			MinDistanceFromTags = [[rare_asteroid, 400]]
+			SuppressLocationAssertions = true
+			DoodadTypes = &<./Data/modes/career/sectors/sysgen_suns.rules>/SunAsteroidTypes
+		}
+
+		// Sundive: a flight recorder in the wreck of a ship that fell toward the sun. Get to it, stay for the salvage, get out.
+		{
+			Type = None
+			Tags = [hc_group_sundive]
+			SpawnChance = 80%
+			RootLocation = Tag
+			RootLocationTag = sun
+			SubSpawners
+			[
+				{
+					Type = Doodads
+					DoodadType = cosmoteer.poi_target_area
+					ScaleFactor = &~/SundiveRadius
+					Tags = [hc_sundive_site]
+					Distance = [1900, 2300]
+					SuppressLocationAssertions = true
+					Undiscovered = true
+					HideIfUnexplored = true
+				}
+				{
+					Type = Mission
+					Metatype = HotCargoSundive
+					SpawnAt = Tag
+					SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+					Faction = OwnerOfTag
+					FactionTag = &SpawnAtTag
+					OkayIfFactionTagNotFound = true
+					Objectives
+					[
+						{
+							Type = Sequential
+							SubObjectives
+							[
+								{
+									Type = HotCargoSundive
+									SiteTag = { Mode=Latest; Tag=hc_sundive_site; }
+									Radius = &~/SundiveRadius
+								}
+								{
+									Type = ReceiveRewards
+								}
+							]
+						}
+					]
+					// No kill fame, so the pay is high for the risk.
+					Rewards
+					[
+						{
+							Type = Money
+							MoneyPerHighTier = &/TIER_TABLES/StandardMoneyPerTier
+							MoneyPerTierMultiplier = 3
+							RoundToMultiple = 500
+						}
+						{
+							Type = Fame
+							FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
+							MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+							FamePerTierMultiplier = 1.5
+						}
+						{
+							Type = Reputation
+							ReputationPerHighTier = &/TIER_TABLES/StandardReputationPerTier
+							ReputationPerTierMultiplier = 2
+						}
+						// The client sells the coordinates: a fee, and a quiet job.
+						{
+							Type = HotCargoContract
+							AcceptFee = 0.3
+							FlatHeat = 2
+							TrailWeight = 0.5
+							InformantChance = 5%
+						}
+					]
+				}
+			]
+		}
+	]
+}
+
+// ---- Deep space (spec 224): the vanilla dense nebula sector, more ion storms, and a pirate lair in the eye of a storm.
+DeepSpace
+{
+	Type = None
+	Conditions { RequireSpawnFlags = [hc_deep_space] }
+	SubSpawners
+	[
+		// More ion storms than the dense nebula sector has.
+		{
+			Conditions { IsInitNode=false; ProhibitSpawnFlags = [disable_nebulas] }
+			Type = Nebula
+			Count = [2, 3]
+			Distance = [6000, 14000]
+			MinDistanceFromTags = [[station, 4000]]
+			NebulaType = ion_storm
+			NebulaRadius = 100000
+			NebulaSplatTriCount = [15, 30]
+			UseIrregularSplatShape = true
+			MaxDistanceFromWorldOrigin = &<./Data/modes/career/career.rules>/Exploration/UnexploredRadius
+			SuppressLocationAssertions = true
+		}
+
+		// The lair: a storm, a calm eye in it, and the vanilla pirate base shape in the eye, hidden until discovered.
+		{
+			Type = None
+			Tags = [hc_group_lair]
+			SpawnChance = 80%
+			Distance = [8000, 13000]
+			MinDistanceFromTags = [[sun, 7500], [station, 6000], [ftl_gate, 3000]]
+			SuppressLocationAssertions = true
+			SubSpawners
+			[
+				{
+					Conditions { ProhibitSpawnFlags = [disable_nebulas] }
+					Type = Nebula
+					NebulaType = ion_storm
+					NebulaRadius = 100000
+					NebulaSplatTriCount = [18, 28]
+					UseIrregularSplatShape = true
+					MaxDistanceFromWorldOrigin = &<./Data/modes/career/career.rules>/Exploration/UnexploredRadius
+				}
+				// The eye. An empty nebula type clears the storm.
+				{
+					Type = Nebula
+					NebulaType = ""
+					NebulaRadius = 1800
+				}
+				: <./Data/modes/career/sectors/sysgen_military_stations.rules>/BaseMilitaryStation
+				{
+					Tags = [station, military_station, hc_lair]
+					Count = 1
+					Distance = 0
+					SpawnsPerSlice = 0
+					MinDistanceFromTags = []
+					MinDistanceFromNebulas = []
+					SuppressLocationAssertions = true
+					Features = [Landmark, HideUntilDiscovered]
+					Allegiance = Unique
+
+					SubSpawners : ^/0/SubSpawners
+					[
+						{
+							Type = Mission
+							Metatype = HotCargoLairRaid
+							SpawnAt = Tag
+							SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+							Faction = OwnerOfTag
+							FactionTag = &SpawnAtTag
+							OkayIfFactionTagNotFound = true
+							Objectives
+							[
+								{
+									Type = Sequential
+									SubObjectives
+									[
+										{
+											Type = HotCargoFindLair
+											LairTag = { Mode=Latest; Tag=hc_lair; }
+											SearchRadius = 4500
+										}
+										{
+											Type = DefeatShips
+											TargetsTag = { Tag=hc_lair; Max=1; }
+											TierOffset = 1
+											AllowSurrender = false
+											OverrideDisplayFormatKey = "HotCargoWorlds/RaidLairFmt"
+										}
+										{
+											Type = ReceiveRewards
+										}
+									]
+								}
+							]
+							Rewards
+							[
+								{
+									Type = Money
+									MoneyPerHighTier = &/TIER_TABLES/StandardMoneyPerTier
+									MoneyPerTierMultiplier = 2.5
+									RoundToMultiple = 1000
+								}
+								{
+									Type = Fame
+									FamePerHighTier = &/TIER_TABLES/StandardFamePerTier
+									MaxFamePerHighTier = &/TIER_TABLES/StandardMaxFamePerTier
+									FamePerTierMultiplier = 2
+								}
+								{
+									Type = Reputation
+									ReputationPerHighTier = &/TIER_TABLES/StandardReputationPerTier
+									ReputationPerTierMultiplier = 3
+								}
+								// Pirates have friends in every port: free, loud, and an informant risk.
+								{
+									Type = HotCargoContract
+									AcceptFee = 0
+									FlatHeat = 4
+									TrailWeight = 1
+									InformantChance = 20%
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	]
+}
