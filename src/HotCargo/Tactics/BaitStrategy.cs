@@ -6,6 +6,7 @@ using Halfling.Geometry;
 using Halfling.PortableHashing;
 using Halfling.Serialization;
 using Halfling.Timing;
+using HotCargo.Core;
 using HotCargo.Hunters;
 
 namespace HotCargo.Tactics;
@@ -48,7 +49,7 @@ internal sealed class BaitStrategy(BaitStrategyRules rules) : AIStrategyModule
         bool isBait = group.Count >= 2 && Bait(group) == ship;
         if (isBait != _isBait) TacticsLog.Event(ship, Tactic.Bait, isBait ? "chosen as bait" : "no longer bait");
         _isBait = isBait;
-        var target = HunterSpawner.HumanShips(HunterOrders.Sim(ship)).MinBy(h => h.DetWorldCenter.DistanceSquaredTo(ship.DetWorldCenter));
+        var target = SimQueries.NearestHumanShip(HunterOrders.Sim(ship), ship.DetWorldCenter);
         if (!isBait || active is not { } t || target is null)
         {
             Phase = BaitPhase.Approach;

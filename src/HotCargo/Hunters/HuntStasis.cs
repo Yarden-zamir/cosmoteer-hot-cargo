@@ -7,6 +7,8 @@ using Halfling.PortableHashing;
 using Halfling.Serialization;
 using Halfling.Timing;
 
+using HotCargo.Core;
+
 namespace HotCargo.Hunters;
 
 [ReflectiveSerialization(Explicit = true)]
@@ -32,7 +34,7 @@ internal sealed class HuntStasis(HuntStasisRules rules) : AIStasisModule
 
     public override bool StasisUpdate(SimRoot sim, StasisSpawner spawner, AIParameters? parameters, Time interval)
     {
-        var target = HunterSpawner.HumanShips(sim).MinBy(h => h.DetWorldCenter.DistanceSquaredTo(spawner.Location));
+        var target = SimQueries.NearestHumanShip(sim, spawner.Location);
         if (target is null) return false;
         float speed = parameters?.StasisSpeed ?? rules.DefaultStasisSpeed;
         spawner.MoveTowards(target.DetWorldCenter, speed, sim, interval, rules.AvoidableDoodadTags, nebulaPathfinding: true, ref _avoidState, rules.AvoidableDoodadBuffer);

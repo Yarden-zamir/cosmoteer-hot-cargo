@@ -32,7 +32,7 @@ public static class HunterArea
         Autotest.Fields["huntershostile"] = () =>
         {
             var sim = Sim();
-            var humans = HunterSpawner.HumanShips(sim).ToList();
+            var humans = sim.Ships.HumanPlayerSignificantShips.ToList();
             return humans.Count > 0 && HunterSpawner.Hunters(sim).All(h => humans.All(h.IsEnemiesWith)) ? 1 : 0;
         };
         Autotest.Fields["huntersattacking"] = () =>

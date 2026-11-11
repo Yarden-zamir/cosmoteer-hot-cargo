@@ -150,8 +150,7 @@ internal sealed class ShadyTrapObjective : Objective
         if (Mission is null || State != ShadyTrapState.Waiting || sim != Mission.Game.Sim || sim.NodeId() != Site.MapNodeID) return;
         if (Site.Location is { } siteLoc) LastSiteLocation = siteLoc;
         if (LastSiteLocation is not { } at) return;
-        Ship? nearest = sim.Ships.HumanPlayerSignificantShips.MinBy(s => s.DetWorldCenter.DistanceSquaredTo(at));
-        if (nearest is null) return;
+        if (SimQueries.NearestHumanShip(sim, at) is not { } nearest) return;
         bool reached = Site.Location is null || nearest.DetWorldCenter.DistanceTo(at) <= TriggerDistance;
         if (reached) Resolve(sim, nearest.DetWorldCenter);
     }
@@ -180,17 +179,16 @@ internal sealed class ShadyTrapObjective : Objective
         try
         {
             var tag = new ID<SimObjectSpawner>(AmbushTag);
-            var before = TaggedShipIds(sim, tag).ToHashSet();
+            var before = SimQueries.TaggedShips(sim, tag).Select(t => t.Id).ToHashSet();
             ShadyAmbush.Generator.Generate(sim, new FastRand(RollSeed, 0x5348_4144_59UL), loadInstantly: true, rootLoc: near);
-            var spawned = TaggedShipIds(sim, tag).Where(id => !before.Contains(id)).ToList();
+            var spawned = SimQueries.TaggedShips(sim, tag).Select(t => t.Id).Where(id => !before.Contains(id)).ToList();
             if (spawned.Count == 0) throw new InvalidOperationException("the ambush spawner made no ships");
             Ambushers = spawned.Select(id => new ObjectiveTargetShip(sim.RequireGame(), sim.NodeId(), id)).ToList();
         }
         catch (Exception ex)
         {
             // A broken ambush file must not crash the sim tick. The offer then pays like an honest one.
-            Log.Error("shady ambush failed to spawn", ex);
-            Ui.Overlay.FatalError = $"shady ambush: {ex.Message}";
+            Errors.Report("shady ambush", ex.Message, ex);
             State = ShadyTrapState.Honest;
             FinishWithoutReward();
             return;
@@ -199,15 +197,6 @@ internal sealed class ShadyTrapObjective : Objective
         foreach (var a in Ambushers) a.Killed += OnAmbusherKilled;
         Log.Info($"shady trap sprung: {Ambushers.Count} ambushers");
         OnDisplayLinesChanged();
-    }
-
-    /// <summary>IDs of live and stasis ships with the tag, in sim order (deterministic).</summary>
-    static IEnumerable<ObjectID> TaggedShipIds(SimRoot sim, ID<SimObjectSpawner> tag)
-    {
-        for (int i = 0; i < sim.Ships.Count; i++)
-            if (sim.Ships[i].Tags?.Contains(tag) == true) yield return sim.Ships[i].UniqueID;
-        foreach (StasisSpawner s in sim.Stasis.OrderBy(s => s.ReservedObjectID))
-            if (MissionArea.StasisTags(s)?.Contains(tag) == true) yield return s.ReservedObjectID;
     }
 
     void OnAmbusherKilled(object? sender, EventArgs e)

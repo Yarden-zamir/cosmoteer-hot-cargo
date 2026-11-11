@@ -159,7 +159,7 @@ public static class MissionArea
         for (int i = 0; i < sim.Ships.Count; i++) Add(sim.Ships[i].Tags, new(sim.Ships[i], null, null));
         foreach (StasisSpawner s in sim.Stasis.OrderBy(s => s.ReservedObjectID))
         {
-            var tags = s is StasisDoodadSpawner d ? d.Tags : StasisTags(s);
+            var tags = s is StasisDoodadSpawner d ? d.Tags : SimQueries.StasisTags(s);
             Add(tags, new(new Circle(s.Location, 0f), s.ReservedObjectID, s, playerIndex: s.ObjectAllegiance));
         }
         foreach (var d in sim.Doodads) Add(d.Tags, new(new Circle(d.Location, d.Rules.SpawnRadius), d.UniqueID));
@@ -233,7 +233,7 @@ public static class MissionArea
     {
         int i = 0;
         foreach (Ship s in RequireSim().Ships.HumanPlayerSignificantShips.ToList())
-            s.WorldCenter = near + new Vector2(400 + 250 * i++, 0);
+            Autotest.Teleport(s, near + new Vector2(400 + 250 * i++, 0));
         Autotest.Wait(3);
     }
 
@@ -242,7 +242,7 @@ public static class MissionArea
     {
         var o = RequireEscort();
         Ship escort = o.Escort.TargetShip ?? throw new InvalidOperationException("escort is not live; run hc_escort_goto and wait first");
-        escort.WorldCenter = o.Destination;
+        Autotest.Teleport(escort, o.Destination);
         TeleportPlayers(o.Destination);
     }
 
@@ -263,25 +263,7 @@ public static class MissionArea
         Autotest.Wait(2);
     }
 
-    /// <summary>Player indexes and locations of live and stasis ships with the tag.</summary>
-    static List<(int PlayerIndex, Vector2 Location)> TaggedShips(SimRoot sim, string tagName)
-    {
-        var tag = new ID<SimObjectSpawner>(tagName);
-        var result = new List<(int, Vector2)>();
-        for (int i = 0; i < sim.Ships.Count; i++)
-            if (sim.Ships[i].Tags?.Contains(tag) == true) result.Add((sim.Ships[i].Metadata.PlayerIndex, sim.Ships[i].DetWorldCenter));
-        foreach (StasisSpawner s in sim.Stasis)
-            if (StasisTags(s)?.Contains(tag) == true) result.Add((s.ObjectAllegiance, s.Location));
-        return result;
-    }
-
-    /// <summary>Spawn tags of a ship in stasis. Ships spawned into stasis and ships that entered stasis use different spawner types.</summary>
-    internal static HashSet<ID<SimObjectSpawner>>? StasisTags(StasisSpawner s) => s switch
-    {
-        StasisShipSpawner ss => ss.Tags,
-        SimStasisManager.SerializedStasisShip ser => ser.Tags,
-        _ => null,
-    };
+    static List<SimQueries.TaggedShip> TaggedShips(SimRoot sim, string tagName) => SimQueries.TaggedShips(sim, new ID<SimObjectSpawner>(tagName));
 
     static int EnemiesOfPlayer(string tag)
     {
@@ -297,11 +279,4 @@ public static class MissionArea
         if (targets.Count == 0) throw new InvalidOperationException($"no ships tagged {targetTag}");
         return TaggedShips(sim, tag).Count(t => targets.All(x => sim.Mode.AreEnemies(t.PlayerIndex, x.PlayerIndex)));
     }
-}
-
-internal static class SimExtensions
-{
-    /// <summary>Career sims always have a game and a map node. A missing one is a bug, so it throws.</summary>
-    public static GameRoot RequireGame(this SimRoot sim) => sim.Game ?? throw new InvalidOperationException("sim has no game");
-    public static ObjectID NodeId(this SimRoot sim) => (sim.MapNode ?? throw new InvalidOperationException("sim has no map node")).UniqueID;
 }

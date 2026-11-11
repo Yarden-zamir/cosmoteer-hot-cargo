@@ -9,6 +9,7 @@ using Halfling.Geometry;
 using Halfling.PortableHashing;
 using Halfling.Serialization;
 using Halfling.Timing;
+using HotCargo.Core;
 using HotCargo.Hunters;
 
 namespace HotCargo.Tactics;
@@ -85,7 +86,7 @@ internal sealed class FallBackStrategy : AIStrategyModule
             }
             return false;
         }
-        var threat = HunterSpawner.HumanShips(HunterOrders.Sim(ship)).MinBy(h => h.DetWorldCenter.DistanceSquaredTo(ship.DetWorldCenter));
+        var threat = SimQueries.NearestHumanShip(HunterOrders.Sim(ship), ship.DetWorldCenter);
         if (threat is not null && HunterOrders.EdgeDistance(ship, threat) < t.FallBackDistance)
         {
             Vector2 away = Vector2.FromAngle(threat.DetWorldCenter.DirectionTo(ship.DetWorldCenter));
