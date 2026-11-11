@@ -37,6 +37,15 @@ static class UxAutotest
         {
             var ship = TechAutotest.PlayerShip();
             ship.Sim.PlayerInput.SelectParts(ship.Parts.ToList());
+            var gui = Autotest.RequireRun().Game.Gui.ShipGui;
+            Log.Info($"ux: selected {ship.Sim.PlayerInput.SelectedParts.Count} parts; ship gui active={gui.SelfActive} parts card={gui.PartsCard.SelfActive}");
+        };
+        // partsstate: logs the part selection and the parts card state.
+        Autotest.Commands["partsstate"] = _ =>
+        {
+            var game = Autotest.RequireRun().Game;
+            var gui = game.Gui.ShipGui;
+            Log.Info($"ux: selected parts {game.Sim.PlayerInput.SelectedParts.Count}, ships {game.Sim.PlayerInput.SelectedShips.Count}; ship gui={gui.SelfActive} parts card={gui.PartsCard.SelfActive} active={gui.PartsCard.IsActive} map={game.MapDisplayFactor}");
         };
         Autotest.Fields["ux_parts_info"] = () => MultiPartInfo.Shown;
         // supplycheck: runs the low supply check now, without the one-second wait.

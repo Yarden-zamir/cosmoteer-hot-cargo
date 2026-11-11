@@ -8,7 +8,7 @@ using HarmonyLib;
 namespace HotCargo.Ux;
 
 /// <summary>
-/// V10. With several parts selected, vanilla hides the part info box (PartsCard.UpdateForMultipleParts).
+/// V10. With several parts selected, vanilla hides the part info box (PartsCard.UpdateForMultipleParts, each frame).
 /// This shows "3 × Laser" or "12 parts", the average health as a bar, and how many are damaged.
 /// </summary>
 static class MultiPartInfo
@@ -21,12 +21,16 @@ static class MultiPartInfo
 
     static bool Active(PartsCard card) => card.Sim.PlayerInput.SelectedParts.Count > 1 && UxKit.On(s => s.MultiPartInfo);
 
-    [HarmonyPatch(typeof(PartsCard), nameof(PartsCard.UpdateForMultipleParts))]
+    /// <summary>
+    /// Patches the per-frame update, not UpdateForMultipleParts: that method is one line, so the JIT inlines it into this caller
+    /// and a patch on it stops running once the caller is recompiled. The update calls UpdateForMultipleParts when no single part is selected.
+    /// </summary>
+    [HarmonyPatch(typeof(PartsCard), nameof(PartsCard.OnUpdatingUIState))]
     static class Info
     {
         static void Postfix(PartsCard __instance)
         {
-            if (!Active(__instance)) return;
+            if (!Active(__instance) || __instance.Sim.PlayerInput.GetSingleSelectedPart() is not null) return;
             UxKit.Guard("multi part info", () =>
             {
                 var parts = __instance.Sim.PlayerInput.SelectedParts;
