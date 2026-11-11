@@ -211,6 +211,21 @@ public sealed class Run
         Log.Info($"run won: {reason}");
     }
 
+    /// <summary>
+    /// Runs a GUI action on the main thread at the end of the next frame. Use it for GUI work from hooks that can run while
+    /// a game is built: a multiplayer launch, resync or load builds the game on a worker thread.
+    /// </summary>
+    public static void OnNextFrame(Action action)
+    {
+        EventHandler<EventArgs>? handler = null;
+        handler = (_, _) =>
+        {
+            Halfling.App.Director.FrameEnded -= handler;
+            Errors.Guard("next frame action", action);
+        };
+        Halfling.App.Director.FrameEnded += handler;
+    }
+
     /// <summary>Replaces the tunables of the run. Deterministic callers only: single-player reload or the host's MP input.</summary>
     internal void ApplyTunables(TunablesFile.Loaded file)
     {

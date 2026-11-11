@@ -28,7 +28,8 @@ static class StartingVault
         bool needsDoor = false;
         for (int i = 0; i < ships.Count; i++)
             needsDoor |= Stock(ships[i], units / ships.Count + (i < units % ships.Count ? 1 : 0));
-        if (needsDoor) run.Game.Gui.ShowAreaName(Strings.GetText("HotCargoTech/VaultOutside"));
+        // A co-op launch runs this on a worker thread, so the notice waits for the next frame.
+        if (needsDoor) Run.OnNextFrame(() => run.Game.Gui.ShowAreaName(Strings.GetText("HotCargoTech/VaultOutside")));
     }
 
     /// <summary>Places vaults on the ship until they hold the units, and fills them. Returns true when a vault has no door.</summary>
