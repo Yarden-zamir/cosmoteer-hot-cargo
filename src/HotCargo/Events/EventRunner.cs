@@ -215,14 +215,16 @@ public static class EventRunner
         Log.Info($"event choice: {e.ID} choice {choiceIndex + 1} outcome {outcomeIndex + 1} by player {playerIndex}");
         s.Pending = null;
         ApplyOutcome(run, sim, playerIndex, outcome, p, lines);
+        // Tokens fill after the effects, so a text sees the counts that the choice left.
+        string outcomeText = EventText.Fill(outcome.Text, Vaults.CountFleetTech(sim));
         if (outcome.Next.Length > 0)
         {
-            string lead = string.Join("\n", new[] { outcome.Text }.Concat(lines).Where(l => l.Length > 0));
+            string lead = string.Join("\n", new[] { outcomeText }.Concat(lines).Where(l => l.Length > 0));
             Open(run, sim, EventLibrary.Get(outcome.Next), lead);
         }
         else
         {
-            s.LastResult = new EventResult { Serial = serial, Title = e.Title, Text = outcome.Text, Lines = [.. lines] };
+            s.LastResult = new EventResult { Serial = serial, Title = e.Title, Text = outcomeText, Lines = [.. lines] };
         }
     });
 
