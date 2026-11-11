@@ -75,3 +75,19 @@ To see more events fast, put `Events { ArrivalEventChance = 1  StationEventChanc
 
 1. Convoy Duty: the offer shows a "Heat -15 (convoy cover)" reward line. When you collect the reward at the station, does heat drop? Does the offer text explain why?
 2. Discreet Bounty: when a trap springs, the message "It was a setup. Corporate hunters drop out of the dark!" shows with the wanted alert. Is it clear that the bounty was a trap?
+
+## Story chains (spec 160-175, CHAINS.md)
+
+The autotests cover assignment, offers, results (success, abandoned, lost, timeout), choice pages, loops, Return and Arrival stages, rewards, reputation and save and load. Only a person can judge the points below.
+
+1. Open a station's comms in the first system. Is the "[Chain] ..." offer easy to tell apart from the other offers? Does the "Story Chains" category make sense in the list and in the mission log?
+2. Read a stage offer. Is the briefing short enough? After a few stages, does the "So far:" line help you remember the story, or is it noise?
+3. Finish a stage at the station. Does the choice window open at a good moment (near the station, after the payment)? Does the result text read well above the page?
+4. Escort and careful-targeting stages: do they play well with the default ships? Is seven minutes enough for "Extraction"? Can you keep the transport alive while you kill its escorts, or do your turrets kill it by accident?
+5. "Reactor Shielding": is 40 to 60 iron in 15 minutes fair at sector 1? Is buying the iron at the station too easy a way out?
+6. "Salvage Race": can you find the pod and haul 3 processors in 8 minutes? Do the Magpie ships make it a race?
+7. Return stages: refuse Mara's bill, leave the system and come back. Do the collectors appear about 8 seconds after you arrive? Does the result read as a consequence of your refusal?
+8. Arrival stages: take Okafor aboard or sell her. Do "Old Schedules" or "Okafor's Friends" come at a fair moment in the next system or the one after?
+9. Mara's standing offer: does it show on each visit and stay away inside one visit? Is 1.33 × the tech value worth a detour?
+10. Frequency: with every station holding a chain, are there too many offers per system? If yes, lower `Chains.StationChance` (for example 0.5) in `tunables.rules`.
+11. Multiplayer (co-op): both players see the chain offer and the chain pages. One player chooses. Does the chain advance the same for both?

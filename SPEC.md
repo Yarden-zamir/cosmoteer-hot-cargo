@@ -136,7 +136,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 13. Tunables, debug and live tuning
 
-50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65 and 67 to 78 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
+50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78 and 160 to 175 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
 51. The file uses the game's `.rules` format.
 52. The mod watches the file. When the file changes, the mod reloads it on the next frame, without a game restart.
 53. If the file has an error, the mod keeps the last valid values and shows the error in game. Errors include values that break sim logic later, for example a stage name that `Hunters.Stages` or a tactic does not match (`TunablesFile.Validate`).
@@ -146,7 +146,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 14. Persistence and multiplayer
 
-57. Heat, the stages that already started, the sector index, the run result and the event state (requirement 76) are saved with the career save and loaded with it. Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
+57. Heat, the stages that already started, the sector index, the run result, the event state (requirement 76) and the chain state (requirement 172) are saved with the career save and loaded with it. Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
 58. All logic that changes simulation state runs in the deterministic simulation tick. It uses the simulation random source, not `System.Random`.
 59. The fleet tech count and the loss rule count all human players together. A loss ends the run for everyone.
 60. In multiplayer, the mod does not reload tunables. The heat panel shows a short hash of the tunables file, so players can compare.
@@ -189,6 +189,9 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `Events.SignalTriggerDistance` | 900 | 69 |
 | `Events.CooldownSeconds`, `MaxEventsPerSystem` | 120 s, 2 | 70 |
 | `Events.MoneyScale`, `FameScale`, `HeatScale` | 1, 1, 1 | 73 |
+| `Chains.StationChance` | 1 | 160 |
+| `Chains.PageTriggerDistance`, `LaterDelaySeconds` | 1500, 8 s | 165 |
+| `Chains.StoryLines` | 2 | 170 |
 | `KiteRangeFraction` | 0.9 | 44 |
 | `PincerAngleDegrees` | 120° | 45 |
 | `FallBackHealthFraction` | 0.35 | 47 |
@@ -208,12 +211,13 @@ mod/                       rules content; scripts/assemble-mod.sh builds mod.rul
   missions/                mission spawners, shady ambush
   tactics/ai_hunter.rules  hunter AI (HotCargoHunter)
   events/                  choice events (events.rules), outcome spawns (spawns.rules), signal POIs
+  chains/                  story chains (chains.rules), stage missions (missions.rules), chain pages (pages.rules)
 src/HotCargo.Loader/       startup hook entry point, assembly resolve
 src/HotCargo/
   Mod.cs                   Harmony setup, area registration
   Core/                    Run, RunState (save), Tunables, TunablesFile (live reload, validation), HeatModel,
                            CareerPatches (lifecycle), Activation (requirement 63), Errors, SimQueries, DebugKeys
-  Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/   one folder for each area: <Area>Area.Register, tunables, patches
+  Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/ Chains/   one folder for each area: <Area>Area.Register, tunables, patches
   Ui/                      overlay, heat panel, run intro and end panels
   Dev/Autotest.cs          headless test commands
 tests/HotCargo.Tests/      fast unit tests for the pure model files
@@ -269,7 +273,7 @@ Parallel work: steps 3 and 4 touch separate files and can run at the same time a
 
 FTL-style choice events. EVENTS.md holds the design and the catalog.
 
-67. An event is a page with a title, a text and 1 to 4 choices. Event content is in `mod/events/events.rules`. Ships that outcomes spawn are generators in `mod/events/spawns.rules`. A change to these files needs a game restart.
+67. An event is a page with a title, a text and 1 to 4 choices. Event content is in `mod/events/events.rules`. Chain pages are events in `mod/chains/pages.rules` (requirement 167). Ships that outcomes spawn are generators in `mod/events/spawns.rules`. A change to these files needs a game restart.
 68. A choice has an optional sure cost, an optional need and 1 or more weighted outcomes. The window shows the cost on the button. A choice whose need or cost the fleet cannot meet is greyed out with the reason, or hidden when the rules say so. The need of a choice includes its cost.
 69. Triggers: Start (once, `StartDelaySeconds` after a new run), Arrival (`ArrivalDelaySeconds` after the first arrival in a system, chance `ArrivalEventChance`), Signal (a player ship within `SignalTriggerDistance` of a signal POI; the POI goes away), Station (the first trade station within `StationTriggerDistance` in a system visit, chance `StationEventChance`; never the Buyer). Signals and stations wait until the Start event opened.
 70. Arrival and Station events wait `CooldownSeconds` after the last triggered event. A system gets at most `MaxEventsPerSystem` Arrival and Station events. An event opens at most `MaxPerRun` times per run (rules, default 1; 0 means no limit). Only one event page waits at a time.
@@ -282,3 +286,23 @@ FTL-style choice events. EVENTS.md holds the design and the catalog.
 77. In single player, an open event window pauses the game when `PauseOnEvent` is on. Headless test games do not pause.
 78. A content error in an event (a missing spawn, an unknown resource, a bad reference) shows in the overlay at the first event and turns off events for that game. An error while an outcome applies drops the page and shows the error; the game keeps running.
 
+## 23. Chains
+
+Story chains: missions in parts, one chain per station. CHAINS.md holds the design and the catalog.
+
+160. When the players first enter a system, each trade or military station gets one chain, with chance `StationChance`. The station must give missions, belong to a faction and not be an enemy of the players. The Buyer gets none.
+161. A chain is a graph of 3 to 5 stages in `mod/chains/chains.rules`. The pick is weighted among the chains whose sector range and station kinds fit. Only the chains that the run used least often take part, so no chain repeats while an unused one fits. The pick uses the simulation random source.
+162. A stage is a mission (a generator in `mod/chains/missions.rules`) or a page (an event in `mod/chains/pages.rules`). The first stage is always a mission offer at the station, so the players choose to start a chain.
+163. A Station mission stage shows its offer in the station's comms. A declined or expired offer comes back on the next visit to the system. Return and Arrival missions go straight into the mission log.
+164. Each Station stage mission has contract terms as data (`Terms`: `AcceptFee`, `FlatHeat`, `TrailWeight`, `RivalGroup`, `InformantChance`, the field names of `HotCargoContract` from the economy area). **Open:** the economy area's carrier type is not in main yet, so the terms do not apply. When it lands, `ChainRunner.AttachTerms` adds the carrier to each stage mission.
+165. A Station page stage opens when a player ship comes within `PageTriggerDistance` of the station. A Return stage starts `LaterDelaySeconds` after the players enter the station's system again, after they left it. An Arrival stage starts `LaterDelaySeconds` after the first arrival in a new system, `AfterSectors` sectors after the stage began. `AfterSectors = 0` starts it in the current system.
+166. A stage mission gives one result when it leaves the mission log: `success` (completed), `timeout` (a time limit ran out), `lost` (a protected ship died), `abandoned` (abandoned in the log) or `fail`.
+167. A page gives the `ChainResult` of the outcome that the players got. Every page outcome has a `ChainResult` or a follow-up page. Choices go through the event choice MP input (requirement 74).
+168. The stage's result rows handle the result. The first row whose `On` matches and whose chain flag conditions hold wins. `timeout`, `lost` and `abandoned` fall back to `fail`, and every result falls back to `any`.
+169. A result row can apply event outcome effects (requirement 72, same units as requirement 73), reputation with the station's faction (in standard mission reputation at the sector tier), chain flags and a story line. Then the chain moves to the row's `Next` stage. An empty `Next` ends the chain.
+170. Comms names a stage offer "[Chain] <chain title>: <stage title>" with "[Chain]" in the event heading color. Its description starts with the last `StoryLines` story lines. Its reward list has a "Story chain, part N" line. Chain stage missions have their own mission category, "Story Chains", so the comms list and the mission log group them.
+171. A result shows in the event window. A page result joins that page's result window. A result before a page that opens at once shows above that page. A mission result waits until no event page is open.
+172. The chain state is saved in the run state: each station's chain, stage, flags, story, stage mission, waiting page and timers, and how often the run used each chain.
+173. Chain logic changes the simulation only from the sim tick, the system switch, the mission log's removal event and the event choice MP input.
+174. A content error in a chain (a bad graph, a missing mission or page, an unhandled result) shows in the overlay at the first chain check and turns off chains for that game.
+175. A stage mission that cannot spawn in a system (a placement or tag search failed) tries again on the next visit.
