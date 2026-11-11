@@ -74,7 +74,12 @@ static class Markers
         double now = App.Clock.Time.Seconds;
         int count = 0;
         foreach (var ship in _sim.Ships.LocalPlayerShips)
-            foreach (var part in VaultsOf(ship, now)) { _renderer.QueueNineSlice(part); count++; }
+            foreach (var part in VaultsOf(ship, now))
+            {
+                // The list is refreshed once a second, so a vault destroyed since then is still in it.
+                if (part.Ship != ship || part.IsDestroyed) continue;
+                _renderer.QueueNineSlice(part); count++;
+            }
         if (count == 0) return;
         float pulse = 0.65f + 0.35f * MathF.Sin((float)now * 3f);
         _renderer.Draw(_sim, new Color(1f, 0.78f, 0.2f, pulse));

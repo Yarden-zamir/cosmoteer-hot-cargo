@@ -74,13 +74,13 @@ Run these on the Mac from the UX worktree, only when the main slot is free.
    `source scripts/pc.sh; SLOT=main; pc "$PS_PATHS"'Get-SlotProcess'`
 2. Deploy to the main slot: `SLOT=main scripts/deploy.sh`
 3. Install the script:
-   `SLOT=main; pc "$PS_PATHS"'$in = [Console]::In.ReadToEnd(); [IO.File]::WriteAllText((Join-Path $modDir "autotest.txt"), $in)' < tests/autotest/ux-screens.txt`
+   `SLOT=main; pc "$PS_PATHS"'$in = [Console]::In.ReadToEnd(); [IO.File]::WriteAllText((Join-Path $modDir "autotest.txt"), $in)' < tests/screens/ux-screens.txt`
 4. Start the game minimized: `SLOT=main scripts/run.sh`. The script quits the game when it is done (about 2 minutes).
 5. Check the log for `ux: screenshot` lines: `SLOT=main scripts/logs.sh 60`
 6. Pull the images: `mkdir -p docs/screenshots; pc "$PS_PATHS"'tar.exe -cf - -C (Join-Path $modDir "screenshots") .' | tar -xf - -C docs/screenshots`
 7. Before you commit the images, look at each one. Crop anything that shows a user name, a file path or a Steam name.
 
-The script `tests/autotest/ux-screens.txt` takes these pairs (before = switch off, after = switch on):
+The script `tests/screens/ux-screens.txt` takes these pairs (before = switch off, after = switch on):
 
 | Image | Shows |
 |---|---|
@@ -94,4 +94,4 @@ The script `tests/autotest/ux-screens.txt` takes these pairs (before = switch of
 ## Tests
 
 - `tests/autotest/ux-basic.txt` (headless slot): heat panel on and off, two stage alerts, hull integrity after damage, map open and close, one ship alert when the own ship is destroyed, the loss path through the patched game-over screen. Any failed UI patch logs an ERROR line and fails the test.
-- `tests/autotest/ux-screens.txt` (main slot only): the screenshots above.
+- `tests/screens/ux-screens.txt` (main slot only): the screenshots above.
