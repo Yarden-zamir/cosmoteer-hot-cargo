@@ -1,3 +1,5 @@
+using Cosmoteer.Game;
+using Cosmoteer.Game.Gui;
 using Halfling;
 using Halfling.Graphics;
 using HarmonyLib;
@@ -11,6 +13,8 @@ namespace HotCargo.Ux;
 /// back buffer, which keeps its last size, and Present still skips because the window is occluded.
 /// "screenshot NAME" copies the back buffer at the end of a frame into Mods/hot_cargo/screenshots/NAME.png.
 /// Headless test slots have no graphics device, so this works only in the player's slot (main).
+/// The OS cursor rests somewhere over the hidden window, so the capture hides hover tooltips. It never moves the real cursor,
+/// because a person uses the PC.
 /// </summary>
 public static class Screenshot
 {
@@ -48,6 +52,8 @@ public static class Screenshot
         string dir = Path.Combine(Mod.ModRoot, "screenshots");
         Directory.CreateDirectory(dir);
         string path = Path.Combine(dir, name + ".png");
+        var gui = App.Director.States.OfType<GameRoot>().FirstOrDefault()?.Gui;
+        if (gui is not null) gui.BeforeFrameDraw += HideToolTips;
         try
         {
             using TextureData td = await App.Graphics.GetEndOfFrameScreenShot();
@@ -58,5 +64,17 @@ public static class Screenshot
         {
             Log.Error($"ux: screenshot {name} failed", ex);
         }
+        finally
+        {
+            if (gui is not null) gui.BeforeFrameDraw -= HideToolTips;
+        }
+    }
+
+    /// <summary>Runs right before the GUI draws, after the tooltip logic of the frame, so the tooltips stay hidden in the capture.</summary>
+    static void HideToolTips(object? sender, EventArgs e)
+    {
+        if (sender is not GameGui gui) return;
+        foreach (var tip in new[] { gui.ToolTipRight, gui.ToolTipRightNoWrap, gui.ToolTipLeft, gui.ToolTipBelow, gui.ToolTipAbove, gui.ToolTipAboveNoWrap })
+            tip.SelfActive = false;
     }
 }

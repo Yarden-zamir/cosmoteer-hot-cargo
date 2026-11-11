@@ -38,6 +38,10 @@ public sealed class UxTunables
     [Serialize(Optional = true)] public bool MapNodeDetails = true;
     /// <summary>Fame tooltip: title, next title, crew limit.</summary>
     [Serialize(Optional = true)] public bool FameTooltip = true;
-    /// <summary>Game-over screen: run statistics and a "waiting for the host" line for clients.</summary>
+    /// <summary>Game-over screen: a backdrop panel, run statistics and a "waiting for the host" line for clients.</summary>
     [Serialize(Optional = true)] public bool GameOverStats = true;
+    /// <summary>A comms window with a station or ship pauses the game. Closing it unpauses, unless you paused by hand.</summary>
+    [Serialize(Optional = true)] public bool PauseOnComms = true;
+    /// <summary>The same in multiplayer. Off by default, because one player's comms window pauses every player.</summary>
+    [Serialize(Optional = true)] public bool PauseOnCommsMultiplayer;
 }

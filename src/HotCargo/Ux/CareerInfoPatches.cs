@@ -6,6 +6,7 @@ using Cosmoteer.Gui;
 using Cosmoteer.Localization;
 using Cosmoteer.Modes.Career;
 using Cosmoteer.Modes.Career.Missions;
+using Halfling.Geometry;
 using Halfling.Graphics.Text;
 using Halfling.Gui;
 using Halfling.Pooling;
@@ -127,7 +128,8 @@ static class CareerInfoPatches
 
     /// <summary>
     /// V6 and H3. The game-over screen: the Hot Cargo loss title and run numbers, career numbers, and a line for clients,
-    /// which see no buttons in vanilla.
+    /// which see no buttons in vanilla. Vanilla draws the lines straight over the game, so this puts them in a panel
+    /// in the style of the win panel, with a fixed width so that long lines wrap instead of overlapping.
     /// </summary>
     [HarmonyPatch(typeof(GameOverGui), MethodType.Constructor, typeof(GameRoot))]
     static class GameOver
@@ -137,29 +139,61 @@ static class CareerInfoPatches
             if (game.Mode is not CareerGameModeManager mode) return;
             var box = (LayoutBox)__instance.Children[0];
             var title = (Label)box.Children[0];
+            bool hotCargoLoss = Run.Current is { } run && run.Mode == mode && run.State.Result == RunResult.Lost && run.T.Ux.RunEndPanel;
+            bool stats = UxKit.On(s => s.GameOverStats);
+            if (!hotCargoLoss && !stats) return;
             int insertAt = 2;
-            if (Run.Current is { } run && run.Mode == mode && run.State.Result == RunResult.Lost && run.T.Ux.RunEndPanel)
+            if (hotCargoLoss)
             {
                 title.Text = UxKit.Text("LossTitle");
-                box.Children.Insert(insertAt++, Line($"<s22>{run.State.EndReason}</s22>\n{RunEndUi.StatsLine(run)}"));
+                title.TextRenderer.FontSize = 40;
+                box.Children.Insert(insertAt++, Line($"<s22>{Run.Current!.State.EndReason}</s22>\n{RunEndUi.StatsLine(Run.Current)}"));
             }
-            if (!UxKit.On(s => s.GameOverStats)) return;
-            int systems = game.Map.Nodes.Count(n => n == game.CurrentMapNode || game.SimArchive.ContainsSim(n));
-            box.Children.Insert(insertAt++, Line(UxKit.Format("CareerStatsFmt", mode.PlayerFame.ToString("N0"),
-                mode.Missions._completedMissions.Count, systems)));
-            if (!game.NetManager.IsHost) box.Children.Insert(insertAt, Line($"<gray>{UxKit.Text("WaitingForHost")}</gray>"));
+            if (stats)
+            {
+                int systems = game.Map.Nodes.Count(n => n == game.CurrentMapNode || game.SimArchive.ContainsSim(n));
+                box.Children.Insert(insertAt++, Line(UxKit.Format("CareerStatsFmt", mode.PlayerFame.ToString("N0"),
+                    mode.Missions._completedMissions.Count, systems)));
+                if (!game.NetManager.IsHost) box.Children.Insert(insertAt, Line($"<gray>{UxKit.Text("WaitingForHost")}</gray>"));
+            }
+            PutInPanel(__instance, box);
         });
+
+        /// <summary>Moves the vanilla content box into a centered blurred panel. The last child of the box is the button row.</summary>
+        static void PutInPanel(GameOverGui gui, LayoutBox box)
+        {
+            var buttons = (LayoutBox)box.Children[box.Children.Count - 1];
+            float width = Math.Max(900f, buttons.Children.Count * 220f + 60f);
+            var panel = new LayoutBox { AnchorRect = AnchorPresets.Center, Width = width, InputBlockMode = InputBlockMode.Auto };
+            panel.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
+            panel.AutoSize.Anchor = new Vector2(0.5f, 0.5f);
+            panel.Children.LayoutAlgorithm = LayoutAlgorithms.StretchTopToBottom;
+            panel.Children.BorderPadding = new Borders(30f, 24f, 30f, 24f);
+            WidgetRules.AddBlur(panel);
+            gui.Children.Remove(box);
+            box.AnchorRect = AnchorPresets.TopLeft;
+            box.AutoSize.AutoWidthMode = AutoSizeMode.Disable;
+            foreach (var child in box.Children)
+                if (child is Label l) Wrap(l);
+            panel.AddChild(box);
+            gui.AddChild(panel);
+        }
+
+        static void Wrap(Label l)
+        {
+            l.AutoSize.AutoWidthMode = AutoSizeMode.Disable;
+            l.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
+            l.TextRenderer.OversizeMode = OversizeMode.Wrap;
+        }
 
         static Label Line(string xml)
         {
             var l = new Label { Text = xml };
-            l.TextRenderer.Font = WidgetRules.Instance.ShadowGlowFont;
+            l.TextRenderer.Font = WidgetRules.Instance.ShadowFont;
             l.TextRenderer.FontSize = 18;
             l.TextRenderer.XmlFormatting = true;
             l.TextRenderer.HAlignment = HAlignment.Center;
-            l.TextRenderer.VAlignment = VAlignment.Center;
-            l.AutoSize.AutoWidthMode = AutoSizeMode.Enable;
-            l.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
+            l.TextRenderer.VAlignment = VAlignment.Top;
             return l;
         }
     }
