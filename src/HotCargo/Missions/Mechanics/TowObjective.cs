@@ -21,16 +21,16 @@ using HotCargo.Core;
 namespace HotCargo.Missions.Mechanics;
 
 /// <summary>
-/// Rules type "HotCargoTow" (spec 134): bring a derelict hulk to a station. Completes when the hulk's hull is within
+/// Rules type "HotCargoSalvageTow" (spec 134): bring a derelict hulk to a station. Completes when the hulk's hull is within
 /// Mechanics.DeliveryRadius of the station's hull. The players tow it with tractor beams, push it, or claim it with crew and fly it.
 /// Fails when the hulk is gone (destroyed or salvaged to nothing) or the station dies.
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
-[SerialDerivedType(TypeName = "HotCargoTow")]
+[SerialDerivedType(TypeName = "HotCargoSalvageTow")]
 internal sealed class TowObjective : Objective
 {
     [ReflectiveSerialization(Explicit = true)]
-    [SerialDerivedType(TypeName = "HotCargoTow")]
+    [SerialDerivedType(TypeName = "HotCargoSalvageTow")]
     [TrackMultipleReferences]
     [ReflectivePortableHashing(Explicit = true)]
     public sealed class Spawner : ObjectiveSpawner
@@ -54,7 +54,7 @@ internal sealed class TowObjective : Objective
     [Serialize] public ObjectiveTargetShip Station { get; private set; }
     [Serialize] public int Tier { get; private set; }
 
-    public override string ScriptTypeName => "HotCargoTow";
+    public override string ScriptTypeName => "HotCargoSalvageTow";
 
     public TowObjective(HullRef hulk, ObjectiveTargetShip station, int tier)
     {
@@ -143,5 +143,5 @@ internal sealed class TowObjective : Objective
         Complete();
     }
 
-    public override int GetTypeIntegrityHash() => 0x4843_5457; // "HCTW"
+    public override int GetTypeIntegrityHash() => 0x4843_5352; // "HCSR"
 }

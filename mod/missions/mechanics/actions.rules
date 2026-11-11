@@ -61,7 +61,7 @@
 			DescriptionKey = "HotCargoMechanics/SunMiningDesc"
 			CategoryID = deliveries
 		}
-		HotCargoTow
+		HotCargoSalvageRights
 		{
 			NameKey = "HotCargoMechanics/Tow"
 			DescriptionKey = "HotCargoMechanics/TowDesc"

@@ -371,7 +371,7 @@ Tow
 			[
 				{
 					Type = Mission
-					Metatype = HotCargoTow
+					Metatype = HotCargoSalvageRights
 					SpawnAt = Tag
 					SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
 					Faction = OwnerOfTag
@@ -389,7 +389,7 @@ Tow
 									SubObjectives
 									[
 										{
-											Type = HotCargoTow
+											Type = HotCargoSalvageTow
 											HulkTag = { Mode=Latest; Tag=hc_tow_hulk; }
 											StationTag = { Mode=Nearest; Tag=trade_station; }
 										}

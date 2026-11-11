@@ -34,7 +34,7 @@ public static class MechanicsArea
         new("siege", "HotCargoDroneSiege", t => t.DroneSiegeChance),
         new("prototype", "HotCargoPrototype", t => t.PrototypeChance),
         new("sunmining", "HotCargoSunMining", t => t.SunMiningChance),
-        new("tow", "HotCargoTow", t => t.TowChance),
+        new("tow", "HotCargoSalvageRights", t => t.TowChance),
         new("capture", "HotCargoCapture", t => t.CaptureChance),
         new("survey", "HotCargoSurvey", t => t.SurveyChance),
         new("guard", "HotCargoClaimJumpers", t => t.MiningGuardChance),
