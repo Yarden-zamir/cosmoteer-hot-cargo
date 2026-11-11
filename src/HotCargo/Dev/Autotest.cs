@@ -30,6 +30,9 @@ public static class Autotest
     static int _line;
     static EventHandler<Cosmoteer.Simulation.SimRoot>? _godmode;
 
+    /// <summary>Test only: while godmode is on, the run cannot be lost (one big hit can still destroy a vault).</summary>
+    public static bool GodMode => _godmode is not null;
+
     /// <summary>A condition that the script waits for. Then runs after the condition holds and may start the next wait.</summary>
     sealed record WaitCondition(Func<bool> Done, double Deadline, string What, Action? Then);
 
