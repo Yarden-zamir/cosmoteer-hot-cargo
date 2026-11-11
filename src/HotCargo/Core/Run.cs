@@ -26,11 +26,14 @@ public sealed class Run
         public static event Action<Run, bool>? SystemEntered;
         /// <summary>Runs once per new career, after the starting ship exists.</summary>
         public static event Action<Run>? NewRunStarted;
+        /// <summary>Runs inside each sim tick while the run is Running, after FleetTech is updated. Arguments: run, sim, tick seconds.</summary>
+        public static event Action<Run, SimRoot, double>? Tick;
 
         internal static void RaiseStageStarted(Run r, SimRoot s, int i) => StageStarted?.Invoke(r, s, i);
         internal static void RaiseStrikeWave(Run r, SimRoot s) => StrikeWave?.Invoke(r, s);
         internal static void RaiseSystemEntered(Run r, bool first) => SystemEntered?.Invoke(r, first);
         internal static void RaiseNewRunStarted(Run r) => NewRunStarted?.Invoke(r);
+        internal static void RaiseTick(Run r, SimRoot s, double dt) => Tick?.Invoke(r, s, dt);
     }
 
     public GameRoot Game { get; }
@@ -99,7 +102,8 @@ public sealed class Run
         double dt = sim.FixedUpdater.Interval.Seconds;
         State.GameSeconds += dt;
         State.FleetTech = Hooks.CountFleetTech(sim);
-        if (!State.HeatEnabled) return;
+        Hooks.RaiseTick(this, sim, dt);
+        if (State.Result != RunResult.Running || !State.HeatEnabled) return;
         float mult = HeatModel.Multiplier(T.Heat.HeatMultiplierByUnits, State.FleetTech);
         AddHeat(HeatModel.TimeHeat(T.Heat.HeatPerGameMinute, mult, dt), sim);
         TickStrikeWaves(sim, dt);

@@ -1,0 +1,79 @@
+// Stolen Tech (spec section 7). Sprites are the vanilla processor sprites with a tint.
+// The C# code (src/HotCargo/Tech) replaces the trade price and keeps tech out of normal storage on human ships.
+ID = yarden_zamir.stolen_tech
+NameKey = "HotCargoTech/StolenTech"
+PluralNameKey = "HotCargoTech/StolenTechPlural"
+DescriptionKey = "HotCargoTech/StolenTechDesc"
+// Static fallback only. TechPatches replaces buy and sell prices with the tech value (spec 19).
+BuyPrice = 10000
+MaxPerNugget = 1
+// A Tech Vault has 2 tiles, so it holds 2 x 3 = 6 units.
+MaxStackSize = 3
+// Normal storage on human ships never holds tech. Sharing the processor key keeps a useless
+// "Supply Stolen Tech" job out of every storage part's job list.
+FlexGridPriorityKey = "flex_grid_processor"
+FlexGridDefaultPriority = 1
+// Destroyed vaults and killed crew lose their tech (spec 9, 65). Salvage (deconstruction) drops it as nuggets.
+DropRates
+{
+	StorageSalvaged = 100%
+}
+Rarity = Unique
+
+TINT = [140, 255, 200]
+
+Icon
+{
+	Texture
+	{
+		File = "./Data/resources/processor/icon.png"
+		MipLevels = max
+	}
+	Size = [64, 64]
+	VertexColor = &~/TINT
+}
+
+Overlay
+{
+	Texture
+	{
+		File = "./Data/resources/processor/overlay.png"
+		SampleMode = Linear
+		MipLevels = max
+	}
+	Size = [1, 1]
+	VertexColor = &~/TINT
+}
+
+NuggetSprite
+{
+	File = "./Data/resources/processor/processor.png"
+	NormalsFile = "./Data/resources/processor/processor_normals.png"
+	Size = [1, 1]
+	Offset = [.25+6/64, 0]
+	UVRotation = 1
+	VertexColor = &~/TINT
+}
+
+StackSprites
+[
+	{
+		File = "./Data/resources/processor/processor_stack_1.png"
+		Size = [1, 1]
+		VertexColor = &~/TINT
+	}
+	{
+		File = "./Data/resources/processor/processor_stack_3.png"
+		Size = [1, 1]
+		VertexColor = &~/TINT
+	}
+	{
+		File = "./Data/resources/processor/processor_stack_5.png"
+		Size = [1, 1]
+		VertexColor = &~/TINT
+	}
+]
+
+StackReceiveMediaEffects = &/COMMON_EFFECTS/ProcessorDeliver
+StackPickupMediaEffects = &/COMMON_EFFECTS/ProcessorPickup
+NuggetPickupMediaEffects = &/COMMON_EFFECTS/NuggetPickup

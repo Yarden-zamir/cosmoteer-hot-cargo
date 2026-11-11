@@ -35,7 +35,7 @@ Out of scope for this batch:
 - **Sector index**: the number of the current sector in the run. The first sector is 1.
 - **Tech unit**: one unit of the stolen technology. It is a resource.
 - **Tech Vault**: a ship part. It is the only part that can store tech units.
-- **Fleet tech count**: the tech units that all human players hold, in vaults and in crew hands.
+- **Fleet tech count**: the tech units that all human players hold, in vaults and in crew hands. Station crew that carry a sale that is not paid yet also count.
 - **Tech value**: the price that a station pays for one tech unit.
 - **Heat**: how close the corporation is in the current sector. Range 0 to 100.
 - **Heat multiplier**: a factor that comes from the fleet tech count.
@@ -65,9 +65,9 @@ Out of scope for this batch:
 
 13. Tech is a new resource: "Stolen Tech". It uses the normal resource systems: storage, crew carrying, transfer between ships, and trade.
 14. Only the Tech Vault part stores tech.
-15. The Tech Vault is a buildable part. Its rules define its size, health, cost and capacity. Defaults: 2×2, high health, capacity 6 units. Rules changes need a game restart.
+15. The Tech Vault is a buildable part. Its rules define its size, health, cost and capacity. Defaults: 2×2, 12,000 health (3 × the vanilla storage bay), 96 steel, capacity 6 units (2 tiles × stack size 3). Rules changes need a game restart.
 16. To move tech between ships, the players build a vault on the other ship. The crew then carry the tech over, like any other resource.
-17. A new run starts with `StartingTechUnits` (default 6) in a Tech Vault on the starting ship.
+17. A new run starts with `StartingTechUnits` (default 6) in a Tech Vault on the starting ship. The vault replaces a vanilla 2×2 storage bay of the ship. A ship without one gets the vault on a free spot next to the hull, with a door to a neighbor part where the rules allow one.
 65. Damage to a Tech Vault destroys tech inside it. Each time a vault takes damage equal to `VaultDamagePerUnitLost` × its maximum health (default 0.15), it loses one unit. A destroyed vault loses all units inside it.
 66. Repair of a vault does not bring back lost tech.
 
@@ -77,7 +77,7 @@ Out of scope for this batch:
 19. Tech value = `TechBaseValue` × (1 + `TechGrowthPerSector` × (sector index − 1) + `TechGrowthPerGameHour` × game hours).
     Defaults: base 10,000, +35 % for each sector, +10 % for each game hour.
 20. The trade screen shows the current tech value as the resource price.
-21. Trade stations buy tech. Stations do not sell tech. **[verify]** which rules decide which stations trade a resource.
+21. Trade stations buy tech. Stations do not sell tech. A station stocks only the resources in the `StationResourceTradeDeltas` lists of the sector rules, and tech is in none of them. Stations take sold tech into free untyped storage tiles. Players can buy back tech that they sold, at `BuyBackFactor` (default 1.5) × the tech value.
 22. Tech value is computed from simulation state only, so it is the same on all multiplayer clients.
 
 ## 9. Heat
@@ -142,7 +142,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 53. If the file has an error, the mod keeps the last valid values and shows the error in game.
 54. Part, resource and mission definitions are mod `.rules` content. A change to them needs a game restart.
 55. An overlay shows heat, the heat rate, the heat multiplier, the fleet tech count, the tech value, the stage and the sector index. F8 toggles it.
-56. When `DebugKeys = true`, debug keys work: add or remove heat, set the stage, add or remove tech units, and spawn the next stage.
+56. When `DebugKeys = true`, debug keys work: add or remove heat, set the stage, add or remove tech units (F11 / Shift+F11, one unit), and spawn the next stage.
 
 ## 14. Persistence and multiplayer
 
@@ -260,5 +260,3 @@ Parallel work: steps 3 and 4 touch separate files and can run at the same time a
 ## 21. Open decisions
 
 - Strike stage: survivable waves (default) or a hard fail (requirement 35).
-- Tech Vault defaults: one vault holds all 6 units, or each vault holds fewer units, so that the cargo spreads over several vaults (requirement 15).
-- Sale of the last unit: it ends the run under requirement 9. The alternative is to block the sale of the last unit (requirement 9).
