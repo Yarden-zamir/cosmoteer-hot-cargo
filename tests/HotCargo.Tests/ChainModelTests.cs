@@ -89,6 +89,14 @@ public class ChainModelTests
     }
 
     [Fact]
+    public void Richest_pays_and_ties_go_to_the_lowest_index()
+    {
+        Assert.Equal(3, ChainModel.Richest([(0, 100), (3, 500), (1, 200)]));
+        Assert.Equal(1, ChainModel.Richest([(2, 500), (1, 500)]));
+        Assert.Throws<ArgumentException>(() => ChainModel.Richest([]));
+    }
+
+    [Fact]
     public void Story_so_far_keeps_the_last_lines()
     {
         Assert.Equal("b. c.", ChainModel.StorySoFar(["a.", "b.", "c."], 2));

@@ -43,7 +43,7 @@ The content files are the source of truth: `mod/chains/chains.rules` (chains, st
 
 | Consequence | How |
 |---|---|
-| Money, money in tech value, fame, heat, tech, crew, resources, hull damage, spawned ships, event flags | `Effects` on a row, or the outcome of a page. Same units as events (EVENTS.md section 2). |
+| Money, money in tech value, fame, heat, tech, crew, resources, hull damage, spawned ships, event flags | `Effects` on a row, or the outcome of a page. Same units as events (EVENTS.md section 2). Gains split between the players. A loss comes from the player who chose, or from the richest player for a mission result. |
 | Reputation with the station's faction | `Reputation` on a row, in standard mission reputation at the sector tier. Vanilla prices and police follow reputation. |
 | Open or close branches | Chain flags: `SetFlags` and `ClearFlags` on a row, `IfFlags` and `NotFlags` on later rows of the same chain. |
 | Change what later stages spawn | The graph: each result leads to its own stage, with its own mission. |

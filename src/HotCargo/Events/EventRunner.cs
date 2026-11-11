@@ -226,14 +226,14 @@ public static class EventRunner
         {
             s.LastResult = new EventResult { Serial = serial, Title = e.Title, Text = outcomeText, Lines = [.. lines] };
         }
-        OutcomeChosen?.Invoke(run, sim, serial, outcome);
+        OutcomeChosen?.Invoke(run, sim, serial, playerIndex, outcome);
     });
 
     /// <summary>
-    /// Runs inside Choose after an outcome applied, with the serial of the page that was chosen on. A follow-up page (Next) is already pending.
-    /// The Chains area reads ChainResult here.
+    /// Runs inside Choose after an outcome applied. Arguments: run, sim, serial of the page that was chosen on, the choosing player, the outcome.
+    /// A follow-up page (Next) is already pending. The Chains area reads ChainResult here.
     /// </summary>
-    public static event Action<Run, SimRoot, int, OutcomeRules>? OutcomeChosen;
+    public static event Action<Run, SimRoot, int, int, OutcomeRules>? OutcomeChosen;
 
     static int RollOutcome(Run run, ChoiceRules choice, ulong seed, int choiceIndex)
     {

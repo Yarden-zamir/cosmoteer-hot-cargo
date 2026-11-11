@@ -77,7 +77,7 @@ public static class ChainRunner
         if (c.PendingResult.Length > 0)
         {
             // A result shows in the event window, so it waits until no page is open.
-            if (events.Pending is null) Resolve(run, sim, c, c.PendingResult, resultSerial: 0);
+            if (events.Pending is null) Resolve(run, sim, c, c.PendingResult, resultSerial: 0, MissionPayer(run));
             return;
         }
         if (c.AwaitingSerial > 0)
@@ -310,15 +310,18 @@ public static class ChainRunner
         Log.Info($"chain {c.ChainId} stage {c.Stage}: page {stage.Page} opened (serial {c.AwaitingSerial})");
     }
 
-    /// <summary>A choice on a page applied. A ChainResult outcome resolves the stage now; a follow-up page keeps the stage waiting.</summary>
-    internal static void OnOutcomeChosen(Run run, SimRoot sim, int serial, OutcomeRules outcome)
+    /// <summary>
+    /// A choice on a page applied. A ChainResult outcome resolves the stage now, with the choosing player paying any cost of the result row,
+    /// like the page's own costs. A follow-up page keeps the stage waiting.
+    /// </summary>
+    internal static void OnOutcomeChosen(Run run, SimRoot sim, int serial, int playerIndex, OutcomeRules outcome)
     {
         var c = State(run).Instances.FirstOrDefault(i => i.AwaitingSerial == serial);
         if (c is null) return;
         if (outcome.ChainResult.Length > 0)
         {
             c.AwaitingSerial = 0;
-            Resolve(run, sim, c, outcome.ChainResult, serial);
+            Resolve(run, sim, c, outcome.ChainResult, serial, playerIndex);
         }
         else c.AwaitingSerial = run.State.Events.Pending?.Serial ?? throw new InvalidDataException($"page outcome without ChainResult or Next in chain {c.ChainId}");
     }
@@ -328,8 +331,9 @@ public static class ChainRunner
     /// <summary>
     /// Applies the result row of the current stage: effects, reputation, chain flags and the story line, then moves to the next stage.
     /// resultSerial: the page that gave the result, whose result window gets the extra lines; 0 for a mission result.
+    /// player: the human player who pays money losses of the row (gains split between all humans, like events).
     /// </summary>
-    static void Resolve(Run run, SimRoot sim, ChainInstance c, string result, int resultSerial)
+    static void Resolve(Run run, SimRoot sim, ChainInstance c, string result, int resultSerial, int player)
     {
         var chain = ChainLibrary.Get(c.ChainId);
         var stage = chain.Stage(c.Stage);
@@ -338,7 +342,6 @@ public static class ChainRunner
         var r = stage.Results[row];
         c.PendingResult = "";
         var lines = new List<string>();
-        int player = run.Game.HumanPlayersIndexes.Min();
         var p = new PendingEvent { Tier = run.CurrentTier, TechValue = EventRunner.CurrentTechValue(run), Seed = sim.Rand.UInt64() };
         if (r.Effects is { } fx) EventRunner.ApplyOutcome(run, sim, player, fx, p, lines);
         if (r.Reputation != 0) ChangeReputation(run, c, r.Reputation, lines);
@@ -350,6 +353,13 @@ public static class ChainRunner
         Advance(run, chain, c, r.Next);
         Show(run, sim, c, chain, r.Effects?.Text ?? "", lines, resultSerial);
     }
+
+    /// <summary>
+    /// The player who pays money losses of a mission result. Nobody chose a mission result, and the mission log is shared,
+    /// so the richest human player pays, like the events area checks costs against the richest player.
+    /// </summary>
+    static int MissionPayer(Run run) =>
+        ChainModel.Richest(run.Game.HumanPlayersIndexes.Select(i => (i, run.Game.GetPlayerState(i, deterministic: true).Money)).ToList());
 
     /// <summary>True when the current stage is a page at the station and a player ship is near it, so it can open now.</summary>
     static bool PageOpensNow(Run run, SimRoot sim, ChainInstance c, ChainRules chain) =>

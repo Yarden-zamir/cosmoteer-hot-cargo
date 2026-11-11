@@ -88,6 +88,13 @@ public static class ChainModel
         return pick < 0 ? -1 : pool[pick];
     }
 
+    /// <summary>The player index with the most money. A tie goes to the lowest index, so every client picks the same player.</summary>
+    public static int Richest(IReadOnlyList<(int Index, int Money)> players)
+    {
+        if (players.Count == 0) throw new ArgumentException("no players", nameof(players));
+        return players.OrderByDescending(p => p.Money).ThenBy(p => p.Index).First().Index;
+    }
+
     /// <summary>The story line under a stage: the last maxLines story entries.</summary>
     public static string StorySoFar(IReadOnlyList<string> story, int maxLines) =>
         string.Join(" ", story.Skip(Math.Max(0, story.Count - maxLines)));
