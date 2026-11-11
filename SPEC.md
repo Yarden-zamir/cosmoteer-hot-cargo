@@ -54,7 +54,7 @@ Out of scope for this batch:
 ## 6. Win and loss
 
 6. **Win**: the players sell at least one tech unit to the Buyer. The run is won when the crew deliver the first units of the sale.
-7. When the players win, a win panel shows the score. Score = money + units still held × tech value × `BuyerPriceFactor` (default 4). A sale to the Buyer pays tech value × `BuyerPriceFactor` for each unit, so delivered units are in the money once, and an unsold unit counts as much as a sold one. The players go to the Buyer instead of a station because of this factor. Delivered units are the units of all crew deliveries to the Buyer; a delivery after the win sets the score again. The run state saves the score and the delivered units. `Buyer.Score` holds the formula.
+7. When the players win, a win panel shows the score. Score = money + units still held × the Buyer unit price. The Buyer unit price = tech value × `BuyerPriceFactor` (default 4) × the run's Buyer price multiplier (requirement 84; 1 unless the players took an advance). A sale to the Buyer pays that price for each unit, so delivered units are in the money once, and an unsold unit counts as much as a sold one. The players go to the Buyer instead of a station because of this factor. Delivered units are the units of all crew deliveries to the Buyer; a delivery after the win sets the score again. The run state saves the score and the delivered units. `Buyer.Score` holds the formula.
 8. After a win, heat turns off. The win panel shows the score and the run numbers, and the players can continue the career.
 9. **Loss**: when the fleet tech count reaches 0, the run is lost. Any cause counts: vault damage, a destroyed vault, crew that die while they carry tech, or a sale of the last unit. A Buyer delivery is the only exception, because it wins the run first.
 10. A loss shows the game-over screen with the title "The corporation recovered the tech", the reason and the run numbers.
@@ -192,6 +192,8 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `Events.ArrivalEventChance`, `ArrivalDelaySeconds` | 0.6, 6 s | 69 |
 | `Events.StationEventChance`, `StationTriggerDistance` | 0.5, 1500 | 69 |
 | `Events.SignalTriggerDistance` | 900 | 69 |
+| `Events.CourierChance` | 0.5 | 85 |
+| `Events.MaxUnavoidablePerRun` | 1 | 87 |
 | `Events.CooldownSeconds`, `MaxEventsPerSystem` | 120 s, 2 | 70 |
 | `Events.MoneyScale`, `FameScale`, `HeatScale` | 1, 1, 1 | 73 |
 | `Contracts.TrailFreeContracts`, `TrailHeatPerContractMinute` | 3, 1 | 101 |
@@ -281,16 +283,25 @@ FTL-style choice events. EVENTS.md holds the design and the catalog.
 
 67. An event is a page with a title, a text and 1 to 4 choices. Event content is in `mod/events/events.rules`. Ships that outcomes spawn are generators in `mod/events/spawns.rules`. A change to these files needs a game restart.
 68. A choice has an optional sure cost, an optional need and 1 or more weighted outcomes. The window shows the cost on the button. A choice whose need or cost the fleet cannot meet is greyed out with the reason, or hidden when the rules say so. The need of a choice includes its cost.
-69. Triggers: Start (once, `StartDelaySeconds` after a new run), Arrival (`ArrivalDelaySeconds` after the first arrival in a system, chance `ArrivalEventChance`), Signal (a player ship within `SignalTriggerDistance` of a signal POI; the POI goes away), Station (the first trade station within `StationTriggerDistance` in a system visit, chance `StationEventChance`; never the Buyer). Signals and stations wait until the Start event opened.
+69. Triggers (the Courier Job offer in requirement 85 is not an event and has its own roll): Start (once, `StartDelaySeconds` after a new run), Arrival (`ArrivalDelaySeconds` after the first arrival in a system, chance `ArrivalEventChance`), Signal (a player ship within `SignalTriggerDistance` of a signal POI; the POI goes away), Station (the first trade station within `StationTriggerDistance` in a system visit, chance `StationEventChance`; never the Buyer). Signals and stations wait until the Start event opened.
 70. Arrival and Station events wait `CooldownSeconds` after the last triggered event. A system gets at most `MaxEventsPerSystem` Arrival and Station events. An event opens at most `MaxPerRun` times per run (rules, default 1; 0 means no limit). Only one event page waits at a time.
 71. A trigger picks one eligible event by weight: `Weight + WeightPerHeat × heat + WeightPerTech × fleet tech count`, never below 0. Outcomes use the same weight rule. The outcome roll uses a seed from the simulation random source, taken when the page opens.
-72. Outcome effects: money, money in tech value, fame, heat, tech units (through the Tech Vaults), crew, vanilla resources, hull damage, spawned ships, story flags and a follow-up page. Money gains are split between the human players like a mission reward. The chooser pays money costs.
+72. Outcome effects: money, money in tech value, fame (gain or loss), heat, reputation (requirement 81), the Buyer price (requirement 84), tech units (through the Tech Vaults), crew, vanilla resources, hull damage, spawned ships, story flags and a follow-up page. Money gains are split between the human players like a mission reward. The chooser pays money costs.
 73. Event money unit: 1 = the middle of a standard mission's pay at the sector tier × the economy money reward factor × `RewardScale` × `MoneyScale`. A fame unit is a standard mission's fame × the economy fame reward factor × `RewardScale` × `FameScale`. Heat effects × `HeatScale`. Money amounts use the tier and the tech value from when the page opened.
 74. A choice goes through a multiplayer input (`HotCargoEventChoice`). The input carries the page serial, so a second click on the same page (by another player) does nothing. The input checks the chooser's need again before it applies the choice.
 75. After a choice, the window shows the outcome text and one result line per effect. A follow-up page shows the outcome text above its own text.
-76. The event state is saved in the run state: seen counts, flags, the waiting page, the last result, the cooldown and the per-system counts.
+76. The event state is saved in the run state: seen counts, flags and the sector at which each flag was set, the waiting page, the last result, the cooldown, the per-system counts and the systems that already rolled a Courier Job.
 77. In single player, an open event window pauses the game when `PauseOnEvent` is on. Headless test games do not pause.
 78. A content error in an event (a missing spawn, an unknown resource, a bad reference) shows in the overlay at the first event and turns off events for that game. An error while an outcome applies drops the page and shows the error; the game keeps running.
+79. Event-spawned ships that fight the players are never tagged `hc_hunter`, so the Hunters area does not count them toward `MaxLiveHunters` and they keep their own hostile player index. Local bounty hunters (Wanted Broadcast) use local faction ship designs, the tag `hc_ev_bounty` and a bounty mission.
+80. A need can require a flag that was set at least N sectors ago (`FlagAges`). The event state saves the sector index at which each flag was last set.
+81. An outcome can change reputation with the faction that controls the system, in units of a standard mission's reputation at the sector tier. A system without a controlling faction gets no change. A fame loss lowers fame and never goes below 0.
+82. A choice cost can grow with heat: `Money + MoneyPerHeat × heat` money units, with the heat from when the page opened.
+83. A need can bound the sectors left before the Buyer's sector (`RunSectorCount` − sector index): `MinSectorsLeft` and `MaxSectorsLeft` (−1 = no limit).
+84. An outcome can multiply the run's Buyer price multiplier (`BuyerPrice`, above 0 and at most 1). The run state saves the multiplier. The Buyer sale price and the score use it (requirement 7).
+85. Courier Job: the first trade station that a player ship comes near in a system rolls `CourierChance` once for the whole run. On success, a Courier Job offer appears in that station's mission list. The job: fly a sealed case to a neutral contact 8,000 to 12,000 away within 7 minutes (the contact counts as reached when a player ship sees it), then collect the pay at the station. Pay: 1.25 × a standard mission's money, 0.5 × its fame.
+86. Event missions carry contract terms (economy, requirement 100 and later) as a `HotCargoContract` reward. Missions that events add straight to the log have zero terms: no fee, heat, trail or informant. The Courier Job: free to accept, flat heat 3, trail weight 0.5, informant chance 15 %.
+87. An event can be in the Unavoidable category: every choice costs something, with no way to avoid it. A trigger picks at most `MaxUnavoidablePerRun` (default 1) Unavoidable events per run, counted from the seen counts. Vault Coolant Leak is the only one so far.
 
 ## 23. Contract economy
 

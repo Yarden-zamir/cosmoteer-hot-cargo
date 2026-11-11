@@ -11,6 +11,10 @@ public sealed class EventsState
     [Serialize(Optional = true)] public Dictionary<string, int> Seen = new();
     /// <summary>Story flags that outcomes set and needs read, for event chains across systems.</summary>
     [Serialize(Optional = true)] public HashSet<string> Flags = new();
+    /// <summary>Sector index at which each flag was last set, for FlagAges needs.</summary>
+    [Serialize(Optional = true)] public Dictionary<string, int> FlagSectors = new();
+    /// <summary>Systems where the Courier Job roll already ran. Once per system for the whole run.</summary>
+    [Serialize(Optional = true)] public HashSet<ObjectID> CourierNodes = new();
     /// <summary>Game seconds of the last triggered event, or -1.</summary>
     [Serialize(Optional = true)] public double LastEventSeconds = -1;
     /// <summary>Game seconds at which the Arrival roll runs, or -1 when none is due.</summary>
@@ -39,6 +43,8 @@ public sealed class PendingEvent
     /// <summary>Sector tier and tech value when the event opened. Money amounts use these, so the shown costs do not drift.</summary>
     [Serialize] public int Tier = 1;
     [Serialize] public long TechValue;
+    /// <summary>Heat when the page opened, for costs that grow with heat (Cost.MoneyPerHeat).</summary>
+    [Serialize(Optional = true)] public float Heat;
     /// <summary>Outcome text and result lines of the choice that led to this page, or empty.</summary>
     [Serialize(Optional = true)] public string Lead = "";
 }

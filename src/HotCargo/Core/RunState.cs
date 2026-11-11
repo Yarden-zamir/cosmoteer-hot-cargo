@@ -45,4 +45,6 @@ public sealed class RunState
     [Serialize(Optional = true)] public Contracts.ContractsState Contracts = new();
     /// <summary>Events area state: seen events, flags and the pending event page.</summary>
     [Serialize(Optional = true)] public Events.EventsState Events = new();
+    /// <summary>Multiplies the Buyer price (spec 7). Events lower it (an advance from the Buyer's agent); 1 means no change.</summary>
+    [Serialize(Optional = true)] public float BuyerPriceMultiplier = 1f;
 }

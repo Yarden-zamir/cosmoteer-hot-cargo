@@ -3,6 +3,7 @@ using Cosmoteer;
 using Cosmoteer.Data;
 using Cosmoteer.Generators.Simulation;
 using Cosmoteer.Modes.Career;
+using Cosmoteer.Modes.Career.Missions;
 using Cosmoteer.Ships;
 using Cosmoteer.Simulation;
 using Halfling.Random;
@@ -151,11 +152,95 @@ public static class EventsArea
         };
         // 1 while the sim is paused. Event dialogs must not pause headless test games.
         Autotest.Fields["ev_paused"] = () => RequireRun().Game.Sim.IsPaused.Confirmed ? 1 : 0;
+        // expectneed <event id> met|unmet: checks the event-level need with the current fleet (the trigger condition).
+        Autotest.Commands["expectneed"] = arg =>
+        {
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var run = RequireRun();
+            var e = EventLibrary.Get(parts[0]);
+            var p = new PendingEvent { EventId = e.ID, Tier = run.CurrentTier, TechValue = EventRunner.CurrentTechValue(run), Heat = run.State.Heat };
+            var unmet = EventModel.FirstUnmet(EventRunner.ToNeed(run, e.Need, p.Tier, p.TechValue),
+                EventRunner.Snap(run, RequireSim(), run.Game.GetPlayerState(run.Game.LocalPlayerIndex, deterministic: true).Money, p.Tier, p.TechValue));
+            string actual = unmet is null ? "met" : "unmet";
+            Autotest.Check(actual == parts[1], $"need of {e.ID} is {parts[1]} (actual {actual}{(unmet is null ? "" : $": {unmet}")})");
+        };
+        // expecteligible <event id> 1|0: whether a trigger could pick the event now (run limit, category limit, need).
+        Autotest.Commands["expecteligible"] = arg =>
+        {
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var run = RequireRun();
+            var snap = EventRunner.Snap(run, RequireSim(), run.Game.GetPlayerState(run.Game.LocalPlayerIndex, deterministic: true).Money,
+                run.CurrentTier, EventRunner.CurrentTechValue(run));
+            bool eligible = EventRunner.Eligible(run, EventLibrary.Get(parts[0]), snap);
+            Autotest.Check(eligible == (parts[1] == "1"), $"{parts[0]} eligible is {parts[1]} (actual {(eligible ? 1 : 0)})");
+        };
+        // ev_sector <n>: sets the sector index without a jump (headless games cannot finish a jump). Test only.
+        Autotest.Commands["ev_sector"] = arg => RequireRun().State.SectorIndex = Int(arg);
+        // Courier Job (spec 85): offers in station lists, accept the first, fly to the contact, and its GotoShip state.
+        Autotest.Fields["ev_courier_offers"] = () => CourierOffers(RequireSim()).Count();
+        Autotest.Commands["ev_courier_accept"] = _ =>
+        {
+            var (list, mission) = CourierOffers(RequireSim()).FirstOrDefault();
+            if (mission is null) throw new InvalidOperationException("no Courier Job offer in this system");
+            list.RemoveMission(mission);
+            RequireRun().Mode.Missions.AddMission(mission, track: true);
+            Autotest.Wait(1);
+        };
+        Autotest.Commands["ev_courier_goto"] = _ =>
+        {
+            var sim = RequireSim();
+            var contacts = SimQueries.TaggedShips(sim, CourierContactTag);
+            if (contacts.Count == 0) throw new InvalidOperationException("no courier contact in this system");
+            var contact = contacts[0];
+            Log.Info($"AUTOTEST courier contact {contact.Id} live={contact.Live is not null} at {contact.Location}");
+            // Ship sight is short (a small control room sees 400), so the ships stop just outside the contact's hull.
+            float offset = (contact.Live?.WorldBoundingRadius ?? 300f) + 150f;
+            foreach (var s in sim.Ships.HumanPlayerSignificantShips.ToList())
+            {
+                Autotest.Teleport(s, contact.Location + new Halfling.Geometry.Vector2(offset + s.WorldBoundingRadius, 0));
+                offset += 2 * s.WorldBoundingRadius + 100f;
+            }
+            Autotest.Wait(3);
+        };
+        Autotest.Fields["ev_courier_seen"] = () =>
+        {
+            var run = RequireRun();
+            var contacts = SimQueries.TaggedShips(RequireSim(), CourierContactTag);
+            if (contacts.Count == 0 || contacts[0].Live is not { } ship) return -1;
+            int team = run.Game.GetPlayerState(run.Game.LocalPlayerIndex, deterministic: true).Team;
+            return ship.IsWithinSightOfTeam(team) ? 1 : 0;
+        };
+        Autotest.Fields["ev_courier_reached"] = () =>
+        {
+            var mission = RequireRun().Mode.Missions.LastOrDefault(m => m.MetatypeID.Equals(CourierType)) ?? throw new InvalidOperationException("no accepted Courier Job");
+            var found = new List<Cosmoteer.Modes.Career.Missions.Objectives.GotoShipObjective>();
+            foreach (var o in mission.Objectives) o.GetObjectives(found);
+            return found.Single().Completion == CompletionState.Completed ? 1 : 0;
+        };
+        // Reputation with the faction that controls the system, for the Reputation outcome effect.
+        Autotest.Fields["ev_rep"] = () =>
+        {
+            var faction = RequireSim().MapNode?.ControllingFaction ?? throw new InvalidOperationException("no faction controls this system");
+            return RequireRun().Mode.GetFactionReputation(faction);
+        };
+        Autotest.Commands["ev_rep_mark"] = _ => { double at = Autotest.Fields["ev_rep"](); Autotest.Fields["ev_rep_gain"] = () => Autotest.Fields["ev_rep"]() - at; };
+        Autotest.Fields["ev_buyer_mult"] = () => RequireRun().State.BuyerPriceMultiplier;
         Autotest.Fields["ev_pending"] = () => RequireRun().State.Events.Pending is null ? 0 : 1;
         Autotest.Fields["ev_seen"] = () => RequireRun().State.Events.Seen.Values.Sum();
         Autotest.Fields["ev_result"] = () => RequireRun().State.Events.LastResult?.Serial ?? 0;
         Autotest.Fields["ev_signals"] = () => RequireSim().Doodads.Count(d => d.Tags?.Contains(EventRunner.SignalTag) == true);
         Autotest.Fields["ev_stdmoney"] = () => EventRunner.Credits(RequireRun(), 1f, 0f, RequireRun().CurrentTier, 0);
+    }
+
+    static readonly ID<SimObjectSpawner> CourierContactTag = new("hc_courier_contact");
+    static readonly ID<MissionMetatype> CourierType = new("HotCargoCourier");
+
+    static IEnumerable<(MissionList List, Mission Mission)> CourierOffers(SimRoot sim)
+    {
+        foreach (var station in Cosmoteer.Ships.Special.SpaceStation.GetStations(sim, onlyOperating: false))
+            if (station.GetProvidedMissions() is { } list)
+                foreach (Mission m in list)
+                    if (m.MetatypeID.Equals(CourierType)) yield return (list, m);
     }
 
     static EventPage? CurrentView()
