@@ -22,12 +22,14 @@ chain_result success
 expectstage offer
 expectevent fence_offer
 expect chain_story == 1
-# The choice goes through the event choice MP input.
+# The choice goes through the event choice MP input. The account opens, and the standing offer follows at once.
 choose 1
-expect ev_pending == 0
 expectstage standing
 expectchainflag account 1
-# The standing offer waits for the next visit.
+expectevent fence_standing
+# "Not today" leads back to the same stage, which then waits for the next visit.
+choose 4
+expectstage standing
 wait 2
 expect ev_pending == 0
 chain_revisit

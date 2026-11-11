@@ -96,14 +96,15 @@ public static class ChainsArea
             RequireRun().Game.NetManager.EnqueueInput(new MissionLogTab.MPAbandonMissionInput(m));
             Autotest.Wait(2);
         };
-        // chain_kill: removes the live and stasis enemies that the stage mission spawned (tag hc_ch_enemy), so DefeatShips objectives complete.
-        Autotest.Commands["chain_kill"] = _ =>
+        // chain_kill [tag]: removes the live ships with the tag (default hc_ch_enemy, the enemies of stage missions).
+        // Removing hc_ch_cargo destroys a protected transport, so its ProtectShips objective fails.
+        Autotest.Commands["chain_kill"] = arg =>
         {
             var sim = RequireSim();
             int n = 0;
-            foreach (var t in SimQueries.TaggedShips(sim, new("hc_ch_enemy")))
+            foreach (var t in SimQueries.TaggedShips(sim, new(arg.Length > 0 ? arg : "hc_ch_enemy")))
                 if (t.Live is { } ship) { sim.Ships.Remove(ship, dispose: true, handleLostShip: false); n++; }
-            Log.Info($"AUTOTEST removed {n} chain enemies");
+            Log.Info($"AUTOTEST removed {n} ships tagged {(arg.Length > 0 ? arg : "hc_ch_enemy")}");
             Autotest.Wait(2);
         };
         // chain_pay: collects the reward of a finished stage mission at its station, like the comms payment button.

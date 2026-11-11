@@ -1,0 +1,34 @@
+# Chains (CHAINS.md): every chain page renders, every mission stage spawns a mission, and a protected transport that dies fails
+# its mission with the "lost" result.
+newgame run
+wait 8
+expectevent getaway
+choose 3 1
+ev_set Enabled false
+eventviewall
+chain_force quiet_defector
+chain_tostation
+chain_spawnall
+chain_force quiet_defector
+chain_tostation
+chainview
+chain_accept
+expect chain_accepted == 1
+chain_mark
+ev_mark
+# The transport dies: ProtectShips fails, so the mission fails with "lost" and the chain ends with heat and a reputation loss.
+chain_kill hc_ch_cargo
+wait 3
+expectstage end
+expect ev_heat_gain >= 9
+expect chain_rep_gain < 0
+expect chain_story == 1
+# A timeout takes its own row: heat +15.
+chain_force quiet_defector
+chain_tostation
+chain_accept
+ev_mark
+chain_result timeout
+expectstage end
+expect ev_heat_gain >= 14
+quit
