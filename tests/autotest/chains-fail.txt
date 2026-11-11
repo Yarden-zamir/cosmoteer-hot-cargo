@@ -1,0 +1,35 @@
+# Chains (CHAINS.md): a real abandon takes the failure branch, a refusal costs reputation and schedules a Return stage,
+# the chain survives save and load mid-chain, and the Return mission completes through its real objective.
+newgame run
+wait 8
+expectevent getaway
+choose 3 1
+ev_set Enabled false
+chain_force fence_ledger
+chain_tostation
+chain_accept
+expect chain_accepted == 1
+# Abandon through the mission log input: the "abandoned" result falls back to the fail row, and the debt page opens.
+chain_abandon
+expectstage debt
+expectevent fence_debt
+expect chain_story == 1
+chain_mark
+choose 3
+expectstage collectors
+expect chain_rep_gain < 0
+expect ev_pending == 0
+save chains_mid
+load chains_mid
+ev_set Enabled false
+expectstage collectors
+expect chain_story == 2
+# The players come back: the collectors spawn straight into the log.
+chain_due
+wait 3
+expect chain_accepted == 1
+chain_kill
+wait 3
+expectstage end
+expect chain_story == 3
+quit

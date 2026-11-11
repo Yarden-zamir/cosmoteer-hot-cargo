@@ -1,0 +1,278 @@
+// Chain pages (Page = <ID> in chains.rules). The events area loads this file next to events/events.rules (same format and units).
+// Pages have no Trigger: a chain stage opens them. Every outcome gives a ChainResult (the stage's result rows handle it) or leads to
+// a follow-up page (Next). Titles start with the chain title, so the window reads as part of the chain.
+Events
+[
+	// ---- The Fence's Ledger
+
+	{
+		ID = fence_offer
+		Title = "The Fence's Ledger: Mara's Offer"
+		Text = "Mara Quell's face fills the screen: older than her voice, with sharp eyes. \"You did right by me. Most people in your line of work don't. So: what do you want?\""
+		Choices
+		[
+			{
+				Text = "Open an account. You buy my crates at a fair price whenever I dock."
+				Outcomes [ { Text = "\"Done. The street price and a third on top, every visit. Don't make me regret it.\""; ChainResult = account } ]
+			}
+			{
+				Text = "Clean transponder codes."
+				Outcomes [ { Text = "She sends a chip and scrubs your last three jumps from the station logs. \"One use. The corporate checkpoints won't look twice.\""; Heat = -10; SetFlags = [fake_codes]; ChainResult = codes } ]
+			}
+			{
+				Text = "Just pay me."
+				Outcomes [ { Text = "\"Simple. I like simple.\" The credits arrive before the line closes."; Money = 0.8; ChainResult = paid } ]
+			}
+		]
+	}
+	{
+		ID = fence_standing
+		Title = "The Fence's Ledger: Mara's Account"
+		Text = "Mara's dock master waves you in. \"Your account is open. Same deal as always: the street price and a third on top.\""
+		Choices
+		[
+			{
+				Text = "Sell one crate."
+				Need { Tech = 1 }
+				Cost { Tech = 1 }
+				Outcomes [ { Text = "The crate disappears into Mara's hold. The credits clear at once."; MoneyTech = 1.33; Heat = -5; ChainResult = sold } ]
+			}
+			{
+				Text = "Sell two crates."
+				Need { Tech = 1 }
+				Cost { Tech = 2 }
+				Outcomes [ { Text = "Two crates, no questions. Mara's dock master whistles at the tags."; MoneyTech = 2.66; Heat = -10; ChainResult = sold } ]
+			}
+			{
+				Text = "Close the account."
+				Outcomes [ { Text = "\"Pity. Fly safe.\""; ChainResult = closed } ]
+			}
+			{
+				Text = "Not today."
+				Outcomes [ { Text = "\"The offer stands.\""; ChainResult = later } ]
+			}
+		]
+	}
+	{
+		ID = fence_debt
+		Title = "The Fence's Ledger: Mara's Bill"
+		Text = "\"That freighter carried a year of my work,\" Mara says. Her voice is very calm. \"You will pay for it. One way or another.\""
+		Choices
+		[
+			{
+				Text = "Pay for the cargo."
+				Cost { Money = 1 }
+				Outcomes [ { Text = "Mara counts it twice. \"We're square. Don't call me again.\""; ChainResult = pay } ]
+			}
+			{
+				Text = "Pay in crates."
+				Need { Tech = 1 }
+				Cost { Tech = 1 }
+				Outcomes [ { Text = "Mara's eyes widen at the tags. \"Corporate stock. That covers it, and then some.\""; Money = 0.2; ChainResult = crate } ]
+			}
+			{
+				Text = "Refuse."
+				Outcomes [ { Text = "\"Then I sell your debt to someone less patient.\" The line goes dead."; ChainResult = refuse } ]
+			}
+		]
+	}
+
+	// ---- The Quiet Defector
+
+	{
+		ID = defector_debrief
+		Title = "The Quiet Defector: Debrief"
+		Text = "Sabine Okafor drinks your coffee like she has not had any in a year. \"I ran supply schedules for the hunter fleets. Every patrol, every depot. What happens to me now is your call.\""
+		Choices
+		[
+			{
+				Text = "Welcome aboard. We can use someone who knows their schedules."
+				Outcomes [ { Text = "She takes a bunk and a terminal. Within an hour she routes your transponder through three dead relays."; Crew = 1; Heat = -10; ChainResult = aboard } ]
+			}
+			{
+				Text = "The station's navy will want to talk to you."
+				Outcomes [ { Text = "Navy officers escort her off with polite smiles. The station commander sends thanks and a purse."; Money = 0.5; ChainResult = navy } ]
+			}
+			{
+				Text = "The corporation pays well for its runaways."
+				Outcomes [ { Text = "The corporate liaison is very grateful, and the hunters get new orders. Okafor does not look at you as they take her."; Money = 1.5; Heat = -20; ChainResult = sold } ]
+			}
+		]
+	}
+	{
+		ID = defector_insider
+		Title = "The Quiet Defector: Old Schedules"
+		Text = "Okafor leans over the nav table. \"This system has a corporate supply depot: two platforms and a guard. It also has a blind spot in the long-range scanners, if we move now.\""
+		Choices
+		[
+			{
+				Text = "Hit the depot."
+				Outcomes [ { Text = "\"Thought you'd say that.\" She marks the depot on your map."; ChainResult = raid } ]
+			}
+			{
+				Text = "Use the blind spot."
+				Outcomes [ { Text = "You slip through the gap in the scanner net. Somewhere, a hunter captain loses your trail."; Heat = -25; ChainResult = slip } ]
+			}
+		]
+	}
+
+	// ---- The Magpies' Rivalry
+
+	{
+		ID = magpies_parley
+		Title = "The Magpies' Rivalry: Parley"
+		Text = "Captain Rook hails you, grinning. \"Nobody beats my crew to a pod. Nobody. So, what now? We can stay out of each other's way, or we can make this a habit.\""
+		Choices
+		[
+			{
+				Text = "Truce. This sector is big enough for two crews."
+				Outcomes [ { Text = "\"Truce, then. I'll owe you one.\" She cuts the line before you can answer."; ChainResult = truce } ]
+			}
+			{
+				Text = "Stay out of my way, Rook."
+				Outcomes [ { Text = "\"Big words for a ship that glows on every corporate scanner.\" But she turns away."; ChainResult = warn } ]
+			}
+		]
+	}
+	{
+		ID = magpies_gloat
+		Title = "The Magpies' Rivalry: Rook's Offer"
+		Text = "Captain Rook hails you from the pod's wreck. \"Too slow. But I'm in a generous mood: you can buy these processors back. Or you can come and take them.\""
+		Choices
+		[
+			{
+				Text = "Pay her price."
+				Cost { Money = 0.5 }
+				Outcomes [ { Text = "\"Pleasure doing business.\" A crate of processors drifts toward your hull."; Resources [ { ID = processor; Amount = 3 } ]; ChainResult = buy } ]
+			}
+			{
+				Text = "Come and take them."
+				Outcomes [ { Text = "\"I hoped you would say that.\" Her ships turn toward you."; ChainResult = fight } ]
+			}
+		]
+	}
+	{
+		ID = magpies_favor
+		Title = "The Magpies' Rivalry: Rook Calls In"
+		Text = "A short-range burst on a Magpie frequency: \"Rook here. A hunter pack waits at the next gate, and they have your hull number. Consider us even.\""
+		Choices
+		[
+			{
+				Text = "Take the warning and change course."
+				Outcomes [ { Text = "You plot around the gate. The hunters wait for a ship that never comes."; Heat = -15; ChainResult = even } ]
+			}
+			{
+				Text = "Offer her a cut to feed them a false trail."
+				Cost { Money = 0.3 }
+				Outcomes [ { Text = "\"Now we're talking.\" A Magpie ship broadcasts your transponder code three systems away."; Heat = -30; ChainResult = partners } ]
+			}
+		]
+	}
+
+	// ---- Lights Out
+
+	{
+		ID = blackout_thanks
+		Title = "Lights Out: Brandt's Thanks"
+		Text = "The reactor hums again. Station master Brandt finds you on the dock, still in her welding suit. \"We owe you. Name it.\""
+		Choices
+		[
+			{
+				Text = "Let us hide in your station's shadow for a while."
+				Outcomes [ { Text = "\"Our sensors will see nothing. If anyone asks, you were never here.\""; Heat = -20; ChainResult = hide } ]
+			}
+			{
+				Text = "A few hands. We are short of crew."
+				Outcomes [ { Text = "Two of her engineers pack their bags. \"Better than waiting for the next shipment that never comes.\""; Crew = 2; ChainResult = crew } ]
+			}
+		]
+	}
+	{
+		ID = blackout_dark
+		Title = "Lights Out: Dark Station"
+		Text = "The reactor scrammed an hour ago. The station runs on emergency power, and families crowd the docks with everything they can carry."
+		Choices
+		[
+			{
+				Text = "Take as many as you can."
+				Outcomes [ { Text = "They fill your corridors. Some of them can work a repair tool. The corporation will hear about a ship full of refugees."; Crew = 2; Fame = 0.3; Heat = 10; ChainResult = refugees } ]
+			}
+			{
+				Text = "Sell them coil for the backup generators."
+				Cost { Resources [ { ID = coil; Amount = 20; PerTier = 5 } ] }
+				Outcomes [ { Text = "The backup generators cough to life. Brandt pays what she can."; Money = 0.6; ChainResult = coil } ]
+			}
+			{
+				Text = "There is nothing you can do."
+				Outcomes [ { Text = "You undock to the sound of the station's alarms."; ChainResult = leave } ]
+			}
+		]
+	}
+
+	// ---- The Commander's Price
+
+	{
+		ID = navy_offer
+		Title = "The Commander's Price"
+		Text = "Commander Hale closes the door behind you. \"The corporation sent us your hull number. Every navy station in the sector has it. I can lose the request. It will cost you.\""
+		Choices
+		[
+			{
+				Text = "Name the price."
+				Cost { Money = 1 }
+				Outcomes [ { Text = "\"Pleasure doing business.\" She deletes a file while you watch."; Heat = -25; ChainResult = bribe } ]
+			}
+			{
+				Text = "I could do another job for you instead."
+				Outcomes [ { Text = "\"I hoped you would say that. I have a tender that needs an escort.\""; ChainResult = job } ]
+			}
+			{
+				Text = "I don't pay for threats."
+				Outcomes [ { Text = "\"Your choice.\" She is already reaching for her comms."; ChainResult = refuse } ]
+			}
+		]
+	}
+
+	// ---- The Black Box
+
+	{
+		ID = blackbox_playback
+		Title = "The Black Box: Playback"
+		Text = "The recorder's last hours play on your screen: patrol routes, rendezvous points and a courier schedule. The station's broker already asks for a price."
+		Choices
+		[
+			{
+				Text = "Sell it to the broker."
+				Outcomes [ { Text = "The broker pays without haggling, which tells you it was worth more."; Money = 0.8; ChainResult = sold } ]
+			}
+			{
+				Text = "Keep the routes and plan around the hunters."
+				Outcomes [ { Text = "Your navigator copies every route into the charts."; Heat = -15; ChainResult = routes } ]
+			}
+			{
+				Text = "Offer it back to the corporation for a lighter trail."
+				Outcomes
+				[
+					{ Weight = 40; Text = "A corporate clerk takes the deal. Your trail goes cold, for now."; Heat = -30; ChainResult = deal }
+					{ Weight = 60; WeightPerHeat = 0.3; Text = "They agree to meet in the next system. They agree very quickly."; ChainResult = trap }
+				]
+			}
+		]
+	}
+	{
+		ID = blackbox_routes
+		Title = "The Black Box: Courier Schedule"
+		Text = "The recorder was right: a corporate courier is due in this system with a light escort and prototype parts in its hold."
+		Choices
+		[
+			{
+				Text = "Hit the courier."
+				Outcomes [ { Text = "Your gunners start picking targets. The courier itself stays off the list."; ChainResult = hit } ]
+			}
+			{
+				Text = "Let it pass, and use the routes to stay hidden."
+				Outcomes [ { Text = "You hold position behind a moon while the courier and its escort pass."; Heat = -15; ChainResult = slip } ]
+			}
+		]
+	}
+]

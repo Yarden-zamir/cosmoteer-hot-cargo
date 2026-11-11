@@ -1,0 +1,46 @@
+# Chains (CHAINS.md): a chain walks through a stage result, a choice page, a standing offer that loops, and its end.
+newgame run
+wait 8
+# The Start event opens first. Keep the crates, then turn random events off so they do not take the event window.
+expectevent getaway
+choose 3 1
+ev_set Enabled false
+# Every chain loads and validates, and the first system's stations got chains.
+expect chains_loaded >= 6
+expect chain_here >= 1
+chain_force fence_ledger
+expectstage courier
+expect chain_mission == 1
+expect chain_offers >= 1
+chain_tostation
+# The offer shows as a chain stage in comms: label, story line and chain line.
+chainview
+chain_accept
+expect chain_accepted == 1
+# Success: the result leads straight into the choice page, because the players are at the station.
+chain_result success
+expectstage offer
+expectevent fence_offer
+expect chain_story == 1
+# The choice goes through the event choice MP input.
+choose 1
+expect ev_pending == 0
+expectstage standing
+expectchainflag account 1
+# The standing offer waits for the next visit.
+wait 2
+expect ev_pending == 0
+chain_revisit
+expectevent fence_standing
+ev_mark
+choose 1
+expect ev_tech_gain == -1
+expect ev_money_gain >= 12000
+expect ev_heat_gain < 0
+expectstage standing
+chain_revisit
+expectevent fence_standing
+choose 3
+expectstage end
+expect chain_story >= 3
+quit

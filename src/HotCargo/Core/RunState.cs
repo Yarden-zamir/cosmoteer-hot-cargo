@@ -39,4 +39,6 @@ public sealed class RunState
     [Serialize(Optional = true)] public long Score;
     /// <summary>Events area state: seen events, flags and the pending event page.</summary>
     [Serialize(Optional = true)] public Events.EventsState Events = new();
+    /// <summary>Chains area state: the chain of each station, its stage, flags and story.</summary>
+    [Serialize(Optional = true)] public Chains.ChainsState Chains = new();
 }
