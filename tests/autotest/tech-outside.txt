@@ -1,0 +1,15 @@
+# Tech: a starter ship without a 2x2 storage bay (Model-M) gets a vault outside the hull with a door. Destroyed vault, loss rule.
+newgame last 3
+wait 8
+tech dump
+expect vaults == 1
+expect tech == 6
+expect flexsinks == 0
+# Spec 65: a destroyed vault loses all units. Spec 12: the loss waits LossGraceSeconds (3 s).
+vault destroy
+wait 1
+expect tech == 0
+expect lost == 0
+wait 5
+expect lost == 1
+quit

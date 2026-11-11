@@ -1,0 +1,311 @@
+// Tech Vault (spec 14, 15). A copy of the vanilla 2x2 storage bay with a tint and a single-type grid for Stolen Tech.
+// The copy is on purpose: inheriting storage_2x2 would merge its FlexResourceGrid, which accepts any resource.
+Part : <./Data/ships/terran/base_part_terran.rules>/Part
+{
+	NameKey = "HotCargoTech/TechVault"
+	IconNameKey = "HotCargoTech/TechVaultIcon"
+	ID = yarden_zamir.tech_vault
+	EditorGroup = "Storage"
+	DescriptionKey = "HotCargoTech/TechVaultDesc"
+	JobsNameKey = "Parts/StorageGeneric"
+	SelectionTypeID = "yarden_zamir.tech_vault"
+	Resources
+	[
+		[steel, 96]
+	]
+	Size = [2, 2]
+	IsRotateable = false
+	// Three times the vanilla storage bay. Spec 65: each 15% of this in damage destroys one unit.
+	MaxHealth = 12000
+	TypeCategories = [storage]
+	ReceivableBuffs : ^/0/ReceivableBuffs []
+	IgnoreRotationForMirroredSelection = true
+	TINT = [255, 200, 140]
+	EditorIcon
+	{
+		Texture
+		{
+			File = "./Data/ships/terran/storage_2x2/icon.png"
+			SampleMode = Linear
+		}
+		Size = [64, 64]
+		VertexColor = &~/Part/TINT
+	}
+	Components : ^/0/Components
+	{
+		IsOperational
+		{
+			Type = CommandToggle
+		}
+
+		// 2 tiles x MaxStackSize 3 = 6 units. The tiles use the top row of the part; the inset moves their sprites to the middle.
+		Storage
+		{
+			Type = TypedResourceGrid
+			ResourceType = yarden_zamir.stolen_tech
+			GridRect = [0, 0, 2, 1]
+			Layer = "doodads_low"
+			SpriteInset = [8/64, 0.5 + 8/64, 8/64, -0.5 + 8/64]
+			// The part cost counts InitToMaxResources x BuyPrice, and a new ship spawns filled to it. Tech comes only from the run start.
+			InitToMaxResources = 0
+			IsDrainable = false
+			AllowExternalPickupAndDelivery = true
+		}
+		// Registers the tiles as sinks, so crew can put carried tech back into a vault.
+		StorageConsumer
+		{
+			Type = TypedResourceGridConsumer
+			ResourceType = yarden_zamir.stolen_tech
+			Storage = Storage
+			DefaultPriority = &/PRIORITIES/Storage_Supply
+		}
+
+		Graphics
+		{
+			Type = Graphics
+			Location = [1, 1]
+			OperationalToggle = IsOperational
+			Floor
+			{
+				Layer = "floors"
+				DamageLevels
+				[
+					{
+						File = "./Data/ships/terran/storage_2x2/floor.png"
+						Size = [2, 2]
+						VertexColor = &~/Part/TINT
+					}
+					{
+						File = "./Data/ships/terran/storage_2x2/floor_33.png"
+						Size = [2, 2]
+						VertexColor = &~/Part/TINT
+					}
+					{
+						File = "./Data/ships/terran/storage_2x2/floor_66.png"
+						Size = [2, 2]
+						VertexColor = &~/Part/TINT
+					}
+				]
+			}
+			NonOperationalDoodad
+			{
+				Layer = "doodads_high"
+				DamageLevels
+				[
+					{
+						File = "./Data/ships/terran/darkness/darkness2x2.png"
+						Size = [2, 2]
+						VertexColor = &~/Part/TINT
+					}
+				]
+			}
+			Walls
+			{
+				Layer = "walls"
+				DamageLevels
+				[
+					{
+						File = "./Data/ships/terran/storage_2x2/walls.png"
+						Size = [2, 2]
+						VertexColor = &~/Part/TINT
+					}
+					{
+						File = "./Data/ships/terran/storage_2x2/walls_33.png"
+						Size = [2, 2]
+						VertexColor = &~/Part/TINT
+					}
+					{
+						File = "./Data/ships/terran/storage_2x2/walls_66.png"
+						Size = [2, 2]
+						VertexColor = &~/Part/TINT
+					}
+				]
+			}
+		}
+
+		RoofDoorOpenToggle
+		{
+			Type = CrewDestinationProximityToggle
+			Distance = 3
+		}
+		RoofDoorSprite
+		{
+			Type = OpenCloseSprite
+			Location = [1, 1]
+			OperationalToggle = RoofDoorOpenToggle
+			Layer = "roofs"
+			OpenDamageLevels
+			[
+				{
+					AnimationFiles
+					[
+						"./Data/ships/terran/storage_2x2/roof1.png"
+						"./Data/ships/terran/storage_2x2/roof2.png"
+						"./Data/ships/terran/storage_2x2/roof3.png"
+						"./Data/ships/terran/storage_2x2/roof4.png"
+						"./Data/ships/terran/storage_2x2/roof5.png"
+						"./Data/ships/terran/storage_2x2/roof6.png"
+					]
+					NormalsAnimationFiles
+					[
+						"./Data/ships/terran/storage_2x2/roof_normals1.png"
+						"./Data/ships/terran/storage_2x2/roof_normals2.png"
+						"./Data/ships/terran/storage_2x2/roof_normals3.png"
+						"./Data/ships/terran/storage_2x2/roof_normals4.png"
+						"./Data/ships/terran/storage_2x2/roof_normals5.png"
+						"./Data/ships/terran/storage_2x2/roof_normals6.png"
+					]
+					Size = [2, 2]
+					VertexColor = &~/Part/TINT
+					AnimationInterval = 0.06
+					AnimationStartTime = MinValue
+					ClampAnimation = true
+				}
+				{
+					AnimationFiles
+					[
+						"./Data/ships/terran/storage_2x2/roof1_33.png"
+						"./Data/ships/terran/storage_2x2/roof2_33.png"
+						"./Data/ships/terran/storage_2x2/roof3_33.png"
+						"./Data/ships/terran/storage_2x2/roof4_33.png"
+						"./Data/ships/terran/storage_2x2/roof5_33.png"
+						"./Data/ships/terran/storage_2x2/roof6_33.png"
+					]
+					NormalsAnimationFiles
+					[
+						"./Data/ships/terran/storage_2x2/roof_normals1_33.png"
+						"./Data/ships/terran/storage_2x2/roof_normals2_33.png"
+						"./Data/ships/terran/storage_2x2/roof_normals3_33.png"
+						"./Data/ships/terran/storage_2x2/roof_normals4_33.png"
+						"./Data/ships/terran/storage_2x2/roof_normals5_33.png"
+						"./Data/ships/terran/storage_2x2/roof_normals6_33.png"
+					]
+					Size = [2, 2]
+					VertexColor = &~/Part/TINT
+					AnimationInterval = 0.06
+					AnimationStartTime = MinValue
+					ClampAnimation = true
+				}
+				{
+					AnimationFiles
+					[
+						"./Data/ships/terran/storage_2x2/roof1_66.png"
+						"./Data/ships/terran/storage_2x2/roof2_66.png"
+						"./Data/ships/terran/storage_2x2/roof3_66.png"
+						"./Data/ships/terran/storage_2x2/roof4_66.png"
+						"./Data/ships/terran/storage_2x2/roof5_66.png"
+						"./Data/ships/terran/storage_2x2/roof6_66.png"
+					]
+					NormalsAnimationFiles
+					[
+						"./Data/ships/terran/storage_2x2/roof_normals1_66.png"
+						"./Data/ships/terran/storage_2x2/roof_normals2_66.png"
+						"./Data/ships/terran/storage_2x2/roof_normals3_66.png"
+						"./Data/ships/terran/storage_2x2/roof_normals4_66.png"
+						"./Data/ships/terran/storage_2x2/roof_normals5_66.png"
+						"./Data/ships/terran/storage_2x2/roof_normals6_66.png"
+					]
+					Size = [2, 2]
+					VertexColor = &~/Part/TINT
+					AnimationInterval = 0.06
+					AnimationStartTime = MinValue
+					ClampAnimation = true
+				}
+			]
+			ClosedDamageLevels
+			[
+				{
+					AnimationFiles
+					[
+						"./Data/ships/terran/storage_2x2/roof6.png"
+						"./Data/ships/terran/storage_2x2/roof5.png"
+						"./Data/ships/terran/storage_2x2/roof4.png"
+						"./Data/ships/terran/storage_2x2/roof3.png"
+						"./Data/ships/terran/storage_2x2/roof2.png"
+						"./Data/ships/terran/storage_2x2/roof1.png"
+					]
+					NormalsAnimationFiles
+					[
+						"./Data/ships/terran/storage_2x2/roof_normals6.png"
+						"./Data/ships/terran/storage_2x2/roof_normals5.png"
+						"./Data/ships/terran/storage_2x2/roof_normals4.png"
+						"./Data/ships/terran/storage_2x2/roof_normals3.png"
+						"./Data/ships/terran/storage_2x2/roof_normals2.png"
+						"./Data/ships/terran/storage_2x2/roof_normals1.png"
+					]
+					Size = [2, 2]
+					VertexColor = &~/Part/TINT
+					AnimationInterval = 0.06
+					AnimationStartTime = MinValue
+					ClampAnimation = true
+				}
+				{
+					AnimationFiles
+					[
+						"./Data/ships/terran/storage_2x2/roof6_33.png"
+						"./Data/ships/terran/storage_2x2/roof5_33.png"
+						"./Data/ships/terran/storage_2x2/roof4_33.png"
+						"./Data/ships/terran/storage_2x2/roof3_33.png"
+						"./Data/ships/terran/storage_2x2/roof2_33.png"
+						"./Data/ships/terran/storage_2x2/roof1_33.png"
+					]
+					NormalsAnimationFiles
+					[
+						"./Data/ships/terran/storage_2x2/roof_normals6_33.png"
+						"./Data/ships/terran/storage_2x2/roof_normals5_33.png"
+						"./Data/ships/terran/storage_2x2/roof_normals4_33.png"
+						"./Data/ships/terran/storage_2x2/roof_normals3_33.png"
+						"./Data/ships/terran/storage_2x2/roof_normals2_33.png"
+						"./Data/ships/terran/storage_2x2/roof_normals1_33.png"
+					]
+					Size = [2, 2]
+					VertexColor = &~/Part/TINT
+					AnimationInterval = 0.06
+					AnimationStartTime = MinValue
+					ClampAnimation = true
+				}
+				{
+					AnimationFiles
+					[
+						"./Data/ships/terran/storage_2x2/roof6_66.png"
+						"./Data/ships/terran/storage_2x2/roof5_66.png"
+						"./Data/ships/terran/storage_2x2/roof4_66.png"
+						"./Data/ships/terran/storage_2x2/roof3_66.png"
+						"./Data/ships/terran/storage_2x2/roof2_66.png"
+						"./Data/ships/terran/storage_2x2/roof1_66.png"
+					]
+					NormalsAnimationFiles
+					[
+						"./Data/ships/terran/storage_2x2/roof_normals6_66.png"
+						"./Data/ships/terran/storage_2x2/roof_normals5_66.png"
+						"./Data/ships/terran/storage_2x2/roof_normals4_66.png"
+						"./Data/ships/terran/storage_2x2/roof_normals3_66.png"
+						"./Data/ships/terran/storage_2x2/roof_normals2_66.png"
+						"./Data/ships/terran/storage_2x2/roof_normals1_66.png"
+					]
+					Size = [2, 2]
+					VertexColor = &~/Part/TINT
+					AnimationInterval = 0.06
+					AnimationStartTime = MinValue
+					ClampAnimation = true
+				}
+			]
+		}
+
+
+		DestroyedEffects
+		{
+			Type = DeathEffects
+			MediaEffects = &/COMMON_EFFECTS/MedPartDestroyedDry
+			Location = [1, 1]
+		}
+
+		Blueprints
+		{
+			Type = BlueprintSprite
+			File = "./Data/ships/terran/storage_2x2/blueprints.png"
+			Size = [2, 2]
+		}
+	}
+
+}
