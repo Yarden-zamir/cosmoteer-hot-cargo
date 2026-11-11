@@ -33,8 +33,6 @@ internal sealed class HuntStrategyRules : AIStrategyModuleRules
 [ReflectiveSerialization(Explicit = true)]
 internal sealed class HuntStrategy(HuntStrategyRules rules) : AIStrategyModule
 {
-    static readonly ID<PartRules> VaultPart = new("yarden_zamir.tech_vault");
-
     [Serialize(Alias = "Target", Optional = true)] Ship? _target;
 
     public override void GetIntegrityHash(IntegrityHash iHash) => (_target?.UniqueID ?? default).GetIntegrityHash(iHash);
@@ -59,7 +57,7 @@ internal sealed class HuntStrategy(HuntStrategyRules rules) : AIStrategyModule
         float vaultFactor = Run.Current?.T.Hunters.VaultTargetFactor ?? 1f;
         Ship? best = null;
         float bestScore = 0f;
-        foreach (var candidate in HunterSpawner.HumanShips(HunterOrders.Sim(ship)))
+        foreach (var candidate in HunterOrders.Sim(ship).Ships.HumanPlayerSignificantShips)
         {
             if (!ship.IsEnemiesWith(candidate) || !candidate.CanBeAttackedBy(ship)) continue;
             float score = 1f / Math.Max(HunterOrders.EdgeDistance(ship, candidate), 1f);
@@ -70,11 +68,5 @@ internal sealed class HuntStrategy(HuntStrategyRules rules) : AIStrategyModule
         return best;
     }
 
-    /// <summary>Matches the Tech area's part by ID, so this works (and finds nothing) when that part is not installed.</summary>
-    static bool CarriesVault(Ship ship)
-    {
-        foreach (var part in ship.Parts)
-            if (part.Rules.ID == VaultPart) return true;
-        return false;
-    }
+    static bool CarriesVault(Ship ship) => Tech.Vaults.VaultParts(ship).Any();
 }

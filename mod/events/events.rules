@@ -352,6 +352,156 @@ Events
 		]
 	}
 
+	{
+		ID = wanted_broadcast
+		Trigger = Arrival
+		Weight = 6
+		WeightPerHeat = 0.1
+		Need { MinSector = 2; MinHeat = 60 }
+		Title = "Wanted Broadcast"
+		Text = "Every comm buoy in the system is playing your hull number, your crew's faces and a reward figure with far too many zeros. Somewhere, local bounty hunters are already doing the math."
+		Choices
+		[
+			{
+				Text = "Pay the broadcaster to pull the bounty notice."
+				Cost { Money = 1 }
+				Outcomes [ { Text = "The station manager takes the credits and has a sudden technical fault. The buoys go back to playing shipping news."; Heat = -10 } ]
+			}
+			{
+				Text = "Jam the nearest buoy and broadcast static."
+				Need { Parts = ["cosmoteer.sensor_array"] }
+				Outcomes
+				[
+					{ Weight = 70; Text = "The buoy chokes on your static. Nobody can see the notice, and nobody can trace the jam."; Heat = -5 }
+					{ Weight = 30; Text = "Someone triangulates the jam. Two ships turn toward its source: you."; Spawn = BountyHunters }
+				]
+			}
+			{
+				Text = "Let them come. Bounty hunters have bounties too."
+				Outcomes [ { Text = "Two local hunters take the job. Their own warrants are posted on every station in the system."; Spawn = BountyHunters } ]
+			}
+			{
+				Text = "Ignore it and keep moving."
+				Outcomes
+				[
+					{ Weight = 50; Text = "The hunters in this system are busy elsewhere. For now." }
+					{ Weight = 50; WeightPerHeat = 0.3; Text = "Two ships drop out of the dark with their weapons warm. \"Nothing personal. The reward is very personal.\""; Spawn = BountyHunters }
+				]
+			}
+		]
+	}
+
+	{
+		ID = magpies_return
+		Trigger = Arrival
+		Weight = 30
+		Need { Tech = 3; FlagAges = [{ Flag = magpies_paid; MinSectors = 2 }] }
+		Title = "The Magpies Return"
+		Text = "A familiar battered gunship, now with two friends. \"Captain Rook again. You paid so nicely last time.\" A pause. \"Two crates now. Inflation.\"\n\nPaying once made you a mark."
+		Choices
+		[
+			{
+				Text = "Pay the two crates."
+				Need { Tech = 1 }
+				Cost { Tech = 2 }
+				Outcomes [ { Text = "Rook's crew carries the crates off, laughing. \"See you around.\" You will, unless you end it."; SetFlags = [magpies_paid] } ]
+			}
+			{
+				Text = "Hand over a crate that Varga rigged to blow."
+				Need { Flags = [defector]; Tech = 1 }
+				HideIfUnmet = true
+				Cost { Tech = 1 }
+				Outcomes [ { Text = "Rook docks the crate in his own hold. A minute later his ship lights up like a flare. The other Magpies scatter and do not come back."; Fame = 0.5; Heat = 5; ClearFlags = [magpies_paid] } ]
+			}
+			{
+				Text = "Pay in credits."
+				Cost { Money = 2 }
+				Outcomes [ { Text = "\"Credits. Fine.\" Rook sounds disappointed, which is somehow worse." } ]
+			}
+			{
+				Text = "Not this time. Come and take them."
+				Outcomes [ { Text = "\"Wrong answer.\" The Magpies come in hot, more of them and better armed. Their bounty has grown too."; Spawn = MagpiesReturn; ClearFlags = [magpies_paid] } ]
+			}
+		]
+	}
+
+	{
+		ID = refugee_convoy
+		Trigger = Arrival
+		Need { MinSector = 3 }
+		Title = "Refugee Convoy"
+		Text = "Three overloaded transports limp along the lane: miners and their families, running from a corporate company town. Their convoy leader hails you. \"The corporation searches every convoy now. Please.\""
+		Choices
+		[
+			{
+				Text = "Take some of them aboard."
+				Outcomes [ { Text = "Two of the miners know their way around a reactor and ask to work for their passage. The corporation will search your hull too."; Crew = 2; Fame = 0.3; Reputation = 1; Heat = 10 } ]
+			}
+			{
+				Text = "Give them fuel and food for the trip."
+				Cost { Resources = [{ ID = hyperium; Amount = 15; PerTier = 3 }] }
+				Outcomes [ { Text = "The convoy leader salutes as they turn for the jump point. The locals will hear about this."; Fame = 0.3; Reputation = 1 } ]
+			}
+			{
+				Text = "Sell their position to the corporation."
+				Outcomes [ { Text = "The corporation pays, and for a few hours its cutters chase someone else. Nobody in this system will forget who sold the convoy."; Money = 1; Heat = -15; Fame = -0.5; Reputation = -2 } ]
+			}
+			{
+				Text = "Wish them luck and fly on."
+				Outcomes [ { Text = "You leave them to the lane." } ]
+			}
+		]
+	}
+
+	{
+		ID = toll_gate
+		Trigger = Arrival
+		Need { MinSector = 2 }
+		Title = "Pirate Toll Gate"
+		Text = "Mines across the lane and three pirate gunships at the gap. \"Toll gate. We know who you are, and we know the corporation pays for sightings. The hotter you are, the more you pay.\""
+		Choices
+		[
+			{
+				Text = "Pay the toll."
+				Cost { Money = 0.3; MoneyPerHeat = 0.01 }
+				Outcomes [ { Text = "They wave you through. \"You pay better than the corporation. For now.\"" } ]
+			}
+			{
+				Text = "Pay double, and they report you heading the wrong way."
+				Cost { Money = 0.6; MoneyPerHeat = 0.02 }
+				Outcomes [ { Text = "The pirates sell the corporation a sighting three systems off. Everyone gets paid, except the corporation."; Heat = -20 } ]
+			}
+			{
+				Text = "Run the gate."
+				Outcomes [ { Text = "You punch through the minefield. The gunships open fire, and their sighting goes out anyway."; Heat = 15; Spawn = TollGuards } ]
+			}
+		]
+	}
+
+	{
+		ID = buyers_agent
+		Trigger = Arrival
+		Weight = 40
+		Need { MinSectorsLeft = 1; MaxSectorsLeft = 2; Tech = 1 }
+		Title = "The Buyer's Agent"
+		Text = "A sleek courier matches your course. \"I represent the Buyer. My client offers an advance: credits now, against a lower price at delivery.\" The terms are already on your screen."
+		Choices
+		[
+			{
+				Text = "Take a small advance: the Buyer pays 80% at delivery."
+				Outcomes [ { Text = "The credits arrive before the courier finishes its turn. The contract terms update."; MoneyTech = 1.5; BuyerPrice = 0.8 } ]
+			}
+			{
+				Text = "Take a large advance: the Buyer pays 60% at delivery."
+				Outcomes [ { Text = "\"A pleasure.\" The courier is gone, and so is a good part of your final payday."; MoneyTech = 3; BuyerPrice = 0.6 } ]
+			}
+			{
+				Text = "Decline. You will be paid in full or not at all."
+				Outcomes [ { Text = "\"As you wish. My client will be waiting.\"" } ]
+			}
+		]
+	}
+
 	// ---- Station
 
 	{

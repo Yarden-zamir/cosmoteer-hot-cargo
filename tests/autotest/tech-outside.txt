@@ -1,5 +1,5 @@
 # Tech: a starter ship without a 2x2 storage bay (Model-M) gets a vault outside the hull with a door. Destroyed vault, loss rule.
-newgame last 3
+newgame run 3
 wait 8
 tech dump
 expect vaults == 1

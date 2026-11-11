@@ -1,5 +1,5 @@
 # Save and load with a pending event: the page, its serial and the flags come back.
-newgame last
+newgame run
 wait 8
 expectevent getaway
 choose 1 1

@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using Cosmoteer.Data;
 using Cosmoteer.Modes.Career;
 using Cosmoteer.Resources;
@@ -7,7 +6,6 @@ using Cosmoteer.Ships.Parts;
 using Cosmoteer.Ships.Parts.Resources;
 using HarmonyLib;
 using HotCargo.Core;
-using HotCargo.Ui;
 
 namespace HotCargo.Tech;
 
@@ -56,37 +54,22 @@ static class FlexGridBlocksTechPatch
 
 /// <summary>
 /// Spec 65, 66: damage to a vault destroys tech inside it. A destroyed vault drops nothing, because the resource has no drop rates.
-/// Repair raises health, which this patch ignores, so repair does not bring tech back.
+/// Repair raises health, which costs nothing and brings nothing back.
 /// </summary>
 [HarmonyPatch(typeof(Part), "OnHealthChanged")]
 static class VaultDamagePatch
 {
-    /// <summary>
-    /// Damage since the last lost unit, per vault.
-    /// Limit: not saved, so a save and load drops a partial amount (less than one unit of damage). Revisit if players notice.
-    /// </summary>
-    static readonly ConditionalWeakTable<Part, StrongBox<float>> Pending = new();
-
-    static void Postfix(Part __instance, int oldHealth, int newHealth)
+    static void Postfix(Part __instance, int oldHealth, int newHealth) => Errors.Guard("vault damage", () =>
     {
-        try
-        {
-            if (newHealth >= oldHealth || newHealth == 0 || __instance.Rules.ID != Vaults.VaultId) return;
-            if (__instance.Ship?.Sim is null || Run.Current is not { } run) return;
-            var grid = __instance.Components.OfType<TypedResourceGrid>().FirstOrDefault(g => g.ResourceType == Vaults.TechId);
-            if (grid is null || grid.Resources == 0) { Pending.Remove(__instance); return; }
-            var pending = Pending.GetOrCreateValue(__instance);
-            var (lost, rest) = TechModel.UnitsLostToDamage(pending.Value + (oldHealth - newHealth), run.T.Tech.VaultDamagePerUnitLost * __instance.Rules.MaxHealth);
-            pending.Value = rest;
-            if (lost == 0) return;
-            int removed = Math.Min(lost, grid.Resources);
-            grid.AddResources(-removed);
-            Log.Info($"vault at {__instance.Location} took {oldHealth - newHealth} damage: lost {removed} tech, {grid.Resources} left");
-        }
-        catch (Exception ex)
-        {
-            Log.Error("vault damage patch failed", ex);
-            Overlay.FatalError = $"vault damage: {ex.Message}";
-        }
-    }
+        if (newHealth >= oldHealth || newHealth == 0 || __instance.Rules.ID != Vaults.VaultId) return;
+        if (__instance.Ship?.Sim is null || Run.Current is not { } run) return;
+        var grid = __instance.Components.OfType<TypedResourceGrid>().FirstOrDefault(g => g.ResourceType == Vaults.TechId);
+        if (grid is null || grid.Resources == 0) return;
+        int max = __instance.Rules.MaxHealth;
+        int lost = TechModel.UnitsLostToDamage(max, oldHealth, newHealth, run.T.Tech.VaultDamagePerUnitLost * max);
+        if (lost == 0) return;
+        int removed = Math.Min(lost, grid.Resources);
+        grid.AddResources(-removed);
+        Log.Info($"vault at {__instance.Location} took {oldHealth - newHealth} damage: lost {removed} tech, {grid.Resources} left");
+    });
 }

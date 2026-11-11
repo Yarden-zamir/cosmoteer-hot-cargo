@@ -71,7 +71,7 @@ public static class EventRunner
     static void CheckSignals(Run run, SimRoot sim)
     {
         float r2 = run.T.Events.SignalTriggerDistance * run.T.Events.SignalTriggerDistance;
-        var ships = HunterSpawner.HumanShips(sim).ToList();
+        var ships = sim.Ships.HumanPlayerSignificantShips.ToList();
         foreach (var doodad in sim.Doodads.Where(d => d.Tags?.Contains(SignalTag) == true).OrderBy(d => d.UniqueID).ToList())
         {
             if (!ships.Any(sh => sh.DetWorldCenter.DistanceSquaredTo(doodad.Location) <= r2)) continue;
@@ -92,8 +92,8 @@ public static class EventRunner
         ObjectID node = sim.MapNode?.UniqueID ?? throw new InvalidOperationException("sim has no map node");
         if (s.StationRolled.Contains(node) && s.CourierNodes.Contains(node)) return;
         float r = run.T.Events.StationTriggerDistance;
-        var ships = HunterSpawner.HumanShips(sim).ToList();
-        Ship? station = sim.Ships.FirstOrDefault(st => st.Tags?.Contains(TradeStationTag) == true && !st.Tags.Contains(BuyerTag) && !st.IsJunk
+        var ships = sim.Ships.HumanPlayerSignificantShips.ToList();
+        Ship? station = sim.Ships.FirstOrDefault(st => st.HasTag(TradeStationTag) && !st.HasTag(BuyerTag) && !st.IsJunk
             && ships.Any(sh => sh.DetWorldBoundingCircle.DistanceTo(st.DetWorldBoundingCircle) <= r));
         if (station is null) return;
         if (s.CourierNodes.Add(node))
@@ -239,7 +239,7 @@ public static class EventRunner
     }
 
     public static int FameAmount(Run run, float units, int tier) =>
-        (int)MathF.Round(units * run.T.Events.FameScale * GameData.StandardMissionFame(tier) * run.Mode.EconDifficulty.FameRewardFactor * run.T.Journey.RewardScale);
+        (int)MathF.Round(units * run.T.Events.FameScale * run.StandardMissionFamePaid(tier));
 
     public static Need ToNeed(Run run, NeedRules? n, int tier, long techValue) => n is null ? new Need() : new Need
     {
@@ -451,7 +451,7 @@ public static class EventRunner
     /// <summary>Runs a generator from spawns.rules around the human fleet. Existing tags (player_ship and others) are visible to its spawners.</summary>
     static void Spawn(Run run, SimRoot sim, string name, ulong seed)
     {
-        Vector2 at = HunterSpawner.FleetCenter(sim) ?? throw new InvalidOperationException("no human ships to spawn near");
+        Vector2 at = SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no human ships to spawn near");
         EventLibrary.Spawn(name).Generate(sim, new FastRand(seed, 0x5350_4157UL), loadInstantly: true, rootLoc: at, addExistingSpawnTags: true);
         Log.Info($"event spawn {name} at {at}");
     }
@@ -465,8 +465,7 @@ public static class EventRunner
         try { action(); }
         catch (Exception ex)
         {
-            Log.Error($"{what} failed", ex);
-            Ui.Overlay.FatalError = $"{what}: {ex.Message}";
+            Errors.Report(what, ex.Message, ex);
             State(run).Pending = null;
         }
     }

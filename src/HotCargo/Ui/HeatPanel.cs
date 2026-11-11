@@ -108,7 +108,7 @@ sealed class HeatPanel : LayoutBox
         float mult = HeatModel.Multiplier(t.Heat.HeatMultiplierByUnits, s.FleetTech);
         _status.Text = s.Result switch
         {
-            RunResult.Won => $"<good>{UxKit.Text("StatusWon")}</good>",
+            RunResult.Won => $"<good>{UxKit.Format("StatusWonFmt", s.Score.ToString("N0"))}</good>",
             RunResult.Lost => $"<bad>{UxKit.Text("StatusLost")}</bad>",
             _ when !s.HeatEnabled => $"<gray>{UxKit.Text("StatusHeatOff")}</gray>",
             _ => StatusLine(s, t.Heat, mult),
@@ -153,17 +153,13 @@ sealed class HeatPanel : LayoutBox
         _seenStages = s.StagesStarted;
         if (!run.T.Ux.StageAlerts || s.StagesStarted == 0) return;
         var stage = run.T.Heat.Stages[s.StagesStarted - 1];
-        string what = StageText(stage.Name);
+        string what = UxKit.StageText(stage.Name);
         AlertsShown++;
         _alert.Text = $"<bad>{stage.Name.ToUpperInvariant()}</bad>  {what}";
         _alertUntil = now + run.T.Ux.StageAlertSeconds;
         _flashUntil = now + 2.0;
         UxKit.ChatLine(_mode.Game, UxKit.Format("StageChatFmt", stage.Name.ToUpperInvariant(), what));
     }
-
-    /// <summary>Per-stage text "HotCargoUx/Stage{Name}". A stage that the strings do not know gets a generic line.</summary>
-    static string StageText(string name) =>
-        Cosmoteer.Localization.Strings.TryGetText("HotCargoUx/Stage" + name, out string? text) ? text : UxKit.Text("StageGeneric");
 
     void DrawBar(GraphicsManager gfx, IntRect pixelRect, Rect r, Color colorScale)
     {

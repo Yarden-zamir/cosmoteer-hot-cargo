@@ -37,6 +37,8 @@ public static class Vaults
         sim.Mode.IsHumanPlayerAllegiance(crew.PlayerIndex)
         || crew.Job is ResourceTransferJob { TradeType: TradeType.Sell, Source.Ship: { } from } && sim.Mode.IsHumanPlayerShip(from);
 
+    public static IEnumerable<Part> VaultParts(Ship ship) => ship.Parts.Where(p => p.Rules.ID == VaultId);
+
     /// <summary>Tech Vault grids on human ships, in a stable order (player, then part location).</summary>
     public static List<TypedResourceGrid> All(SimRoot sim) =>
         HumanShips(sim)

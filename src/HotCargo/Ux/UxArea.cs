@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Reflection;
+using Cosmoteer.Game.Gui;
 using Halfling;
 using HarmonyLib;
 using HotCargo.Core;
@@ -12,6 +13,7 @@ namespace HotCargo.Ux;
 public static class UxArea
 {
     static bool _screenshotPatched;
+    static Cosmoteer.Modes.Career.Comms.CommWindow? _comms;
 
     public static void Register()
     {
@@ -71,7 +73,14 @@ public static class UxArea
             foreach (var part in ship.Parts.ToList())
                 if (i++ % 2 == 0) part.Health = Math.Max(1, (int)(part.Rules.MaxHealth * f));
         };
-        Autotest.Commands["win"] = arg => Autotest.RequireRun().Win(arg.Length > 0 ? arg : "You delivered 4 tech units to the Buyer.\nScore: 184,500");
+        // win: test only. Ends the run as won with a sample score (the real path is a Buyer delivery).
+        Autotest.Commands["win"] = _ =>
+        {
+            var run = Autotest.RequireRun();
+            run.State.DeliveredUnits = 4;
+            run.State.Score = 184_500;
+            run.Win(Cosmoteer.Localization.Strings.GetText("HotCargoJourney/WinReason"));
+        };
         Autotest.Commands["lose"] = arg => Autotest.RequireRun().Lose(arg.Length > 0 ? arg : "The last Tech Vault was destroyed.");
         // select: selects the first own ship, so the ships card shows its info row.
         Autotest.Commands["select"] = _ =>
@@ -80,6 +89,24 @@ public static class UxArea
             sim.PlayerInput.SelectSingleShip(sim.Ships.LocalPlayerShips.FirstOrDefault() ?? throw new InvalidOperationException("no own ship"));
         };
         Autotest.Commands["closepanel"] = _ => CenterPanel.CloseAll();
+        // comms open|close: opens a comms window from the first own ship to the nearest trading station, or closes it.
+        Autotest.Commands["comms"] = arg =>
+        {
+            var game = Autotest.RequireRun().Game;
+            switch (arg)
+            {
+                case "open":
+                    if (_comms is not null) throw new InvalidOperationException("a comms window is already open");
+                    _comms = new Cosmoteer.Modes.Career.Comms.CommWindow(game, Tech.TechAutotest.PlayerShip(), Tech.TechAutotest.NearestStation());
+                    game.Gui.FloatingWindows.AddChild(_comms);
+                    break;
+                case "close":
+                    (_comms ?? throw new InvalidOperationException("no comms window is open")).Unparent();
+                    _comms = null;
+                    break;
+                default: throw new InvalidOperationException("comms needs: open | close");
+            }
+        };
         Autotest.Commands["map"] = arg => { var r = Autotest.RequireRun(); r.Game.ShowMap = arg != "off"; };
 
         // kill: test only, single player. Destroys every part of the first own ship.

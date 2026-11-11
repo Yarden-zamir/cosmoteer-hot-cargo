@@ -1,14 +1,16 @@
 # Core heat loop: new career, heat, stages, fame heat, time heat, save and load.
-newgame last
+newgame run
 wait 8
 log start
 expect active == 1
 expect sector == 1
 heat 30
 expect stages == 1
-# One standard tier-1 mission is 5 fame: +15 heat x multiplier (0.25 with no tech).
-fame 5
-expect heat >= 33.7
+# One standard tier-1 mission pays 5 fame x 1.5 (default difficulty) x 2.0 (RewardScale) = 15 fame.
+# That is +15 heat (HeatPerStandardMission) x 1.2 (multiplier with 6 tech).
+fame 15
+expect heat >= 47.9
+expect heat <= 49.5
 expect stages == 1
 wait 20
 expect seconds > 5
@@ -16,7 +18,7 @@ save core
 wait 3
 load core
 log loaded
-expect heat >= 33.7
+expect heat >= 47.9
 expect stages == 1
 heat 100
 expect stages == 4

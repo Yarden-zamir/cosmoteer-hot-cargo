@@ -31,6 +31,12 @@ public sealed class RunState
     [Serialize(Optional = true)] public string TunablesHash = "";
     /// <summary>Last fleet tech count seen in a tick. Shown in the overlay and used by the heat multiplier.</summary>
     [Serialize(Optional = true)] public int FleetTech;
+    /// <summary>Game seconds that the fleet tech count stayed at 0 while the count was certain (spec 12).</summary>
+    [Serialize(Optional = true)] public double SecondsWithoutTech;
+    /// <summary>Tech units that crew delivered to the Buyer, summed over all deliveries (spec 7).</summary>
+    [Serialize(Optional = true)] public int DeliveredUnits;
+    /// <summary>Run score (spec 7). Set at the win and updated by later Buyer deliveries.</summary>
+    [Serialize(Optional = true)] public long Score;
     /// <summary>Events area state: seen events, flags and the pending event page.</summary>
     [Serialize(Optional = true)] public Events.EventsState Events = new();
     /// <summary>Multiplies the Buyer price (spec 7). Events lower it (an advance from the Buyer's agent); 1 means no change.</summary>

@@ -21,8 +21,7 @@ static class StartingVault
     {
         var sim = run.Game.Sim;
         int units = run.T.Tech.StartingTechUnits;
-        Ship ship = Vaults.HumanShips(sim).OrderBy(s => s.Metadata.PlayerIndex).ThenBy(s => s.UniqueID).FirstOrDefault()
-            ?? throw new InvalidOperationException("new run has no human player ship");
+        Ship ship = SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("new run has no human player ship");
         PartRules vault = ship.Rules.PartsByID[Vaults.VaultId];
         bool needsDoor = false;
         // Each placement adds one vault. The loop handles a StartingTechUnits value above one vault's capacity.

@@ -18,14 +18,13 @@ namespace HotCargo.Ui;
 /// </summary>
 public static class Overlay
 {
-    /// <summary>Set when a lifecycle hook failed. Shown in red so the failure is not silent.</summary>
+    /// <summary>The newest failure that Errors.Report saw. Shown in red so the failure is not silent. It stays until the game restarts.</summary>
     public static string? FatalError;
 
     internal static bool Visible = true;
 
     internal static void Attach(CareerGameModeManager mode)
     {
-        FatalError = null;
         var label = new Label
         {
             AnchorRect = AnchorPresets.TopRight,
@@ -79,12 +78,13 @@ public static class Overlay
             _ => s.HeatEnabled ? "" : "\nheat off",
         };
         string error = TunablesFile.LastError is { } e ? $"\ntunables error: {e}" : "";
-        string mp = run.IsMultiplayer ? $"  (mp, no reload)" : "";
+        // Spec 60: the tunables hash shows in multiplayer, so players can compare it, and with debug keys on.
+        string hash = run.IsMultiplayer ? $"\ntunables {s.TunablesHash}  (mp, no reload)" : t.Debug.DebugKeys ? $"\ntunables {s.TunablesHash}" : "";
         return
             $"HOT CARGO  sector {s.SectorIndex}/{t.Journey.RunSectorCount}\n" +
             $"heat {s.Heat:0.0} / 100   +{perMinute:0.0}/min\n" +
             $"stage {stage}   next {next}\n" +
-            $"tech {s.FleetTech}   x{mult:0.00}   value {t.Tech.Value(s.SectorIndex, s.GameSeconds):N0}\n" +
-            $"tunables {s.TunablesHash}{mp}" + result + error;
+            $"tech {s.FleetTech}   x{mult:0.00}   value {t.Tech.Value(s.SectorIndex, s.GameSeconds):N0}" +
+            hash + result + error;
     }
 }

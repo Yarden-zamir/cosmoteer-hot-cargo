@@ -1,7 +1,7 @@
 // Hot Cargo run map (spec section 5, requirements 2 and 3).
 // A small galaxy whose tiers rise about +2 for each jump on the main route, from tier 1 to FinalSectorTier.
 // The values here are rules: a change needs a game restart and applies to new careers only.
-// Based on Data/galaxy_map/map_generators/base_galaxy.rules. Only the tier and size values differ.
+// Based on Data/galaxy_map/map_generators/base_galaxy.rules. The tier and size values differ, and TierCap is new.
 
 // Highest low tier that a normal system gets. The system after about 8 jumps on the main route reaches it.
 FinalSectorTier = 12
@@ -26,6 +26,7 @@ HotCargoRun
 			&~/FactionTiers
 			&~/StartingNodePicker
 			&~/ProgressionTiers
+			&~/TierCap
 			&<./Data/galaxy_map/map_generators/base_galaxy.rules>/SectorTypes
 		]
 	}
@@ -118,4 +119,14 @@ ProgressionTiers
 			HighTierSpread = &~/TierSpread
 		}
 	]
+}
+
+// Hot Cargo C# type (Journey/TierCap.cs). Vanilla side systems keep their faction tiers, so a system next to the start
+// can be tier 10 or more. This caps the low tier of each system at start tier + TierPerJump x jumps from the start.
+// Faction home systems (above MaxChangeableLowTier) keep their tier.
+TierCap
+{
+	Type = HotCargoTierCap
+	TierPerJump = 2
+	MaxChangeableLowTier = &~/FinalSectorTier
 }

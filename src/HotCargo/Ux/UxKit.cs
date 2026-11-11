@@ -48,21 +48,12 @@ public static class UxKit
         if (game.NetManager is IChatBoxProvider p) p.ChatBox.DisplayRawMessage(xml);
     }
 
-    static readonly HashSet<string> Failed = [];
+    /// <summary>Runs a UI patch body. A failure logs once, shows in the overlay, and the vanilla UI stays.</summary>
+    public static void Guard(string what, Action body) => Errors.Guard("ux " + what, body);
 
-    /// <summary>
-    /// Runs a UI patch body. A failure must not crash the game: it logs once, shows in the overlay, and the vanilla UI stays.
-    /// </summary>
-    public static void Guard(string what, Action body)
-    {
-        try { body(); }
-        catch (Exception ex)
-        {
-            if (!Failed.Add(what)) return;
-            Log.Error($"ux: {what} failed; this UI change is skipped", ex);
-            Ui.Overlay.FatalError = $"ux {what}: {ex.Message}";
-        }
-    }
+    /// <summary>Per-stage text "HotCargoUx/Stage{Name}". A stage that the strings do not know gets a generic line.</summary>
+    public static string StageText(string stageName) =>
+        Strings.TryGetText("HotCargoUx/Stage" + stageName, out string? text) ? text : Text("StageGeneric");
 
     /// <summary>Percent text in the game's good, limited or bad text color.</summary>
     public static string PercentXml(float fraction)

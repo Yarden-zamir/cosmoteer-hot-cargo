@@ -29,16 +29,18 @@ public static class RunEndUi
         {
             var gui = new GameOverGui(run.Game);
             run.Game.Gui.RootWidget.Children.InsertBelow(run.Game.Gui.FloatingWindows, gui);
-            if (!panel) _ = OneButtonDialog.Show($"The corporation recovered the tech.\n\n{run.State.EndReason}");
+            if (!panel) _ = OneButtonDialog.Show($"{UxKit.Text("LossTitle")}\n\n{run.State.EndReason}");
         }
         else if (panel)
         {
-            string body = $"<s24>{run.State.EndReason}</s24>\n\n{StatsLine(run)}\n<gray>{UxKit.Text("WinContinue")}</gray>";
+            var st = run.State;
+            string body = $"<s24>{st.EndReason}</s24>\n\n{UxKit.Format("WinScoreFmt", st.Score.ToString("N0"), st.DeliveredUnits)}\n\n" +
+                          $"{StatsLine(run)}\n<gray>{UxKit.Text("WinContinue")}</gray>";
             CenterPanel.Show(run.Game, UxKit.Text("WinTitle"), WidgetRules.Instance.GoodTextColor, body, UxKit.Text("WinButton"));
         }
         else
         {
-            _ = OneButtonDialog.Show($"You got the tech out.\n\n{run.State.EndReason}\n\nHeat is off. You can keep playing this career.");
+            _ = OneButtonDialog.Show($"{UxKit.Text("WinTitle")}\n\n{run.State.EndReason}\n{UxKit.Format("ScoreFmt", run.State.Score.ToString("N0"), run.State.DeliveredUnits)}\n\n{UxKit.Text("WinContinue")}");
         }
     }
 
@@ -49,7 +51,7 @@ public static class RunEndUi
         _introFor = run;
         if (!run.T.Ux.RunIntro) return;
         var t = run.T;
-        string body = UxKit.Format("IntroBodyFmt", t.Journey.RunSectorCount, t.Heat.Stages.Length);
+        string body = UxKit.Format("IntroBodyFmt", t.Journey.RunSectorCount, t.Heat.Stages.Length, t.Heat.HeatCarryOverFraction);
         CenterPanel.Show(run.Game, UxKit.Text("IntroTitle"), WidgetRules.Instance.FameTextColor, body, UxKit.Text("IntroButton"));
     }
 

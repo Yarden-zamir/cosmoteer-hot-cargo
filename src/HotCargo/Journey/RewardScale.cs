@@ -5,7 +5,6 @@ using Cosmoteer.Modes.Career.Missions.Objectives;
 using Cosmoteer.Modes.Career.Missions.Rewards;
 using HarmonyLib;
 using HotCargo.Core;
-using HotCargo.Ui;
 
 namespace HotCargo.Journey;
 
@@ -47,11 +46,7 @@ static class RewardScalePatch
             return ci;
         }).ToList();
         if (replaced == 0)
-        {
-            string error = $"reward scale: no reward factor read found in {original.DeclaringType?.Name}.{original.Name}; rewards there are not scaled";
-            Log.Error(error);
-            Overlay.FatalError = error;
-        }
+            Errors.Report($"reward scale {original.DeclaringType?.Name}.{original.Name}", "no reward factor read found; rewards there are not scaled");
         return result;
     }
 }
