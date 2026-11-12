@@ -33,8 +33,15 @@ take_one_slot() {
   local i lock limit busy
   while :; do
     limit="$(usable_slots)"
-    # The integrator's runs (main worktree) always keep one slot free of agent runs, so merges never starve.
-    if [[ "$(basename "$REPO_ROOT")" != main && $limit -gt 1 ]]; then limit=$((limit - 1)); fi
+        # Two slots stay free for the integrator (main worktree), so its co-op tests (2 slots each) never starve.
+    if [[ "$(basename "$REPO_ROOT")" != main && $limit -gt 2 ]]; then limit=$((limit - 2)); fi
+    # Fair share: an agent worktree holds at most HOT_CARGO_SLOTS_PER_AGENT slots (default 2), so one agent's big batch
+    # cannot starve the others. The main worktree (the integrator) has no cap.
+    if [[ "$(basename "$REPO_ROOT")" != main ]]; then
+      local mine=0 l
+      for l in /tmp/hot_cargo_slot_[0-9]*.lock; do [[ "$(cat "$l/owner" 2>/dev/null)" == "$REPO_ROOT" ]] && mine=$((mine + 1)); done
+      if [[ $mine -ge ${HOT_CARGO_SLOTS_PER_AGENT:-2} ]]; then sleep 5; continue; fi
+    fi
     for lock in /tmp/hot_cargo_slot_[0-9]*.lock; do
       if [[ -f "$lock/pid" ]] && ! kill -0 "$(cat "$lock/pid")" 2>/dev/null; then rm -rf "$lock"; fi
     done

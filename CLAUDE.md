@@ -57,6 +57,7 @@ Procedures are skills in `.claude/skills/`:
 ## Agents
 
 - An agent works only in its own worktree and branch. At the end it pushes its branch and opens a draft PR. It never pushes to `main` and never merges.
+- Tests: run only the tests your change needs (your area's tests, `core`, and any test you changed). Never run the full suite; the integrator runs it for each merge batch. Each agent holds at most 2 test slots at a time (the scripts enforce it).
 - Save progress so a crash or restart loses nothing:
   - In the first minutes, commit a short `PLAN.md` (design decisions, steps) to your branch, push it, and open the draft PR with a checklist of the steps. Delete `PLAN.md` before the final commit.
   - Commit and push after each step that builds. Tick the step in the PR checklist.
