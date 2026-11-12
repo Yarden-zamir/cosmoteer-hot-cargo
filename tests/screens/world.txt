@@ -62,4 +62,9 @@ wait 15
 buyer goto
 wait 3
 screenshot world-10-buyer-near
+# Ship loss alert (last: the run ends without a ship).
+godmode off
+kill
+wait 1.5
+screenshot world-11-ship-lost
 quit
