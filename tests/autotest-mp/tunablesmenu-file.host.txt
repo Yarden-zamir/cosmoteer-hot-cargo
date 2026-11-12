@@ -1,0 +1,28 @@
+# Co-op change of the host's tunables.rules mid-run (spec 60, 850): the host's game sends the file as the tunables input,
+# and every machine applies it at the same tick. A bad file sends nothing. The client's file has no effect.
+mphost {PORT}
+mpstart 2
+mp godmode on
+waitfor menu_ready == 1 30
+tunablesfile Events { Enabled = false }; Heat { HeatPerGameMinute = 45 }; Hunters { Stages = [{ Name = "Warning"; ShipCount = 2 }, { Name = "Patrol"; ShipCount = 2 }, { Name = "Hunt"; ShipCount = 3; TierOffset = 1 }, { Name = "Strike"; ShipCount = 3; TierOffset = 2 }] }
+waitfor heatperminute == 45 30
+menu open
+menu shows Heat.HeatPerGameMinute 45
+menu close
+# A bad value: the host rejects it and sends nothing.
+tunablesfile Heat { HeatPerGameMinute = 50; HeatCarryOverFraction = 2 }
+wait 3
+expect tunables_error == 1
+expect heatperminute == 45
+# Barrier: the client saw 45, checked its read-only window and changed its own file.
+waitfor mpmark >= 1 120
+wait 3
+expect heatperminute == 45
+# The file's Warning response spawns 2 hunters on both machines.
+mp stage
+waitfor hunters >= 2 30
+wait 20
+expect desyncs == 0
+log host-end
+waitfor mpconnected == 0 240
+quit

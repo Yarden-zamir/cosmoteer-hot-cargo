@@ -2,7 +2,7 @@
 
 UI and UX findings for vanilla Cosmoteer 0.30.5a and the Hot Cargo mod, the changes, and their status.
 Each change has an on/off switch in `Ux` in `tunables.rules` (class `src/HotCargo/Ux/UxTunables.cs`). All switches default to on.
-A switch change takes effect on the next frame in single player (live reload).
+A switch change takes effect within a second (live reload: single player, and the host's file in co-op).
 
 All changes are GUI-only, with one exception: the comms pause (V17) pauses through the game's own pause input, which is deterministic. So co-op multiplayer stays in lockstep.
 A failing UI patch logs one error, shows it in the overlay, and leaves the vanilla UI in place (`UxKit.Guard`, which calls `Core/Errors.cs`).

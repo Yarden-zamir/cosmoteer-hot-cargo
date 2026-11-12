@@ -31,10 +31,6 @@ public static class TunableTiming
 {
     static readonly Dictionary<string, Applies> Exceptions = new()
     {
-        ["HeatTunables.HeatCarryOverFraction"] = Applies.NextSystem,
-        ["FactionsTunables.RelayWatchedHeatCut"] = Applies.NextSystem,
-        ["FactionsTunables.RelayClearHeatCut"] = Applies.NextSystem,
-        ["FactionsTunables.BlindHeatCut"] = Applies.NextSystem,
         ["TechTunables.StartingTechUnits"] = Applies.NewRun,
         ["JourneyTunables.RunSectorCount"] = Applies.NextSystem,
         ["HunterTunables.Stages"] = Applies.NextSpawn,
@@ -68,8 +64,6 @@ public static class TunableTiming
         ["EventsTunables.RelicMinSector"] = Applies.NewRun,
         ["ChainsTunables.StationChance"] = Applies.NextSystem,
         ["ChainsTunables.MaxNewChainsPerSystem"] = Applies.NextSystem,
-        ["BalanceTunables.StationFuelPerMillion"] = Applies.NextSpawn,
-        ["BalanceTunables.StationFuelMinimum"] = Applies.NextSpawn,
         ["ChainsTunables.LaterDelaySeconds"] = Applies.NextSystem,
         ["ChainsTunables.StoryLines"] = Applies.NextUse,
         ["ContractsTunables.FeeChance"] = Applies.NextOffer,

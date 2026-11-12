@@ -1,42 +1,46 @@
 #!/usr/bin/env bash
-# Change tunables while the game runs: edits <slot Mods>/hot_cargo/tunables.rules on the PC (SLOT, default main = the player).
-# Usage: scripts/tune.sh Section.Field=value [Section.Field=value ...]
-#        scripts/tune.sh --show                 prints the file
-#        scripts/tune.sh --reset Section.Field  removes a value, so the default applies again
-# In single player the mod reloads the file on the next frame (spec 50 to 53). TUNABLES.md says when each value takes
-# effect (now, next spawn, next system, new runs). Bad values are rejected and the old ones stay; the overlay shows why.
-# Limit: plain Section.Field values only (no arrays or nested sections). Use the in-game settings window for those.
-# Co-op: the mod ignores file changes during a co-op run (spec 60); the host changes values in the settings window.
+# Change tunables in a running Hot Cargo run on the PC (SLOT, default main = the player). Skill: hot-cargo-tune.
+# Usage: scripts/tune.sh PATH=VALUE [PATH=VALUE ...]   for example Heat.HeatPerGameMinute=2 Hunters.Stages[2].ShipCount=4
+#        scripts/tune.sh --reset PATH [PATH ...]       sets values back to their defaults
+#        scripts/tune.sh --show                        prints tunables.rules (only the changed values)
+#        scripts/tune.sh --defaults                    prints tunables.defaults.rules (every value, written at game start)
+# PATH and VALUE use the format of the settings window: lists are comma separated ("1, 1.5, 2"), switches true/false,
+# texts without quotes. All values of one call apply as one change, or none of them do: the mod validates them like a
+# settings window edit, writes tunables.rules and, in co-op on the host, sends them to every machine (spec 853).
+# The game must be in a run (a career game with the mod on). In co-op only the host's game takes changes.
 set -euo pipefail
 source "$(dirname "$0")/pc.sh"
-[[ $# -ge 1 ]] || { sed -n 2,9p "$0"; exit 1; }
+[[ $# -ge 1 ]] || { sed -n 2,10p "$0"; exit 1; }
 
-read_file() { pc "$PS_PATHS"'$f = Join-Path $modDir "tunables.rules"; if (Test-Path $f) { Get-Content $f -Raw }'; }
-if [[ "$1" == --show ]]; then read_file; exit 0; fi
+if [[ "$1" == --show || "$1" == --defaults ]]; then
+  file=tunables.rules; [[ "$1" == --defaults ]] && file=tunables.defaults.rules
+  pc "$PS_PATHS"'$f = Join-Path $modDir "'"$file"'"; if (Test-Path $f) { Get-Content $f -Raw } else { "(no '"$file"')" }' | tr -d '\r'
+  exit 0
+fi
 
-CURRENT="$(read_file | tr -d '\r')"
-NEW="$(CURRENT="$CURRENT" uv run - "$@" <<'EOF'
-# Sets or removes Section.Field lines in an ObjectText file of "Section { Field = value }" blocks.
-import os, re, sys
-text = os.environ["CURRENT"]
-args = sys.argv[1:]
-reset = args[:1] == ["--reset"]
-items = args[1:] if reset else args
-for item in items:
-    path, _, value = item.partition("=")
-    section, _, field = path.strip().partition(".")
-    if not section or not field or "." in field or "[" in field or (not reset and not value):
-        sys.exit(f"tune: expected Section.Field=value, got {item!r}")
-    block = re.search(r"(?ms)^" + re.escape(section) + r"\s*\{(.*?)^\}", text)
-    line = f"\t{field} = {value.strip()}\n"
-    if block:
-        body = block.group(1)
-        field_re = re.compile(r"(?m)^\s*" + re.escape(field) + r"\s*=.*\n?")
-        body = field_re.sub("", body) if reset else (field_re.sub(line, body, count=1) if field_re.search(body) else body.rstrip("\n") + "\n" + line)
-        text = text[:block.start(1)] + body + text[block.end(1):]
-    elif not reset:
-        text = text.rstrip("\n") + f"\n{section}\n{{\n{line}}}\n"
-print(text, end="")
-EOF
-)"
-pc "$PS_PATHS"'$f = Join-Path $modDir "tunables.rules"; [IO.File]::WriteAllText($f, [Console]::In.ReadToEnd()); "tunables.rules written (slot " + $slot + ")"' <<<"$NEW"
+REQUEST=""
+if [[ "$1" == --reset ]]; then
+  shift
+  [[ $# -ge 1 ]] || { echo "tune: --reset needs at least one PATH" >&2; exit 1; }
+  for path in "$@"; do REQUEST+="reset $path"$'\n'; done
+else
+  for item in "$@"; do
+    path="${item%%=*}"
+    value="${item#*=}"
+    [[ "$item" == *=* && -n "$path" && "$path" != *" "* ]] || { echo "tune: expected PATH=VALUE, got '$item'" >&2; exit 1; }
+    REQUEST+="set $path $value"$'\n'
+  done
+fi
+
+# Writes tune.request in one move, so the mod never reads half a request, then waits for tune.result (the mod polls twice a second).
+RESULT="$(pc "$PS_PATHS"'
+$req = Join-Path $modDir "tune.request"; $res = Join-Path $modDir "tune.result"
+Remove-Item $res -ErrorAction SilentlyContinue
+[IO.File]::WriteAllText("$req.tmp", [Console]::In.ReadToEnd())
+Move-Item "$req.tmp" $req -Force
+for ($i = 0; $i -lt 40 -and -not (Test-Path $res); $i++) { Start-Sleep -Milliseconds 250 }
+if (Test-Path $res) { Get-Content $res -Raw; Remove-Item $res }
+else { Remove-Item $req -ErrorAction SilentlyContinue; "error no answer in 10 seconds: is the game of slot " + $slot + " in a Hot Cargo run, and not on a menu screen? Nothing changed." }
+' <<<"$REQUEST" | tr -d '\r')"
+echo "$RESULT"
+[[ "$RESULT" == ok* ]]
