@@ -24,8 +24,10 @@ Mission checks are in [tests/playtest/missions.md](tests/playtest/missions.md).
 6. In the trade window, check that the station offers the sold unit back at 1.5 × the sell price.
 7. Try to move tech into a normal storage bay with the transfer window. Check that the game refuses it.
 8. Let an enemy shoot a vault. Check that it loses 1 unit at half health and the other when it is destroyed, that other vaults keep their tech, and that repair does not bring units back.
-9. Sell the last unit. Check that the loss dialog "The corporation recovered the tech." shows about 3 seconds after the delivery.
+9. Sell the last unit. Check that a toast says "No tech left!", and that the heat panel shows "NO TECH, run lost in 3:00" and counts down. Wait it out. Check that the loss dialog "The corporation recovered the tech." shows at 0:00.
 10. Press F11 and Shift+F11. Check that the overlay tech count goes up and down by 1.
+11. Remove all tech with Shift+F11, then press F11 before the countdown ends. Check that the NO TECH line goes away and the run goes on.
+12. Zoom out to the map view. Check that your ship blip shows "TECH 8". Deconstruct a full vault. Check that each crate in space shows the tech icon and "TECH", also as an arrow at the screen edge, and that the collect tool brings the crates back into a vault.
 
 ## Economy and contracts (spec 19, 100-108)
 

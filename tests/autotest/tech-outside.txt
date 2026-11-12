@@ -23,7 +23,8 @@ vault move
 wait 30
 expect outsidetech == 2
 expect tech == 6
-# Spec 9, 12: when every vault is destroyed, the loss waits LossGraceSeconds (3 s).
+# Spec 9, 12, 443: when every vault is destroyed, the loss timer runs (3 s here).
+tech_set LossGraceSeconds 3
 vault destroy all
 wait 1
 expect tech == 0

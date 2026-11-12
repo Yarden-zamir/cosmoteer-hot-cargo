@@ -24,8 +24,10 @@ public sealed class TechTunables
     /// Default 0.5 for a 2-unit vault: the first unit goes at half health, the second when the vault is destroyed.
     /// </summary>
     [Serialize(Optional = true)] public float VaultDamagePerUnitLost = 0.5f;
-    /// <summary>Spec 12: the fleet tech count must stay at 0 this long before the run is lost.</summary>
-    [Serialize(Optional = true)] public float LossGraceSeconds = 3f;
+    /// <summary>Spec 12, 443: game seconds of the loss timer. When the fleet holds no tech, the players have this long to get tech back.</summary>
+    [Serialize(Optional = true)] public float LossGraceSeconds = 180f;
+    /// <summary>Spec 444: map markers for tech in the system (tech held on ship blips, crates in space).</summary>
+    [Serialize(Optional = true)] public bool TechMarkers = true;
 }
 
 public static class TechTunablesExtensions

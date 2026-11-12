@@ -26,7 +26,7 @@ HotCargoUx
 	               "<fame>Goal</fame>   Sell the tech to the <good>Buyer</good> in sector {0}. Each jump to a new system is one sector.\n"\
 	               "<fame>Heat</fame>   Rises over time and with each mission. It has {1} stages, and each stage sends hunters.\n"\
 	               "<fame>Cool</fame>   A jump to a new system drops heat to {2:0%}.\n"\
-	               "<fame>Cargo</fame>  The tech sits in your Tech Vaults. Damage destroys it. If all of it is gone, the run ends.\n"\
+	               "<fame>Cargo</fame>  The tech sits in your Tech Vaults. Damage destroys it. If all of it is gone and you get none back in time, the run ends.\n"\
 	               "<fame>Sell?</fame>  You can sell tech at stations on the way: less heat, more money, a lower final score."
 	IntroButton = "Fly"
 

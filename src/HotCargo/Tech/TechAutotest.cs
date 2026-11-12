@@ -7,6 +7,7 @@ using Cosmoteer.Ships.Crew.Jobs;
 using Cosmoteer.Ships.Parts;
 using Cosmoteer.Ships.Parts.Resources;
 using Cosmoteer.Ships.Resources;
+using Cosmoteer.Simulation;
 using HotCargo.Core;
 using HotCargo.Dev;
 
@@ -20,6 +21,16 @@ static class TechAutotest
         Autotest.Commands["tech"] = Tech;
         Autotest.Commands["vault"] = Vault;
         Autotest.Commands["tostation"] = _ => ToStation();
+        // tech_set Field value: changes a Tech tunable of the run. In co-op run it through "mp".
+        Autotest.Commands["tech_set"] = arg => Autotest.SetField(Active().T.Tech, arg);
+        Autotest.Fields["losstimer"] = () => LossTimer.IsRunning(Active()) ? 1 : 0;
+        Autotest.Fields["losstimerleft"] = () => LossTimer.SecondsLeft(Active()) ?? -1;
+        // Spec 444: tech crate indicators in the scene, and the TECH count on the player ship's blip.
+        Autotest.Fields["techcrates"] = () => ObjectIndicatorSource.GetAllInScene(Active().Game.Sim).OfType<TechMarkers.CrateIndicator>().Count();
+        // Shown crate markers (one per group of crates) and the units they name.
+        Autotest.Fields["cratemarkers"] = () => CrateLeaders().Count;
+        Autotest.Fields["crateunits"] = () => CrateLeaders().Sum(c => c.Units);
+        Autotest.Fields["shiptag"] = () => PlayerShip().IndicatorSource.GetNonMouseoverText()?.Contains($"TECH {TechMarkers.ShipUnits(PlayerShip())}") == true ? TechMarkers.ShipUnits(PlayerShip()) : 0;
         Autotest.Fields["techvalue"] = () => { var r = Active(); return r.T.Tech.Value(r.State); };
         Autotest.Fields["sellprice"] = () => Active().Game.Sim.Mode.GetResourceSellRefund(Vaults.TechId, null);
         Autotest.Fields["buyprice"] = () => Active().Game.Sim.Mode.GetResourceBuyCost(Vaults.TechId, null);
@@ -57,6 +68,9 @@ static class TechAutotest
 
     static Run Active() => Autotest.RequireRun();
 
+    static List<TechMarkers.CrateIndicator> CrateLeaders() =>
+        [.. ObjectIndicatorSource.GetAllInScene(Active().Game.Sim).OfType<TechMarkers.CrateIndicator>().Where(c => c.ShouldShowA(out _, out _) == true)];
+
     static Halfling.Geometry.IntVector2? _outside;
 
     static TypedResourceGrid? OutsideVault() => _outside is { } at ? Vaults.OnShip(PlayerShip()).FirstOrDefault(g => g.Part!.Location == at) : null;
@@ -68,7 +82,7 @@ static class TechAutotest
 
     static int Int(string s) => int.Parse(s, CultureInfo.InvariantCulture);
 
-    /// <summary>tech add N | tech remove N | tech sell N | tech dump</summary>
+    /// <summary>tech add N | tech remove N | tech sell N | tech dump | tech drop N (takes N from the vaults and drops them as crates next to the player ship) | tech collect (crew fetch every tech crate)</summary>
     static void Tech(string arg)
     {
         var run = Active();
@@ -80,6 +94,25 @@ static class TechAutotest
             case ["remove", var n]: Log.Info($"AUTOTEST tech removed {Vaults.Remove(sim, Int(n))}"); break;
             case ["sell", var n]: Sell(run, Int(n)); break;
             case ["dump"]: Dump(run); break;
+            case ["collect"]:
+                // The input of the vanilla collect tool (SalvageCollectState): crew fetch each crate into the best vault with room.
+                var collector = PlayerShip();
+                for (int i = 0; i < sim.Nuggets.Count; i++)
+                {
+                    var nugget = sim.Nuggets[i];
+                    if (nugget.ResourceType != Vaults.TechId) continue;
+                    var sink = collector.Resources.GetBestReceivingSink(nugget, nugget.Quantity, MPValueType.Displayed, out int room) ?? throw new InvalidOperationException("no vault room for a tech crate");
+                    run.Game.NetManager.EnqueueInput(new MPMoveResourcesInput(nugget, sink, Math.Min(room, nugget.Quantity), collector.Jobs.AllocLocalJobID()));
+                }
+                Log.Info("AUTOTEST tech collect queued");
+                break;
+            case ["drop", var n]:
+                int removed = Vaults.Remove(sim, Int(n));
+                var ship = PlayerShip();
+                var at = ship.WorldCenter + new Halfling.Geometry.Vector2(ship.WorldBoundingRadius + 150f, 0f);
+                sim.Nuggets.DropNuggets(Vaults.TechId, removed, new Halfling.Geometry.RotRect(at, new Halfling.Geometry.Vector2(20f, 20f), default));
+                Log.Info($"AUTOTEST tech dropped {removed} crates at {at}");
+                break;
             default: throw new InvalidOperationException($"tech: unknown arguments '{arg}'");
         }
     }

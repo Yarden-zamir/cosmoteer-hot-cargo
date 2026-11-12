@@ -3,6 +3,8 @@
 mphost {PORT}
 mpstart 2
 mp ev_set Enabled false
+# A short loss timer (spec 443), so the last sale loses the run within the test.
+mp tech_set LossGraceSeconds 3
 expect vaulttech == 8
 expect vaults == 4
 expect vaultpaths == 4
