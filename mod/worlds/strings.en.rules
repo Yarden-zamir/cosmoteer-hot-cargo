@@ -19,9 +19,10 @@ HotCargoWorlds
 
 	HazardTipFmt = "<gray>{0}</gray>"
 	ArrivalFmt = "<b>{0}.</b> {1}"
+	ArrivalCenterFmt = "{0}\n<s28>{1}</s28>"
 
 	// The current nebula.
-	CurrentTip = "<b>Current</b>\nA stream of charged gas. Ships inside drift with the flow. Fly with it to move fast, or burn hard against it."
+	CurrentTip = "<b>Current</b>\nA stream of charged gas. Ships inside drift with the flow: ride it to move fast, or burn hard against it."
 	CurrentHudFmt = "<s14><color r='120' g='230' b='235'>{0:0.}%</color></s14>\n<s12><gray>current</gray></s12>"
 
 	// Heat zone line on the HUD.
@@ -29,7 +30,7 @@ HotCargoWorlds
 
 	// Missions.
 	HoldPass = "Hold the Pass"
-	HoldPassDesc = "Raiders camp in a pass through the belt and tax every ship that passes. Clear them out, then hold the pass until the convoy is through. Keep a ship in the pass: if the pass stays empty, the raiders take it back."
+	HoldPassDesc = "Raiders camp in a pass through the belt and tax every ship. Clear them out, then hold the pass until the convoy is through. Keep a ship in the ring: an empty pass falls back to the raiders."
 	ClearPassFmt = "Clear the raiders from the pass"
 	HoldPassFmt = "Hold the pass: {0} left"
 	HoldPassWaitFmt = "Hold the pass ({0}): fly into the ring"
@@ -37,7 +38,7 @@ HotCargoWorlds
 	PassLost = "The raiders took the pass back."
 
 	Sundive = "Sundive"
-	SundiveDesc = "A courier fell toward the star. Its flight recorder still sends from deep in the heat. Dive in, stay with the wreck until the data is out, and get clear of the heat. The heat cooks cargo: a Tech Vault loses units within seconds. Dive fast, raise shields, or move the tech to another ship first."
+	SundiveDesc = "A courier fell toward the star, and its flight recorder still sends from deep in the heat. Dive in, stay at the wreck until the data is out, then get clear. The heat cooks cargo: a Tech Vault loses units within seconds. Dive fast, raise shields, or move the tech to another ship first."
 	SundiveDiveFmt = "Dive to the wreck (depth {0:0}%)"
 	SundiveSalvageFmt = "Salvage the recorder: {0:0}/{1:0} s"
 	SundiveEscapeFmt = "Get {0} out of the heat"

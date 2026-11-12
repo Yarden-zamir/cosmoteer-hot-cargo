@@ -6,6 +6,7 @@ namespace HotCargo.Events;
 [ReflectiveSerialization(Explicit = true)]
 public sealed class EventsTunables
 {
+    /// <summary>Events that open by themselves (Start, Arrival, Station, Signal, Wanted). Off: none of them opens.</summary>
     [Serialize(Optional = true)] public bool Enabled = true;
     /// <summary>Chance that the first arrival in a system opens an Arrival event.</summary>
     [Serialize(Optional = true)] public float ArrivalEventChance = 0.6f;

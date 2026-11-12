@@ -212,9 +212,9 @@ public static class ContractBook
         Log.Info($"contracts: accepted {m.MetatypeID} {m.MissionID} by player {playerIndex}: fee={terms.Fee} bonus={terms.Bonus} flatHeat={terms.FlatHeat} " +
                  $"trail={terms.TrailWeight} rival='{terms.RivalGroup}' dismissed={dismissed.Count} informant={terms.InformantChance:0.00} sellout={informant}");
         Onboarding.RunLog.ContractAccepted(run, m.Name.Text, terms.Fee, dismissed.Count);
-        // UI only: a line in the chat log for each dismissed rival, so the players see why an offer vanished.
+        // UI only: a line in the chat log for each dismissed rival, so the players see why an offer vanished. Mission names are XML already.
         foreach (string name in dismissed)
-            Ux.UxKit.ChatLine(run.Game, Strings.FormatText("HotCargoContracts/RivalDismissedChatFmt", StringTools.EscapeForXml(name), StringTools.EscapeForXml(m.Name.Text)));
+            Ux.UxKit.ChatLine(run.Game, Strings.FormatText("HotCargoContracts/RivalDismissedChatFmt", name, m.Name.Text));
     }
 
     /// <summary>Spec 104: a client sells the players out when its time comes, while the contract is still open.</summary>
@@ -240,12 +240,13 @@ public static class ContractBook
         run.AddHeat(t.InformantHeat, sim);
         if (t.InformantShips > 0)
             Errors.Guard("informant wave", () => HunterSpawner.SpawnWave(run, sim, t.InformantShips, run.CurrentTier, "Informant", firstOfStage: false));
-        string client = StringTools.EscapeForXml(ClientName(m)), contract = StringTools.EscapeForXml(m.Name.Text);
+        // Mission names are XML already (a chain stage name carries a color tag), so only the client name is escaped.
+        string client = StringTools.EscapeForXml(ClientName(m)), contract = m.Name.Text;
         Log.Info($"contracts: informant sold out {m.MetatypeID} {m.MissionID} ({ClientName(m)})");
         Onboarding.RunLog.SoldOut(run, ClientName(m), m.Name.Text, t.InformantHeat);
         InformantWarnings++;
         // UI only, after the wave alert so that this text replaces the generic one.
-        run.Game.Gui.ShowAreaName(Strings.FormatText("HotCargoContracts/InformantBannerFmt", client, contract));
+        Ux.UxKit.CenterText(run.Game, Strings.FormatText("HotCargoContracts/InformantBannerFmt", client, contract));
         Ux.UxKit.ChatLine(run.Game, Strings.FormatText("HotCargoContracts/InformantChatFmt", client, contract, t.InformantHeat));
     }
 

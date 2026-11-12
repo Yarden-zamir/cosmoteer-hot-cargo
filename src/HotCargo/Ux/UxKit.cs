@@ -3,7 +3,10 @@ using Cosmoteer.Game.Gui;
 using Cosmoteer.Localization;
 using Halfling;
 using Halfling.Events;
+using Halfling.Graphics.Text;
+using Halfling.Gui;
 using Halfling.Gui.Components.Text;
+using Cosmoteer.Gui;
 using HotCargo.Core;
 
 namespace HotCargo.Ux;
@@ -46,6 +49,68 @@ public static class UxKit
     public static void ChatLine(GameRoot game, string xml)
     {
         if (game.NetManager is IChatBoxProvider p) p.ChatBox.DisplayRawMessage(xml);
+    }
+
+    /// <summary>
+    /// A center screen text in the style of the game's area name (GameGui.ShowAreaName: same font, size, place and fades),
+    /// with XML formatting, and wrapped to the screen width. The vanilla label never wraps, so a long line runs off both sides.
+    /// </summary>
+    public static async void CenterText(GameRoot game, string xml)
+    {
+        // async void: an exception here would end the game, so it reports instead.
+        try { await ShowCenterText(game, xml); }
+        catch (Exception ex) { Errors.Report("ux center text", ex.Message, ex); }
+    }
+
+    /// <summary>Center texts on screen now. A new one goes below them, so two alerts at once do not draw over each other.</summary>
+    static readonly List<Label> CenterTexts = [];
+
+    static async Task ShowCenterText(GameRoot game, string xml)
+    {
+        var root = game.Gui.RootWidget;
+        float w = Math.Min(1100f, root.ScreenRect.Width - 80f);
+        CenterTexts.RemoveAll(l => l.Root != game.Gui);
+        var lbl = new Label
+        {
+            AnchorRect = AnchorPresets.TopCenter,
+            Left = -w / 2f,
+            Right = w / 2f,
+            Y = 100f,
+            Text = xml,
+            InputBlockMode = InputBlockMode.Never,
+        };
+        lbl.TextRenderer.Font = WidgetRules.Instance.ShadowFont;
+        lbl.TextRenderer.FontSize = 48;
+        lbl.TextRenderer.XmlFormatting = true;
+        lbl.TextRenderer.HAlignment = HAlignment.Center;
+        lbl.TextRenderer.VAlignment = VAlignment.Top;
+        lbl.TextRenderer.OversizeMode = OversizeMode.Wrap;
+        lbl.TextRenderer.Clip = false;
+        lbl.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
+        // Placed each frame below the older texts: a text has its height only after its first layout.
+        lbl.BeforeFrameDraw += (_, _) =>
+        {
+            float y = 100f;
+            foreach (var l in CenterTexts)
+            {
+                if (l == lbl) break;
+                y += l.Height + 8f;
+            }
+            if (Math.Abs(lbl.Y - y) > 0.5f) lbl.Y = y;
+        };
+        root.AddChild(lbl);
+        CenterTexts.Add(lbl);
+        try
+        {
+            await lbl.FadeIn(1f);
+            await App.Clock.UntilElapsed(2f);
+            await lbl.FadeOut(1f);
+        }
+        finally
+        {
+            CenterTexts.Remove(lbl);
+            root.Children.Remove(lbl);
+        }
     }
 
     /// <summary>Runs a UI patch body. A failure logs once, shows in the overlay, and the vanilla UI stays.</summary>
