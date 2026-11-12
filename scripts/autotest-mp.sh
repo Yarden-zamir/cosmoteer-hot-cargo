@@ -4,6 +4,7 @@
 # PLAYERS (default 2) is the number of players: the host and PLAYERS-1 clients that all run the client script.
 # "{PORT}" in the scripts becomes the host's UDP port (35870 + host slot number), so parallel MP tests do not collide.
 # "{PLAYERS}" becomes the number of players (for "mpstart {PLAYERS}").
+# Line filters: a line that starts with "@<n>p " runs only with n players, "@c<k> " only on client k (1 is the first client).
 # The host starts first. The clients start when the host log shows "AUTOTEST hosting".
 # Exit code 0 only if every log passes (AUTOTEST DONE, no AUTOTEST FAIL, no ERROR, so no "MP DESYNC")
 # and the MPSTATE lines that every machine logs at the same sim ticks are equal.
@@ -26,10 +27,17 @@ trap release_all EXIT
 PORT=$((35870 + ${HOST#t}))
 echo "== host slot $HOST, client slots ${CLIENTS[*]}, port $PORT, $PLAYERS players"
 
-script_for() { echo "telename $(basename "$1" .txt)"; sed "s/{PORT}/$PORT/g; s/{PLAYERS}/$PLAYERS/g" "$1"; }
+# script_for <script> <client index, 0 for the host>
+script_for() {
+  echo "telename $(basename "$1" .txt)"
+  awk -v p="$PLAYERS" -v c="$2" '
+    /^@[0-9]+p / { if (substr($1, 2) + 0 != p) next; sub(/^@[0-9]+p /, "") }
+    /^@c[0-9]+ / { if (substr($1, 3) + 0 != c) next; sub(/^@c[0-9]+ /, "") }
+    { print }' "$1" | sed "s/{PORT}/$PORT/g; s/{PLAYERS}/$PLAYERS/g"
+}
 exited() { grep -q '<<GAME EXITED>>' <<<"$1"; }
 
-script_for "$HOST_SCRIPT" | start_slot "$HOST"
+script_for "$HOST_SCRIPT" 0 | start_slot "$HOST"
 HOST_LOG="" CLIENTS_STARTED=no
 CLIENT_LOG=() # index i holds the log of CLIENTS[i]
 for ((t = 0; t < TIMEOUT; t += 10)); do
@@ -37,7 +45,7 @@ for ((t = 0; t < TIMEOUT; t += 10)); do
   HOST_LOG="$(slot_log "$HOST")"
   if [[ "$CLIENTS_STARTED" == no ]]; then
     if grep -q 'AUTOTEST hosting' <<<"$HOST_LOG"; then
-      for c in "${CLIENTS[@]}"; do script_for "$CLIENT_SCRIPT" | start_slot "$c"; done
+      for i in "${!CLIENTS[@]}"; do script_for "$CLIENT_SCRIPT" $((i + 1)) | start_slot "${CLIENTS[i]}"; done
       CLIENTS_STARTED=yes
     elif exited "$HOST_LOG"; then
       break

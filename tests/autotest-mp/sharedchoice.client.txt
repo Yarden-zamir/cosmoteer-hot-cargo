@@ -19,15 +19,16 @@ expect sc_decided_choice == 3
 waitfor ev_pending == 1 60
 ev_mark
 vote 2
-waitfor sc_decided_reason == 3 60
+@2p waitfor sc_decided_reason == 3 60
+@3p waitfor sc_decided_reason == 2 60
 expect sc_decided_choice == 2
 expect ev_tech_gain == -1
-# Force round. A pick in vote mode does nothing; the vote counts.
+# Force round. A pick in vote mode does nothing; the vote of the first client counts.
 waitfor ev_pending == 1 60
 choose 1
 wait 3
 expect ev_pending == 1
-vote 3
+@c1 vote 3
 waitfor sc_decided_reason == 4 60
 expect sc_decided_choice == 3
 expect ev_pending == 0

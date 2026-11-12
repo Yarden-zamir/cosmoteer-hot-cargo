@@ -25,6 +25,9 @@ description: Build Hot Cargo, run unit tests, headless game tests and co-op test
 
 ## Co-op tests
 - `scripts/autotest-mp.sh tests/autotest-mp/<name>.host.txt tests/autotest-mp/<name>.client.txt`. Two headless instances play host and client over LAN. Any desync fails the test. `mp <command>` runs a test command in the sim on both sides.
+- 3 players: `PLAYERS=3 scripts/autotest-mp.sh ...` or `scripts/autotest-all.sh 400 mp3:<name>`. Every client runs the client script. `{PLAYERS}` becomes the player count (`mpstart {PLAYERS}`).
+- Line filters in co-op scripts: a line that starts with `@3p ` runs only with 3 players, `@c1 ` only on the first client.
+- Frame and tick cost of Hot Cargo code: `selfprof on|reset|report <label>` (test `telemetry-stress`, `mp3:telemetry-stress`). Headless slots draw nothing, so draw hooks show no time there.
 
 ## Infrastructure failures
 These are not game failures. Rerun the test:

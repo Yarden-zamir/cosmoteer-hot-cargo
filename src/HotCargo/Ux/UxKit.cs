@@ -49,7 +49,12 @@ public static class UxKit
     }
 
     /// <summary>Runs a UI patch body. A failure logs once, shows in the overlay, and the vanilla UI stays.</summary>
-    public static void Guard(string what, Action body) => Errors.Guard("ux " + what, body);
+    /// The name is built only on failure, because frame code calls this many times per frame (spec 872).
+    public static void Guard(string what, Action body)
+    {
+        try { body(); }
+        catch (Exception ex) { Errors.Report("ux " + what, ex.Message, ex); }
+    }
 
     /// <summary>Per-stage text "HotCargoUx/Stage{Name}". A stage that the strings do not know gets a generic line.</summary>
     public static string StageText(string stageName) =>
