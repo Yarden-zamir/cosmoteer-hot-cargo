@@ -13,6 +13,8 @@ public sealed class EventsState
     [Serialize(Optional = true)] public HashSet<string> Flags = new();
     /// <summary>Sector index at which each flag was last set, for FlagAges needs.</summary>
     [Serialize(Optional = true)] public Dictionary<string, int> FlagSectors = new();
+    /// <summary>True while the wanted-and-hunted warning is up; it fires again only after the players stop being both.</summary>
+    [Serialize(Optional = true)] public bool WantedWarned;
     /// <summary>Systems where the Courier Job roll already ran. Once per system for the whole run.</summary>
     [Serialize(Optional = true)] public HashSet<ObjectID> CourierNodes = new();
     /// <summary>Game seconds of the last triggered event, or -1.</summary>

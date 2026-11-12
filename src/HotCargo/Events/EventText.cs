@@ -1,6 +1,8 @@
 using Cosmoteer;
 using Cosmoteer.Data;
+using Cosmoteer.Game;
 using Cosmoteer.Gui;
+using Cosmoteer.Localization;
 using Cosmoteer.Resources;
 using Cosmoteer.Ships.Parts;
 using Halfling.Graphics;
@@ -43,6 +45,17 @@ public static class EventText
     {
         var f = GameApp.Rules.GetFactionRules(faction);
         return (amount > 0 ? W.GoodTextColor : W.BadTextColor).FormatWithXml($"{f.TextIconXml} {Signed(amount)} reputation with {f.NameKey.Text}");
+    }
+
+    public static string WantedCleared() => W.GoodTextColor.FormatWithXml(Strings.GetText("HotCargoEvents/WantedCleared"));
+
+    /// <summary>
+    /// Spec 470: a short toast and a chat line with the ways out. UI only and local: safe to call from the sim tick on every client.
+    /// </summary>
+    public static void ShowWantedWarning(GameRoot game, string factions)
+    {
+        game.Gui.ShowAreaName(Strings.GetText("HotCargoEvents/WantedWarning"));
+        Ux.UxKit.ChatLine(game, W.BadTextColor.FormatWithXml(Strings.FormatText("HotCargoEvents/WantedHintFmt", factions)));
     }
 
     public static string NoFaction() => "<gray>No faction controls this system.</gray>";
@@ -92,6 +105,7 @@ public static class EventText
         UnmetKind.Part => $"Needs a {PartName(u.Id)}",
         UnmetKind.Flag or UnmetKind.NotFlag or UnmetKind.FlagAge => "Not available",
         UnmetKind.MinSectorsLeft or UnmetKind.MaxSectorsLeft => "Not available here",
+        UnmetKind.NotWanted => "Only while wanted",
         _ => throw new ArgumentOutOfRangeException(nameof(u), u.Kind, null),
     };
 }

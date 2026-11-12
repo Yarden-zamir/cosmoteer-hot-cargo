@@ -1,0 +1,15 @@
+# Co-op wanted and hunted, client side.
+mpjoin 127.0.0.1:{PORT}
+mpready
+waitfor ev_pending == 1 30
+waitfor ev_pending == 0 60
+waitfor ev_wanted_warned == 1 60
+# Three pages opened: the intro, the event that the Wanted trigger picked, and the host's forced Clean Record.
+waitfor ev_seen >= 3 60
+expectevent clean_record
+ev_mark
+choose 2
+waitfor ev_wanted == 0 30
+expect ev_tech_gain == -1
+expect desyncs == 0
+quit
