@@ -3,9 +3,14 @@ mpjoin 127.0.0.1:{PORT}
 mpready
 mp tostation
 wait 5
-tech sell 4
-waitfor tech == 4 60
-expect moneygain >= 60000
+@2p tech sell 4
+@3p @c1 tech sell 3
+@3p @c2 tech sell 2
+@2p waitfor tech == 4 60
+@3p waitfor tech == 3 60
+@2p expect moneygain >= 60000
+@3p @c1 expect moneygain >= 45000
+@3p @c2 expect moneygain >= 30000
 expect lost == 0
 waitfor lost == 1 120
 expect tech == 0

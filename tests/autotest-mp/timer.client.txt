@@ -6,7 +6,8 @@ mp mpmark 1
 waitfor mpmark >= 2 90
 expect losstimer == 1
 expect techcrates == 8
-mp tech add 2
+# With 3 players, only the first client gets tech back.
+@c1 mp tech add 2
 waitfor losstimer == 0 30
 waitfor lost == 1 90
 expect desyncs == 0
