@@ -45,10 +45,10 @@ $in = [Console]::OpenStandardInput(); $out = [IO.File]::Create($tar); $in.CopyTo
 tar.exe -xf $tar -C $tmpDir
 if ($LASTEXITCODE -ne 0) { throw "tar failed" }
 
-# Mod folder: replace everything but the live tunables and their backups.
+# Mod folder: replace everything but the live tunables, their backups and the telemetry files (TELEMETRY.md).
 $keep = Join-Path $tmpDir "tunables_keep.rules"
 if (Test-Path (Join-Path $modDir "tunables.rules")) { Copy-Item (Join-Path $modDir "tunables.rules") $keep -Force }
-if (Test-Path $modDir) { Get-ChildItem $modDir | Where-Object { $_.Name -notlike "tunables.rules*" } | Remove-Item -Recurse -Force }
+if (Test-Path $modDir) { Get-ChildItem $modDir | Where-Object { $_.Name -notlike "tunables.rules*" -and $_.Name -ne "telemetry" } | Remove-Item -Recurse -Force }
 Copy-Item (Join-Path $tmpDir "hot_cargo") $mods -Recurse -Force
 $new = Join-Path $modDir "tunables.rules.deploy"; $live = Join-Path $modDir "tunables.rules"
 # The player edits tunables in the game (settings window) and by hand. Never overwrite them:

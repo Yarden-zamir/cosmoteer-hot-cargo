@@ -20,9 +20,11 @@ src/HotCargo/
   ShipAi/                  player ship tactics: model (ShipAiModel), per-ship state and save hooks (ShipTactics), sim controller, MP input, editor
   Ui/                      overlay, heat panel, run intro and end panels
   Dev/Autotest.cs          headless test commands
+  Telemetry/               session telemetry files (TELEMETRY.md); read-only hooks and patches
 tests/HotCargo.Tests/      fast unit tests for the pure model files
 tests/autotest/            game tests that scripts/autotest.sh runs on the PC
-scripts/                   pull-game, deploy, run, stop, logs, autotest, release
+scripts/                   pull-game, deploy, run, stop, logs, autotest, pull-telemetry, release
+tools/telemetry/           telemetry analysis (uv project): markdown and HTML reports
 ```
 
 Rules:

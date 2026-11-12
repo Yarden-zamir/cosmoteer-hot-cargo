@@ -1,0 +1,44 @@
+# Telemetry (TELEMETRY.md, spec 530 and later): a session file with the header, heat sources, money sources, tech causes,
+# snapshots, perf, the log copy, and a save and load that continues the run ID. Telemetry overhead stays below 1 % of frame time.
+newgame run
+wait 8
+expect tele_active == 1
+expect tele_trace_missing == 0
+expect tele_trace_patched >= 10
+heat 12
+fame 300
+contract_money 25000
+vault damage 0.5
+wait 3
+tech add 1
+wait 2
+telesnap test
+wait 12
+teleflush
+telecount session.start == 1
+telecount run.new == 1
+telecount heat.change >= 2
+telecount heat.accrual >= 1
+telecount econ.money >= 1
+telecount econ.fame >= 1
+telecount tech.count >= 2
+telecount tech.vault_hit >= 1
+telecount tech.value >= 1
+telecount snap >= 2
+telecount perf >= 1
+telecount log >= 5
+telecount combat.census >= 1
+telecount mission.offered >= 1
+telecount trace >= 1
+save tele
+load tele
+wait 3
+expect tele_active == 1
+teleflush
+telecount run.loaded == 1
+telecount session.start == 2
+telecount session.end == 1
+telestats
+expect tele_dropped == 0
+expect tele_overhead_pct < 1
+quit

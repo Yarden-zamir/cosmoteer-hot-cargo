@@ -19,14 +19,14 @@ trap 'release_slot "$HOST"; release_slot "$CLIENT"' EXIT
 PORT=$((35870 + ${HOST#t}))
 echo "== host slot $HOST, client slot $CLIENT, port $PORT"
 
-sed "s/{PORT}/$PORT/g" "$HOST_SCRIPT" | start_slot "$HOST"
+{ echo "telename $(basename "$HOST_SCRIPT" .txt)"; sed "s/{PORT}/$PORT/g" "$HOST_SCRIPT"; } | start_slot "$HOST"
 HOST_LOG="" CLIENT_LOG="" CLIENT_STARTED=no
 for ((t = 0; t < TIMEOUT; t += 10)); do
   sleep 10
   HOST_LOG="$(slot_log "$HOST")"
   if [[ "$CLIENT_STARTED" == no ]]; then
     if grep -q 'AUTOTEST hosting' <<<"$HOST_LOG"; then
-      sed "s/{PORT}/$PORT/g" "$CLIENT_SCRIPT" | start_slot "$CLIENT"
+      { echo "telename $(basename "$CLIENT_SCRIPT" .txt)"; sed "s/{PORT}/$PORT/g" "$CLIENT_SCRIPT"; } | start_slot "$CLIENT"
       CLIENT_STARTED=yes
     elif grep -q '<<GAME EXITED>>' <<<"$HOST_LOG"; then
       break

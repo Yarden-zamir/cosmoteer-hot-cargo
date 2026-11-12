@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 # Run autotests in parallel on the free test slots and print a summary.
-# Usage: autotest-all.sh [timeout-per-test] [test ...]
+# Usage: autotest-all.sh [--telemetry] [timeout-per-test] [test ...]
+# --telemetry: after the tests, copy the telemetry of every slot to ../.telemetry (scripts/pull-telemetry.sh) and write a report
+#   of the runs that these tests made (tools/telemetry). The report path is printed at the end.
 # - No test names: every tests/autotest/*.txt and every co-op test (tests/autotest-mp/<name>.host.txt).
 # - Test names: only those, for example "tech-sell mp:trade" (autotest-affected.sh passes its list this way).
 # Each test retries once (see autotest.sh); a pass on the retry counts as FLAKY, not as a failure.
 # Exit code 0 only if every test passed. Full logs: /tmp/hot_cargo_logs/<worktree>/ (summary per test in run/).
 set -uo pipefail
 cd "$(dirname "$0")/.."
+TELEMETRY=no
+if [[ "${1:-}" == "--telemetry" ]]; then TELEMETRY=yes; shift; fi
+STARTED_UTC="$(date -u +%Y-%m-%dT%H:%M:%S)"
 TIMEOUT="${1:-400}"
 shift || true
 source scripts/autotest-lib.sh
@@ -46,6 +51,9 @@ run_test() {
   wait
 } | tee "$RUN_DIR/summary.txt"
 
+if [[ "$TELEMETRY" == yes ]]; then
+  scripts/pull-telemetry.sh >/dev/null && (cd tools/telemetry && uv run hc-telemetry --since "$STARTED_UTC") || echo "== telemetry report failed"
+fi
 FAILED="$(grep '^FAIL ' "$RUN_DIR/summary.txt" | cut -d' ' -f2- | tr '\n' ' ')"
 FLAKY="$(grep '^FLAKY ' "$RUN_DIR/summary.txt" | cut -d' ' -f2- | tr '\n' ' ')"
 [[ -n "$FLAKY" ]] && echo "== flaky (passed on retry): $FLAKY"

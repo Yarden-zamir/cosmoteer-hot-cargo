@@ -1,0 +1,19 @@
+[project]
+name = "hc-telemetry"
+version = "0.1.0"
+description = "Summarize Hot Cargo telemetry files (TELEMETRY.md) into a markdown and a self-contained HTML report."
+requires-python = ">=3.12"
+dependencies = ["matplotlib>=3.11.2"]
+
+[project.scripts]
+hc-telemetry = "hc_telemetry.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=9"]
+
+[build-system]
+requires = ["uv_build>=0.9,<0.14"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 160
