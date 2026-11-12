@@ -40,6 +40,10 @@ StrategyModules
 		Type = HcBait
 		MoveTolerance = 100
 	}
+	// Leave the fight for loose tech crates (spec 446). Fall back, call and flee still come first.
+	{
+		Type = HcGrabTech
+	}
 	{
 		Type = HcFallBack
 		RepairChecksPerTick = 2

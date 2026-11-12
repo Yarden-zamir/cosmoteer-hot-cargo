@@ -73,6 +73,7 @@ static class CareerPatches
         iHash.AddHash(s.DeliveredUnits);
         iHash.AddHash((int)(s.GameSeconds * 10));
         iHash.AddHash((int)(s.SecondsWithoutTech * 10));
+        iHash.AddHash(s.Tech.HunterHeld.Sum(h => h.Units));
         iHash.AddHash(s.Events.LastSerial);
         iHash.AddHash(s.Events.Pending?.Serial ?? 0);
         iHash.AddHash((int)(s.Notoriety * 100));
