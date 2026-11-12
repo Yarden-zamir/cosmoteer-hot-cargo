@@ -17,6 +17,8 @@ public static class SharedChoiceArea
         AddAutotest();
     }
 
+    static int _presenceMark;
+
     static Run RequireRun() => Autotest.RequireRun();
 
     /// <summary>The serial of the pending event page. The test commands act on it.</summary>
@@ -36,6 +38,9 @@ public static class SharedChoiceArea
         // hover <choice number> | hover off: replaces the mouse hover of this machine (headless games have no mouse).
         Autotest.Commands["hover"] = arg => Presence.ForcedOption = arg == "off" ? null : int.Parse(arg, CultureInfo.InvariantCulture) - 1;
         Autotest.Commands["sc_reset"] = _ => SharedChoices.LastDecision = null;
+        // sc_presence_mark: marks the hover messages sent so far; sc_presence_sent counts the ones after the mark.
+        Autotest.Commands["sc_presence_mark"] = _ => _presenceMark = Presence.Sent;
+        Autotest.Fields["sc_presence_sent"] = () => Presence.Sent - _presenceMark;
         // mp sc_set <SharedChoiceTunables field> <value>: changes a live tunable on every machine at the same tick. Test only.
         Autotest.Commands["sc_set"] = arg => Autotest.SetField(RequireRun().T.SharedChoice, arg);
 

@@ -1,7 +1,7 @@
 # Co-op ship tactics, host side (spec 409, 411): edits by either player go through the tactics input and stay in sync,
 # and both machines run the same decisions in a fight.
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 mp ev_set Enabled false
 mp godmode on
 mp aiset FleeEnabled false

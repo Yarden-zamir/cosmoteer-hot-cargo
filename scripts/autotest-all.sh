@@ -5,6 +5,7 @@
 #   of the runs that these tests made (tools/telemetry). The report path is printed at the end.
 # - No test names: every tests/autotest/*.txt and every co-op test (tests/autotest-mp/<name>.host.txt).
 # - Test names: only those, for example "tech-sell mp:trade" (autotest-affected.sh passes its list this way).
+#   "mp3:<name>" runs a co-op test with 3 players (the host and 2 clients).
 # Each test retries once (see autotest.sh); a pass on the retry counts as FLAKY, not as a failure.
 # Exit code 0 only if every test passed. Full logs: /tmp/hot_cargo_logs/<worktree>/ (summary per test in run/).
 set -uo pipefail
@@ -32,9 +33,10 @@ dotnet build src/HotCargo/HotCargo.csproj -c Release -nologo -v quiet > "$RUN_DI
 
 run_test() {
   local t="$1" out="$RUN_DIR/$1.out"
-  if [[ "$t" == mp:* ]]; then
-    local n="${t#mp:}"
-    scripts/autotest-mp.sh "tests/autotest-mp/$n.host.txt" "tests/autotest-mp/$n.client.txt" "$((TIMEOUT + 200))" > "$out" 2>&1
+  if [[ "$t" == mp:* || "$t" == mp3:* ]]; then
+    local n="${t#*:}" players=2
+    [[ "$t" == mp3:* ]] && players=3
+    PLAYERS=$players scripts/autotest-mp.sh "tests/autotest-mp/$n.host.txt" "tests/autotest-mp/$n.client.txt" "$((TIMEOUT + 200))" > "$out" 2>&1
   else
     scripts/autotest.sh "tests/autotest/$t.txt" "$TIMEOUT" > "$out" 2>&1
   fi

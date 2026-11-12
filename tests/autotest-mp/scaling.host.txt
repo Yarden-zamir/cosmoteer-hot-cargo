@@ -3,7 +3,7 @@
 # and a hunter wave and an event group get twice the ships on both machines, with no desync.
 enemysetting 2.0
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 expect enemysetting == 2
 expect enemyfactor == 2
 mp godmode on

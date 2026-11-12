@@ -1,0 +1,10 @@
+# Heavy co-op fight for a performance measure, client side.
+mpjoin 127.0.0.1:{PORT}
+mpready
+selfprof on
+wait 30
+selfprof reset
+waitfor mpmark >= 1 300
+selfprof report client
+expect desyncs == 0
+quit

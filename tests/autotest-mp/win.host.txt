@@ -1,6 +1,6 @@
 # Co-op win, host side: the Buyer appears, the client sells tech to it, and the run is won on both machines.
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 mp ev_set Enabled false
 mp buyer spawn
 waitfor buyers == 1 30

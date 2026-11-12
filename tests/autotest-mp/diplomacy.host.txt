@@ -1,7 +1,7 @@
 # Co-op diplomacy, host side (spec 587): the client hands tech to a hunter and hires a friendly ship through the shared choice
 # input, with a shared punishment draft that both players change. Both machines see the hunters leave, the same vault tech and the hire, with no desync.
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 mp godmode on
 mp ev_set Enabled false
 mp aiset FleeEnabled false

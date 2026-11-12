@@ -1,7 +1,7 @@
 # Co-op ship comms (spec 771), host side: a freighter carries the page; the client chooses in its comms; the host's late click on
 # the same page (same serial) does nothing, so the choice applies once on both machines.
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 waitfor ev_pending == 1 30
 expectevent getaway
 choose 3

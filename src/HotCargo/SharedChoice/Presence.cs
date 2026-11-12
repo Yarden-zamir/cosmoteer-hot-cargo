@@ -41,6 +41,9 @@ public static class Presence
     /// <summary>Test only: replaces the mouse hover of this machine (headless games have no mouse). Null uses the mouse.</summary>
     internal static int? ForcedOption;
 
+    /// <summary>Hover messages that this machine sent, for the autotest check of the send rate.</summary>
+    internal static int Sent;
+
     /// <summary>Call each frame while a shared choice page shows, with the hovered option or -1. The last call in a frame wins.</summary>
     public static void Report(string domain, int serial, int option) => _want = new(domain, serial, ForcedOption ?? option);
 
@@ -76,6 +79,7 @@ public static class Presence
         double gap = changed ? t.PresenceSendSeconds : t.PresenceExpirySeconds / 3;
         if (now - _sentAt < gap) return;
         _send(want.Domain, want.Serial, want.Option, RpcReceivers.Others);
+        Sent++;
         _sent = want;
         _sentAt = now;
     }

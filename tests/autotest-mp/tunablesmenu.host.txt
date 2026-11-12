@@ -2,7 +2,7 @@
 # The host's file has a value. A menu edit must keep it, also when the edit comes right after the start.
 tunablesfile Heat { HeatCarryOverFraction = 0.5 }
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 mp godmode on
 waitfor menu_ready == 1 30
 menu open

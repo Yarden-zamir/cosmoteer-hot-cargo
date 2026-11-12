@@ -1,7 +1,7 @@
 # Co-op save, resync and load, host side. A resync re-sends the host's game (late join and desync recovery use it).
 # The run state, a pending event, a sprung trap and the stage come back on both machines.
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 mp ev_set Enabled false
 mp godmode on
 mp heat 30
@@ -26,7 +26,7 @@ expect heat >= 30
 waitfor mpmark >= 1 60
 mplobby
 mpload mpsave
-mpstart 2
+mpstart {PLAYERS}
 expectevent smuggler_den
 expect hc_trap_state == 2
 expect stages >= 1

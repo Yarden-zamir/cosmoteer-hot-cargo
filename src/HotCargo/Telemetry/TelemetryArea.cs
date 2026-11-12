@@ -65,6 +65,7 @@ public static class TelemetryArea
     {
         // telename <name>: labels the telemetry of this game process. scripts/autotest.sh sends the script name first.
         Autotest.Commands["telename"] = arg => Label = arg;
+        SelfProfile.AddAutotest();
         Autotest.Fields["tele_active"] = () => Session.Current is null ? 0 : 1;
         Autotest.Fields["tele_events"] = () => Interlocked.Read(ref Stats.Events);
         Autotest.Fields["tele_dropped"] = () => Interlocked.Read(ref Stats.Dropped);

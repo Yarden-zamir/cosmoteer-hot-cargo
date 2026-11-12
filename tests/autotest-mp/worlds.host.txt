@@ -1,7 +1,7 @@
 # Co-op current (spec 221, 227), host side: a current painted on both machines pushes the host's ship the same way
 # on both machines, with no desync. Co-op tests cannot jump, so "worlds paint" makes the current in the starting system.
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 mp ev_set Enabled false
 mp godmode on
 mp worlds paint

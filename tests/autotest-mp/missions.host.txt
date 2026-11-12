@@ -1,6 +1,6 @@
 # Co-op missions, host side: offers and sides, escort, the shady trap roll on arrival, a sprung trap that pays both players.
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 mp ev_set Enabled false
 mp godmode on
 mp hc_generate all

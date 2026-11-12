@@ -1,7 +1,7 @@
 # Co-op events, host side: the client picks a choice and pays for it, a late second click does nothing,
 # then the host picks a choice with a tech cost and both machines get the same result.
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 waitfor ev_pending == 1 30
 expectevent getaway
 ev_mark

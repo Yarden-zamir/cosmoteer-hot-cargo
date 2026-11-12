@@ -1,7 +1,7 @@
 # Co-op shared choices, host side (spec 600 and later): the client's hover shows on the host's UI, then votes decide
 # by unanimity, by timeout (plurality, lowest choice on a tie) and by a host force. No desync.
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 waitfor ev_pending == 1 30
 expectevent getaway
 # Presence: the client hovers choice 3. It reaches the host through the hover RPC, not through the sim.

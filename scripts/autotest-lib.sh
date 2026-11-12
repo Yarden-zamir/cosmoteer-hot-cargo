@@ -29,7 +29,7 @@ take_one_slot() {
   local i lock limit busy
   while :; do
     limit="$(usable_slots)"
-    busy="$(ls -d /tmp/hot_cargo_slot_*.lock 2>/dev/null | wc -l | tr -d ' ')"
+    busy="$(ls -d /tmp/hot_cargo_slot_[0-9]*.lock 2>/dev/null | wc -l | tr -d ' ')"
     if [[ $busy -ge $limit ]]; then sleep 5; continue; fi
     for ((i = 1; i <= SLOTS; i++)); do
       lock="$(slot_lock "t$i")"
@@ -40,12 +40,16 @@ take_one_slot() {
   done
 }
 
-# Takes N slots and prints their names. Two-slot takers (co-op tests) queue on one global lock and then hold each slot
+# Takes N slots and prints their names. Multi-slot takers (co-op tests) queue on one global lock and then hold each slot
 # as it frees up. Only one taker at a time holds some slots while it waits for more, so they cannot deadlock, and
 # single-slot tests that grab every freed slot cannot starve a co-op test.
 take_slots() {
   local want="${1:-1}" got=() pair=/tmp/hot_cargo_slot_pair.lock
-  if [[ "$want" -eq 1 ]]; then take_one_slot; return; fi
+  if [[ "$want" -eq 1 ]]; then
+    # A co-op test that collects its slots goes first, so single tests that grab every freed slot cannot starve it.
+    while [[ -d "$pair" ]] && kill -0 "$(cat "$pair/pid" 2>/dev/null)" 2>/dev/null; do sleep 5; done
+    take_one_slot; return
+  fi
   until mkdir "$pair" 2>/dev/null; do
     if [[ -f "$pair/pid" ]] && ! kill -0 "$(cat "$pair/pid")" 2>/dev/null; then rm -rf "$pair"; continue; fi
     sleep 5

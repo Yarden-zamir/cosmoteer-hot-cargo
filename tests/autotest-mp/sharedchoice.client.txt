@@ -5,6 +5,11 @@ waitfor ev_pending == 1 30
 hover 3
 # The host saw the hover.
 waitfor mpmark >= 1 60
+# A steady hover sends a heartbeat every PresenceExpirySeconds / 3 (1 s), never every frame.
+sc_presence_mark
+wait 10
+expect sc_presence_sent <= 15
+expect sc_presence_sent >= 5
 hover off
 waitfor sc_votemode == 1 60
 vote 3

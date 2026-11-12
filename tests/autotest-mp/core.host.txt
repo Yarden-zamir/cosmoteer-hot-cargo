@@ -2,7 +2,7 @@
 # The host's tunables.rules differs from the client's. Both start with the defaults, then the host's file arrives as an MP input.
 tunablesfile Heat { HeatPerGameMinute = 30 }  Events { Enabled = false }
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 waitfor heatperminute == 30 30
 # Test commands that change the sim run through "mp", inside the sim on both machines.
 mp godmode on

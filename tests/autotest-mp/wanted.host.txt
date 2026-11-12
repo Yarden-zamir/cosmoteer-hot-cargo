@@ -1,7 +1,7 @@
 # Co-op wanted and hunted (spec 470-472), host side: both machines become wanted and hunted, the Wanted event opens on both,
 # the client pays a crate for a clean record, and wanted clears on both machines with the same state.
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 waitfor ev_pending == 1 30
 expectevent getaway
 choose 3

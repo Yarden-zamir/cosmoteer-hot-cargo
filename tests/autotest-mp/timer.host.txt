@@ -1,7 +1,7 @@
 # Co-op loss timer, host side (spec 443): tech at 0 starts the timer on both machines, tech back stops it, and the timer ends the run.
 tunablesfile Tech { LossGraceSeconds = 30 }  Events { Enabled = false }
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 waitfor mpmark >= 1 120
 # All tech goes out as crates: the timer starts on both machines, and both see the crate markers.
 mp tech drop 8

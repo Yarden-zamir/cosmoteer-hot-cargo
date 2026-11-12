@@ -1,7 +1,7 @@
 # Co-op trade and loss, host side. Each player starts with 2 vaults and half of the tech (4 + 4, spec 17, 441).
 # Each player sells from their own ship to a station and gets the money. The last sale loses the run for both.
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 mp ev_set Enabled false
 # A short loss timer (spec 443), so the last sale loses the run within the test.
 mp tech_set LossGraceSeconds 3
