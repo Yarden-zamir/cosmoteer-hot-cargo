@@ -2,6 +2,9 @@
 mpjoin 127.0.0.1:{PORT}
 mpready
 waitfor ev_pending == 1 30
+# The event window opens after the run intro closes (GUI only).
+closepanel
+wait 1
 hover 3
 # The host saw the hover.
 waitfor mpmark >= 1 60

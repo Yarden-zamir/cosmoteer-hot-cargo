@@ -3,6 +3,9 @@
 mphost {PORT}
 mpstart 2
 waitfor ev_pending == 1 30
+# The event window opens after the run intro closes (GUI only).
+closepanel
+wait 1
 expectevent getaway
 # Presence: the client hovers choice 3. It reaches the host through the hover RPC, not through the sim.
 waitfor sc_hovers >= 1 30

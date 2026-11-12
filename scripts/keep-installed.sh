@@ -7,7 +7,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 WT="${1:-../play}"
 MINUTES="${2:-115}"
-STATE=/tmp/hot_cargo_installed_sha
+STATE="${HOT_CARGO_STATE:-$(cd "$(dirname "$0")/../.." && pwd)/.state}/installed_sha"
 [[ -d "$WT" ]] || git --git-dir ../.bare worktree add -q --detach "$WT" origin/main
 for ((i = 0; i < MINUTES; i++)); do
   git fetch -q origin main 2>/dev/null

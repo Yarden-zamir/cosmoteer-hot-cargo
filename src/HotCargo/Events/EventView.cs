@@ -44,14 +44,17 @@ public static class EventView
         return new EventPage($"event {p.Serial}", p.Serial, e.Title, body, choices);
     }
 
-    /// <summary>"2. [Sensor Array] Scan it first. (-5,000)" with the requirement tag in FTL blue, or all grey with the reason.</summary>
-    /// <summary>No number prefix: the UX area draws the key numbers next to the buttons (Ux/DialogueKeys).</summary>
+    /// <summary>
+    /// "[Sensor Array] Scan it first. (-5,000 credits)" with the requirement tag in FTL blue, or grey text with the reason in red.
+    /// No number prefix: the UX area draws the key numbers next to the buttons (Ux/DialogueKeys).
+    /// </summary>
     static string ChoiceText(Run run, ChoiceRules c, PendingEvent p, Unmet? unmet)
     {
         string tag = RequirementTag(c.Need);
         string cost = CostText(run, c.Cost, p);
         if (unmet is not null)
-            return $"<gray>{(tag.Length > 0 ? $"[{tag}] " : "")}{EventText.Fill(c.Text, run.State.FleetTech, p)}{(cost.Length > 0 ? $" ({cost})" : "")}  - {EventText.Reason(unmet)}</gray>";
+            // No requirement tag here: the reason names what is missing, so the tag would say it twice.
+            return $"<gray>{EventText.Fill(c.Text, run.State.FleetTech, p)}{(cost.Length > 0 ? $" ({cost})" : "")}</gray>   <bad>{EventText.Reason(unmet)}</bad>";
         string tagXml = tag.Length > 0 ? EventText.Unlocked.FormatWithXml($"[{tag}]") + " " : "";
         string costXml = cost.Length > 0 ? $" <gray>({cost})</gray>" : "";
         return $"{tagXml}{EventText.Fill(c.Text, run.State.FleetTech, p)}{costXml}";

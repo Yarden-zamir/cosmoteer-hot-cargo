@@ -54,7 +54,7 @@ public static class EventText
     /// </summary>
     public static void ShowWantedWarning(GameRoot game, string factions)
     {
-        game.Gui.ShowAreaName(Strings.GetText("HotCargoEvents/WantedWarning"));
+        Ux.UxKit.CenterText(game, Strings.GetText("HotCargoEvents/WantedWarning"));
         Ux.UxKit.ChatLine(game, W.BadTextColor.FormatWithXml(Strings.FormatText("HotCargoEvents/WantedHintFmt", factions)));
     }
 
@@ -114,7 +114,7 @@ public static class EventText
     /// <summary>Spec 765: the vault senses the relic ship. UI only and local.</summary>
     public static void ShowRelicMessage(GameRoot game)
     {
-        game.Gui.ShowAreaName(Strings.GetText("HotCargoEvents/RelicSensed"));
+        Ux.UxKit.CenterText(game, Strings.GetText("HotCargoEvents/RelicSensed"));
         Ux.UxKit.ChatLine(game, Unlocked.FormatWithXml(Strings.GetText("HotCargoEvents/RelicSensedChat")));
     }
 
