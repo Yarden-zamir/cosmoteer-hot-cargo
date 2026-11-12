@@ -1,91 +1,59 @@
 #!/usr/bin/env bash
 # Build the mod on this Mac and install it on the PC, in the slot that SLOT selects (see pc.sh).
-# - Assembles mod/ (rules content) and copies the C# build into <slot Mods>/hot_cargo.
-# - Keeps the slot's tunables file as it is (the player edits it in game); installs the repo copy only when none exists.
-# - Installs the startup hook loader into the game Bin folder (only when it changed) and points
-#   Cosmoteer.runtimeconfig.json at it (backup kept as .hot_cargo_orig). Writes Bin/steam_appid.txt.
-# - Test slots get their own settings.rules that turns the mod on.
+# - Stages the build with stage.sh, or uses the stage in HOT_CARGO_STAGE (autotest-all.sh stages once per suite).
+# - The PC keeps one unpacked copy of each build in %USERPROFILE%\HotCargoSlots\_builds\<hash> (the 30 newest).
+#   A build that the PC has already is not uploaded again; the slot gets a copy of the cached build.
+# - scripts/slot-install.ps1 (shipped in the build) does the install: it replaces the slot's mod folder, keeps telemetry
+#   and, in slot main, the player's tunables file, installs the startup hook loader and the test slot settings.
+# Autotest mode (AUTOTEST_SCRIPT=<file>, used by autotest-lib.sh start_slot): the same PC call also stops the test slot's
+# game first, installs the file as autotest.txt and starts the game. It never stops the main slot: it fails if that game runs.
+# Before a test slot's game starts, the PC waits up to 120 s for HOT_CARGO_MIN_FREE_GB (default 3) of free memory.
 source "$(dirname "$0")/pc.sh"
 
-# Parallel autotests from one worktree build into the same output folder. A per-worktree lock covers the build and the
-# copy into the stage, so no deploy copies a half-written DLL. A lock whose owner process is gone is stale.
-BUILD_LOCK="/tmp/hot_cargo_build_$(printf %s "$REPO_ROOT" | shasum | cut -c1-12).lock"
-STAGE="$(mktemp -d)"
-trap 'rm -rf "$STAGE"; if [[ "$(cat "$BUILD_LOCK/pid" 2>/dev/null)" == "$$" ]]; then rm -rf "$BUILD_LOCK"; fi' EXIT
-until mkdir "$BUILD_LOCK" 2>/dev/null; do
-  if [[ -f "$BUILD_LOCK/pid" ]] && ! kill -0 "$(cat "$BUILD_LOCK/pid")" 2>/dev/null; then rm -rf "$BUILD_LOCK"; continue; fi
-  sleep 1
-done
-echo $$ > "$BUILD_LOCK/pid"
+STAGE="${HOT_CARGO_STAGE:-}"
+OWN_STAGE=""
+if [[ -z "$STAGE" ]]; then
+  STAGE="$(mktemp -d)"; OWN_STAGE="$STAGE"
+  "$REPO_ROOT/scripts/stage.sh" "$STAGE" || { rm -rf "$STAGE"; exit 1; }
+fi
+HASH="$(cat "$STAGE/hash")"
+[[ -n "$HASH" ]] || { echo "deploy: empty build hash in $STAGE" >&2; exit 1; }
+SEND_DIR="$(mktemp -d)"
+trap 'rm -rf "$SEND_DIR"; if [[ -n "$OWN_STAGE" ]]; then rm -rf "$OWN_STAGE"; fi' EXIT
+# stdin of the PC call: a tar with autotest.txt (autotest mode only) and, on the second call, the build.
+if [[ -n "${AUTOTEST_SCRIPT:-}" ]]; then cp "$AUTOTEST_SCRIPT" "$SEND_DIR/autotest.txt"; else touch "$SEND_DIR/none"; fi
+send() { COPYFILE_DISABLE=1 tar -cf - -C "$SEND_DIR" . "$@"; }
 
-dotnet build "$REPO_ROOT/src/HotCargo/HotCargo.csproj" -c Release -nologo -v quiet
-dotnet build "$REPO_ROOT/src/HotCargo.Loader/HotCargo.Loader.csproj" -c Release -nologo -v quiet
-BUILD="$REPO_ROOT/src/HotCargo/bin/Release/net10.0-windows"
-LOADER="$REPO_ROOT/src/HotCargo.Loader/bin/Release/net10.0/HotCargo.Loader.dll"
-"$REPO_ROOT/scripts/assemble-mod.sh" "$STAGE/hot_cargo"
-# A dev build carries its git version (for example 0.4.0-3-g1a2b3c4), so the title screen shows which build runs.
-# package.sh sets the release version the same way.
-DEV_VERSION="$(git -C "$REPO_ROOT" describe --tags --always --dirty)"
-sed -i '' "s/^Version = .*/Version = ${DEV_VERSION#v}/" "$STAGE/hot_cargo/mod.rules"
-mkdir -p "$STAGE/hot_cargo/csharp" "$STAGE/loader"
-cp "$BUILD/HotCargo.dll" "$BUILD/HotCargo.pdb" "$BUILD/HotCargo.xml" "$BUILD/0Harmony.dll" "$STAGE/hot_cargo/csharp/"
-cp "$LOADER" "$REPO_ROOT/src/HotCargo.Loader/VERSION" "$STAGE/loader/"
-# The tunables file is staged under a temporary name. The PC side decides if it overwrites the live copy.
-if [[ -f "$STAGE/hot_cargo/tunables.rules" ]]; then mv "$STAGE/hot_cargo/tunables.rules" "$STAGE/hot_cargo/tunables.rules.deploy"; fi
-rm -rf "$BUILD_LOCK"
-
-COPYFILE_DISABLE=1 tar -cf - -C "$STAGE" hot_cargo loader | pc "$PS_PATHS"'
-$ErrorActionPreference = "Stop"
-if (Get-SlotProcess) { throw "Cosmoteer is running in slot $slot. Stop it before deploy (scripts/stop.sh)." }
-New-Item -ItemType Directory -Force $mods | Out-Null
-$tmpDir = Join-Path $env:TEMP ("hot_cargo_deploy_" + $slot); if (Test-Path $tmpDir) { Remove-Item $tmpDir -Recurse -Force }
-New-Item -ItemType Directory $tmpDir | Out-Null
-$tar = Join-Path $tmpDir "deploy.tar"
-$in = [Console]::OpenStandardInput(); $out = [IO.File]::Create($tar); $in.CopyTo($out); $out.Close()
-tar.exe -xf $tar -C $tmpDir
-if ($LASTEXITCODE -ne 0) { throw "tar failed" }
-
-# Mod folder: replace everything but the live tunables, their backups and the telemetry files (TELEMETRY.md).
-$keep = Join-Path $tmpDir "tunables_keep.rules"
-if (Test-Path (Join-Path $modDir "tunables.rules")) { Copy-Item (Join-Path $modDir "tunables.rules") $keep -Force }
-if (Test-Path $modDir) { Get-ChildItem $modDir | Where-Object { $_.Name -notlike "tunables.rules*" -and $_.Name -ne "telemetry" } | Remove-Item -Recurse -Force }
-Copy-Item (Join-Path $tmpDir "hot_cargo") $mods -Recurse -Force
-$new = Join-Path $modDir "tunables.rules.deploy"; $live = Join-Path $modDir "tunables.rules"
-# The player edits tunables in the game (settings window) and by hand. Never overwrite them:
-# in the player slot, install the repo copy only when it has no tunables file yet.
-if (Test-Path $new) {
-  # Test slots always start from the repo copy, so the settings of one test never leak into the next.
-  if ($slot -eq "main" -and (Test-Path $keep)) { Copy-Item $keep $live -Force; Remove-Item $new -Force } else { Move-Item $new $live -Force }
+# The PC side: unpack stdin, move a new build into the cache (a complete build folder has the file "ok" and moves into
+# place in one step), then run the build's slot-install.ps1. Kept short: the T3 link allows 8192 characters.
+PS_BOOT='$ErrorActionPreference = "Stop"
+$builds = Join-Path $env:USERPROFILE "HotCargoSlots\_builds"; $cache = Join-Path $builds $hash; $cacheState = "cached build " + $hash
+$tmpDir = Join-Path $builds ("tmp-" + $slot + "-" + $PID); if (Test-Path $tmpDir) { Remove-Item $tmpDir -Recurse -Force }
+New-Item -ItemType Directory -Force $tmpDir | Out-Null
+$tar = Join-Path $tmpDir "in.tar"; $in = [Console]::OpenStandardInput(); $out = [IO.File]::Create($tar); $in.CopyTo($out); $out.Close()
+tar.exe -xf $tar -C $tmpDir; if ($LASTEXITCODE -ne 0) { throw "tar failed" }
+$autotestFile = Join-Path $tmpDir "autotest.txt"; if (-not (Test-Path $autotestFile)) { $autotestFile = $null }
+$new = Join-Path $tmpDir "build"
+if (-not (Test-Path (Join-Path $cache "ok"))) {
+  if (-not (Test-Path $new)) { Remove-Item $tmpDir -Recurse -Force; "NEED_UPLOAD"; return }
+  New-Item -ItemType File (Join-Path $new "ok") | Out-Null
+  if ((Test-Path $cache) -and -not (Test-Path (Join-Path $cache "ok"))) { Remove-Item $cache -Recurse -Force }
+  # Another slot can upload the same build at the same time. Then its copy wins.
+  try { Move-Item $new $cache } catch { }
+  if (-not (Test-Path (Join-Path $cache "ok"))) { throw "build $hash is not in the cache after the upload" }
+  $cacheState = "uploaded build " + $hash
+  Get-ChildItem $builds -Directory | Where-Object { $_.Name -notlike "tmp-*" } | Sort-Object LastWriteTime -Descending | Select-Object -Skip 30 | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 }
-
-# Startup hook loader. A running game locks it, and every worktree builds different bytes,
-# so the loader is replaced only when src/HotCargo.Loader/VERSION changes. Bump VERSION when the loader code changes.
-$loaderDir = Join-Path $game "Bin\HotCargoLoader"; New-Item -ItemType Directory -Force $loaderDir | Out-Null
-$loaderDll = Join-Path $loaderDir "HotCargo.Loader.dll"; $newLoader = Join-Path $tmpDir "loader\HotCargo.Loader.dll"
-$verFile = Join-Path $loaderDir "VERSION"; $newVer = (Get-Content (Join-Path $tmpDir "loader\VERSION") -Raw).Trim()
-$oldVer = if (Test-Path $verFile) { (Get-Content $verFile -Raw).Trim() } else { "" }
-if (-not (Test-Path $loaderDll) -or $oldVer -ne $newVer) {
-  try { Copy-Item $newLoader $loaderDll -Force; [IO.File]::WriteAllText($verFile, $newVer) }
-  catch {
-    # Version 1 was installed before VERSION files existed. Same code, so keep it.
-    if ($oldVer -eq "" -and $newVer -eq "1") { "loader in use; keeping the installed copy (same code)"; [IO.File]::WriteAllText($verFile, $newVer) }
-    else { throw "HotCargo.Loader.dll version $newVer must replace $oldVer, but a running game uses it. Stop all Cosmoteer instances once, then deploy again." }
-  }
-}
-[IO.File]::WriteAllText((Join-Path $loaderDir "hot_cargo_default.txt"), (Join-Path $mainMods "hot_cargo\csharp\HotCargo.dll"))
-$rc = Join-Path $game "Bin\Cosmoteer.runtimeconfig.json"; $orig = "$rc.hot_cargo_orig"
-if (-not (Test-Path $orig)) { Copy-Item $rc $orig }
-$json = Get-Content $orig -Raw | ConvertFrom-Json
-$json.runtimeOptions.configProperties | Add-Member -NotePropertyName STARTUP_HOOKS -NotePropertyValue $loaderDll -Force
-[IO.File]::WriteAllText($rc, ($json | ConvertTo-Json -Depth 10))
-# Without this file, Steamworks restarts the game through Steam when a script starts the exe directly.
-[IO.File]::WriteAllText((Join-Path $game "Bin\steam_appid.txt"), "799600")
-
-# Test slots: own settings with the mod on.
-if ($slot -ne "main") {
-  $entry = [char]34 + ($modDir -replace "\\", "/") + [char]34
-  [IO.File]::WriteAllText((Join-Path $root "settings.rules"), "GameSettings`r`n{`r`n`tEnabledMods [$entry]`r`n`tAutoDisableMods = false`r`n`tShowNewsOnStartup = false`r`n`tShowTipsOnStartup = false`r`n`tIsFirstBoot = false`r`n}`r`n")
-}
-Remove-Item $tmpDir -Recurse -Force
-"deployed to $modDir (slot $slot)"
+(Get-Item $cache).LastWriteTime = Get-Date
+$startGame = {'"$PS_START"'}
+try { . ([scriptblock]::Create((Get-Content (Join-Path $cache "slot-install.ps1") -Raw))) } finally { Remove-Item $tmpDir -Recurse -Force -ErrorAction SilentlyContinue }
 '
+
+# First call without the build. The PC answers NEED_UPLOAD when it does not have this build yet; then upload it.
+MIN_FREE_GB="${HOT_CARGO_MIN_FREE_GB:-3}"
+[[ -n "$MIN_FREE_GB" && "$MIN_FREE_GB" != *[!0-9]* ]] || { echo "deploy: HOT_CARGO_MIN_FREE_GB must be a whole number of GB" >&2; exit 1; }
+deploy_call() { pc "$PS_PATHS"'$hash = "'"$HASH"'"; $minFreeGB = '"$MIN_FREE_GB"';'"$PS_BOOT"; }
+OUT="$(send | deploy_call)"
+if [[ "$OUT" == *NEED_UPLOAD* ]]; then OUT="$(send -C "$STAGE" build | deploy_call)"; fi
+[[ "$OUT" == *"deployed to"* ]] || { echo "$OUT"; echo "deploy: the PC did not confirm the deploy" >&2; exit 1; }
+echo "$OUT"
