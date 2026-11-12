@@ -1,0 +1,31 @@
+	// Hired help (spec 580): every AI that a friendly ship can run gets the HcHired module at the end, so it comes before the vanilla modules.
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_normal.rules>/StrategyModules"
+		ManyToAdd = [&<diplomacy/ai.rules>/Hired]
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_easy.rules>/StrategyModules"
+		ManyToAdd = [&<diplomacy/ai.rules>/Hired]
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_wanderer.rules>/StrategyModules"
+		ManyToAdd = [&<diplomacy/ai.rules>/Hired]
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_station_guard.rules>/StrategyModules"
+		ManyToAdd = [&<diplomacy/ai.rules>/Hired]
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_police.rules>/StrategyModules"
+		ManyToAdd = [&<diplomacy/ai.rules>/Hired]
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_trade_ship.rules>/StrategyModules"
+		ManyToAdd = [&<diplomacy/ai.rules>/Hired]
+	}
