@@ -1,0 +1,27 @@
+	// Balance: FTL fuel is scarce (spec 300, BALANCE.md). Gate jumps stay free, so a run never gets stuck.
+	// A hyperdrive jump is the escape button, and it costs more fuel. Hunters and mining are the best fuel sources.
+	{
+		Action = Overrides
+		OverrideIn = "<resources/hyperium/hyperium.rules>"
+		Overrides
+		{
+			BuyPrice = 150 // was 50. Stations pay half of it for fuel that players sell.
+			MaxStackSize = 10 // was 20: a storage tile and a crew trip hold half as much.
+		}
+	}
+	{
+		Action = Overrides
+		// Index 0 of StationResourceTradeDeltas is hyperium. The archetype and vanilla sector types inherit this list.
+		OverrideIn = "<modes/career/sectors/sector_basic/sector_basic.rules>/Sector/TradeRoutes/StationResourceTradeDeltas/0"
+		// With the smaller stack, a station holds about a fifth of the vanilla fuel stock.
+		Overrides { PercentOfTypedTiles = [25%, 40%]; PercentOfUntypedTiles = [0%, 2%]; } // was [80%, 90%] and [0%, 10%]
+	}
+	{
+		Action = Overrides
+		OverrideIn = "<ships/terran/terran.rules>/Terran"
+		Overrides
+		{
+			MapJumpFuelCostPerMassDistance = 0.002 // was 1 / 100 / 10: 1 fuel per 100 mass to jump 5 LY at 100% efficiency
+			LocalJumpFuelCostPerMassDistance = 0.0000008 // was 1 / 100 / 25000: 1 fuel per 100 mass to jump 12.5 km
+		}
+	}

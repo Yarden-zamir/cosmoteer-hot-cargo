@@ -48,7 +48,7 @@ Out of scope for this batch:
 1. A run has `RunSectorCount` sectors (default 8). The Buyer appears when the players first enter a system with sector index `RunSectorCount` or more, once per run. So a `RunSectorCount` lowered mid-run below the current sector gives a Buyer in the next new system. A mission in the log points to it, and a message shows it.
 2. The career map is small enough that a direct route crosses all sectors in about `RunSectorCount` sector jumps. The mod adds the map size "Hot Cargo run" (`mod/journey/galaxy.rules`, 50 systems, about 7 jumps from the start to the far edge). It is first in the map size list, so it is the default while the mod is on. The player can still choose Standard. These are rules values: a change needs a game restart and applies to new careers only.
 3. The danger tier of a sector rises with the sector index. Sector 1 is tier 1. The last sector is about tier `FinalSectorTier` (default 12). On the main route the tier rises by 2 for each jump. `FinalSectorTier` is a rules value in `mod/journey/galaxy.rules`, not a live tunable. Side systems keep the vanilla faction tiers, but no system has a low tier above start tier + 2 × its jumps from the start (rules type `HotCargoTierCap`). So a side system is never more dangerous than the main route at the same distance. Faction home systems (low tier above `FinalSectorTier`) keep their tier.
-4. Fame and money rewards are scaled by `RewardScale` (default 2.0), so that ship growth keeps up with the shorter run. The scale multiplies the difficulty reward factors. So it applies to mission rewards, fame for defeated ships and the reward text in the UI.
+4. Fame and money rewards are scaled by `RewardScale` (default 1.0, the vanilla rates). The scale multiplies the difficulty reward factors. So it applies to mission rewards, fame for defeated ships and the reward text in the UI. On the default Fast economy, six missions a sector pay about twice what a fleet needs to keep up with the tier ramp (BALANCE.md), so 1.0 is enough for the shorter run. The Normal and Slow economies make the run tighter.
 5. The new career screen keeps the vanilla difficulty options. The mod does not add its own difficulty screen. It adds one row: the co-op enemy scaling slider (requirement 330). The vanilla levels scale Hot Cargo's pressure (requirement 680).
 
 ## 6. Win and loss
@@ -79,7 +79,8 @@ Out of scope for this batch:
     - Notoriety = the sum of every heat gain in the run (time, fame, contracts, events, debug keys). Heat losses do not lower it. The run state saves it.
     - Game time, notoriety and the peak tier never go down, so the tech value never goes down. Exception: a lower economic difficulty factor set mid-run (requirement 683). Time and notoriety count in whole steps (`PriceStepMinutes` 1 min, `NotorietyStep` 5), so a sale in flight sees one price.
     - Defaults 0.25, 0.10 and 0.05. Purpose: 1 or 2 units pay for a ship of even power for the current stage. Examples: start (tier 1) 15,000, a quarter of a tier 1 ship. Mid-run (tier 7, 1.2 h, 250 notoriety) about 114,000 = 0.5 × 230,000, so 2 units buy a full tier 7 ship. Late (tier 12, 2.5 h, 600 notoriety) 640,000 = 0.8 × 800,000. A later sale pays more.
-    - Against rewards: a standard mission pays 0.05 × the tier's ship value × the difficulty money factor × `RewardScale`. On the default Fast economy (2×) with `RewardScale` 2 that is 0.2 × ship value, so one unit mid-run is worth about 2.5 standard missions. Ship prices do not change with difficulty, so the tech value does not use the money factors.
+    - Against rewards: a standard mission pays about 0.05 × the tier's ship value × the difficulty money factor × `RewardScale`. On the default Fast economy (2×) with `RewardScale` 1 that is about 0.1 × ship value, so one unit mid-run is worth about 5 standard missions, or about 1.5 typical missions (a typical offer pays 3.6 standard missions, BALANCE.md). Ship prices do not change with difficulty, so the tech value does not use the money factors.
+    - The peak tier counts a system's tier only up to the cap of requirement 303, so a short visit to a faction home system does not multiply the tech value.
 20. The trade screen shows the current tech value as the resource price.
 21. Trade stations buy tech. Stations do not sell tech. A station stocks only the resources in the `StationResourceTradeDeltas` lists of the sector rules, and tech is in none of them. Stations take sold tech into free untyped storage tiles. Players can buy back tech that they sold, at `BuyBackFactor` (default 1.5) × the tech value.
 22. Tech value is computed from simulation state only, so it is the same on all multiplayer clients.
@@ -87,15 +88,15 @@ Out of scope for this batch:
 ## 9. Heat
 
 23. Heat belongs to the current sector and starts at 0 in sector 1.
-24. Each simulation tick, heat increases by heat multiplier × `HeatPerGameMinute` × elapsed game minutes. The heat multiplier includes the difficulty heat rate (requirement 681). Default: 2 heat per minute. Open contracts add a trail on top (requirement 101).
-25. When the players earn fame, heat increases by heat multiplier × `HeatPerStandardMission` × (fame earned ÷ standard mission fame of the sector tier). Default: 15 heat for each standard mission. The standard mission fame includes the same factors as the payout: the difficulty fame factor and `RewardScale`.
-    The division keeps "heat per mission" stable across tiers, so that the tunable reads as "missions per sector".
+24. Each simulation tick, heat increases by heat multiplier × `HeatPerGameMinute` × elapsed game minutes. The heat multiplier includes the difficulty heat rate (requirement 681). Default: 1.2 heat per minute. Open contracts add a trail on top (requirement 101).
+25. When the players earn fame, heat increases by heat multiplier × `HeatPerStandardMission` × (fame earned ÷ standard mission fame of the sector tier). Default: 1.5 heat for each standard mission fame unit. The standard mission fame includes the same factors as the payout: the difficulty fame factor and `RewardScale`.
+    The division keeps "heat per mission" stable across tiers. A typical mission pays about 3.4 units, because a vanilla mission pays the kill fame of its targets and its own fame reward (a bounty pays 2 to 2.5 units, a base attack 6 to 15). So a typical mission adds about 5 heat × multiplier. Fame that the vanilla fame cap takes adds heat too (requirement 302).
 26. Heat multiplier = `HeatMultiplierByUnits[fleet tech count]`. Default table for 0 to 8 units: `[0.25, 0.4, 0.52, 0.64, 0.76, 0.88, 1.0, 1.1, 1.2]`. A count above the table uses the last entry.
 27. Heat does not increase while the game is paused. Game speed changes the rate, as it does for all game time.
 28. When the players enter a new sector, heat = old heat × `HeatCarryOverFraction` (default 0.25).
 29. Heat stays in the range 0 to 100.
 
-With defaults and 8 units held (no contract trail), a sector reaches the top stage after about 6 missions, or after about 40 minutes with no missions.
+With defaults and 8 units held, the players enter a sector with about 25 heat (requirement 28). Each typical mission adds about 6 heat from fame and about 2.6 heat from its contract (flat heat and informants), and time adds about 1.4 heat per minute. So a sector reaches the top stage after about 6 missions in about 17 minutes, or after about 50 minutes with no missions. BALANCE.md has the full heat budget.
 
 ## 10. Corporate response
 
@@ -110,7 +111,7 @@ With defaults and 8 units held (no contract trail), a sector reaches the top sta
 
 31. Each stage starts once for each sector visit. The Strike stage repeats its waves. A stage response can arrive in groups (requirement 191). A group spawns only enough ships to reach `MaxLiveHunters` (default 12) live hunters in the system. In co-op the group and the cap scale (requirement 334).
 32. Hunters spawn at a distance of `SpawnDistanceMin` to `SpawnDistanceMax` (default 2,000 to 3,000) from the center of the player fleet. All ships of one wave come from one direction, spread over `WaveArcDegrees` (default 40°). They always know where the players are, move to them and attack. Hunters far from the players move toward them in stasis too.
-33. Hunters are a corporate force, not a rules faction. They use built-in ships with the `ShipTags` tag (default `combat`) from the `ShipFactions` pools (default: all factions), at the wanted tier or the nearest lower tier. Their names start with `ShipNamePrefix` (default "Corporate"). All hunters in a system share one hostile player index, so they are allies of each other and enemies of the players. Like vanilla ambushes, they are also enemies of faction ships. Every hunter carries FTL fuel (requirement 192). Hunters never surrender and never accept surrender. Resolved: a rules faction needs an icon, two player indices and its own ship pool, and the faction reputation systems would treat it as a normal faction. A unique player index gives the same result at much lower cost.
+33. Hunters are a corporate force, not a rules faction. They use built-in ships with the `ShipTags` tag (default `combat`) from the `ShipFactions` pools (default: all factions), at the wanted tier or the nearest lower tier. Their names start with `ShipNamePrefix` (default "Corporate"). All hunters in a system share one hostile player index, so they are allies of each other and enemies of the players. Like vanilla ambushes, they are also enemies of faction ships. Every hunter carries FTL fuel (requirement 192). Hunters give no fame and no money reward, so a fight with them adds no heat; their wreck pays in salvage, about 10 % of the ship value on the Fast economy (BALANCE.md). Hunters never surrender and never accept surrender. Resolved: a rules faction needs an icon, two player indices and its own ship pool, and the faction reputation systems would treat it as a normal faction. A unique player index gives the same result at much lower cost.
 34. Hunters prefer to attack ships that carry Tech Vaults. A ship with a Tech Vault part counts `VaultTargetFactor` times more (default 3) when a hunter picks the nearest target.
 35. The Strike stage is dangerous but survivable. Its ships arrive in groups, so players who can fight have time to destroy a hunter, take its fuel and jump away (requirements 191 and 192). It does not end the run directly. Only a loss under requirement 9 ends the run. **Open decision:** the user may choose a hard fail instead.
 
@@ -118,7 +119,7 @@ With defaults and 8 units held (no contract trail), a sector reaches the top sta
 
 New mission types appear in the normal mission lists, next to the vanilla ones.
 
-36. **Escort**: a friendly AI ship flies to a destination in the system. The players must keep it alive until it arrives. Reward on arrival. The ship is a civilian freighter next to a station; the destination is a jump point 4,500 to 6,500 away, with 2 to 3 hostile raiders (sector tier − 1) near it. The freighter moves only while a player is near it, because ships far from players are in stasis. When the mission completes, heat changes by `EscortHeatChange` (default −15): a registered convoy hides the players' trail. The offer shows this as a reward line.
+36. **Escort**: a friendly AI ship flies to a destination in the system. The players must keep it alive until it arrives. Reward on arrival. The ship is a civilian freighter next to a station; the destination is a jump point 4,500 to 6,500 away, with 2 to 3 hostile raiders (sector tier − 1) near it. The freighter moves only while a player is near it, because ships far from players are in stasis. When the mission completes, heat changes by `EscortHeatChange` (default −8, about one typical mission and a half): a registered convoy hides the players' trail. The offer shows this as a reward line.
 37. **Fleet assault**: an allied AI fleet and the players attack a hostile station together. Reward when the station is destroyed. The station is the vanilla pirate base shape. The fleet is 2 to 3 faction military ships of one faction; the mission belongs to that faction.
 38. **Shady offer**: a mission offer with a reward of `ShadyRewardFactor` × the normal money reward (default 2.0). Fame stays normal. It uses the shape of a vanilla fugitive bounty and sits in the bounty list. Tells: no faction (so no reputation reward), the high pay, and odd wording. Shady deliveries are not implemented, because a delivery needs a station or trade ship as the target.
 39. When the players arrive at a shady mission location, it is a trap with chance `ShadyTrapChanceBase` + `ShadyTrapChancePerHeat` × heat. Defaults: 0.2 + 0.006 per heat point, so 80 % at heat 100. Arrival means a human ship within `TriggerDistance` (rules, default 2,500) of the target ship, or the target is destroyed. The roll uses the heat at that moment.
@@ -140,7 +141,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 13. Tunables, debug and live tuning
 
-50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78, 100 to 104, 130 to 141, 160 to 175, 190 to 202, 221 to 225, 360 to 367, 400 to 412, 680 to 688 and 723 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
+50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78, 100 to 104, 130 to 141, 160 to 175, 190 to 202, 221 to 225, 301, 360 to 367, 400 to 412, 680 to 688 and 723 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
 51. The file uses the game's `.rules` format.
 52. The mod watches the file. When the file changes, the mod reloads it on the next frame, without a game restart. The settings menu (requirement 500) writes the same file.
 53. If the file has an error, the mod keeps the last valid values and shows the error in game. Errors include values that break sim logic later, for example a stage name that `Hunters.Stages` or a tactic does not match (`TunablesFile.Validate`).
@@ -168,7 +169,8 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 |---|---|---|
 | `RunSectorCount` | 8 | 1 |
 | `FinalSectorTier` | 12 (rules value in `mod/journey/galaxy.rules`, restart needed) | 3 |
-| `RewardScale` | 2.0 | 4 |
+| `RewardScale` | 1.0 | 4 |
+| `Journey.TechCostScale` | 2.5 | 301 |
 | `BuyerPriceFactor` | 4 | 7 |
 | `StartingTechUnits` | 8 | 17 |
 | `VaultDamagePerUnitLost` | 0.5 | 65, 442 |
@@ -178,8 +180,8 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `TechShipFractionPerGameHour` | 0.10 | 19 |
 | `TechShipFractionPer100Notoriety` | 0.05 | 19 |
 | `NotorietyStep` | 5 | 19 |
-| `HeatPerGameMinute` | 2 | 24 |
-| `HeatPerStandardMission` | 15 | 25 |
+| `HeatPerGameMinute` | 1.2 | 24 |
+| `HeatPerStandardMission` | 1.5 | 25 |
 | `HeatMultiplierByUnits` | [0.25, 0.4, 0.52, 0.64, 0.76, 0.88, 1.0, 1.1, 1.2] | 26 |
 | `HeatCarryOverFraction` | 0.25 | 28 |
 | `HeatStages` | see section 10 | 30 |
@@ -189,7 +191,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `ShadyTrapChanceBase` | 0.2 | 39 |
 | `ShadyTrapChancePerHeat` | 0.006 | 39 |
 | `ShadyTrapSurvivalReward` | 0.5 | 40 |
-| `EscortHeatChange` | −15 | 36 |
+| `EscortHeatChange` | −8 | 36 |
 | `Events.ArrivalEventChance`, `ArrivalDelaySeconds` | 0.6, 6 s | 69 |
 | `Events.StationEventChance`, `StationTriggerDistance` | 0.5, 1500 | 69 |
 | `Events.SignalTriggerDistance` | 900 | 69 |
@@ -203,7 +205,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `Contracts.RivalPairChance` | 0.2 | 103 |
 | `Contracts.InformantShare`, `InformantChanceMin`, `InformantChanceMax` | 0.75, 0.05, 0.15 | 104 |
 | `Contracts.InformantDelayMin`, `InformantDelayMax`, `InformantHeat`, `InformantShips` | 45 s, 150 s, 15, 2 | 104 |
-| `Chains.StationChance` | 1 | 160 |
+| `Chains.StationChance`, `MaxNewChainsPerSystem` | 0.6, 2 | 160 |
 | `Chains.PageTriggerDistance`, `LaterDelaySeconds` | 1500, 8 s | 165 |
 | `Chains.StoryLines` | 2 | 170 |
 | `KiteRangeFraction` | 0.9 | 44 |
@@ -211,7 +213,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `FallBackHealthFraction` | 0.35 | 47 |
 | `Hunters.Stages` Strike `EarlyScale`, `EarlyTierReduction` | 0.67, 1 | 190 |
 | `Hunters.Stages` Strike `Waves`, `WaveGapSeconds` | 3, 45 s | 191 |
-| `Hunters.MinFuel` | 40 | 192 |
+| `Hunters.MinFuel` | 60 | 192 |
 | `FleeHealthFraction`, `FleeChance` | 0.25, 0.5 | 193 |
 | `FleeDistance`, `FleeJumpSeconds`, `FleeRecoverFraction` | 1500, 25 s, 0.6 | 195 |
 | `CallSeconds`, `CallRange`, `CallCooldownSeconds` | 6 s, 6000, 60 s | 196, 197 |
@@ -267,12 +269,13 @@ mod/                       rules content; scripts/assemble-mod.sh builds mod.rul
   onboarding/              Hot Cargo How to Play pages (codex.rules), the action that puts them first, run log strings
   sharedchoice/            strings of the co-op bar of shared choice dialogs
   runmodes/                run mode strings: difficulty intro line, Ironman lines
+  balance/                 economy rules: FTL fuel price, stack size, station fuel stock, jump fuel cost
 src/HotCargo.Loader/       startup hook entry point, assembly resolve
 src/HotCargo/
   Mod.cs                   Harmony setup, area registration
   Core/                    Run, RunState (save), Tunables, TunablesFile (live reload, validation), HeatModel,
                            CareerPatches (lifecycle), Activation (requirement 63), Errors, SimQueries, DebugKeys
-  Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/ Chains/ Worlds/ Scaling/ SharedChoice/ Onboarding/ RunModes/   one folder for each area: <Area>Area.Register, tunables, patches
+  Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/ Chains/ Worlds/ Scaling/ SharedChoice/ Onboarding/ RunModes/ Balance/   one folder for each area: <Area>Area.Register, tunables, patches
   Ai/                      enemy AI behaviors (flee, call, regroup, focus) and personalities; TacticsArea registers it, Tactics tunables
   ShipAi/                  player ship tactics: model (ShipAiModel), per-ship state and save hooks (ShipTactics), sim controller, MP input, editor
   Ui/                      overlay, heat panel, run intro and end panels
@@ -367,7 +370,7 @@ Tunables: `Hunters` (requirements 190 to 192) and `Tactics` (requirements 193 to
 
 190. **Stage scaling.** A stage response sends `ShipCount` ships of the sector tier + `TierOffset` in the last sector of the run. In sector 1 it sends `ShipCount` × `EarlyScale` ships (rounded, at least 1) of the sector tier + `TierOffset` − `EarlyTierReduction`. Both values rise linearly with the sector index. By default only Strike scales: 2 ships of tier + 1 in sector 1, 3 ships of tier + 2 in the last sector. The difficulty factors (requirement 682) and the fame title prototype (requirement 686) apply on top.
 191. **Waves.** A stage response arrives in `Waves` groups, `WaveGapSeconds` apart. Defaults: Strike 3 groups 45 s apart (one ship at a time), other stages 1 group. The first group arrives when the stage starts, with the stage alert. Each later group plays the alert sound with the "more ships" text. The repeat Strike waves of requirement 30 split the same way. The run state saves the waiting groups. A jump to another system drops them: a jump is how the players escape a strike.
-192. **Hunter fuel.** Every hunter carries at least `MinFuel` (default 40) hyperium, the FTL fuel resource. Built-in ships spawn with full hyperdrive tanks. A hunter with less fuel gets the rest in any storage that takes hyperium. Some built-in ships have no hyperdrive and no such storage; the run state holds the fuel that does not fit, and it drops with the same roll when the hunter is destroyed or becomes derelict. Vanilla drop rates apply when it dies: hyperdrive tanks drop their fuel when destroyed (`DropResourcesWhenDestroyed`), each unit with the hyperium `StorageDestroyed` chance (50 %), and crew salvage recovers all of it (`StorageSalvaged` 100 %). Hunters never surrender (requirement 33), so death and salvage are the ways to get their fuel. A hunter that jumps out (requirement 195) takes its fuel with it.
+192. **Hunter fuel.** Every hunter carries at least `MinFuel` (default 60) hyperium, the FTL fuel resource. Built-in ships spawn with full hyperdrive tanks, but the combat ships of the hunter pool have no hyperdrive (24 of 24 in the balance probe, BALANCE.md). A hunter with less fuel gets the rest in any storage that takes hyperium. Some built-in ships have no hyperdrive and no such storage; the run state holds the fuel that does not fit, and it drops with the same roll when the hunter is destroyed or becomes derelict. Vanilla drop rates apply when it dies: hyperdrive tanks drop their fuel when destroyed (`DropResourcesWhenDestroyed`), each unit with the hyperium `StorageDestroyed` chance (50 %), and crew salvage recovers all of it (`StorageSalvaged` 100 %). Hunters never surrender (requirement 33), so death and salvage are the ways to get their fuel. A hunter that jumps out (requirement 195) takes its fuel with it.
 
 The enemy AI behaviors are the rules modules `HcFlee`, `HcCall` and `HcRegroup` and a patch on `SimModeManager.ModifyAIAttackValue`. The modules are in the hunter AI (`mod/tactics/ai_hunter.rules`) and at the end of the module lists of the vanilla combat AIs Normal, Easy, Wanderer, StationGuard and Police (`mod/tactics/ai_vanilla.rules`), together with the tactics and personality modules of section 31. Strategy priority, highest first, for every one of these AIs: personality (measures only), flee, call (answering ally), fall back, bait, cover, regroup, team, then the hunter chase or the vanilla modules.
 
@@ -403,7 +406,7 @@ Missions that use game mechanics, not only combat. MISSIONS.md describes how eac
 
 Story chains: missions in parts, one chain per station. CHAINS.md holds the design and the catalog.
 
-160. When the players first enter a system, each trade or military station gets one chain, with chance `StationChance`. The station must give missions, belong to a faction and not be an enemy of the players. The Buyer gets none.
+160. When the players first enter a system, each trade or military station gets one chain, with chance `StationChance` (default 0.6), in station ID order, until `MaxNewChainsPerSystem` (default 2) stations of the system have one. So story offers do not crowd the boards (BALANCE.md). The station must give missions, belong to a faction and not be an enemy of the players. The Buyer gets none.
 161. A chain is a graph of 3 to 5 stages in `mod/chains/chains.rules`. The pick is weighted among the chains whose sector range and station kinds fit. Only the chains that the run used least often take part, so no chain repeats while an unused one fits. The pick uses the simulation random source.
 162. A stage is a mission (a generator in `mod/chains/missions.rules`) or a page (an event in `mod/chains/pages.rules`). The first stage is always a mission offer at the station, so the players choose to start a chain.
 163. A Station mission stage shows its offer in the station's comms. A declined or expired offer comes back on the next visit to the system. Return and Arrival missions go straight into the mission log, and the event window shows their title and briefing.
@@ -603,12 +606,21 @@ The vanilla defaults stay at 1, so the balance numbers (BALANCE.md) hold for the
 684. **Display.** When a factor differs from 1, the run intro (UX.md H4) shows a "DIFFICULTY" line with the names of the three levels and each factor that is not 1. The heat panel has no tooltip. A loaded run and a level change mid-run show no line.
 685. **Ironman.** In an Ironman career (vanilla `IronmanModeEnabled`), a Hot Cargo loss (requirement 9) deletes the Ironman save and clears the last save, like the vanilla game over. Only the host has the save, so only the host deletes it. The save does not come back: no save is allowed after a loss (`AllowSaveGame`), so the exit save and the autosave do not run. The run intro says "IRONMAN: lose the tech and this save is deleted.". The game-over screen says that the save is deleted and that the run cannot be reloaded. The win screen says that the score is final; a win keeps the save. Without Ironman nothing changes (requirement 11).
 686. **Fame title tiers (prototype).** With `FameTitleTiers` on (default off), each hunter stage response gets one more tier for each tier of the current vanilla fame title above the system tier, up to `FameTierCap` (default 2). The tier of a fame title is its `WantedPoliceTier`. A fame title at or below the system tier adds nothing. It adds to requirement 682.
-687. **Fame title measure and recommendation.** Headless probes (`tests/runmodes/fame-probe-*.txt`) follow the main route for 8 sectors and give typical missions (3.4 standard mission fame each, BALANCE.md) with the vanilla fame cap of the system tier, on the Fast economy with `RewardScale` 2. Results:
+687. **Fame title measure and recommendation.** Headless probes (`tests/runmodes/fame-probe-*.txt`) follow the main route for 8 sectors and give typical missions (3.4 standard mission fame each, BALANCE.md) with the vanilla fame cap of the system tier, on the Fast economy with `RewardScale` 2 (before the balance pass of section 35; the fame cap holds the same way with `RewardScale` 1, after about 4 to 5 missions). Results:
      - With 3, 6 or 12 missions in each sector the numbers are the same. The vanilla cap holds fame at the MaxFame of the system tier after 2 missions (1 in sectors 1 and 7). That fame is the threshold of the fame title one tier above the system. So the bonus is 0 on arrival and 1 from the second mission on, in every sector. It never reaches 2 on the main route. Example: sector 5 (tier 9), Strike tier 11 off, 11 on arrival and 12 after 2 missions.
      - Side route: after main route sector 5 (fame title tier 10), a tier 6 side system gives the bonus 2 (the cap; the gap is 4). Strike tier 10 instead of 8.
      - Recommendation: keep the sector and stage scaling of requirement 190, and keep `FameTitleTiers` off. On the main route the fame title adds a step of +1 after the second mission of each sector. Mission count above 2 has no effect, so it does not measure how the players play; heat already counts the missions, and the Strike usually comes after about 6 missions, when the step is always on. So it equals `TierOffset` + 1 for most of each sector, and the players cannot see why. Its one useful effect is a floor in low side systems (BALANCE.md open question 1). A direct floor does that more clearly: hunter tier at least the main route tier of the sector index (`HotCargoTierCap.Cap`).
 688. **Strike music.** With `StrikeMusic` on (default), while the run is at the last heat stage (all stages started, requirement 31), the music plays its battle layers: a postfix on `MusicParameters.Update` sets the vanilla `battle` value to true. Each vanilla track has a battle layer (`battle == True or wanted == True`), and the vanilla fade-out waits while battle is true. Below the last stage, after a jump, after a win or with the switch off, the music is vanilla. Limit: the intro track of a cluster has no battle layer, so the battle layers start with the next track. The log names the playing track and its active conditional layers at each switch. Local audio only, no sim state.
 689. **Tests.** `runmodes-difficulty` (every vanilla level against its row: heat multiplier, tech value, station price, fee factor, every stage response; then a hard combination through the vanilla settings inputs: the heat tick rate, the station price, re-rolled fees and a real Patrol spawn), `runmodes-ironman` (a loss keeps the save without Ironman; deletes it with Ironman, with the game-over line; a win keeps it, with the win line), `runmodes-music` (the switch at Strike, the off switch, the return below the last stage), `runmodes-fame` (the prototype off and on, the cap, a real spawn), co-op `runmodes` (the host's level change, heat, tech value, fame tiers and a spawn on both machines, no desync). The fame probes are in `tests/runmodes/` and are not part of `autotest-all`.
+
+## 35. Balance
+
+BALANCE.md holds the economy model, the measurements and the reasons for the numbers. `docs/balance.html` shows them as charts. `tests/balance/` holds the measurement scripts (not part of `autotest-all.sh`); `tools/balance/model.py` turns their logs into the model.
+
+300. **Scarce fuel.** FTL fuel (hyperium) is scarce, so a hyperdrive jump is a real decision. Gate jumps cost no fuel, so a run never gets stuck. Rules in `mod/balance/actions.rules`: the buy price is 150 (vanilla 50), a stack holds 10 (vanilla 20), stations stock 25 % to 40 % of their typed fuel tiles and 0 % to 2 % of their untyped tiles (vanilla 80 % to 90 % and 0 % to 10 %), and a jump costs twice the vanilla fuel (1 fuel per 100 mass for each 5 LY, and for each 12.5 km of a local jump). So a station holds about a fifth of the vanilla fuel. Hunters carry 60 fuel each (requirement 192), and hyperium asteroids keep the vanilla yield, so hunters and mining are the best sources.
+301. **Blueprint price.** A blueprint costs its rules cost × the faction reputation factor × `Journey.TechCostScale` (default 2.5), rounded to 100. A patch on `CommTechsTab.GetTechCost` applies it, so the buy button and the buy input agree. All base blueprints together cost about 19 % of a run's income, and the overclock blueprints cost more than a run earns, so a player does not unlock all tech.
+302. **Heat above the fame cap.** A mission reward or a kill above the vanilla fame cap of its tier gives no fame, but it adds the heat of its uncapped fame (requirement 25). Patches on `FameReward.GiveReward` and `CareerSimModeManager.OnShipJunked` add the heat for the part that the cap took. They run in the sim.
+303. **Peak tier cap.** A system counts toward the peak tier (requirement 19) only up to start tier + `TierPerJump` × (sector index − 1) (the `HotCargoTierCap` rules values). Normal systems never pass it (requirement 3). A faction home system can, and a short visit to one does not raise the tech value above the tier of the run's progress. With another map size, there is no cap.
 
 ## 39. One-tile Tech Vault
 

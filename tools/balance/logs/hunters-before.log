@@ -1,0 +1,91 @@
+09:20:26.239 INFO AUTOTEST loaded 46 commands; tutorial auto-pause off on 1 pages
+09:20:26.307 INFO AUTOTEST line 2: newgame 
+09:20:35.797 INFO AUTOTEST line 3: wait 8
+09:20:43.796 INFO AUTOTEST line 4: godmode on
+09:20:43.798 INFO AUTOTEST line 5: aiset CallOnVanilla false
+09:20:43.799 INFO AUTOTEST TacticsTunables.CallOnVanilla = False
+09:20:43.799 INFO AUTOTEST line 6: aiset CallEnabled false
+09:20:43.800 INFO AUTOTEST TacticsTunables.CallEnabled = False
+09:20:43.800 INFO AUTOTEST line 7: balance_probe 1 3
+09:20:43.855 INFO AUTOTEST BALANCE probe tier=1 ship=Corporate Maui spawnTier=1 mass=62 value=57500 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:20:43.856 INFO AUTOTEST BALANCE probe tier=1 ship=Corporate Swift spawnTier=1 mass=80 value=57900 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:20:43.856 INFO AUTOTEST BALANCE probe tier=1 ship=Corporate Glimmer spawnTier=1 mass=75 value=57000 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:20:43.858 INFO AUTOTEST line 8: wait 2
+09:20:45.856 INFO AUTOTEST line 9: balance_salvage mark
+09:20:45.858 INFO AUTOTEST BALANCE salvage mark nuggets=0 hunterValue=172400
+09:20:45.893 INFO AUTOTEST line 10: wait 6
+09:20:51.886 INFO AUTOTEST line 11: balance_salvage t1
+09:20:51.887 INFO AUTOTEST BALANCE salvage t1 nuggetValue=16470 fuelNuggets=52 money=10000
+09:20:51.892 INFO AUTOTEST line 12: balance_probe 3 3
+09:20:52.004 INFO AUTOTEST BALANCE probe tier=3 ship=Corporate Recusant spawnTier=3 mass=176 value=80950 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:20:52.006 INFO AUTOTEST BALANCE probe tier=3 ship=Corporate Ternion spawnTier=3 mass=194 value=84000 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:20:52.006 INFO AUTOTEST BALANCE probe tier=3 ship=Corporate Rustbloom spawnTier=3 mass=254 value=80700 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:20:52.009 INFO AUTOTEST line 13: wait 2
+09:20:54.007 INFO AUTOTEST line 14: balance_salvage mark
+09:20:54.007 INFO AUTOTEST BALANCE salvage mark nuggets=16470 hunterValue=245650
+09:20:54.019 INFO AUTOTEST line 15: wait 6
+09:21:00.018 INFO AUTOTEST line 16: balance_salvage t3
+09:21:00.019 INFO AUTOTEST BALANCE salvage t3 nuggetValue=22328 fuelNuggets=112 money=10000
+09:21:00.019 INFO AUTOTEST line 17: balance_probe 5 3
+09:21:00.067 INFO AUTOTEST BALANCE probe tier=5 ship=Corporate Austral spawnTier=5 mass=309 value=106500 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:00.067 INFO AUTOTEST BALANCE probe tier=5 ship=Corporate Skirath spawnTier=5 mass=216 value=135150 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:00.067 INFO AUTOTEST BALANCE probe tier=5 ship=Corporate Skirath spawnTier=5 mass=216 value=135150 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:00.069 INFO AUTOTEST line 18: wait 2
+09:21:02.068 INFO AUTOTEST line 19: balance_salvage mark
+09:21:02.068 INFO AUTOTEST BALANCE salvage mark nuggets=38798 hunterValue=376800
+09:21:02.081 INFO AUTOTEST line 20: wait 6
+09:21:08.076 INFO AUTOTEST line 21: balance_salvage t5
+09:21:08.076 INFO AUTOTEST BALANCE salvage t5 nuggetValue=35292 fuelNuggets=174 money=10000
+09:21:08.077 INFO AUTOTEST line 22: balance_probe 7 3
+09:21:08.131 INFO AUTOTEST BALANCE probe tier=7 ship=Corporate Dread spawnTier=7 mass=385 value=184100 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:08.131 INFO AUTOTEST BALANCE probe tier=7 ship=Corporate Black and Bruised spawnTier=7 mass=604 value=190100 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:08.131 INFO AUTOTEST BALANCE probe tier=7 ship=Corporate Dread spawnTier=7 mass=385 value=184100 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:08.133 INFO AUTOTEST line 23: wait 2
+09:21:10.132 INFO AUTOTEST line 24: balance_salvage mark
+09:21:10.132 INFO AUTOTEST BALANCE salvage mark nuggets=74090 hunterValue=558300
+09:21:10.148 INFO AUTOTEST line 25: wait 6
+09:21:16.147 INFO AUTOTEST line 26: balance_salvage t7
+09:21:16.148 INFO AUTOTEST BALANCE salvage t7 nuggetValue=53366 fuelNuggets=234 money=10000
+09:21:16.149 INFO AUTOTEST line 27: balance_probe 9 3
+09:21:16.231 INFO AUTOTEST BALANCE probe tier=9 ship=Corporate Groovebill spawnTier=9 mass=1169 value=320350 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:16.231 INFO AUTOTEST BALANCE probe tier=9 ship=Corporate Herse spawnTier=9 mass=767 value=324100 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:16.231 INFO AUTOTEST BALANCE probe tier=9 ship=Corporate Leraje spawnTier=9 mass=495 value=299850 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:16.234 INFO AUTOTEST line 28: wait 2
+09:21:18.232 INFO AUTOTEST line 29: balance_salvage mark
+09:21:18.233 INFO AUTOTEST BALANCE salvage mark nuggets=127456 hunterValue=944300
+09:21:18.265 INFO AUTOTEST line 30: wait 6
+09:21:24.264 INFO AUTOTEST line 31: balance_salvage t9
+09:21:24.264 INFO AUTOTEST BALANCE salvage t9 nuggetValue=93602 fuelNuggets=300 money=10000
+09:21:24.265 INFO AUTOTEST line 32: balance_probe 11 3
+09:21:24.352 INFO AUTOTEST BALANCE probe tier=11 ship=Corporate Roko's Vengeance spawnTier=11 mass=1207 value=524300 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:24.352 INFO AUTOTEST BALANCE probe tier=11 ship=Corporate Rasalhague spawnTier=11 mass=2035 value=581375 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:24.353 INFO AUTOTEST BALANCE probe tier=11 ship=Corporate Sulla spawnTier=11 mass=2917 value=593900 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:24.356 INFO AUTOTEST line 33: wait 2
+09:21:26.354 INFO AUTOTEST line 34: balance_salvage mark
+09:21:26.355 INFO AUTOTEST BALANCE salvage mark nuggets=221058 hunterValue=1699575
+09:21:26.392 INFO AUTOTEST line 35: wait 6
+09:21:32.389 INFO AUTOTEST line 36: balance_salvage t11
+09:21:32.390 INFO AUTOTEST BALANCE salvage t11 nuggetValue=172600 fuelNuggets=364 money=10000
+09:21:32.391 INFO AUTOTEST line 37: balance_probe 12 3
+09:21:32.557 INFO AUTOTEST BALANCE probe tier=12 ship=Corporate Razorbill spawnTier=12 mass=2593 value=737350 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:32.557 INFO AUTOTEST BALANCE probe tier=12 ship=Corporate Firewhistle spawnTier=12 mass=2514 value=680050 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:32.557 INFO AUTOTEST BALANCE probe tier=12 ship=Corporate Ballista spawnTier=12 mass=1580 value=683900 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:32.563 INFO AUTOTEST line 38: wait 2
+09:21:34.559 INFO AUTOTEST line 39: balance_salvage mark
+09:21:34.560 INFO AUTOTEST BALANCE salvage mark nuggets=393658 hunterValue=2101300
+09:21:34.621 INFO AUTOTEST line 40: wait 6
+09:21:40.617 INFO AUTOTEST line 41: balance_salvage t12
+09:21:40.618 INFO AUTOTEST BALANCE salvage t12 nuggetValue=210341 fuelNuggets=427 money=10000
+09:21:40.619 INFO AUTOTEST line 42: balance_probe 14 3
+09:21:40.875 INFO AUTOTEST BALANCE probe tier=14 ship=Corporate Landsknecht spawnTier=14 mass=3922 value=1056650 fuel=41 killFame=0 drives=-1 jump8LY=-1
+09:21:40.876 INFO AUTOTEST BALANCE probe tier=14 ship=Corporate Vestarka spawnTier=14 mass=3623 value=1219100 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:40.876 INFO AUTOTEST BALANCE probe tier=14 ship=Corporate Vestarka spawnTier=14 mass=3623 value=1219100 fuel=40 killFame=0 drives=-1 jump8LY=-1
+09:21:40.884 INFO AUTOTEST line 43: wait 2
+09:21:42.877 INFO AUTOTEST line 44: balance_salvage mark
+09:21:42.878 INFO AUTOTEST BALANCE salvage mark nuggets=603999 hunterValue=3494850
+09:21:43.065 INFO AUTOTEST line 45: wait 6
+09:21:49.061 INFO AUTOTEST line 46: balance_salvage t14
+09:21:49.063 INFO AUTOTEST BALANCE salvage t14 nuggetValue=330409 fuelNuggets=484 money=10000
+09:21:49.065 INFO AUTOTEST line 47: quit 
+09:21:49.065 INFO AUTOTEST DONE
+== AUTOTEST OK (slot t4)

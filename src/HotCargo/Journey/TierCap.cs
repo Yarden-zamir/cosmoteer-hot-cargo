@@ -1,3 +1,4 @@
+using Cosmoteer;
 using Cosmoteer.GalaxyMap;
 using Cosmoteer.Generators.Galaxies;
 using Cosmoteer.Modes.Career;
@@ -40,6 +41,21 @@ internal sealed class TierCapSpawner : GalaxySpawner
     }
 
     public int Cap(int startTier, int jumps) => startTier + TierPerJump * jumps;
+
+    /// <summary>
+    /// Spec 303: the highest tier that counts toward the peak tier (and so the tech value) at this sector index. A system J jumps from
+    /// the start needs at least J + 1 visited systems, so normal systems never pass this cap. Only faction home systems do: a short visit
+    /// to one must not multiply the tech value. Null when the career does not use the Hot Cargo run map (no cap).
+    /// </summary>
+    public static int? PeakTierCap(CareerGameModeManager mode, int sectorIndex)
+    {
+        if (mode.Init is not CareerInit init || init.MapSizeIndex >= GameApp.Rules.CareerMode.MapSizes.Length) return null;
+        var cap = GameApp.Rules.CareerMode.MapSizes[init.MapSizeIndex].MapGenerator.Spawners.OfType<TierCapSpawner>().FirstOrDefault();
+        if (cap is null) return null;
+        var start = mode.Game.Map.Nodes.FirstOrDefault(n => mode.GetMapNodeData(n).IsInitNode)
+            ?? throw new InvalidOperationException("the career map has no starting system");
+        return cap.Cap(mode.GetMapNodeData(start).TierRange?.Min ?? 1, Math.Max(0, sectorIndex - 1));
+    }
 
     /// <summary>Each node reachable from the start with its jump count (breadth-first).</summary>
     public static Dictionary<MapNode, int> JumpDistances(MapNode start)

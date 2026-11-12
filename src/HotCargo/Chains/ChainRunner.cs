@@ -126,10 +126,12 @@ public static class ChainRunner
         ObjectID node = sim.NodeId();
         if (s.AssignedNodes.Contains(node)) return;
         s.AssignedNodes.Add(node);
+        int started = 0;
         foreach (var station in Stations(sim).OrderBy(st => st.StationID))
         {
+            if (started >= run.T.Chains.MaxNewChainsPerSystem) break;
             if (sim.Rand.Single() >= run.T.Chains.StationChance) continue;
-            if (PickChain(run, sim, station) is { } chain) Start(run, sim, chain, station);
+            if (PickChain(run, sim, station) is { } chain) { Start(run, sim, chain, station); started++; }
         }
     }
 

@@ -5,9 +5,9 @@ wait 8
 expectevent getaway
 choose 3 1
 ev_set Enabled false
-# Every chain loads and validates, and the first system's stations got chains.
+# Every chain loads and validates. At most MaxNewChainsPerSystem (2) stations of the first system got a chain (StationChance 0.6 each).
 expect chains_loaded >= 6
-expect chain_here >= 1
+expect chain_here <= 2
 chain_force fence_ledger
 expectstage courier
 expect chain_mission == 1
