@@ -82,17 +82,14 @@ wait 10
 damagehostiles 0.05
 wait 10
 log system3
-# System 4 (tier 7): a starter ship does not outlast a tier 7 Hunt, so it sells at once and leaves at Patrol.
+# System 4 (tier 7): a starter ship does not outlast a tier 7 Hunt, so it leaves at Patrol. A supernova system can have no station in reach, so no sale here.
 jump
 # A jump out of a fight waits until the ships may leave (factions), so wait for the arrival.
 waitfor sector >= 4 120
 pause off
 wait 5
 damagehostiles 0.05
-tostation
-wait 3
-tech sell 1
-wait 25
+wait 20
 heat 25
 wait 15
 damagehostiles 0.05
