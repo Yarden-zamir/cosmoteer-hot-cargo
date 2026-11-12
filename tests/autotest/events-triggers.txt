@@ -32,7 +32,9 @@ ev_arrive
 wait 2
 ev_tostation
 wait 3
-expectevent the_fence
+# Some Station event opened (The Fence, The Archive, ...), and the station carries it: its comms show the page (spec 768).
+expect ev_pending == 1
+expect ev_carrier == 1
 choose last
 expect ev_pending == 0
 quit

@@ -19,4 +19,9 @@ HotCargoEvents
 	WantedWarning = "Wanted and hunted: police and the corporation"
 	WantedHintFmt = "Wanted by {0} while the corporation hunts you. Ways out: pay the bounty (hail one of their police ships), leave the system, outlast the search timer, or find a smuggler who fixes records."
 	WantedCleared = "Wanted cleared"
+	CarrierCallingFmt = "{0} is calling. Fly within comms range to answer, or hail it."
+	CarrierGone = "The ship is gone, and so is the offer."
+	CarrierRefuses = "The station stops answering. Your heat is too high for them."
+	RelicSensed = "Your vault hums: stolen tech nearby"
+	RelicSensedChat = "Your vault picks up a tech signature from a dead ship nearby. Another crew's haul? Fly close to look."
 }
