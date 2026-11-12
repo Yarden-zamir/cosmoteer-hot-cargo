@@ -2,5 +2,5 @@ HotCargoScaling
 {
 	Label = "Enemy ships per extra player"
 	ValueFmt = "{0:0.0}×"
-	Tip = "Co-op difficulty. With 2 players, hostile ship counts are × this value, and each extra player adds the same step: at 1.5, 3 players face 2× and 4 players 2.5×. Solo is always 1×. Applies to pirates, bounty fleets, base guards, ambushes, police and every Hot Cargo wave. A single bounty target stays one ship."
+	Tip = "Co-op difficulty: hostile ship counts with 2 players. Each extra player adds the same step (at 1.5: 3 players face 2×, 4 players 2.5×). Solo is always 1×. Applies to every hostile fleet and Hot Cargo wave; a single bounty target stays one ship."
 }
