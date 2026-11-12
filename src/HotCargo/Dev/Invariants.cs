@@ -30,7 +30,6 @@ public static class Invariants
     internal static void Register()
     {
         Run.Hooks.Tick += OnTick;
-        Halfling.App.Director.FrameEnded += (_, _) => ShownText.CheckPending();
         Autotest.Fields["invariants_broken"] = () => Broken;
     }
 
@@ -217,9 +216,18 @@ public static class Invariants
     {
         static readonly HashSet<TextRenderer> Pending = [];
 
+        static bool _subscribed;
+
         internal static void Add(TextRenderer r)
         {
-            if (On) Pending.Add(r);
+            if (!On) return;
+            // The frame director does not exist yet when the mod boots, so the check subscribes at the first shown text.
+            if (!_subscribed)
+            {
+                Halfling.App.Director.FrameEnded += (_, _) => CheckPending();
+                _subscribed = true;
+            }
+            Pending.Add(r);
         }
 
         internal static void CheckPending()
