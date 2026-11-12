@@ -80,7 +80,7 @@ HotCargoCodex
 		Title = "Hot Cargo: Events"
 		What = "Out here, things happen. An event gives you a choice. A cost shows on its button."
 		Needs = "A grey choice needs something you lack. Some outcomes roll, for better or worse."
-		Coop = "In co-op, the first player to choose decides for everyone."
+		Coop = "In co-op, the first pick decides for everyone. Switch the bar to <b>vote</b> to decide together."
 	}
 
 	Worlds

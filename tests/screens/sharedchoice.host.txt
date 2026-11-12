@@ -1,0 +1,23 @@
+# Co-op shared choice screenshots. Host in the main slot (graphics), client in a headless test slot.
+# scripts/screens-mp.sh runs both. {PORT} is the host port.
+render on
+mphost {PORT}
+mpstart 2
+waitfor ev_pending == 1 60
+wait 3
+closepanel
+# Presence: the client hovers choice 3.
+waitfor sc_hovers >= 1 30
+wait 1
+screenshot sharedchoice-presence
+# Votes: the host votes 1, the client votes 2 and still hovers 3. No timeout, so the vote stays open.
+mp sc_set VoteTimeoutSeconds 0
+votemode on
+waitfor sc_votemode == 1 10
+vote 1
+waitfor sc_votes >= 2 60
+wait 1
+screenshot sharedchoice-vote
+mp mpmark 1
+waitfor mpconnected == 0 120
+quit

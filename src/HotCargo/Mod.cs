@@ -25,6 +25,7 @@ public static class Mod
             Tactics.TacticsArea.Register();
             Events.EventsArea.Register();
             Chains.ChainsArea.Register();
+            SharedChoice.SharedChoiceArea.Register();
             Contracts.ContractsArea.Register();
             Ux.UxArea.Register();
             Worlds.WorldsArea.Register();
