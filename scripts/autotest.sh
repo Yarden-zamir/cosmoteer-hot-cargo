@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run an autotest script in a headless test instance of the game on the PC and print the result.
-# Usage: autotest.sh tests/autotest/<name>.txt [timeout-seconds]
+# Usage: autotest.sh tests/autotest/<name>.txt [timeout-seconds]. A "# timeout: N" line in the script raises the timeout to N.
 # - Takes a free test slot (t1..tN, N = HOT_CARGO_SLOTS, default 8). Parallel runs work, also from one worktree.
 # - Keeps the full log in $LOG_DIR (see autotest-lib.sh) and prints only the lines that explain a failure.
 # - Retries a failed run once (AUTOTEST_RETRY, default 1). A pass on the retry prints "AUTOTEST FLAKY" and exits 0,
@@ -9,6 +9,9 @@
 set -euo pipefail
 SCRIPT="${1:?usage: autotest.sh <script> [timeout]}"
 TIMEOUT="${2:-300}"
+# A script can ask for more time with a "# timeout: <seconds>" line (long playthroughs). The larger value wins.
+SCRIPT_TIMEOUT="$(grep -m1 '^# timeout:' "$SCRIPT" | cut -d: -f2 | tr -d ' ' || true)"
+[[ -n "$SCRIPT_TIMEOUT" && "$SCRIPT_TIMEOUT" -gt "$TIMEOUT" ]] && TIMEOUT="$SCRIPT_TIMEOUT"
 RETRY="${AUTOTEST_RETRY:-1}"
 source "$(dirname "$0")/autotest-lib.sh"
 NAME="$(basename "$SCRIPT" .txt)"
