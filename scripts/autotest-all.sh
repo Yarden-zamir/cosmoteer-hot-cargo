@@ -53,6 +53,8 @@ run_test() {
     scripts/autotest.sh "tests/autotest/$t.txt" "$TIMEOUT" > "$out" 2>&1
   fi
   local rc=$?
+  # Exit code 3: the PC refuses calls (this agent's turn is not active). Later tests would only hold slots for nothing.
+  if [[ $rc -eq 3 ]]; then touch "$RUN_DIR/link-refused"; fi
   if [[ $rc -ne 0 ]]; then echo "FAIL $t"; elif grep -q "AUTOTEST FLAKY" "$out"; then echo "FLAKY $t"; else echo "PASS $t"; fi
 }
 
@@ -60,6 +62,7 @@ run_test() {
 {
   for t in "${TESTS[@]}"; do
     while [[ $(jobs -rp | wc -l) -ge $SLOTS ]]; do sleep 2; done
+    if [[ -f "$RUN_DIR/link-refused" ]]; then echo "FAIL $t"; continue; fi
     run_test "$t" &
   done
   wait
@@ -83,6 +86,10 @@ phase_times | tee "$RUN_DIR/phases.txt"
 
 if [[ "$TELEMETRY" == yes ]]; then
   scripts/pull-telemetry.sh >/dev/null && (cd tools/telemetry && uv run hc-telemetry --since "$STARTED_UTC") || echo "== telemetry report failed"
+fi
+if [[ -f "$RUN_DIR/link-refused" ]]; then
+  echo "== stopped: the PC refused calls, because this agent's turn was not active. Tests after that did not run (FAIL)."
+  echo "== keep the turn open while a suite runs: --detach, then scripts/suite-wait.sh <log> with t3_background_wait."
 fi
 FAILED="$(grep '^FAIL ' "$RUN_DIR/summary.txt" | cut -d' ' -f2- | tr '\n' ' ')"
 FLAKY="$(grep '^FLAKY ' "$RUN_DIR/summary.txt" | cut -d' ' -f2- | tr '\n' ' ')"

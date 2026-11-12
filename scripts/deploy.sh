@@ -7,6 +7,7 @@
 #   and, in slot main, the player's tunables file, installs the startup hook loader and the test slot settings.
 # Autotest mode (AUTOTEST_SCRIPT=<file>, used by autotest-lib.sh start_slot): the same PC call also stops the test slot's
 # game first, installs the file as autotest.txt and starts the game. It never stops the main slot: it fails if that game runs.
+# Before a test slot's game starts, the PC waits up to 120 s for HOT_CARGO_MIN_FREE_GB (default 3) of free memory.
 source "$(dirname "$0")/pc.sh"
 
 STAGE="${HOT_CARGO_STAGE:-}"
@@ -49,7 +50,9 @@ try { . ([scriptblock]::Create((Get-Content (Join-Path $cache "slot-install.ps1"
 '
 
 # First call without the build. The PC answers NEED_UPLOAD when it does not have this build yet; then upload it.
-deploy_call() { pc "$PS_PATHS"'$hash = "'"$HASH"'";'"$PS_BOOT"; }
+MIN_FREE_GB="${HOT_CARGO_MIN_FREE_GB:-3}"
+[[ -n "$MIN_FREE_GB" && "$MIN_FREE_GB" != *[!0-9]* ]] || { echo "deploy: HOT_CARGO_MIN_FREE_GB must be a whole number of GB" >&2; exit 1; }
+deploy_call() { pc "$PS_PATHS"'$hash = "'"$HASH"'"; $minFreeGB = '"$MIN_FREE_GB"';'"$PS_BOOT"; }
 OUT="$(send | deploy_call)"
 if [[ "$OUT" == *NEED_UPLOAD* ]]; then OUT="$(send -C "$STAGE" build | deploy_call)"; fi
 [[ "$OUT" == *"deployed to"* ]] || { echo "$OUT"; echo "deploy: the PC did not confirm the deploy" >&2; exit 1; }

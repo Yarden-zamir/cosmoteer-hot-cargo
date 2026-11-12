@@ -1,7 +1,8 @@
 # Installs a cached build into a slot. scripts/deploy.sh runs it on the PC: it ships inside the build
 # (%USERPROFILE%\HotCargoSlots\_builds\<hash>\slot-install.ps1), so the command over the T3 link stays short (8192 limit).
 # deploy.sh sets before it: the PS_PATHS variables and Get-SlotProcess (scripts/pc.sh), $cache (the build folder),
-# $cacheState (text for the output), $autotestFile (path of the autotest script, or $null) and $startGame (PS_START).
+# $cacheState (text for the output), $autotestFile (path of the autotest script, or $null), $startGame (PS_START) and
+# $minFreeGB (free memory that a test slot needs before its game starts).
 $ErrorActionPreference = "Stop"
 if ($autotestFile -and $slot -ne "main") {
   $running = Get-SlotProcess
@@ -60,5 +61,14 @@ if ($slot -ne "main") {
 if ($autotestFile) {
   Copy-Item $autotestFile (Join-Path $modDir "autotest.txt") -Force
   "autotest script installed"
+  # A headless game needs about 2.5 GB. Too many games at once make the PC page, and tests turn flaky.
+  # Test slots wait up to 120 s for $minFreeGB of free memory (HOT_CARGO_MIN_FREE_GB, 0 turns the check off).
+  if ($slot -ne "main" -and $minFreeGB -gt 0) {
+    $deadline = (Get-Date).AddSeconds(120)
+    while (($free = (Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1MB) -lt $minFreeGB) {
+      if ((Get-Date) -gt $deadline) { throw ("not enough free memory to start slot {0}: {1:N1} GB free, {2} GB needed" -f $slot, $free, $minFreeGB) }
+      Start-Sleep -Seconds 5
+    }
+  }
   . $startGame
 }

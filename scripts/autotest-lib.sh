@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Shared parts of autotest.sh and autotest-mp.sh. Source it; it does not run anything.
-# Slots t1..tN (N = HOT_CARGO_SLOTS, default 8) are headless test instances on the PC (see pc.sh).
+# Slots t1..tN (N = HOT_CARGO_SLOTS, default 12) are headless test instances on the PC (see pc.sh).
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$LIB_DIR/.." && pwd)"
-SLOTS="${HOT_CARGO_SLOTS:-8}"
+SLOTS="${HOT_CARGO_SLOTS:-12}"
 # Full logs of every run stay here, one folder per worktree, so a later run in the same slot cannot overwrite them.
 # Logs, flaky list and pass markers live in <container>/.state (next to .bare and .game), not in /tmp, so they survive a restart.
 STATE_DIR="${HOT_CARGO_STATE:-$(cd "$REPO_ROOT/.." && pwd)/.state}"
@@ -33,8 +33,15 @@ take_one_slot() {
   local i lock limit busy
   while :; do
     limit="$(usable_slots)"
-    # The integrator's runs (main worktree) always keep one slot free of agent runs, so merges never starve.
-    if [[ "$(basename "$REPO_ROOT")" != main && $limit -gt 1 ]]; then limit=$((limit - 1)); fi
+    # Off by default: HOT_CARGO_INTEGRATOR_RESERVE slots stay free for the main worktree, if contention returns.
+    if [[ "$(basename "$REPO_ROOT")" != main && ${HOT_CARGO_INTEGRATOR_RESERVE:-0} -gt 0 && $limit -gt ${HOT_CARGO_INTEGRATOR_RESERVE:-0} ]]; then limit=$((limit - HOT_CARGO_INTEGRATOR_RESERVE)); fi
+    # Off by default: with HOT_CARGO_SLOTS_PER_AGENT > 0, an agent worktree holds at most that many slots, so one agent's big batch
+    # cannot starve the others. The main worktree (the integrator) has no cap.
+    if [[ "$(basename "$REPO_ROOT")" != main && ${HOT_CARGO_SLOTS_PER_AGENT:-0} -gt 0 ]]; then
+      local mine=0 l
+      for l in /tmp/hot_cargo_slot_[0-9]*.lock; do [[ "$(cat "$l/owner" 2>/dev/null)" == "$REPO_ROOT" ]] && mine=$((mine + 1)); done
+      if [[ $mine -ge ${HOT_CARGO_SLOTS_PER_AGENT:-0} ]]; then sleep 5; continue; fi
+    fi
     for lock in /tmp/hot_cargo_slot_[0-9]*.lock; do
       if [[ -f "$lock/pid" ]] && ! kill -0 "$(cat "$lock/pid")" 2>/dev/null; then rm -rf "$lock"; fi
     done
@@ -84,9 +91,13 @@ start_slot() {
   return $rc
 }
 
+# T3 refuses PC calls from an agent thread that has no active turn (the agent ended its turn while its tests run).
+# Every later call fails the same way, so a run that sees this text stops at once (exit code 3, no retry).
+LINK_REFUSED_TEXT="no longer owns an active thread run"
+
 # Prints one line about the slot's game: "running=0|1 started=0|1 done=0|1 match=0|1".
 # started: the log has a script line. done: the log has AUTOTEST DONE. match: the log has the text in $2 (optional).
-# A small PC call, so polls can be frequent. Prints nothing when the PC call fails.
+# A small PC call, so polls can be frequent. When the PC call fails, it prints the error text in place of the line.
 slot_status() {
   (
     export SLOT="$1"
@@ -94,18 +105,22 @@ slot_status() {
     pc "$PS_PATHS"'$l = Join-Path $modDir "csharp\hot_cargo_log.txt"; $t = if (Test-Path $l) { [string](Get-Content $l -Raw) } else { "" }
 $m = "'"${2:-}"'"
 "running=" + [int][bool](Get-SlotProcess) + " started=" + [int]$t.Contains("AUTOTEST line") + " done=" + [int]$t.Contains("AUTOTEST DONE") + " match=" + [int]($m -ne "" -and $t.Contains($m))'
-  ) 2>/dev/null || true
+  ) 2>&1 || true
 }
 
 # Waits until the slot's game exits or its log has AUTOTEST DONE for two polls in a row (the game then had time to
 # exit by itself), or until $2 seconds pass. Polls every AUTOTEST_POLL seconds (default 3).
+# Stops early when the PC refuses calls (sets LINK_REFUSED=yes) or after 5 failed status calls in a row.
 # Sets STARTED_AT (SECONDS when the first script line showed, empty if never) and ENDED_AT.
 wait_slot_end() {
-  local slot="$1" timeout="$2" from=$SECONDS status dones=0
-  STARTED_AT=""
+  local slot="$1" timeout="$2" from=$SECONDS status dones=0 fails=0
+  STARTED_AT="" LINK_REFUSED=no
   while (( SECONDS - from < timeout )); do
     sleep "${AUTOTEST_POLL:-3}"
     status="$(slot_status "$slot")"
+    if [[ "$status" == *"$LINK_REFUSED_TEXT"* ]]; then LINK_REFUSED=yes; break; fi
+    if [[ "$status" != *running=* ]]; then fails=$((fails + 1)); [[ $fails -ge 5 ]] && break; continue; fi
+    fails=0
     if [[ -z "$STARTED_AT" && "$status" == *started=1* ]]; then STARTED_AT=$SECONDS; fi
     if [[ "$status" == *running=0* ]]; then break; fi
     if [[ "$status" == *done=1* ]]; then dones=$((dones + 1)); [[ $dones -ge 2 ]] && break; fi

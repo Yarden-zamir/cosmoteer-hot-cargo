@@ -24,10 +24,11 @@ echo "== host slot $HOST, client slot $CLIENT, port $PORT"
 { echo "telename $(basename "$HOST_SCRIPT" .txt)"; sed "s/{PORT}/$PORT/g" "$HOST_SCRIPT"; } | start_slot "$HOST"
 T2=$SECONDS
 # Small status calls every AUTOTEST_POLL seconds; the full logs are fetched once at the end.
-CLIENT_STARTED=no
+CLIENT_STARTED=no LINK_REFUSED=no
 while (( SECONDS - T2 < TIMEOUT )); do
   sleep "${AUTOTEST_POLL:-3}"
   HOST_STATUS="$(slot_status "$HOST" "AUTOTEST hosting")"
+  if [[ "$HOST_STATUS" == *"$LINK_REFUSED_TEXT"* ]]; then LINK_REFUSED=yes; break; fi
   if [[ "$CLIENT_STARTED" == no ]]; then
     if [[ "$HOST_STATUS" == *match=1* ]]; then
       { echo "telename $(basename "$CLIENT_SCRIPT" .txt)"; sed "s/{PORT}/$PORT/g" "$CLIENT_SCRIPT"; } | start_slot "$CLIENT"
@@ -38,6 +39,7 @@ while (( SECONDS - T2 < TIMEOUT )); do
     continue
   fi
   CLIENT_STATUS="$(slot_status "$CLIENT")"
+  if [[ "$CLIENT_STATUS" == *"$LINK_REFUSED_TEXT"* ]]; then LINK_REFUSED=yes; break; fi
   if [[ "$HOST_STATUS" == *running=0* && "$CLIENT_STATUS" == *running=0* ]]; then break; fi
 done
 T3=$SECONDS
@@ -53,6 +55,9 @@ TIMING="== timing mp-$NAME wait=$((T1 - T0)) deploy=$((T2 - T1)) script=$((T3 - 
 echo "$TIMING" | tee -a "$RUN_LOG"
 echo "== $NAME: log $RUN_LOG"
 
+if [[ "$LINK_REFUSED" == yes ]] || grep -q "$LINK_REFUSED_TEXT" "$RUN_LOG"; then
+  echo "== MP AUTOTEST LINK REFUSED $NAME: the PC refused the calls, because this agent's turn is not active (log $RUN_LOG)"; exit 3
+fi
 OK=yes
 if ! log_passed <<<"$HOST_LOG"; then echo "== host log failed"; OK=no; fi
 if ! log_passed <<<"$CLIENT_LOG"; then echo "== client log failed"; OK=no; fi

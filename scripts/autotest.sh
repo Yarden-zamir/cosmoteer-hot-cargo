@@ -7,7 +7,8 @@
 #   so timing problems and PC link errors do not block work. Limit: a real failure costs two runs.
 # - Prints one "== timing" line per run with the seconds of each phase: wait (for a slot), deploy (stop, deploy, start),
 #   start (game start to the first script line), script (to the end of the script), teardown (log fetch, stop, release).
-# Exit code 0 only if a run has AUTOTEST DONE and no AUTOTEST FAIL or ERROR line.
+# Exit code 0 only if a run has AUTOTEST DONE and no AUTOTEST FAIL or ERROR line. Exit code 3: the PC refused the calls
+# because this agent's turn is not active (see LINK_REFUSED_TEXT in autotest-lib.sh); keep the turn open while tests run.
 set -euo pipefail
 SCRIPT="${1:?usage: autotest.sh <script> [timeout]}"
 TIMEOUT="${2:-300}"
@@ -34,7 +35,7 @@ run_once() {
     # A failed PC call leaves an empty log, which never passes.
     if out="$(slot_finish "$SLOT" 2>&1)"; then rm -rf "$(slot_lock "$SLOT")"; else out=""; release_slot "$SLOT"; fi
   else
-    t2=$SECONDS; STARTED_AT="" ENDED_AT=$SECONDS
+    t2=$SECONDS; STARTED_AT="" ENDED_AT=$SECONDS LINK_REFUSED=no
     release_slot "$SLOT"
   fi
   SLOT=""
@@ -44,6 +45,8 @@ run_once() {
   log_passed < "$RUN_LOG" && ok=0
   if [[ $ok -ne 0 && "$out" == *"<<<VANILLA LOG>>>"* ]]; then { echo; echo "=== vanilla game log"; echo "${out#*<<<VANILLA LOG>>>}"; } >> "$RUN_LOG"; fi
   t3=$SECONDS
+  RUN_REFUSED=no
+  if [[ "${LINK_REFUSED:-no}" == yes ]] || grep -q "$LINK_REFUSED_TEXT" "$RUN_LOG"; then RUN_REFUSED=yes; fi
   local started="${STARTED_AT:-$ENDED_AT}" upload=hit
   grep -q "uploaded build" "$RUN_LOG.deploy" && upload=uploaded
   rm -f "$RUN_LOG.deploy"
@@ -52,7 +55,9 @@ run_once() {
   return $ok
 }
 
+refused() { echo "== AUTOTEST LINK REFUSED $NAME: the PC refused the calls, because this agent's turn is not active. Keep the turn open while tests run (log $RUN_LOG)"; exit 3; }
 if run_once; then echo "== AUTOTEST OK $NAME (slot $RUN_SLOT)"; exit 0; fi
+[[ "$RUN_REFUSED" == yes ]] && refused
 FIRST_LOG="$RUN_LOG"
 echo "== first run failed:"
 failure_lines "$FIRST_LOG"
@@ -61,6 +66,7 @@ if [[ "$RETRY" -ge 1 ]] && run_once; then
   echo "$(date +%F\ %T) $NAME $FIRST_LOG" >> "$STATE_DIR/flaky.log"
   exit 0
 fi
+[[ "$RUN_REFUSED" == yes ]] && refused
 [[ "$RUN_LOG" != "$FIRST_LOG" ]] && { echo "== retry failed:"; failure_lines "$RUN_LOG"; }
 echo "== AUTOTEST FAILED $NAME (log $RUN_LOG)"
 exit 1
