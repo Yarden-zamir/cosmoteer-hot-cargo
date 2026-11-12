@@ -57,11 +57,12 @@ Procedures are skills in `.claude/skills/`:
 ## Agents
 
 - An agent works only in its own worktree and branch. At the end it pushes its branch and opens a draft PR. It never pushes to `main` and never merges.
-- Tests: run only the tests your change needs (your area's tests, `core`, and any test you changed). Never run the full suite; the integrator runs it for each merge batch. Each agent holds at most 2 test slots at a time (the scripts enforce it).
+- Tests: run the tests your change needs (your area's tests, `core`, and any test you changed). The integrator runs the full suite for each merge batch.
 - Save progress so a crash or restart loses nothing:
   - In the first minutes, commit a short `PLAN.md` (design decisions, steps) to your branch, push it, and open the draft PR with a checklist of the steps. Delete `PLAN.md` before the final commit.
   - Commit and push after each step that builds. Tick the step in the PR checklist.
   - A restarted agent reads the branch, `PLAN.md` and the PR checklist first, and continues from there.
+- PC work (tests, deploys, screenshots) only works while your turn is active: the T3 link refuses PC calls from a thread with no active turn ("no longer owns an active thread run"), and the run then hangs on its slot. Run PC work in the foreground, in chunks under 9 minutes (for example `scripts/autotest-all.sh 400 <a few tests>`), and repeat. Never leave a suite running in the background after your turn ends.
 - Never end a turn while your own tests or builds run in the background. Ending the turn early leaves the work hanging. How to wait:
   - Short runs (under about 9 minutes): run them in the foreground with a long Bash timeout.
   - Long runs: start them with Bash `run_in_background`, then call `t3_background_wait` with the task ID (load it with ToolSearch `select:mcp__t3-code__t3_background_wait`). The turn then stays open until the run finishes.
