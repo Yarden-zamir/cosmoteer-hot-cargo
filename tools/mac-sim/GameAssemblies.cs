@@ -79,28 +79,35 @@ static class GameAssemblies
             ? Find(outer)?.NestedTypes.FirstOrDefault(n => n.Name == t.Name)
             : standIn.GetType(t.Namespace, t.Name);
 
-        foreach (var t in game.SelectMany(m => m.GetTypeReferences()).Where(t => t.Scope.Name == name && t.DeclaringType is null))
+        // A missing top-level type is added when a signature first uses it: only a signature says whether it is a value type.
+        TypeDefinition FindOrAdd(TypeReference t)
         {
-            if (Find(t) is not null) continue;
-            var stub = new TypeDefinition(t.Namespace, t.Name, TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.SequentialLayout,
+            if (Find(t) is { } found) return found;
+            if (t.DeclaringType is not null) throw new InvalidOperationException($"stand-in {name} lacks nested type {t.FullName}");
+            var stub = new TypeDefinition(t.Namespace, t.Name, TypeAttributes.Public | TypeAttributes.SequentialLayout | (t.IsValueType ? TypeAttributes.Sealed : 0),
                 standIn.ImportReference(t.IsValueType ? typeof(ValueType) : typeof(object)));
             standIn.Types.Add(stub);
-            Out.Line($"stand-in {name}: added type {t.FullName}");
+            Out.Line($"stand-in {name}: added {(t.IsValueType ? "struct" : "class")} {t.FullName}");
+            return stub;
         }
+
         foreach (var r in game.SelectMany(m => m.GetMemberReferences()).OfType<MethodReference>())
         {
             if (r.DeclaringType is not { IsArray: false, IsGenericInstance: false } dt || dt.Scope?.Name != name) continue;
             var owner = Find(r.DeclaringType);
             if (owner is null || owner.HasGenericParameters || r.HasGenericParameters) continue;
             if (owner.Methods.Any(m => m.Name == r.Name && SameSignature(m, r))) continue;
-            var stub = new MethodDefinition(r.Name, MethodAttributes.Public | (r.HasThis ? 0 : MethodAttributes.Static), Import(standIn, r.ReturnType, Find));
-            foreach (var p in r.Parameters) stub.Parameters.Add(new ParameterDefinition(Import(standIn, p.ParameterType, Find)));
+            var stub = new MethodDefinition(r.Name, MethodAttributes.Public | (r.HasThis ? 0 : MethodAttributes.Static), Import(standIn, r.ReturnType, FindOrAdd));
+            foreach (var p in r.Parameters) stub.Parameters.Add(new ParameterDefinition(Import(standIn, p.ParameterType, FindOrAdd)));
             var il = stub.Body.GetILProcessor();
             il.Emit(OpCodes.Ldnull);
             il.Emit(OpCodes.Throw);
             owner.Methods.Add(stub);
             Out.Line($"stand-in {name}: added method {r.FullName}");
         }
+        // Types that only appear outside method signatures (typeof, locals). Without a signature, assume a class.
+        foreach (var t in game.SelectMany(m => m.GetTypeReferences()).Where(t => t.Scope.Name == name && t.DeclaringType is null))
+            FindOrAdd(t);
         game.ForEach(m => m.Dispose());
     }
 
@@ -109,11 +116,11 @@ static class GameAssemblies
         && m.Parameters.Select(p => p.ParameterType.FullName).SequenceEqual(r.Parameters.Select(p => p.ParameterType.FullName));
 
     /// <summary>Maps a type from a game signature into the stand-in: its own types by name, everything else imported.</summary>
-    static TypeReference Import(ModuleDefinition standIn, TypeReference t, Func<TypeReference, TypeDefinition?> find) => t switch
+    static TypeReference Import(ModuleDefinition standIn, TypeReference t, Func<TypeReference, TypeDefinition> find) => t switch
     {
         ArrayType a => new ArrayType(Import(standIn, a.ElementType, find), a.Rank),
         ByReferenceType b => new ByReferenceType(Import(standIn, b.ElementType, find)),
-        _ when t.Scope.Name == standIn.Assembly.Name.Name => find(t) ?? throw new InvalidOperationException($"stand-in lacks {t.FullName}"),
+        _ when t.Scope.Name == standIn.Assembly.Name.Name => find(t),
         _ => standIn.ImportReference(t),
     };
 }
