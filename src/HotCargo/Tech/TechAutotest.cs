@@ -20,7 +20,7 @@ static class TechAutotest
         Autotest.Commands["tech"] = Tech;
         Autotest.Commands["vault"] = Vault;
         Autotest.Commands["tostation"] = _ => ToStation();
-        Autotest.Fields["techvalue"] = () => { var r = Active(); return r.T.Tech.Value(r.State); };
+        Autotest.Fields["techvalue"] = () => { var r = Active(); return r.TechValue(); };
         Autotest.Fields["sellprice"] = () => Active().Game.Sim.Mode.GetResourceSellRefund(Vaults.TechId, null);
         Autotest.Fields["buyprice"] = () => Active().Game.Sim.Mode.GetResourceBuyCost(Vaults.TechId, null);
         Autotest.Fields["money"] = Money;
@@ -30,7 +30,7 @@ static class TechAutotest
         Autotest.Fields["vaults"] = () => Vaults.All(Active().Game.Sim).Count;
         Autotest.Fields["vaulttech"] = () => Vaults.All(Active().Game.Sim).Sum(g => g.Resources);
         Autotest.Fields["livetech"] = () => Vaults.CountFleetTech(Active().Game.Sim);
-        Autotest.Fields["heatmult"] = () => HeatModel.Multiplier(Active().T.Heat.HeatMultiplierByUnits, Active().State.FleetTech);
+        Autotest.Fields["heatmult"] = () => Active().HeatMultiplier(Active().State.FleetTech);
         // Normal storage tiles on human ships that would accept tech. Must stay 0 (spec 14).
         Autotest.Fields["flexsinks"] = () => Vaults.HumanShips(Active().Game.Sim).Sum(s => FlexTilesTakingTech(s));
         Autotest.Fields["stationsinks"] = () => FlexTilesTakingTech(NearestStation());

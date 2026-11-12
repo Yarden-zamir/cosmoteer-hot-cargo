@@ -65,7 +65,7 @@ public static class Overlay
         if (Run.Current is not { } run || run.Mode != mode) return "";
         var s = run.State;
         var t = run.T;
-        float mult = HeatModel.Multiplier(t.Heat.HeatMultiplierByUnits, s.FleetTech);
+        float mult = run.HeatMultiplier(s.FleetTech);
         float open = Contracts.ContractBook.OpenWeight(run);
         float trail = Contracts.ContractBook.TrailPerMinute(run, open);
         float perMinute = mult * t.Heat.HeatPerGameMinute + trail;
@@ -86,7 +86,7 @@ public static class Overlay
             $"HOT CARGO  sector {s.SectorIndex}/{t.Journey.RunSectorCount}\n" +
             $"heat {s.Heat:0.0} / 100   +{perMinute:0.0}/min\n" +
             $"stage {stage}   next {next}\n" +
-            $"tech {s.FleetTech}   x{mult:0.00}   value {t.Tech.Value(s):N0}   notoriety {s.Notoriety:0}\n" +
+            $"tech {s.FleetTech}   x{mult:0.00}   value {run.TechValue():N0}   notoriety {s.Notoriety:0}\n" +
             $"contracts {open:0.#} open   trail +{trail:0.0}/min" +
             hash + result + error;
     }

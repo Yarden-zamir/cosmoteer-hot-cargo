@@ -302,7 +302,7 @@ public static class EventRunner
 
     // ---- Conditions
 
-    public static long CurrentTechValue(Run run) => run.T.Tech.Value(run.State);
+    public static long CurrentTechValue(Run run) => run.TechValue();
 
     /// <summary>The most money one human player has. In co-op each player has own money and any player can pick a choice.</summary>
     static int RichestHumanMoney(Run run) =>

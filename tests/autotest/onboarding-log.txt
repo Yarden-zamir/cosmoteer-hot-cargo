@@ -1,0 +1,64 @@
+# Run log (spec 730 to 734): Hot Cargo events in the career log window, saved with the run.
+newgame run
+wait 8
+closepanel
+expect runlog_sector == 1
+# An event choice.
+expectevent getaway
+choose 3 1
+expect runlog_event == 1
+ev_set Enabled false
+# A new sector. Jump before any fight; combat blocks the jump.
+worlds jumpto hc_trade_hub
+expect runlog_sector == 2
+ev_tostation
+tostation
+# A heat stage.
+heat 30
+wait 2
+expect runlog_stage == 1
+# Vault damage that destroys tech.
+vault damage 0.12
+wait 1
+expect runlog_loss >= 1
+# A tech sale at a station.
+tech sell 1
+wait 25
+expect runlog_sale == 1
+# A contract accept.
+hc_generate all
+wait 3
+contract_money 500000
+contract_pick any
+contract_terms fee 0
+contract_terms informant 0
+contract_accept
+expect contract_accepted == 1
+expect runlog_contract == 1
+# A chain stage result.
+chain_force fence_ledger
+chain_tostation
+chain_accept
+chain_result success
+expect runlog_chain == 1
+# The career log window has the Hot Cargo run tab with one row per line.
+careerlog
+wait 2
+expect runlog_rows >= 7
+# The log saves with the run.
+save onboardinglog
+load onboardinglog
+wait 3
+expect runlog_count >= 7
+# A Buyer delivery wins the run.
+buyer spawn
+wait 3
+buyer goto
+wait 15
+buyer goto
+wait 2
+buyer sell 1
+wait 45
+expect runlog_delivery >= 1
+expect runlog_won == 1
+quit

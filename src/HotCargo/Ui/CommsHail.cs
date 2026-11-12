@@ -161,6 +161,14 @@ public static class CommsHail
             row.Changed += v => { if (__instance._currentDialogue is HailPage { Slider: { } s }) Values[(callee.UniqueID, s.Key)] = v; };
             pageBox.Children.Insert(pageBox.Children.IndexOf(__instance._dialogueButtonsBox), row.Row);
             Rows.AddOrUpdate(__instance, row);
+            // A Hot Cargo page has more rows than the vanilla surrender page (slider, co-op bar, up to six buttons), and the tab
+            // does not scroll, so the window grows to fit them.
+            if (__instance._currentDialogue is HailPage && __instance._window is { } window)
+            {
+                window.Size = new Halfling.Geometry.Vector2(Math.Max(window.Size.X, 760f), Math.Max(window.Size.Y, 840f));
+                pageBox.Children.BorderPadding = new Halfling.Gui.Borders(40f, 30f, 40f, 30f);
+                pageBox.Children.WidgetPadding = new Halfling.Geometry.Vector2(12f);
+            }
             Show(__instance, row);
             UpdateShared(__instance, pageBox);
         });

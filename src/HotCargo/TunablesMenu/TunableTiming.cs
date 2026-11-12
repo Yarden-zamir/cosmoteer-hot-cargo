@@ -105,6 +105,11 @@ public static class TunableTiming
         ["UxTunables.CommsStayOnMap"] = Applies.NextUse,
         ["UxTunables.PauseOnComms"] = Applies.NextUse,
         ["UxTunables.PauseOnCommsMultiplayer"] = Applies.NextUse,
+        ["DifficultyRow.HunterShips"] = Applies.NextSpawn,
+        ["DifficultyRow.HunterTiers"] = Applies.NextSpawn,
+        ["DifficultyRow.ContractFees"] = Applies.NextOffer,
+        ["RunModesTunables.FameTitleTiers"] = Applies.NextSpawn,
+        ["RunModesTunables.FameTierCap"] = Applies.NextSpawn,
     };
 
     public static Applies Of(FieldInfo field) =>
