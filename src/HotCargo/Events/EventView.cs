@@ -84,7 +84,7 @@ public static class EventView
         return o.Pay switch
         {
             PayKind.Money => $"{pay.Money:n0} credits",
-            PayKind.Tech => $"{pay.Tech} Stolen Tech",
+            PayKind.Tech => $"{pay.Tech} tech",
             PayKind.Crew => $"{pay.Crew} crew",
             PayKind.CrewWork => $"{pay.CrewWork} crew",
             PayKind.Resource => EventText.ResourceName(o.Resource, pay.Resource),

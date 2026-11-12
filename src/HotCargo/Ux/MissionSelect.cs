@@ -126,6 +126,8 @@ static class MissionSelect
         if (!float.IsInfinity(here)) return Strings.FormatText("MissionLog/DistanceFmt", here / 1000f);
         if (m.GetClosestObjectiveMapNode(out _) is not { } node) return null;
         int jumps = UxKit.Jumps(m.Game, node);
+        // 0 jumps: the mission is in this system but has no place yet (a bounty target not found yet). Vanilla shows "0.0 L.Y.".
+        if (jumps == 0) return null;
         return jumps < 0 ? UxKit.Text("JumpsNoRoute") : UxKit.Format(jumps == 1 ? "JumpsOneFmt" : "JumpsFmt", jumps);
     }
 
@@ -179,6 +181,10 @@ static class MissionSelect
             UxKit.Guard("mission select distance", () =>
             {
                 var m = __instance.Mission;
+                // The chain group header in the chain color. Set here, each frame: a patch on GetCategoryItem did not run (inlined),
+                // and the vanilla code resets the color when it regroups.
+                if (KindOf(m) == MissionKind.Chain && __instance.Category.Key == m.Metatype.Category && __instance.Category.TextColor != ChainColor)
+                    __instance.Category.TextColor = ChainColor;
                 var parts = new List<string>();
                 if (Distance(m) is { } d) parts.Add(d);
                 string risk = InfoOf(m).Right;
@@ -195,6 +201,16 @@ static class MissionSelect
                 if (label.Text != text) label.Text = text;
             });
             return false;
+        }
+    }
+
+    /// <summary>Chain stage names carry the colored "[Chain]" mark; the vanilla name label of the info panel showed it as raw XML.</summary>
+    [HarmonyPatch(typeof(MissionsPanel.MissionInfoPanel), nameof(MissionsPanel.MissionInfoPanel.Refresh))]
+    static class InfoNamePatch
+    {
+        static void Postfix(MissionsPanel.MissionInfoPanel __instance)
+        {
+            if (On) __instance._name.TextRenderer.XmlFormatting = true;
         }
     }
 
@@ -218,15 +234,6 @@ static class MissionSelect
         static void Postfix(Mission m, ref float sort)
         {
             if (On && KindOf(m) == MissionKind.Chain) sort = float.MinValue / 2f;
-        }
-    }
-
-    [HarmonyPatch(typeof(MissionsPanel), "GetCategoryItem", typeof(Mission))]
-    static class ChainCategoryColorPatch
-    {
-        static void Postfix(Mission m, MissionsPanel.CategoryItem __result)
-        {
-            if (On && KindOf(m) == MissionKind.Chain && __result.TextColor is null) __result.TextColor = ChainColor;
         }
     }
 
