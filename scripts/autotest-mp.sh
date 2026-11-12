@@ -14,18 +14,18 @@ source "$(dirname "$0")/autotest-lib.sh"
 RETRY="${AUTOTEST_RETRY:-1}"
 NAME="$(basename "$HOST_SCRIPT" .host.txt)"
 # Both slots at once, so parallel co-op tests cannot deadlock (see take_slots).
-T0=$SECONDS
+PHASE0=$SECONDS
 read -r HOST CLIENT <<<"$(take_slots 2)"
 trap 'release_slot "$HOST"; release_slot "$CLIENT"' EXIT
-T1=$SECONDS
+PHASE1=$SECONDS
 PORT=$((35870 + ${HOST#t}))
 echo "== host slot $HOST, client slot $CLIENT, port $PORT"
 
 { echo "telename $(basename "$HOST_SCRIPT" .txt)"; sed "s/{PORT}/$PORT/g" "$HOST_SCRIPT"; } | start_slot "$HOST"
-T2=$SECONDS
+PHASE2=$SECONDS
 # Small status calls every AUTOTEST_POLL seconds; the full logs are fetched once at the end.
 CLIENT_STARTED=no LINK_REFUSED=no
-while (( SECONDS - T2 < TIMEOUT )); do
+while (( SECONDS - PHASE2 < TIMEOUT )); do
   sleep "${AUTOTEST_POLL:-3}"
   HOST_STATUS="$(slot_status "$HOST" "AUTOTEST hosting")"
   if [[ "$HOST_STATUS" == *"$LINK_REFUSED_TEXT"* ]]; then LINK_REFUSED=yes; break; fi
@@ -42,7 +42,7 @@ while (( SECONDS - T2 < TIMEOUT )); do
   if [[ "$CLIENT_STATUS" == *"$LINK_REFUSED_TEXT"* ]]; then LINK_REFUSED=yes; break; fi
   if [[ "$HOST_STATUS" == *running=0* && "$CLIENT_STATUS" == *running=0* ]]; then break; fi
 done
-T3=$SECONDS
+PHASE3=$SECONDS
 # A failed PC call leaves an empty log, which never passes.
 HOST_OUT="$(slot_finish "$HOST" 2>&1 || true)"
 CLIENT_OUT=""; [[ "$CLIENT_STARTED" == yes ]] && CLIENT_OUT="$(slot_finish "$CLIENT" 2>&1 || true)"
@@ -51,7 +51,7 @@ HOST_LOG="${HOST_OUT%%<<<VANILLA LOG>>>*}" CLIENT_LOG="${CLIENT_OUT%%<<<VANILLA 
 RUN_LOG="$LOG_DIR/mp-$NAME.$(date +%Y%m%d-%H%M%S).$HOST-$CLIENT.log"
 { echo "=== host ($HOST)"; echo "$HOST_LOG"
   echo "=== client ($CLIENT)"; echo "$CLIENT_LOG"; } > "$RUN_LOG"
-TIMING="== timing mp-$NAME wait=$((T1 - T0)) deploy=$((T2 - T1)) script=$((T3 - T2)) teardown=$((SECONDS - T3)) total=$((SECONDS - T0))"
+TIMING="== timing mp-$NAME wait=$((PHASE1 - PHASE0)) deploy=$((PHASE2 - PHASE1)) script=$((PHASE3 - PHASE2)) teardown=$((SECONDS - PHASE3)) total=$((SECONDS - PHASE0))"
 echo "$TIMING" | tee -a "$RUN_LOG"
 echo "== $NAME: log $RUN_LOG"
 
