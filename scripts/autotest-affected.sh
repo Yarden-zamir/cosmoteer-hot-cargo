@@ -6,6 +6,10 @@
 #        HEAD_REF=<ref> uses the changes of that ref in place of HEAD (no uncommitted changes); integrate.sh uses it
 #        with LIST_ONLY=1 to tell which branch of a batch touches a failed test.
 # --detach: run the suite detached (see autotest-all.sh).
+# Runner: single-player tests run on this Mac (scripts/autotest-mac.sh), co-op tests and tests whose last line is
+# "# runner: pc" on the PC (scripts/autotest-all.sh), both at the same time.
+#   AUTOTEST_MAC=0 runs every test on the PC. integrate.sh sets it: the PC suite stays the merge gate.
+#   Without the game files on the Mac (scripts/pull-game.sh), every test runs on the PC.
 # Rule, derived from the folder names (no list to keep up to date):
 # - A changed file under src/HotCargo/<A>/<B>/... or mod/<a>/<b>/... touches the areas a, b (lowercase).
 # - An area runs the single-player tests named "<area>-*.txt" and the co-op tests whose name starts with "<area>".
@@ -16,8 +20,13 @@
 # The "core" smoke test always runs.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-DETACH=()
-if [[ "${1:-}" == "--detach" ]]; then DETACH=(--detach); shift; fi
+if [[ "${1:-}" == "--detach" ]]; then
+  shift
+  LOG="$(scripts/detach.sh "autotest-affected-$(basename "$PWD")" scripts/autotest-affected.sh "$@")"
+  echo "== suite runs detached. Log: $LOG"
+  echo "== wait for it: scripts/suite-wait.sh $LOG"
+  exit 0
+fi
 BASE="${1:-origin/main}"
 TIMEOUT="${2:-400}"
 
@@ -61,8 +70,40 @@ done <<<"$CHANGED"
 if [[ "$FULL" == yes ]]; then
   echo "== shared code changed: full suite"
   [[ "${LIST_ONLY:-}" == 1 ]] && exit 0
-  exec scripts/autotest-all.sh "${DETACH[@]}" "$TIMEOUT"
+else
+  echo "== affected: ${TESTS[*]}"
+  [[ "${LIST_ONLY:-}" == 1 ]] && exit 0
 fi
-echo "== affected: ${TESTS[*]}"
-[[ "${LIST_ONLY:-}" == 1 ]] && exit 0
-exec scripts/autotest-all.sh "${DETACH[@]}" "$TIMEOUT" "${TESTS[@]}"
+
+mac_ready() { command -v dotnet >/dev/null && [[ -n "$(find ../.game/Data -name '*.ship.png' -print -quit 2>/dev/null)" ]]; }
+if [[ "${AUTOTEST_MAC:-1}" == 0 ]] || ! mac_ready; then
+  [[ "${AUTOTEST_MAC:-1}" == 0 ]] || echo "== no game files on this Mac (scripts/pull-game.sh): every test runs on the PC"
+  if [[ "$FULL" == yes ]]; then exec scripts/autotest-all.sh "$TIMEOUT"; fi
+  exec scripts/autotest-all.sh "$TIMEOUT" "${TESTS[@]}"
+fi
+
+if [[ "$FULL" == yes ]]; then
+  TESTS=()
+  for f in tests/autotest/*.txt; do TESTS+=("$(basename "$f" .txt)"); done
+  for f in tests/autotest-mp/*.host.txt; do TESTS+=("mp:$(basename "$f" .host.txt)"); done
+fi
+MAC=() PC=()
+for t in "${TESTS[@]}"; do
+  if [[ "$t" != mp:* && "$(tail -n 1 "tests/autotest/$t.txt")" != "# runner: pc" ]]; then MAC+=("$t"); else PC+=("$t"); fi
+done
+echo "== on the Mac: ${MAC[*]:-none}"
+echo "== on the PC: ${PC[*]:-none}"
+PC_OUT="$(mktemp)" PC_PID="" rc=0
+if [[ ${#PC[@]} -gt 0 ]]; then scripts/autotest-all.sh "$TIMEOUT" "${PC[@]}" > "$PC_OUT" 2>&1 & PC_PID=$!; fi
+MAC_OUT="$(mktemp)"
+if [[ ${#MAC[@]} -gt 0 ]]; then scripts/autotest-mac.sh "$TIMEOUT" "${MAC[@]}" 2>&1 | tee "$MAC_OUT" || rc=1; fi
+if [[ -n "$PC_PID" ]]; then
+  echo "== waiting for the PC tests"
+  wait "$PC_PID" || rc=1
+  cat "$PC_OUT"
+fi
+# One line with every failed test, in the format of autotest-all.sh.
+FAILED="$(grep -h '^FAIL ' "$MAC_OUT" "$PC_OUT" | cut -d' ' -f2- | tr '\n' ' ' || true)"
+rm -f "$MAC_OUT" "$PC_OUT"
+if [[ $rc -ne 0 ]]; then echo "== failed: ${FAILED% } (Mac and PC)"; exit 1; fi
+echo "== all affected tests passed"
