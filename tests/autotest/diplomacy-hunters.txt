@@ -1,0 +1,121 @@
+# Hunter demands (spec 561 to 566): hand over N, the once-per-ship rule, bluff, deal with 0, 2 and 5 other hunters, the demand hail.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+aiset FleeEnabled false
+aiset CallEnabled false
+aiset RegroupEnabled false
+dip_set DemandHailChance 0
+dip_set HunterYieldChance 0
+dip_set HandOverVisiblePenalty 0
+dip_set HandOverPerLeverage 0
+expect dip_vaulttech == 8
+# The dialogue page of a hunter: the slider and the hand-over, bluff, deal, surrender and refuse buttons.
+spawnstage Warning
+wait 2
+expect hunters == 1
+dip_near hunter 250
+wait 1
+dip_page hunter
+expect dip_pageslider == 1
+expect dip_pagebuttons >= 5
+# More units, higher chance (no penalty for visible tech here).
+dip_expect handover hunter 1 == 0.15
+dip_expect handover hunter 7 > 0.8
+# A refused hand-over keeps the tech, and the hunter takes no second offer of any kind.
+dip_set HandOverChanceMin 0
+dip_set HandOverChanceMax 0
+dip handover hunter 3
+wait 1
+expect dip_vaulttech == 8
+expect dip_used >= 4
+expect hunters == 1
+dip_set HandOverChanceMin 1
+dip_set HandOverChanceMax 1
+dip handover hunter 3
+wait 1
+expect dip_vaulttech == 8
+dip_log refused
+# An accepted hand-over: tech goes, the wave leaves (jump-out after HunterLeaveSeconds).
+dip_set HunterLeaveSeconds 2
+spawnstage Warning
+wait 2
+dip_near fresh 250
+wait 1
+dip handover fresh 3
+wait 1
+expect dip_vaulttech == 5
+expect dip_leaving >= 1
+wait 8
+expect hunters == 0
+expect dip_leaving == 0
+# Bluff that works: tech goes, the wave leaves.
+dip_set BluffChanceBase 1
+dip_set BluffVisiblePenalty 0
+spawnstage Warning
+wait 2
+dip_near hunter 250
+wait 1
+dip bluff hunter 1
+wait 1
+expect dip_vaulttech == 4
+wait 8
+expect hunters == 0
+# Bluff that fails: tech goes, heat rises, the hunter stays.
+dip_set BluffChanceBase 0
+dip_set BluffPerShare 0
+spawnstage Warning
+wait 2
+dip_near hunter 250
+wait 1
+log beforebluff
+dip bluff hunter 1
+wait 1
+expect dip_vaulttech == 3
+expect hunters == 1
+expect heat >= 10
+# Deal: full chance alone, less with 2 others, none with 5 others (DealMaxOtherHunters 4).
+killhunter 0
+wait 2
+spawnstage Warning
+wait 2
+dip_near hunters 300
+wait 1
+expect hunters == 1
+dip_expect deal hunter 3 == 0.85
+dip_expect deal hunter 1 < 0.85
+maxhunters 20
+spawnstage Patrol
+wait 2
+dip_near hunters 300
+wait 1
+expect hunters == 3
+dip_expect deal hunter 3 == 0.51
+spawnstage Hunt
+wait 2
+dip_near hunters 300
+wait 1
+expect hunters == 6
+dip_expect deal hunter 3 == 0
+# A deal that works: pay, keep the tech, the wave leaves.
+# A chance above 1 clamps to 1, so the crowd factor of the 5 others does not matter.
+dip_set DealChanceAlone 5
+dip_set DealMaxOtherHunters 10
+dip_set DealPriceFactor 0.05
+dip_mark
+dip deal hunter 3
+wait 1
+expect dip_vaulttech == 3
+expect dip_moneyspent > 0
+wait 8
+expect hunters == 0
+# The demand hail: a hunter in comms range hails the players once.
+dip_set DemandHailChance 1
+dip_set DemandHailGapSeconds 0
+spawnstage Warning
+wait 2
+dip_near hunter 250
+wait 3
+expect dip_hailing >= 1
+quit
