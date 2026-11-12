@@ -55,8 +55,7 @@ run_test() {
   local rc=$?
   # Exit code 3: the PC refuses calls (this agent's turn is not active). Later tests would only hold slots for nothing.
   if [[ $rc -eq 3 ]]; then touch "$RUN_DIR/link-refused"; fi
-  # A co-op session prints one result line with the reason (join failed, steps failed: ..., desync, PC link).
-  if [[ $rc -ne 0 ]]; then echo "FAIL $t$(grep -m1 "^== result: FAIL" "$out" | sed "s/^== result: FAIL:/ --/")"; elif grep -q "AUTOTEST FLAKY" "$out"; then echo "FLAKY $t"; else echo "PASS $t"; fi
+  if [[ $rc -ne 0 ]]; then echo "FAIL $t"; elif grep -q "AUTOTEST FLAKY" "$out"; then echo "FLAKY $t"; else echo "PASS $t"; fi
 }
 
 # At most SLOTS tests wait for slots at the same time; take_slots hands out the slots.
@@ -102,5 +101,10 @@ if [[ -z "$FAILED" ]]; then
   fi
   exit 0
 fi
-for t in $FAILED; do echo "--- $t"; grep -A60 "first run failed\|retry failed\|MP AUTOTEST FAILED" "$RUN_DIR/$t.out" | head -40; done
+# A co-op session prints its step lines and one result line with the reason (join failed, steps failed, desync, PC link).
+for t in $FAILED; do
+  echo "--- $t"
+  if [[ "$t" == mp:* ]]; then grep -E "^FAIL |^== result|^   " "$RUN_DIR/$t.out" | head -40
+  else grep -A60 "first run failed\|retry failed\|MP AUTOTEST FAILED" "$RUN_DIR/$t.out" | head -40; fi
+done
 echo "== failed: $FAILED ($RUN_DIR)"; exit 1

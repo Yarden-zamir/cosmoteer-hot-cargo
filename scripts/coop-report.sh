@@ -52,6 +52,10 @@ if [[ -n "$FIRST" ]]; then
   grep -m1 "MPHASH tick=$FIRST " <<<"$CLIENT" | sed 's/.*MPHASH/   client:/'
 fi
 
+# A member that the hash cannot serialize is a gap that hides desyncs in it.
+GAPS="$(sed -n 's/.*MPHASH cannot serialize \([^ ]*\) .*/\1/p' <<<"$HOST$CLIENT" | sort -u | tr '\n' ' ')"
+if [[ -n "$GAPS" ]]; then REASONS+=("state hash gap"); echo "   the state hash cannot serialize: $GAPS"; fi
+
 # Other errors (for example a failing Harmony patch). Step failures, client "on" failures and desyncs are counted above.
 ERRORS="$( { grep -h ' ERROR ' <<<"$HOST"; grep -h ' ERROR ' <<<"$CLIENT"; } | grep -vE 'AUTOTEST STEP FAIL|AUTOTEST ON FAIL|MP DESYNC' || true)"
 if [[ -n "$ERRORS" ]]; then REASONS+=("errors"); head -5 <<<"$ERRORS" | sed 's/^/   /'; fi

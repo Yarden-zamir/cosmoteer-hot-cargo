@@ -155,7 +155,8 @@ public static class Autotest
 
     static void FailStep(string step, string what, Exception ex)
     {
-        Log.Error($"AUTOTEST STEP FAIL {step}: {what}", ex);
+        // The reason in the same line, so scripts/coop-report.sh can print it.
+        Log.Error($"AUTOTEST STEP FAIL {step}: {what}: {ex.Message}", ex);
         if (!_failedSteps.Contains(step)) _failedSteps.Add(step);
     }
 

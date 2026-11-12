@@ -407,13 +407,15 @@ public static class MpAutotest
 
     static readonly HashSet<string> _hashErrorsLogged = [];
 
-    /// <summary>The first 4 bytes of the SHA-256 of the value in the game's binary serializer, as hex. "error" when it cannot serialize.</summary>
+    /// <summary>The first 4 bytes of the SHA-256 of the value as the save writes it (object bits), as hex. "error" when it cannot serialize.</summary>
     static string Hash(string name, object? value, Type type)
     {
         try
         {
+            var node = new Halfling.ObjectBits.OBNode();
+            App.ObjectBitsSerializer.Write(node, value, type);
             using var stream = new MemoryStream();
-            using (var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, leaveOpen: true)) App.BinarySerializer.Write(writer, value, type);
+            node.WriteTo(stream);
             return Convert.ToHexString(SHA256.HashData(stream.ToArray()), 0, 4);
         }
         catch (Exception ex)

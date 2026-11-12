@@ -9,7 +9,7 @@ client: codex_reset
 client: tutorials on
 codex_reset
 tutorials on
-tunablesfile Heat { HeatPerGameMinute = 30  HeatCarryOverFraction = 0.5 }  Events { Enabled = false }
+tunablesfile Heat { HeatPerGameMinute = 30; HeatCarryOverFraction = 0.5 }  Events { Enabled = false }
 mphost {PORT}
 mpstart 2
 mp godmode on
