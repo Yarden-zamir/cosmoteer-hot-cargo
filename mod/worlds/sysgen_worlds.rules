@@ -76,8 +76,9 @@ MiningBelt
 					SpawnsPerSlice = 1
 					// Wide slices, so a station or a gate near the belt cannot block a whole slice. A slice without a free spot ends the passes.
 					SpawnSlicePadding = 15%
-					// The ring (radius 800) keeps clear of station and gate edges, so a pass fight does not start at a station.
-					MinDistanceFromTags = [[station, 1000], [ftl_gate, 1000]]
+					// The ring (radius 800) keeps clear of stations and gates, so a pass fight does not start at a station. Stations that
+					// generate into stasis count as points here (no radius), so the gap holds the ring and a station's size.
+					MinDistanceFromTags = [[station, 1600], [ftl_gate, 1400]]
 					SuppressLocationAssertions = true
 				}
 
@@ -90,7 +91,8 @@ MiningBelt
 					Tags = [asteroid, hc_belt_rock]
 					RootLocation = Grandparent
 					AddDistance = ParentToGrandparent
-					MinDistanceFromTags = [[station, 0], [asteroid, 0], [bounty, 0], [ftl_gate, 600], [hc_pass, &~/PassRadius]]
+					// Stations in stasis count as points, so 700 keeps rocks out of a station's hull (military stations reach into the belt).
+					MinDistanceFromTags = [[station, 700], [asteroid, 0], [bounty, 0], [ftl_gate, 600], [hc_pass, &~/PassRadius]]
 					SuppressLocationAssertions = true
 					DoodadTypes = &~/BeltRockTypes
 				}

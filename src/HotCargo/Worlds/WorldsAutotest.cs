@@ -276,8 +276,8 @@ static class WorldsAutotest
             var worst = gaps.MinBy(g => g.Gap);
             Autotest.Check(worst.Gap >= min, $"{what}: closest {worst.Gap:0} >= {min} ({gaps.Count} objects; {worst.At} to [{TagsAt(worst.Near)}] at {worst.Near})");
         }
-        CheckMin("pass ring edge to station or gate center", fixedPoints, Doodads(sim, Pass).Select(c => (c.Center, c.Radius)), 300f);
-        CheckMin("belt rock to station or gate center", fixedPoints, Tagged(sim, BeltRock).Select(p => (p, 0f)), 300f);
+        CheckMin("pass ring edge to station or gate center", fixedPoints, Doodads(sim, Pass).Select(c => (c.Center, c.Radius)), 600f);
+        CheckMin("belt rock to station or gate center", fixedPoints, Tagged(sim, BeltRock).Select(p => (p, 0f)), 600f);
         CheckMin("hub planet to gate center", At(Gate), At(HubPlanet).Select(p => (p, 0f)), 2000f);
         CheckMin("lair to station or gate center", fixedPoints, lairs.Select(p => (p, 0f)), 3000f);
     }
