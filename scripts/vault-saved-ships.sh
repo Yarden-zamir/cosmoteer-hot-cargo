@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build Tech Vaults into ship designs with the game's own code (autotest command vaultdesigns, spec 1016-1018).
 # Usage:
-#   vault-saved-ships.sh               the player's saved ships (<save folder>\Ships), changed in place after a full backup.
+#   vault-saved-ships.sh               the player's saved ships (<save folder>\Saved Ships, Paths.SavedShipsFolder), changed in place after a full backup.
 #   vault-saved-ships.sh --starters D  the vanilla starter ships; the new designs go to the local folder D (mod/tech/starters).
 # Runs in the player's game slot (main, the only slot with graphics), only when that game is closed, under the main-slot lock.
 # Then it installs origin/main back into the player's game (scripts/install-player.sh).
@@ -26,8 +26,8 @@ if [[ -n "$(pc "$PS_PATHS"'Get-SlotProcess' </dev/null)" ]]; then echo "the play
 if [[ "$MODE" == saved ]]; then
   PATHS="$(pc "$PS_PATHS"'
     $ErrorActionPreference = "Stop"
-    $ships = Join-Path $mainRoot "Ships"
-    if (-not (Test-Path $ships)) { throw "no Ships folder in the save folder" }
+    $ships = Join-Path $mainRoot "Saved Ships"
+    if (-not (Test-Path $ships)) { throw "no Saved Ships folder in the save folder" }
     $backup = "$ships.backup-" + (Get-Date -Format "yyyyMMdd-HHmmss")
     Copy-Item $ships $backup -Recurse
     $a = @(Get-ChildItem $ships -Recurse -File).Count; $b = @(Get-ChildItem $backup -Recurse -File).Count
