@@ -82,7 +82,15 @@ public static class TunablesFile
             Require(min.Length == 0 || stages.Contains(min), $"Tactics.{tactic}MinStage '{min}' is not a Heat.Stages name");
         }
         Require(t.Tech.VaultDamagePerUnitLost > 0, "Tech.VaultDamagePerUnitLost must be above 0");
+        Require(t.Tech.TechShipFraction > 0, "Tech.TechShipFraction must be above 0");
+        Require(t.Tech.TechShipFractionPerGameHour >= 0 && t.Tech.TechShipFractionPer100Notoriety >= 0, "Tech value growth must not be negative: the value only goes up (spec 19)");
         Require(t.Tech.BuyBackFactor >= 1, "Tech.BuyBackFactor must be 1 or more, or players can sell and buy back for profit");
+        var c = t.Contracts;
+        Require(c.FeeMin >= 0 && c.FeeMax >= c.FeeMin, "Contracts.FeeMin must be 0 or more and at most FeeMax");
+        Require(c.InformantChanceMin >= 0 && c.InformantChanceMax >= c.InformantChanceMin && c.InformantChanceMax <= 1, "Contracts.InformantChanceMin/Max must be 0 to 1, min at most max");
+        Require(c.InformantDelayMin >= 0 && c.InformantDelayMax >= c.InformantDelayMin, "Contracts.InformantDelayMin must be 0 or more and at most InformantDelayMax");
+        Require(c.MoneyRoundTo >= 1, "Contracts.MoneyRoundTo must be 1 or more");
+        Require(c.Metatypes.All(m => m.Metatype.Length > 0), "Contracts.Metatypes entries need a Metatype");
         Require(t.Journey.RunSectorCount >= 1, "Journey.RunSectorCount must be 1 or more");
         Missions.Mechanics.MechanicsTunables.Validate(t.Mechanics);
     }

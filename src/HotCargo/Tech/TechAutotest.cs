@@ -20,7 +20,7 @@ static class TechAutotest
         Autotest.Commands["tech"] = Tech;
         Autotest.Commands["vault"] = Vault;
         Autotest.Commands["tostation"] = _ => ToStation();
-        Autotest.Fields["techvalue"] = () => { var r = Active(); return r.T.Tech.Value(r.State.SectorIndex, r.State.GameSeconds); };
+        Autotest.Fields["techvalue"] = () => { var r = Active(); return r.T.Tech.Value(r.State); };
         Autotest.Fields["sellprice"] = () => Active().Game.Sim.Mode.GetResourceSellRefund(Vaults.TechId, null);
         Autotest.Fields["buyprice"] = () => Active().Game.Sim.Mode.GetResourceBuyCost(Vaults.TechId, null);
         Autotest.Fields["money"] = Money;
@@ -83,10 +83,17 @@ static class TechAutotest
     /// <summary>The first ship of the player that runs the command (see Autotest.ActingShip). In co-op each player commands only own ships.</summary>
     internal static Ship PlayerShip() => Autotest.ActingShip(Active().Game.Sim) ?? throw new InvalidOperationException("no player ship");
 
-    /// <summary>The trading station nearest to the first human ship. Throws when the system has none.</summary>
+    /// <summary>The station that tostation picked.</summary>
+    static Ship? _station;
+
+    /// <summary>
+    /// The station that tostation picked, else the trading ship nearest to the first human ship. Throws when the system has none.
+    /// The pick stays fixed, because a trade ship that docks next to the player can come closer than the station center.
+    /// </summary>
     internal static Ship NearestStation()
     {
         var ship = PlayerShip();
+        if (_station is { IsDisposed: false } picked && picked.Sim == ship.Sim) return picked;
         return Active().Game.Sim.Ships.AllShips
             .Where(s => s != ship && s.AI?.WillTradeWith(ship) == true)
             .OrderBy(s => s.WorldCenter.DistanceSquaredTo(ship.WorldCenter))
@@ -97,7 +104,8 @@ static class TechAutotest
     static void ToStation()
     {
         var ship = PlayerShip();
-        var station = NearestStation();
+        _station = null;
+        var station = _station = NearestStation();
         // In co-op each player's ship gets its own spot on the same side, so two ships never land on each other.
         float side = Autotest.ActingPlayerIndex * (2f * ship.WorldBoundingRadius + 50f);
         Autotest.Teleport(ship, station.WorldCenter + new Halfling.Geometry.Vector2(station.WorldBoundingRadius + ship.WorldBoundingRadius + 2f, side));

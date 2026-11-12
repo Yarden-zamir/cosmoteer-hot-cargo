@@ -37,6 +37,12 @@ public sealed class RunState
     [Serialize(Optional = true)] public int DeliveredUnits;
     /// <summary>Run score (spec 7). Set at the win and updated by later Buyer deliveries.</summary>
     [Serialize(Optional = true)] public long Score;
+    /// <summary>Spec 19: sum of every heat gain in the run. It never goes down.</summary>
+    [Serialize(Optional = true)] public float Notoriety;
+    /// <summary>Spec 19: highest low tier of a system that the players were in. It never goes down.</summary>
+    [Serialize(Optional = true)] public int PeakTier = 1;
+    /// <summary>Contract economy state: resolved terms of offers and open contracts (spec 100 to 108).</summary>
+    [Serialize(Optional = true)] public Contracts.ContractsState Contracts = new();
     /// <summary>Events area state: seen events, flags and the pending event page.</summary>
     [Serialize(Optional = true)] public Events.EventsState Events = new();
     /// <summary>Chains area state: the chain of each station, its stage, flags and story.</summary>

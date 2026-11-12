@@ -3,7 +3,7 @@ newgame run 3
 wait 8
 tech dump
 expect vaults == 1
-expect tech == 6
+expect tech == 8
 expect flexsinks == 0
 # Spec 65: a destroyed vault loses all units. Spec 12: the loss waits LossGraceSeconds (3 s).
 vault destroy

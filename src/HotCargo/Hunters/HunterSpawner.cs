@@ -97,8 +97,9 @@ public static class HunterSpawner
         SpawnWave(run, sim, groups[0], tier, stageName, firstOfStage: true);
     }
 
-    /// <summary>Spawns one group near the human fleet. Each ship spawns physically at once, so the AI owns it from the first tick.</summary>
-    static void SpawnWave(Run run, SimRoot sim, int wanted, int tier, string stageName, bool firstOfStage)
+    /// <summary>Spawns one group near the human fleet. Each ship spawns physically at once, so the AI owns it from the first tick.
+    /// Also used by the contract informant sell-out (Contracts/ContractBook.SellOut).</summary>
+    internal static void SpawnWave(Run run, SimRoot sim, int wanted, int tier, string stageName, bool firstOfStage)
     {
         string reason = $"stage {stageName}";
         if (sim != run.Game.Sim) return;

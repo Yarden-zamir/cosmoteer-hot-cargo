@@ -13,7 +13,8 @@ spawnstage Strike
 wait 1
 expect hunterwaves == 1
 expect hunterspending == 1
-wait 14
+# The hunter ship is random and the system layout changes with the sector rules, so wait for the call, not a fixed time.
+waitfor ai_call_complete >= 1 40
 hunters called
 expect ai_call_start >= 1
 expect ai_call_complete >= 1

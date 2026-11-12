@@ -5,18 +5,18 @@ wait 8
 tostation
 wait 3
 expect pricegap == 0
-tech sell 5
-wait 20
-log sold5
+tech sell 7
+wait 25
+log sold7
 expect tech == 1
-expect stationtech == 5
-expect moneygain >= 50000
+expect stationtech == 7
+expect moneygain >= 105000
 expect lost == 0
 tech sell 1
 wait 15
-log sold6
+log sold8
 expect tech == 0
-expect stationtech == 6
-expect moneygain >= 10000
+expect stationtech == 8
+expect moneygain >= 15000
 expect lost == 1
 quit

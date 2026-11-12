@@ -75,6 +75,10 @@ static class CareerPatches
         iHash.AddHash((int)(s.SecondsWithoutTech * 10));
         iHash.AddHash(s.Events.LastSerial);
         iHash.AddHash(s.Events.Pending?.Serial ?? 0);
+        iHash.AddHash((int)(s.Notoriety * 100));
+        iHash.AddHash(s.PeakTier);
+        iHash.AddHash(s.Contracts.Terms.Count);
+        iHash.AddHash(s.Contracts.Informants.Count);
         // string.GetHashCode is random per process, so it would differ between clients. This hash is stable.
         int tunables = 0;
         foreach (char c in run.State.TunablesHash) tunables = tunables * 31 + c;

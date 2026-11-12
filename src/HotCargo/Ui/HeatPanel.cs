@@ -29,6 +29,7 @@ sealed class HeatPanel : LayoutBox
     readonly Label _sector;
     readonly Label _status;
     readonly Label _tech;
+    readonly Label _contracts;
     readonly Label _alert;
     readonly Label _debug;
 
@@ -71,6 +72,8 @@ sealed class HeatPanel : LayoutBox
         AddChild(_status);
         _tech = NewLabel(14, "");
         AddChild(_tech);
+        _contracts = NewLabel(14, "");
+        AddChild(_contracts);
         _alert = NewLabel(18, "");
         AddChild(_alert);
         _debug = NewLabel(12, "");
@@ -111,10 +114,13 @@ sealed class HeatPanel : LayoutBox
             RunResult.Won => $"<good>{UxKit.Format("StatusWonFmt", s.Score.ToString("N0"))}</good>",
             RunResult.Lost => $"<bad>{UxKit.Text("StatusLost")}</bad>",
             _ when !s.HeatEnabled => $"<gray>{UxKit.Text("StatusHeatOff")}</gray>",
-            _ => StatusLine(s, t.Heat, mult),
+            _ => StatusLine(s, t.Heat, mult * t.Heat.HeatPerGameMinute + Contracts.ContractBook.TrailPerMinute(run, Contracts.ContractBook.OpenWeight(run))),
         };
-        long value = t.Tech.Value(s.SectorIndex, s.GameSeconds);
+        long value = t.Tech.Value(s);
         _tech.Text = UxKit.Format("TechFmt", s.FleetTech, value.ToString("N0"));
+        string? contracts = Contracts.ContractsUi.HeatPanelLine(run);
+        _contracts.SelfActive = contracts is not null;
+        _contracts.Text = contracts ?? "";
         _alert.SelfActive = now < _alertUntil;
         // Spec 60: in multiplayer the tunables hash stays visible, so players can compare it.
         _debug.SelfActive = t.Debug.DebugKeys || run.IsMultiplayer;
@@ -124,7 +130,8 @@ sealed class HeatPanel : LayoutBox
                 : $"<gray>heat {s.Heat:0.0}  x{mult:0.00}  tunables {s.TunablesHash}  F9/F10</gray>";
     }
 
-    static string StatusLine(RunState s, HeatTunables heat, float mult)
+    /// <summary>ratePerMinute: time heat plus the contract trail (spec 24, 101).</summary>
+    static string StatusLine(RunState s, HeatTunables heat, float ratePerMinute)
     {
         string stage = s.StagesStarted == 0
             ? $"<gray>{UxKit.Text("Calm")}</gray>"
@@ -132,7 +139,7 @@ sealed class HeatPanel : LayoutBox
         string next = s.StagesStarted < heat.Stages.Length
             ? UxKit.Format("NextFmt", heat.Stages[s.StagesStarted].Name, heat.Stages[s.StagesStarted].Heat)
             : UxKit.Text("NextMax");
-        return UxKit.Format("StatusFmt", stage, next, mult * heat.HeatPerGameMinute);
+        return UxKit.Format("StatusFmt", stage, next, ratePerMinute);
     }
 
     static string StageTag(int stage, int count) => stage >= count - 2 ? "<bad>" : "<limited_color>";

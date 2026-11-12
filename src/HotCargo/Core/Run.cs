@@ -91,6 +91,7 @@ public sealed class Run
         Current = run;
         // Validates the vanilla tier table now, so that a data problem shows at game start and not mid-run.
         GameData.StandardMissionFame(1);
+        GameData.TierValueMaximum(1);
         run.State.VisitedNodes.Add(mode.Game.CurrentMapNode.UniqueID);
         mode.Game.EventHub.Tick += run.OnTick;
         mode.Game.EventHub.PlayerFameChanged += run.OnFameChanged;
@@ -117,6 +118,7 @@ public sealed class Run
         double dt = sim.FixedUpdater.Interval.Seconds;
         State.GameSeconds += dt;
         State.FleetTech = Hooks.CountFleetTech(sim);
+        State.PeakTier = Math.Max(State.PeakTier, CurrentTier);
         Hooks.RaiseTick(this, sim, dt);
         if (State.Result != RunResult.Running || !State.HeatEnabled) return;
         float mult = HeatModel.Multiplier(T.Heat.HeatMultiplierByUnits, State.FleetTech);
@@ -143,7 +145,10 @@ public sealed class Run
     /// <summary>Adds heat and starts any stages it crosses. Call only from simulation logic (or single-player debug keys).</summary>
     public void AddHeat(float amount, SimRoot sim)
     {
+        float before = State.Heat;
         State.Heat = HeatModel.Clamp(State.Heat + amount);
+        // Spec 19: notoriety sums every real heat gain. It never goes down, so the tech value only ratchets up.
+        if (State.Heat > before) State.Notoriety += State.Heat - before;
         int reached = HeatModel.StagesReached(State.Heat, T.Heat.Thresholds());
         while (State.StagesStarted < reached)
         {

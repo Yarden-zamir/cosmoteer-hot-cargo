@@ -64,6 +64,17 @@ public static class GameData
         return _standardMissionFame[clamped];
     }
 
+    static int[]? _tierValueMaximums;
+
+    /// <summary>
+    /// Highest ship value of a tier, from TIER_TABLES/TierValueMaximums (index 0 = tier 1). Same limit as StandardMissionFame.
+    /// </summary>
+    public static int TierValueMaximum(int tier)
+    {
+        _tierValueMaximums ??= LoadTable<int>("TierValueMaximums");
+        return _tierValueMaximums[Math.Clamp(tier, 1, _tierValueMaximums.Length) - 1];
+    }
+
     static T[] LoadTable<T>(string name)
     {
         string path = (string)(Paths.DataFolder / "modes/career/tier_tables.rules");

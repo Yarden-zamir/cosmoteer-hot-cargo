@@ -60,7 +60,7 @@ public static class RunEndUi
     {
         var s = run.State;
         var time = TimeSpan.FromSeconds(s.GameSeconds);
-        long value = run.T.Tech.Value(s.SectorIndex, s.GameSeconds);
+        long value = run.T.Tech.Value(s);
         return UxKit.Format("RunStatsFmt", s.SectorIndex, run.T.Journey.RunSectorCount, $"{(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}",
             s.FleetTech, value.ToString("N0"));
     }

@@ -1,0 +1,42 @@
+# Economy: spec 100 to 106. Terms on offers, fee and bonus, flat heat, a refused accept without money, rival dismissal.
+newgame run
+wait 8
+hc_generate all
+wait 3
+contract_stats start
+expect contract_offers >= 4
+contract_money 500000
+godmode
+# Fee and flat heat: the discreet bounty has rules terms (fee 0.5 standard pay, flat heat 4).
+contract_pick paid HotCargoShadyBounty
+expect contract_fee >= 500
+expect contract_has_bonus >= 1000
+expect contract_panel_lines >= 4
+heat_mark
+contract_accept
+expect contract_accepted == 1
+expect contract_fee_diff == 0
+expect heat_change >= 4
+expect heat_change < 5
+expect contract_open >= 1
+# Spec 102: the player who paid the fee collects the whole bonus.
+expect contract_bonus_payer == 0
+contract_give_bonus
+expect contract_money_change >= 1000
+# A fee above the player's money: the accept input refuses, and no money moves.
+contract_pick paid
+contract_terms fee 900000000
+contract_accept
+expect contract_accepted == 0
+expect contract_money_change == 0
+# Rivals: accepting one offer dismisses the other.
+contract_pick any
+contract_make_rival
+expect contract_rival_offered == 1
+contract_terms informant 0
+contract_terms fee 0
+contract_accept
+expect contract_accepted == 1
+expect contract_rival_offered == 0
+contract_stats end
+quit

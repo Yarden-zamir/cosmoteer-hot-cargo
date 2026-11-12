@@ -22,8 +22,8 @@ wait 15
 buyer goto
 wait 3
 expect buyertrades == 1
-expect buyerprice >= 1.49
-expect buyerprice <= 1.51
+expect buyerprice >= 3.99
+expect buyerprice <= 4.01
 save journey
 wait 3
 load journey
