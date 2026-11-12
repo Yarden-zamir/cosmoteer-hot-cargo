@@ -10,13 +10,14 @@ description: Build Hot Cargo, run unit tests, headless game tests and co-op test
 2. Unit tests (pure math only, no game types): `cd tests/HotCargo.Tests && dotnet run`. Pure math goes in a file named `*Model.cs` with no game types; the test project picks up every such file.
 
 ## Headless game tests
-- One test: `scripts/autotest.sh tests/autotest/<name>.txt [timeoutSeconds]`. It takes a free headless slot on the PC (t1..t12, own save, settings and cache folders, no window), deploys your worktree's build and runs the script. Exit 0 means pass.
+- One test: `scripts/autotest.sh tests/autotest/<name>.txt [timeoutSeconds]`. It takes a free headless slot on the PC (t1..t6, own save, settings and cache folders, no window), deploys your worktree's build and runs the script. Exit 0 means pass.
   - The PC caches each build by a hash of its content. A build that the PC already has is not uploaded again.
   - It prints a `== timing` line: seconds for wait (slot), deploy, start (to the first script line), script and teardown.
+  - Exit code 3 ("AUTOTEST LINK REFUSED"): the PC refused the calls, because your turn was not active. Rerun it with the turn open.
   - It prints only the lines that explain a failure. The full log stays in `../.state/logs/<worktree>/` (it survives restarts), and its path is in the output.
   - A failed run is retried once. "AUTOTEST FLAKY" means the retry passed. Fix a flaky test with `waitfor <condition>` in place of a fixed `wait`. `../.state/flaky.log` lists flaky runs.
 - Several tests: `scripts/autotest-all.sh 400 <name> <name> mp:<coop name>`. They run in parallel on the free slots, also from one worktree. The suite builds once, and every test runs that build. At the end it prints the seconds per phase (sum, median, max).
-- Long suites: add `--detach` as the first argument (`autotest-all.sh`, `autotest-affected.sh`, `integrate.sh`). The suite then runs in its own session, and a killed shell does not stop it. It prints a log path in `../.state/suites/`. Wait with `scripts/suite-wait.sh <log>` (Bash `run_in_background`, then `t3_background_wait`). Its exit code is the suite's. If the wait is killed, start it again.
+- Long suites: add `--detach` as the first argument (`autotest-all.sh`, `autotest-affected.sh`, `integrate.sh`). The suite then runs in its own session, and a killed shell does not stop it. It prints a log path in `../.state/suites/`. PC calls work only while your turn is active, so wait in the foreground: run `scripts/suite-wait.sh <log> 540` and repeat it while it exits with 124 (still running). Otherwise its exit code is the suite's. A suite whose PC calls are refused stops starting tests and fails.
 - The tests that your change touches: `scripts/autotest-affected.sh` (base `origin/main`). A test belongs to an area when its name starts with the area folder name in lowercase (`tech-sell` for `src/HotCargo/Tech`). Name new tests that way. A change in Core, shared UI or scripts runs the full suite. `LIST_ONLY=1` prints the list.
 - All tests: `scripts/autotest-all.sh 400`. A full clean pass on a clean tree writes `../.state/autotest_pass_<sha>`, which `scripts/release.sh` needs.
 - Find the commit that broke a test: `scripts/bisect-autotest.sh <name> <good commit> [bad commit]`.
@@ -31,7 +32,7 @@ description: Build Hot Cargo, run unit tests, headless game tests and co-op test
 
 ## Infrastructure failures
 These are not game failures. Rerun the test:
-- "relay was lost", "no signed connection to kitshn", "no longer owns an active thread run", "kitshn refused the run", "tar: Write error", "the PC did not confirm the deploy".
+- "relay was lost", "no signed connection to kitshn", "kitshn refused the run", "tar: Write error", "the PC did not confirm the deploy", "not enough free memory to start slot" (the PC is full; it waited 120 s).
 - An empty test log after the deploy line.
 A game failure shows `CHECK FAILED`, `ERROR` or `MP DESYNC` in the log.
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run an autotest script in a headless test instance of the game on the PC and print the result.
 # Usage: autotest.sh tests/autotest/<name>.txt [timeout-seconds]
-# - Takes a free test slot (t1..tN, N = HOT_CARGO_SLOTS, default 8). Parallel runs work, also from one worktree.
+# - Takes a free test slot (t1..tN, N = HOT_CARGO_SLOTS, default 6). Parallel runs work, also from one worktree.
 # - Keeps the full log in $LOG_DIR (see autotest-lib.sh) and prints only the lines that explain a failure.
 # - Retries a failed run once (AUTOTEST_RETRY, default 1). A pass on the retry prints "AUTOTEST FLAKY" and exits 0,
 #   so timing problems and PC link errors do not block work. Limit: a real failure costs two runs.

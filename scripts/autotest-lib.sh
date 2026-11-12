@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Shared parts of autotest.sh and autotest-mp.sh. Source it; it does not run anything.
-# Slots t1..tN (N = HOT_CARGO_SLOTS, default 12) are headless test instances on the PC (see pc.sh).
+# Slots t1..tN (N = HOT_CARGO_SLOTS, default 6) are headless test instances on the PC (see pc.sh).
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$LIB_DIR/.." && pwd)"
-SLOTS="${HOT_CARGO_SLOTS:-12}"
+SLOTS="${HOT_CARGO_SLOTS:-6}"
 # Full logs of every run stay here, one folder per worktree, so a later run in the same slot cannot overwrite them.
 # Logs, flaky list and pass markers live in <container>/.state (next to .bare and .game), not in /tmp, so they survive a restart.
 STATE_DIR="${HOT_CARGO_STATE:-$(cd "$REPO_ROOT/.." && pwd)/.state}"
