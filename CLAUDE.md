@@ -58,4 +58,9 @@ Procedures are skills in `.claude/skills/`:
 ## Agents
 
 - An agent works only in its own worktree and branch. At the end it pushes its branch and opens a draft PR. It never pushes to `main` and never merges.
+- Save progress so a crash or restart loses nothing:
+  - In the first minutes, commit a short `PLAN.md` (design decisions, steps) to your branch, push it, and open the draft PR with a checklist of the steps. Delete `PLAN.md` before the final commit.
+  - Commit and push after each step that builds. Tick the step in the PR checklist.
+  - A restarted agent reads the branch, `PLAN.md` and the PR checklist first, and continues from there.
+- Never end a turn while your own tests or builds run in the background. Wait for their completion notice first, then continue. Ending the turn early leaves the work hanging.
 - Start only the last message with `FINAL REPORT`: what works with test results, what does not, Core changes, spec changes, commits, merge notes.

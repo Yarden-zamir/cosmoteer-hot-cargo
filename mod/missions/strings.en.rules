@@ -1,18 +1,13 @@
 HotCargoMissions
 {
 	Escort = "Convoy Duty"
-	EscortDesc = "The freighter {escort_ship} must reach a jump point in the {mission_location} system, and word is that raiders know the route. "\
-	             "The convoy master needs an escort and does not ask about cargo. Keep the freighter in one piece, and the {faction_name} pays {money} when it reaches the jump point. "\
-	             "A registered convoy also hides your own trail from corporate scanners for a while. The freighter waits for its escort, so stay close."
+	EscortDesc = "The freighter {escort_ship} must reach a jump point in the {mission_location} system, and raiders know the route. Keep it in one piece and the {faction_name} pays {money}. A registered convoy also hides your trail from corporate scanners for a while. The freighter waits for its escort: stay close."
 	EscortCoverFmt = "Heat {0} (convoy cover)"
 	EscortCoverTip = "Flying in a registered convoy hides your trail. Heat changes when you collect the reward."
 	FleetAssault = "Joint Strike"
-	FleetAssaultDesc = "The {faction_name} navy has found a raider stronghold in the {mission_location} system and has sent a strike group to take it apart. "\
-	                   "The navy wants another gun on the line and has better things to do than check your cargo. Meet the strike group near the stronghold and destroy it together. "\
-	                   "The navy pays {money} when the station is gone."
+	FleetAssaultDesc = "The {faction_name} navy found a raider stronghold in the {mission_location} system. It wants another gun on the line and will not check your cargo. Meet the strike group near the stronghold and destroy it together. The navy pays {money}."
 	ShadyBounty = "Discreet Bounty"
-	ShadyBountyDesc = "A client who does not give a name wants the <b>{target_ship}</b> class vessel in the {mission_location} system gone. "\
-	                  "No faction seal, no paperwork, no questions. The client pays {money}, well above the going rate, and says that you will want to come alone."
+	ShadyBountyDesc = "A client with no name wants the <b>{target_ship}</b> class vessel in the {mission_location} system gone. No faction seal, no questions. The pay is {money}, well above the going rate. The client says to come alone."
 }
 
 HotCargoObjectives

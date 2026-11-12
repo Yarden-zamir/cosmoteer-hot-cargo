@@ -184,10 +184,11 @@ static class TitleShip
     };
 
     /// <summary>
-    /// Hot Cargo's ember orange in place of the logo's blue accent paint. The top-left corner of each letter gets it,
-    /// like the blue corners of the logo: a corner wedge ('0') all of it, a square corner ('B') its top-left half.
+    /// Heat orange in place of the logo's blue accent paint: the game's limited text color, which the heat panel uses for the
+    /// stage name. The top-left corner of each letter gets it, like the blue corners of the logo: a corner wedge ('0') all of it,
+    /// a square corner ('B') its top-left half.
     /// </summary>
-    static readonly Color Accent = new(1f, 0.5f, 0.12f);
+    static Color Accent => WidgetRules.Instance.LimitedTextColor;
 
     /// <summary>Parts that keep their own look: the lattice and the parts that stick out of the letters.</summary>
     const string Unpainted = "s<>";

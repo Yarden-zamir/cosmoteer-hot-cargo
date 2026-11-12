@@ -1,9 +1,9 @@
 HotCargoJourney
 {
 	MapSize = "Hot Cargo run"
-	MapSizeTip = "A small galaxy for one Hot Cargo run. Danger rises fast with each jump. The Buyer waits at the end of the run."
+	MapSizeTip = "A small galaxy for one Hot Cargo run. Danger rises fast with each jump. The Buyer waits at the end."
 	BuyerMission = "Deliver the tech to the Buyer"
 	BuyerHere = "The Buyer is in this system"
 	WinReason = "The Buyer has the tech. The corporation lost."
-	BuyerMissionDesc = "The Buyer is in this system. Fly to the station and sell at least one unit of stolen tech to win the run."
+	BuyerMissionDesc = "The Buyer is in this system. Sell it at least one unit of Stolen Tech to win the run."
 }

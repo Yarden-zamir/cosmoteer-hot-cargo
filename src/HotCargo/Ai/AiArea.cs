@@ -99,6 +99,16 @@ public static class AiArea
                 _ => throw new InvalidOperationException("disrupt needs: disruptor|emp"),
             });
         };
+        // hunternear <index> <distance>: moves hunter <index> to this distance from the first human ship, so a screenshot shows it. Test only.
+        Autotest.Commands["hunternear"] = arg =>
+        {
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length != 2) throw new InvalidOperationException("hunternear needs: index distance");
+            var ship = HunterAt(parts[0]);
+            var player = Tech.TechAutotest.PlayerShip();
+            float d = float.Parse(parts[1], CultureInfo.InvariantCulture);
+            Autotest.Teleport(ship, Autotest.ClearSpotNear(Sim(), player.WorldCenter, d, ship.WorldBoundingRadius));
+        };
         // storm <index>: puts an ion storm around hunter <index>. Test only.
         Autotest.Commands["storm"] = arg =>
         {

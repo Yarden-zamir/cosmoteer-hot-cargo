@@ -3,6 +3,11 @@
 newgame run
 wait 8
 expect active == 1
+# The start event waits until the run intro closes.
+expect ux_event_open == 0
+closepanel
+wait 1
+expect ux_event_open == 1
 # The start event window stays open until the end of the test: its choice can move the ship.
 expect ev_pending == 1
 # Only the gold key number shows: no choice text starts with its number.

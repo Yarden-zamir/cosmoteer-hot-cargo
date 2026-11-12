@@ -1,0 +1,111 @@
+# Visual pass, part 1: run intro, events, heat panel states, HUD alerts, comms, tooltips, run end.
+# Main slot only (needs graphics): scripts/screens.sh tests/screens/hud.txt <out-dir>
+render on
+newgame run
+wait 8
+pause off
+screenshot hud-01-intro
+closepanel
+wait 2
+screenshot hud-02-event-start
+uxpick 2
+wait 2
+screenshot hud-03-event-result
+uxpick 1
+wait 1
+ev_set Enabled false
+godmode on
+screenshot hud-04-heat-calm
+# A greyed choice (no sensor array) and a follow-up page.
+event distress_beacon
+wait 1
+screenshot hud-05-event-greyed
+choose 1 4
+wait 2
+screenshot hud-06-event-followup
+choose 4 1
+wait 1
+uxpick 1
+wait 1
+# Stage start: heat panel strip, chat line, hunter center text.
+heat 27
+wait 1.5
+screenshot hud-07-heat-warning
+wait 6
+heat 50
+wait 1.5
+screenshot hud-08-heat-hunt
+wait 6
+heat 25
+wait 1.5
+screenshot hud-09-heat-strike
+# Ship alerts: damage ping, low supply, hull. Godmode would heal the damage at once.
+godmode off
+select
+damage 0.3
+wait 1
+screenshot hud-12-damage
+godmode on
+ux LowSupplyFraction 1.2
+ux CriticalSupplyFraction 1.1
+supplycheck
+wait 0.5
+screenshot hud-13-low-supply
+ux LowSupplyFraction 0.25
+ux CriticalSupplyFraction 0.1
+selectparts
+wait 1
+screenshot hud-14-parts
+select
+# Station badges, trade tab, fame tooltip, map tooltips. At high heat stations refuse to trade, so heat goes back down first.
+heat -90
+wait 1
+tostation
+wait 2
+tipshow station
+wait 1
+screenshot hud-15-station-tip
+tipclear
+comms open
+wait 1
+commstab trade
+wait 2
+screenshot hud-16-trade
+comms close
+wait 1
+tipshow fame
+wait 1
+screenshot hud-17-fame-tip
+tipclear
+map on
+wait 3
+tipshow map
+wait 1
+screenshot hud-18-map-tip
+tipshow mapcur
+wait 1
+screenshot hud-19-map-tip-here
+tipclear
+map off
+wait 2
+wanted
+wait 2
+screenshot hud-21-wanted
+win
+wait 3
+screenshot hud-22-win
+closepanel
+wait 2
+screenshot hud-23-heat-after-win
+newgame run
+wait 8
+closepanel
+wait 1
+uxpick 3
+wait 1
+uxpick 1
+godmode off
+lose
+wait 4
+screenshot hud-24-loss
+quit

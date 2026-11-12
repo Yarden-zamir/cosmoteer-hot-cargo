@@ -4,6 +4,7 @@
 # Takes the main-slot lock, so it does not collide with screenshot runs.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+STATE_DIR="${HOT_CARGO_STATE:-$(cd "$(dirname "$0")/../.." && pwd)/.state}"; mkdir -p "$STATE_DIR"
 PLAY="$(cd .. && pwd)/play"
 [[ -d "$PLAY" ]] || { echo "install: no ../play worktree (git worktree add --detach ../play origin/main)"; exit 1; }
 LOCK=/tmp/hot_cargo_main_slot.lock
@@ -21,5 +22,5 @@ git fetch -q origin
 git checkout -q --detach origin/main
 SLOT=main scripts/deploy.sh | tail -1
 SLOT=main scripts/mod-toggle.sh on > /dev/null
-git rev-parse HEAD > /tmp/hot_cargo_installed_sha
+git rev-parse HEAD > "$STATE_DIR/installed_sha"
 echo "install: $(git log --oneline -1)"
