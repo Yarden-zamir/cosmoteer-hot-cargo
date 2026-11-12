@@ -114,7 +114,8 @@ wait 2
 dip_near hunters 300
 wait 1
 expect hunters == 1
-dip_pick hunter tech 1
+dip_focus hunter
+dip_pick focus tech 1
 wait 1
 expect dip_paychance == 0.3
 maxhunters 20
@@ -133,7 +134,7 @@ expect hunters == 6
 dip_set PayMaxOtherHunters 4
 expect dip_paychance == 0
 # Fight: no cost, the hunter takes no further offer.
-dip refuse hunter
+dip refuse focus
 wait 1
 expect dip_vaulttech == 3
 expect dip_picks == 0

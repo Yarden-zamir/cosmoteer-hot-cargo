@@ -42,7 +42,7 @@ while (( SECONDS - T2 < TIMEOUT )); do
   if [[ "$CLIENT_STATUS" == *"$LINK_REFUSED_TEXT"* ]]; then LINK_REFUSED=yes; break; fi
   if [[ "$HOST_STATUS" == *running=0* && "$CLIENT_STATUS" == *running=0* ]]; then break; fi
 done
-T3=$SECONDS
+TEND=$SECONDS
 # A failed PC call leaves an empty log, which never passes.
 HOST_OUT="$(slot_finish "$HOST" 2>&1 || true)"
 CLIENT_OUT=""; [[ "$CLIENT_STARTED" == yes ]] && CLIENT_OUT="$(slot_finish "$CLIENT" 2>&1 || true)"
@@ -51,7 +51,7 @@ HOST_LOG="${HOST_OUT%%<<<VANILLA LOG>>>*}" CLIENT_LOG="${CLIENT_OUT%%<<<VANILLA 
 RUN_LOG="$LOG_DIR/mp-$NAME.$(date +%Y%m%d-%H%M%S).$HOST-$CLIENT.log"
 { echo "=== host ($HOST)"; echo "$HOST_LOG"
   echo "=== client ($CLIENT)"; echo "$CLIENT_LOG"; } > "$RUN_LOG"
-TIMING="== timing mp-$NAME wait=$((T1 - T0)) deploy=$((T2 - T1)) script=$((T3 - T2)) teardown=$((SECONDS - T3)) total=$((SECONDS - T0))"
+TIMING="== timing mp-$NAME wait=$((T1 - T0)) deploy=$((T2 - T1)) script=$((TEND - T2)) teardown=$((SECONDS - TEND)) total=$((SECONDS - T0))"
 echo "$TIMING" | tee -a "$RUN_LOG"
 echo "== $NAME: log $RUN_LOG"
 

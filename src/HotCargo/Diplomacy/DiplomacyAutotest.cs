@@ -20,11 +20,12 @@ namespace HotCargo.Diplomacy;
 
 /// <summary>
 /// Autotest commands and fields of the Diplomacy area. Targets: hunter (first hunter by ID), hunterN, friend or enemy (the last ship
-/// that dip_spawn made), fresh (the first hunter that got no offer yet). Commands that change the sim run with "mp" in co-op tests; "dip" sends the real MP input like a click.
+/// that dip_spawn made), fresh (the first hunter that got no offer yet), focus (the hunter that dip_focus pinned; hunter IDs of new waves
+/// can be lower, so "hunter" can change ship). Commands that change the sim run with "mp" in co-op tests; "dip" sends the real MP input like a click.
 /// </summary>
 static class DiplomacyAutotest
 {
-    static ObjectID? _friend, _enemy;
+    static ObjectID? _friend, _enemy, _focus;
     static string _pageText = "";
     static int _pageButtons, _pageActive, _pageSlider, _pageToggles;
 
@@ -48,7 +49,7 @@ static class DiplomacyAutotest
             int i = name.Length > 6 ? Int(name[6..]) : 0;
             return HunterSpawner.Hunters(sim).OrderBy(h => h.UniqueID).ElementAtOrDefault(i) ?? throw new InvalidOperationException($"no hunter {i}");
         }
-        ObjectID? id = name switch { "friend" => _friend, "enemy" => _enemy, _ => throw new InvalidOperationException($"unknown target '{name}'") };
+        ObjectID? id = name switch { "friend" => _friend, "enemy" => _enemy, "focus" => _focus, _ => throw new InvalidOperationException($"unknown target '{name}'") };
         return (id is { } x ? sim.Ships[x] : null) ?? throw new InvalidOperationException($"no live {name} ship");
     }
 
@@ -65,6 +66,8 @@ static class DiplomacyAutotest
             var target = Target(p[1]);
             R().Game.NetManager.EnqueueInput(DiplomacyChoiceDomain.Pick(target, offer, p.Length == 3 ? Int(p[2]) : 0));
         };
+        // dip_focus <target>: pins a ship as the target "focus". dip_picks and dip_paychance read it (else the first hunter).
+        Autotest.Commands["dip_focus"] = arg => _focus = Target(arg.Trim()).UniqueID;
         Autotest.Commands["dip_set"] = arg => Autotest.SetField(R().T.Diplomacy, arg);
         // dip_spawn friend|ally|enemy|trader [distance]: a combat ship near the acting ship: of the system faction (friend), of the corporation's
         // ally faction (ally, military), on a new hostile side (enemy), or a trade ship (trader). friend, ally and trader become "friend".
@@ -174,9 +177,8 @@ static class DiplomacyAutotest
                      $"mercs={s.Mercs.Count} leaving={s.Leaving.Count} asks={s.FeeAsks.Count} tech={Situation.VaultTech(Sim())} fleet={R().State.FleetTech}");
         };
 
-        // dip_picks and dip_paychance read the pay-off draft of the first hunter (target "hunter").
-        Autotest.Fields["dip_picks"] = () => HunterSpawner.Hunters(Sim()).Any() ? Deals.PayDraft(R(), Target("hunter")).Count : 0;
-        Autotest.Fields["dip_paychance"] = () => HunterSpawner.Hunters(Sim()).Any() ? Quotes.PayOff(R(), Sim(), Target("hunter"), Deals.PayDraft(R(), Target("hunter"))) : 0;
+        Autotest.Fields["dip_picks"] = () => PayTarget() is { } h ? Deals.PayDraft(R(), h).Count : 0;
+        Autotest.Fields["dip_paychance"] = () => PayTarget() is { } h ? Quotes.PayOff(R(), Sim(), h, Deals.PayDraft(R(), h)) : 0;
         Autotest.Fields["dip_crew"] = () => R().Game.HumanPlayersIndexes.Sum(Sim().Crew.CountCrewForPlayer);
         Autotest.Fields["dip_pagetoggles"] = () => _pageToggles;
         Autotest.Fields["dip_used"] = () => R().State.Diplomacy.Used.Count;
@@ -207,6 +209,10 @@ static class DiplomacyAutotest
     }
 
     static int _fuelMark, _moneyMark;
+
+    /// <summary>The hunter whose pay-off draft the fields read: the focus ship while it lives, else the first hunter, else none.</summary>
+    static Ship? PayTarget() =>
+        _focus is { } f && Sim().Ships[f] is { } s && s.ExistsInSim(Sim()) ? s : HunterSpawner.Hunters(Sim()).OrderBy(h => h.UniqueID).FirstOrDefault();
 
     static int Money() => R().Game.GetPlayerState(Autotest.ActingPlayerIndex, deterministic: true).Money;
 
