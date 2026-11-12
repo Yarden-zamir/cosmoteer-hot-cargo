@@ -14,6 +14,11 @@ STATE_DIR="${HOT_CARGO_STATE:-$(cd "$REPO_ROOT/.." && pwd)/.state}"
 LOG_DIR="${HOT_CARGO_LOG_DIR:-$STATE_DIR/logs/$(basename "$REPO_ROOT")}"
 mkdir -p "$LOG_DIR"
 
+# True when a lock folder's owner process is gone. A lock with no pid yet (being created) or an empty pid is not stale.
+lock_is_stale() { local pid; pid="$(cat "$1/pid" 2>/dev/null)"; [[ -n "$pid" ]] && ! kill -0 "$pid" 2>/dev/null; }
+# Writes this shell's pid into a lock folder in one rename, so a reader never sees an empty pid file.
+lock_write_pid() { echo $$ > "$1/pid.tmp" && mv -f "$1/pid.tmp" "$1/pid"; }
+
 slot_lock() { echo "/tmp/hot_cargo_slot_${1#t}.lock"; }
 
 # While the player's own game runs (slot main), tests use at most HOT_CARGO_SLOTS_WHILE_PLAYING slots (default 4), so
@@ -49,15 +54,15 @@ take_one_slot() {
       if [[ $mine -ge ${HOT_CARGO_SLOTS_PER_AGENT:-0} ]]; then sleep 5; continue; fi
     fi
     for lock in /tmp/hot_cargo_slot_[0-9]*.lock; do
-      if [[ -f "$lock/pid" ]] && ! kill -0 "$(cat "$lock/pid")" 2>/dev/null; then rm -rf "$lock"; fi
+      if lock_is_stale "$lock"; then rm -rf "$lock"; fi
     done
     # Only the numbered slot locks count; the co-op pair lock is a queue, not a slot.
     busy="$(ls -d /tmp/hot_cargo_slot_[0-9]*.lock 2>/dev/null | wc -l | tr -d ' ')"
     if [[ $busy -ge $limit ]]; then sleep 2; continue; fi
     for ((i = 1; i <= SLOTS; i++)); do
       lock="$(slot_lock "t$i")"
-      if mkdir "$lock" 2>/dev/null; then echo $$ > "$lock/pid"; echo "$REPO_ROOT" > "$lock/owner"; echo "t$i"; return; fi
-      if [[ -f "$lock/pid" ]] && ! kill -0 "$(cat "$lock/pid")" 2>/dev/null; then rm -rf "$lock"; fi
+      if mkdir "$lock" 2>/dev/null; then echo "$REPO_ROOT" > "$lock/owner"; lock_write_pid "$lock"; echo "t$i"; return; fi
+      if lock_is_stale "$lock"; then rm -rf "$lock"; fi
     done
     sleep 2
   done
@@ -71,10 +76,10 @@ take_slots() {
   if [[ "$want" -eq 1 ]]; then take_one_slot; return; fi
   while :; do
     until mkdir "$pair" 2>/dev/null; do
-      if [[ -f "$pair/pid" ]] && ! kill -0 "$(cat "$pair/pid")" 2>/dev/null; then rm -rf "$pair"; continue; fi
+      if lock_is_stale "$pair"; then rm -rf "$pair"; continue; fi
       sleep 5
     done
-    echo $$ > "$pair/pid"
+    lock_write_pid "$pair"
     got=()
     while [[ ${#got[@]} -lt "$want" ]]; do
       # The first slot waits as long as needed; later slots wait at most HOT_CARGO_PAIR_WAIT seconds (default 600).
