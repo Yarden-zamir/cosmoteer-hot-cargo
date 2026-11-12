@@ -19,6 +19,8 @@ expect paneltotal == 1
 # The ship becomes a derelict: the tech still counts, the loss timer stays off, the panel and the blip say where it is.
 tech derelict
 wait 2
+expect livetech == 7
+expect lost == 0
 expect tech == 7
 expect derelicttech == 7
 expect derelicttag == 7

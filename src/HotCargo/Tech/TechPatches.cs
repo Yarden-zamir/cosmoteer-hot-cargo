@@ -5,6 +5,8 @@ using Cosmoteer.Modes.Career;
 using Cosmoteer.Resources;
 using Cosmoteer.Ships.Parts;
 using Cosmoteer.Ships.Parts.Resources;
+using Cosmoteer.Ships;
+using Cosmoteer.Simulation.Stasis;
 using HarmonyLib;
 using HotCargo.Core;
 
@@ -90,7 +92,22 @@ static class VaultDamagePatch
         if (lost == 0) return;
         int removed = Math.Min(lost, grid.Resources);
         grid.AddResources(-removed);
-        Log.Info($"vault at {__instance.Location} took {oldHealth - newHealth} damage: lost {removed} tech, {grid.Resources} left");
+        // The hit that crosses a step is often small: earlier hits (fire, weapons) took the health down without a loss.
+        Log.Info($"vault at {__instance.Location} took {oldHealth - newHealth} damage, health {oldHealth} -> {newHealth} of {max}: lost {removed} tech, {grid.Resources} left");
         Onboarding.RunLog.TechLost(run, removed, Vaults.CountFleetTech(__instance.Ship.Sim));
     });
+}
+
+/// <summary>
+/// Spec 449: a derelict ship that holds tech stays live. Vanilla puts a junk ship out of sight into stasis (CareerSimModeManager.GetShipStasisMode,
+/// SimStasisManager.UpdateStasis), where it leaves the sim: its tech would drop out of the fleet count and its blip would go.
+/// Exempt keeps it live without keeping the space around it live. The check reads sim data only, so every client agrees.
+/// </summary>
+[HarmonyPatch(typeof(CareerSimModeManager), nameof(CareerSimModeManager.GetShipStasisMode))]
+static class DerelictVaultStasisPatch
+{
+    static void Postfix(Ship ship, ref StasisMode __result)
+    {
+        if (__result == StasisMode.Normal && ship.IsJunk && Vaults.ShipTech(ship) > 0) __result = StasisMode.Exempt;
+    }
 }

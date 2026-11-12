@@ -172,7 +172,8 @@ static class TechAutotest
             case ["derelict"]:
                 // The acting player's ship loses its owner, like a ship without control rooms or a piece that broke off (ShipAlerts: junk).
                 var lost = PlayerShip();
-                sim.Mode.SetReducedShipAllegiance(lost, Cosmoteer.PlayerIndexes.Junk, -1);
+                // The crew keep their owner, like the vanilla path (SimModeManager.GetAllegianceForReducedShip).
+                sim.Mode.SetReducedShipAllegiance(lost, Cosmoteer.PlayerIndexes.Junk, null);
                 Log.Info($"AUTOTEST derelict {lost.Metadata.PlainShipName} with {Vaults.ShipTech(lost)} tech");
                 break;
             case ["wreckholder"]:
@@ -400,8 +401,9 @@ static class TechAutotest
     static void Dump(Run run)
     {
         var sim = run.Game.Sim;
-        foreach (var ship in Vaults.HumanShips(sim))
+        foreach (var ship in sim.Ships.AllShips.Where(s => Vaults.HoldsForPlayers(sim, s)))
         {
+            Log.Info($"AUTOTEST ship {ship.Name} player={ship.Metadata.PlayerIndex} junk={ship.IsJunk} disposed={ship.IsDisposed} parts={ship.Parts.Count} vaulttech={Vaults.ShipTech(ship)} stored={ship.Resources.GetResourceTotal(Vaults.TechId, includeStored: true, includeCarried: false)}");
             Log.Info($"AUTOTEST ship {ship.Name}: blueprint valid={ship.BlueprintParts.IsValid} matches={ship.PhysicalMatchesBlueprints}");
             foreach (var p in ship.BlueprintParts.OrderBy(p => p.Location.Y).ThenBy(p => p.Location.X))
                 Log.Info($"  part {p.Rules.ID} at {p.Location} rect {p.Rect}");
@@ -424,6 +426,6 @@ static class TechAutotest
         }
         foreach (var ship in Vaults.HumanShips(sim)) LogMap(ship);
         foreach (var s in sim.Ships.AllShips.Where(s => !sim.Mode.IsHumanPlayerShip(s)))
-            Log.Info($"AUTOTEST other ship {s.Name} player={s.Metadata.PlayerIndex} trades={s.AI?.WillTradeWith(PlayerShip())} flexTilesForTech={FlexTilesTakingTech(s)}");
+            Log.Info($"AUTOTEST other ship {s.Name} player={s.Metadata.PlayerIndex} trades={(Autotest.ActingShip(sim) is { } me ? s.AI?.WillTradeWith(me) : null)} flexTilesForTech={FlexTilesTakingTech(s)}");
     }
 }
