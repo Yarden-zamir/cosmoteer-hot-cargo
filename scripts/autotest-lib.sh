@@ -183,5 +183,5 @@ log_passed() {
 # Prints the lines of a log file that explain a failure, with a little context.
 failure_lines() {
   grep -n -B2 -A4 -E 'AUTOTEST FAIL| ERROR |Exception|MP DESYNC|MPSTATE MISMATCH' "$1" | head -60 || true
-  grep -q 'AUTOTEST DONE' "$1" || echo "(no AUTOTEST DONE: the game exited early, timed out, or the PC link failed)"
+  grep -q 'AUTOTEST DONE' "$1" || { echo "(no AUTOTEST DONE: the game exited early, timed out, or the PC link failed; first log lines:)"; grep -v "^$" "$1" | head -6; }
 }

@@ -14,18 +14,18 @@ source "$(dirname "$0")/autotest-lib.sh"
 RETRY="${AUTOTEST_RETRY:-1}"
 NAME="$(basename "$HOST_SCRIPT" .host.txt)"
 # Both slots at once, so parallel co-op tests cannot deadlock (see take_slots).
-PHASE0=$SECONDS
+BEGIN_AT=$SECONDS
 read -r HOST CLIENT <<<"$(take_slots 2)"
 trap 'release_slot "$HOST"; release_slot "$CLIENT"' EXIT
-PHASE1=$SECONDS
+SLOTS_AT=$SECONDS
 PORT=$((35870 + ${HOST#t}))
 echo "== host slot $HOST, client slot $CLIENT, port $PORT"
 
 { echo "telename $(basename "$HOST_SCRIPT" .txt)"; sed "s/{PORT}/$PORT/g" "$HOST_SCRIPT"; } | start_slot "$HOST"
-PHASE2=$SECONDS
+DEPLOYED_AT=$SECONDS
 # Small status calls every AUTOTEST_POLL seconds; the full logs are fetched once at the end.
 CLIENT_STARTED=no LINK_REFUSED=no
-while (( SECONDS - PHASE2 < TIMEOUT )); do
+while (( SECONDS - DEPLOYED_AT < TIMEOUT )); do
   sleep "${AUTOTEST_POLL:-3}"
   HOST_STATUS="$(slot_status "$HOST" "AUTOTEST hosting")"
   if [[ "$HOST_STATUS" == *"$LINK_REFUSED_TEXT"* ]]; then LINK_REFUSED=yes; break; fi
@@ -42,7 +42,7 @@ while (( SECONDS - PHASE2 < TIMEOUT )); do
   if [[ "$CLIENT_STATUS" == *"$LINK_REFUSED_TEXT"* ]]; then LINK_REFUSED=yes; break; fi
   if [[ "$HOST_STATUS" == *running=0* && "$CLIENT_STATUS" == *running=0* ]]; then break; fi
 done
-PHASE3=$SECONDS
+SCRIPT_END_AT=$SECONDS
 # A failed PC call leaves an empty log, which never passes.
 HOST_OUT="$(slot_finish "$HOST" 2>&1 || true)"
 CLIENT_OUT=""; [[ "$CLIENT_STARTED" == yes ]] && CLIENT_OUT="$(slot_finish "$CLIENT" 2>&1 || true)"
@@ -51,7 +51,7 @@ HOST_LOG="${HOST_OUT%%<<<VANILLA LOG>>>*}" CLIENT_LOG="${CLIENT_OUT%%<<<VANILLA 
 RUN_LOG="$LOG_DIR/mp-$NAME.$(date +%Y%m%d-%H%M%S).$HOST-$CLIENT.log"
 { echo "=== host ($HOST)"; echo "$HOST_LOG"
   echo "=== client ($CLIENT)"; echo "$CLIENT_LOG"; } > "$RUN_LOG"
-TIMING="== timing mp-$NAME wait=$((PHASE1 - PHASE0)) deploy=$((PHASE2 - PHASE1)) script=$((PHASE3 - PHASE2)) teardown=$((SECONDS - PHASE3)) total=$((SECONDS - PHASE0))"
+TIMING="== timing mp-$NAME wait=$((SLOTS_AT - BEGIN_AT)) deploy=$((DEPLOYED_AT - SLOTS_AT)) script=$((SCRIPT_END_AT - DEPLOYED_AT)) teardown=$((SECONDS - SCRIPT_END_AT)) total=$((SECONDS - BEGIN_AT))"
 echo "$TIMING" | tee -a "$RUN_LOG"
 echo "== $NAME: log $RUN_LOG"
 
@@ -59,8 +59,9 @@ if [[ "$LINK_REFUSED" == yes ]] || grep -q "$LINK_REFUSED_TEXT" "$RUN_LOG"; then
   echo "== MP AUTOTEST LINK REFUSED $NAME: the PC refused the calls, because this agent's turn is not active (log $RUN_LOG)"; exit 3
 fi
 OK=yes
-if ! log_passed <<<"$HOST_LOG"; then echo "== host log failed"; OK=no; fi
-if ! log_passed <<<"$CLIENT_LOG"; then echo "== client log failed"; OK=no; fi
+# Each log must be this run's own (first script line "telename <script name>"), not a stale log of another test in the slot.
+if ! log_passed <<<"$HOST_LOG" || ! grep -qF "telename $(basename "$HOST_SCRIPT" .txt)" <<<"$HOST_LOG"; then echo "== host log failed"; OK=no; fi
+if ! log_passed <<<"$CLIENT_LOG" || ! grep -qF "telename $(basename "$CLIENT_SCRIPT" .txt)" <<<"$CLIENT_LOG"; then echo "== client log failed"; OK=no; fi
 # Compare the state lines of ticks that both machines logged, without the log time stamps.
 states() { grep -o 'MPSTATE .*' <<<"$1" | tr -d '\r' | sort -u || true; }
 HOST_STATES="$(states "$HOST_LOG")" CLIENT_STATES="$(states "$CLIENT_LOG")"

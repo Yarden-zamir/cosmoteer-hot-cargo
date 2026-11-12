@@ -5,11 +5,8 @@
 # $minFreeGB (free memory that a test slot needs before its game starts).
 $ErrorActionPreference = "Stop"
 if ($autotestFile -and $slot -ne "main") {
-  # The pid file can miss a game of this slot: a killed run, or an old stop.sh that removed the file before the game
-  # exited. Such a game still holds the mod files, so also find the slot's games by their --rootsavepath argument.
-  $mark = "HotCargoSlots\" + $slot + [char]34
-  $orphans = @(Get-CimInstance Win32_Process -Filter ("Name = " + [char]39 + "Cosmoteer.exe" + [char]39) | Where-Object { $_.CommandLine -like "*$mark*" } | ForEach-Object { Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue })
-  $running = @(@(Get-SlotProcess) + $orphans | Where-Object { $_ } | Sort-Object Id -Unique)
+  # Get-SlotProcess finds the slot's games by their command line (see pc.sh), also after a killed run.
+  $running = @(Get-SlotProcess | Where-Object { $_ })
   if ($running.Count -gt 0) { $running | Stop-Process -Force; $running | Wait-Process -Timeout 20 -ErrorAction SilentlyContinue }
   if (Test-Path $pidFile) { Remove-Item $pidFile -Force }
 }
