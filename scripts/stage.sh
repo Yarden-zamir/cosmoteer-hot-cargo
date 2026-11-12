@@ -17,8 +17,13 @@ until mkdir "$BUILD_LOCK" 2>/dev/null; do
 done
 echo $$ > "$BUILD_LOCK/pid"
 
-dotnet build "$REPO_ROOT/src/HotCargo/HotCargo.csproj" -c Release -nologo -v quiet
-dotnet build "$REPO_ROOT/src/HotCargo.Loader/HotCargo.Loader.csproj" -c Release -nologo -v quiet
+# Build output only on a failure: warnings would fill every test log.
+BUILD_LOG="$(mktemp)"
+for proj in HotCargo/HotCargo.csproj HotCargo.Loader/HotCargo.Loader.csproj; do
+  dotnet build "$REPO_ROOT/src/$proj" -c Release -nologo -v quiet > "$BUILD_LOG" 2>&1 \
+    || { grep -E ' error |error :' "$BUILD_LOG" | sort -u | head -30; rm -f "$BUILD_LOG"; echo "stage: build of $proj failed" >&2; exit 1; }
+done
+rm -f "$BUILD_LOG"
 BUILD="$REPO_ROOT/src/HotCargo/bin/Release/net10.0-windows"
 LOADER="$REPO_ROOT/src/HotCargo.Loader/bin/Release/net10.0/HotCargo.Loader.dll"
 rm -rf "$OUT"
