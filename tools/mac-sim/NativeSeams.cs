@@ -22,11 +22,18 @@ static class NativeSeams
         harmony.Patch(AccessTools.Method(typeof(TextureData), nameof(TextureData.Compress)),
             prefix: new HarmonyMethod(typeof(NativeSeams), nameof(Skip)));
         // Not native, but PNG-only: these list PNG folders that exist only on the PC. Roof art is visual only.
-        foreach (var name in new[] { nameof(Cosmoteer.Ships.ShipRoofRules.LoadRoofTextures), nameof(Cosmoteer.Ships.ShipRoofRules.BuildRoofDecalsAtlas) })
-            harmony.Patch(AccessTools.Method(typeof(Cosmoteer.Ships.ShipRoofRules), name), prefix: new HarmonyMethod(typeof(NativeSeams), nameof(Skip)));
+        harmony.Patch(AccessTools.Method(typeof(Cosmoteer.Ships.ShipRoofRules), nameof(Cosmoteer.Ships.ShipRoofRules.LoadRoofTextures)),
+            prefix: new HarmonyMethod(typeof(NativeSeams), nameof(PlaceholderRoof)));
+        harmony.Patch(AccessTools.Method(typeof(Cosmoteer.Ships.ShipRoofRules), nameof(Cosmoteer.Ships.ShipRoofRules.BuildRoofDecalsAtlas)),
+            prefix: new HarmonyMethod(typeof(NativeSeams), nameof(Skip)));
+        // Ship decals (paint) look up that skipped atlas. Decals are cosmetic.
+        harmony.Patch(AccessTools.Method(typeof(Cosmoteer.Ships.Paint.DecalsManager), nameof(Cosmoteer.Ships.Paint.DecalsManager.LoadSaveData)),
+            prefix: new HarmonyMethod(typeof(NativeSeams), nameof(Skip)));
         // Not native: scripts/pull-game.sh copies only *.rules and *.txt, so the name generator files (*.markov) are missing.
         harmony.Patch(AccessTools.Constructor(typeof(Cosmoteer.Generators.Names.MarkovGenerator), [typeof(Halfling.Serialization.Generic.GenericSerialReader)]),
             prefix: new HarmonyMethod(typeof(NativeSeams), nameof(MarkovWithoutFile)));
+        harmony.Patch(AccessTools.Method(typeof(Cosmoteer.Generators.Names.MarkovGenerator), nameof(Cosmoteer.Generators.Names.MarkovGenerator.GenerateName)),
+            prefix: new HarmonyMethod(typeof(NativeSeams), nameof(NameWithoutChain)));
         harmony.Patch(AccessTools.Method(typeof(Halfling.Audio.SoundStream), nameof(Halfling.Audio.SoundStream.FromFile)),
             prefix: new HarmonyMethod(typeof(NativeSeams), nameof(SilentIfMissing)));
         // Not native: ship designs are *.ship.png files and exist only on the PC. A missing ship file loads the vanilla
@@ -56,22 +63,47 @@ static class NativeSeams
         var path = reader.ReadFromPath<Halfling.IO.AbsolutePath>("MarkovFile");
         if (File.Exists(path)) return true;
         reader.ReflectiveRead(__instance);
-        var chain = new Halfling.Generation.MarkovChain<char>(2);
-        foreach (var word in new[] { "alder", "brenna", "corvin", "dalia", "emrys", "fenna", "garrick", "halley", "isolde", "jorund" })
-            chain.Learn((IReadOnlyList<char>)(word + '\0').ToCharArray());
-        Traverse.Create(__instance).Field(nameof(__instance.MarkovChain)).SetValue(chain);
+        FileLessMarkov.Add(__instance);
+        return false;
+    }
+
+    static readonly HashSet<Cosmoteer.Generators.Names.MarkovGenerator> FileLessMarkov = [];
+
+    /// <summary>A generator without its chain makes consonant-vowel names from the sim's Rand, within its length limits.</summary>
+    static bool NameWithoutChain(Cosmoteer.Generators.Names.MarkovGenerator __instance, Halfling.Random.Rand rand, int maxLength, ref string __result)
+    {
+        if (!FileLessMarkov.Contains(__instance)) return true;
+        int length = Math.Clamp(6, __instance.MinLength, Math.Min(__instance.MaxLength, maxLength));
+        var name = new char[length];
+        for (int i = 0; i < length; i++)
+            name[i] = i % 2 == 0 ? "bdfgklmnprstvz"[rand.Int32(0, 13)] : "aeiou"[rand.Int32(0, 4)];
+        name[0] = char.ToUpperInvariant(name[0]);
+        __result = new string(name);
         return false;
     }
 
     static bool Skip() => false;
 
+    /// <summary>
+    /// Only the default roof texture gets a placeholder: ship metadata reads it, and saves write its file name.
+    /// It loads through the texture factory, so its file path is the real one (the file itself is missing).
+    /// </summary>
+    static bool PlaceholderRoof(Cosmoteer.Ships.ShipRoofRules __instance)
+    {
+        if (__instance is { DefaultRoofTextureID: { } id, RoofTexturesFolders: [var folder, ..] })
+            __instance.RoofTextures[id] = Halfling.App.Graphics.Textures.Load(folder / $"{id}.png")!;
+        return false;
+    }
+
     static readonly byte[] SilentWav = MakeSilentWav();
 
+    // Stereo 44.1 kHz: music streams require the format in Data/music/music.rules (ChannelCount, Frequency). The rules are
+    // still loading when the first sound loads, so they cannot be read here. Revisit if music.rules changes its format.
     static byte[] MakeSilentWav()
     {
         var silence = new MemoryStream();
-        using (var writer = new NAudio.Wave.WaveFileWriter(new NAudio.Utils.IgnoreDisposeStream(silence), new NAudio.Wave.WaveFormat(44100, 16, 1)))
-            writer.Write(new byte[882], 0, 882);
+        using (var writer = new NAudio.Wave.WaveFileWriter(new NAudio.Utils.IgnoreDisposeStream(silence), new NAudio.Wave.WaveFormat(44100, 16, 2)))
+            writer.Write(new byte[1764], 0, 1764);
         return silence.ToArray();
     }
 

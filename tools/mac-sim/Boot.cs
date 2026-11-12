@@ -36,6 +36,22 @@ static class Boot
         NativeSeams.PlaceholderTextures();
     }
 
+    public const double FrameSeconds = 1.0 / 60;
+
+    /// <summary>
+    /// Every clock advances one fixed frame per call instead of the real time that passed. The game then runs as fast as
+    /// the CPU allows, and two runs with the same input see the same frame times.
+    /// </summary>
+    public static void FixedStepClock() =>
+        Harmony.Patch(AccessTools.Method(typeof(Halfling.Timing.RealTimeClock), nameof(Halfling.Timing.RealTimeClock.AdvanceRealTime)),
+            prefix: new HarmonyMethod(typeof(Boot), nameof(AdvanceFixed)));
+
+    static bool AdvanceFixed(Halfling.Timing.RealTimeClock __instance)
+    {
+        __instance.Advance(new Halfling.Timing.Time(FrameSeconds));
+        return false;
+    }
+
     static bool CreatePlatformPrefix(ref Platform __result)
     {
         __result = new MacPlatform();
