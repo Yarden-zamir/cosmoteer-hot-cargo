@@ -77,7 +77,8 @@ internal sealed class DiplomacyMultiDomain : MultiChoice.IMultiChoiceDomain
     {
         if (DiplomacyChoiceDomain.Callee(run, serial) is not { } hunter || hunter.Sim is not { } sim || !Situation.IsHunter(hunter)) return null;
         var s = run.State.Diplomacy;
-        if (s.WasUsed(hunter.UniqueID, Offer.PayOff) || s.Leaving.Any(l => l.Ship == hunter.UniqueID)) return null;
+        // Every end of the talk marks Refuse (Deals.MarkHunterTalksUsed). Not PayOff: Deals.Choose marks it before the pay-off reads the draft.
+        if (s.WasUsed(hunter.UniqueID, Offer.Refuse) || s.Leaving.Any(l => l.Ship == hunter.UniqueID)) return null;
         return Quotes.PayOptions(run, sim);
     }
 }
