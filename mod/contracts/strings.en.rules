@@ -20,14 +20,9 @@ HotCargoContracts
 	OpenTrailFmt = "Open contracts: {1}, trail heat +{2}/min"
 	TrailTipFmt = "Open contracts leave a trail. Up to {0} stay quiet. Each one above that adds {1} heat/min until you finish or drop it."
 
-<<<<<<< HEAD
-	RivalFmt = "Rival offer: accepting dismisses \"{0}\""
-	RivalAtFmt = "Rival offer: accepting dismisses \"{0}\" at {1}"
-	RivalTip = "These clients work against each other. Take one job and the other offer is gone."
-=======
 	RivalFmt = "Rival: taking this cancels \"{0}\""
-	RivalTip = "Rival clients. Take one job and the other offer is gone."
->>>>>>> origin/main
+	RivalAtFmt = "Rival: taking this cancels \"{0}\" at {1}"
+	RivalTip = "Rival clients. Take one job and the other offers are gone."
 
 	InformantFmt = "Informant risk {0}%: the client may sell you out"
 	InformantTip = "Some clients sell your position to the corporation. If this one does, heat jumps and hunters come for you."
