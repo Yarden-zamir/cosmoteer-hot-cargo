@@ -11,6 +11,8 @@ tacticlog on
 # The enemy AI behaviors (flee, regroup) have their own tests; here they would change the tactic counts.
 aiset FleeEnabled false
 aiset RegroupEnabled false
+# Every hunter uses every tactic, as before personalities (spec 360).
+aiset PersonalitiesEnabled false
 heat 100
 wait 1
 hunters start

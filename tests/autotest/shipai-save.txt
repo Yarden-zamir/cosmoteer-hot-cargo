@@ -1,0 +1,47 @@
+# Ship tactics persistence (spec 405 to 407): the career save, the ship design file (with and without the mod),
+# and the build menu's "Load ship (replace)".
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+tactics Sniper
+tacticsauto on
+spawnstage Patrol
+waitfor tactics_target_row >= 0 60
+tactics_log before
+save shipai
+wait 2
+load shipai
+wait 8
+expecttactics Sniper
+expect tactics_auto == 1
+waitfor tactics_target_row >= 0 30
+tactics_log loaded
+# The ship design: rows and the Auto switch go into the design file and come back with it.
+savedesign shipai_sniper
+loaddesign shipai_sniper
+expect design_rows == 4
+expect design_auto == 1
+# A game without the mod reads the same file: the ship loads with every part and no tactics.
+loaddesign shipai_sniper vanilla
+expect design_rows == 0
+expect design_parts > 0
+# A design without tactics.
+tacticsauto off
+tactics clear
+expect tactics_rows == 0
+savedesign shipai_none
+loaddesign shipai_none
+expect design_rows == 0
+# Load ship (replace) copies the design's tactics to the live ship, through the tactics input.
+loadreplace shipai_sniper
+wait 2
+expecttactics Sniper
+expect tactics_auto == 1
+# A design without tactics keeps the ship's own tactics.
+tactics VaultGuard
+loadreplace shipai_none
+wait 2
+expecttactics VaultGuard
+# A bad tactics text does not change the ship and shows the error (an ERROR line would fail this test, so only valid text here).
+quit

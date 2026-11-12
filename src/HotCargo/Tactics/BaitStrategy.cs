@@ -23,7 +23,7 @@ internal sealed class BaitStrategyRules : AIStrategyModuleRules
 }
 
 /// <summary>
-/// Spec 48. In a group of two or more hunters, the most agile one (thrust per mass) is the bait.
+/// Spec 48. In a group of two or more allies, the most agile ship with the bait tactic (thrust per mass) is the bait.
 /// It flies close to the nearest player ship, then runs back to the middle of its group, and repeats.
 /// Tell: one small ship dives in alone and turns back at once. A player that chases it meets the group.
 /// </summary>
@@ -44,12 +44,12 @@ internal sealed class BaitStrategy(BaitStrategyRules rules) : AIStrategyModule
 
     public override bool OnAITick(Ship ship, ShipAI ai)
     {
-        var active = TacticGate.Active(Tactic.Bait);
-        var group = active is null ? [] : Group(ship);
+        var active = TacticGate.Active(Tactic.Bait, ship);
+        var group = active is { } on ? Group(ship, on) : [];
         bool isBait = group.Count >= 2 && Bait(group) == ship;
         if (isBait != _isBait) TacticsLog.Event(ship, Tactic.Bait, isBait ? "chosen as bait" : "no longer bait");
         _isBait = isBait;
-        var target = SimQueries.NearestHumanShip(HunterOrders.Sim(ship), ship.DetWorldCenter);
+        var target = Ai.AiGate.NearestHumanEnemy(ship);
         if (!isBait || active is not { } t || target is null)
         {
             Phase = BaitPhase.Approach;
@@ -84,18 +84,12 @@ internal sealed class BaitStrategy(BaitStrategyRules rules) : AIStrategyModule
 
     public override AIStrategyModule Clone(AIParameters? parameters) => new BaitStrategy(rules) { _phase = _phase, _phaseStart = _phaseStart };
 
-    /// <summary>Allied ships of this ship's player index, in the stable order of the sim ship list.</summary>
-    static List<Ship> Group(Ship ship) =>
-        HunterOrders.Sim(ship).Ships.GetShipsForPlayer(ship.Metadata.PlayerIndex).Where(s => !s.IsJunk && s.IsSignificant).ToList();
+    /// <summary>The ship, then its allies within RegroupSearchRange in the stable order of the sim ship list.</summary>
+    static List<Ship> Group(Ship ship, TacticsTunables t) =>
+        Ai.AiGate.Allies(ship).Where(a => a.DetWorldCenter.DistanceTo(ship.DetWorldCenter) <= t.RegroupSearchRange).Prepend(ship).ToList();
 
-    /// <summary>Most thrust per mass. Ties go to the lowest ID, so every client picks the same ship.</summary>
-    static Ship Bait(List<Ship> group) =>
-        group.OrderByDescending(Agility).ThenBy(s => s.UniqueID).First();
-
-    static float Agility(Ship ship)
-    {
-        float thrust = 0f;
-        foreach (var thruster in ship.Thrusters) thrust += thruster.Force;
-        return ship.Parts.Mass > 0f ? thrust / ship.Parts.Mass : 0f;
-    }
+    /// <summary>The most agile group member with the bait tactic on (thrust per mass). Ties go to the lowest ID, so every client picks the same ship.</summary>
+    static Ship? Bait(List<Ship> group) =>
+        group.Where(s => TacticGate.Active(Tactic.Bait, s) is not null)
+            .OrderByDescending(s => Ai.PersonalityStrategy.Profile(s).Acceleration).ThenBy(s => s.UniqueID).FirstOrDefault();
 }

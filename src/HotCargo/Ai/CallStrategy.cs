@@ -86,7 +86,8 @@ internal sealed class CallStrategy(CallStrategyRules rules) : AIStrategyModule
         bool damaged = _lastHealth >= 0f && AiModel.TookDamage(_lastHealth, health, t.CallDamageTrigger);
         _lastHealth = health;
         var spotted = AiGate.NearestHumanEnemy(ship);
-        bool triggered = spotted is not null && (!_sawEnemy || damaged);
+        // Spec 361: with personalities on, only ships with the Call trait call. Every ship can still answer.
+        bool triggered = spotted is not null && (!_sawEnemy || damaged) && AiGate.PersonalityAllows(ship, Trait.Call, t);
         _sawEnemy = spotted is not null;
 
         bool inStorm = AiGate.InStorm(ship, t);

@@ -62,7 +62,7 @@ internal sealed class FallBackStrategy : AIStrategyModule
 
     public override bool OnAITick(Ship ship, ShipAI ai)
     {
-        if (TacticGate.Active(Tactic.FallBack) is not { } t)
+        if (TacticGate.Active(Tactic.FallBack, ship) is not { } t)
         {
             _active = false;
             return false;
@@ -86,7 +86,7 @@ internal sealed class FallBackStrategy : AIStrategyModule
             }
             return false;
         }
-        var threat = SimQueries.NearestHumanShip(HunterOrders.Sim(ship), ship.DetWorldCenter);
+        var threat = Ai.AiGate.NearestHumanEnemy(ship);
         if (threat is not null && HunterOrders.EdgeDistance(ship, threat) < t.FallBackDistance)
         {
             Vector2 away = Vector2.FromAngle(threat.DetWorldCenter.DirectionTo(ship.DetWorldCenter));
