@@ -39,7 +39,7 @@ public static class Quotes
         return DiplomacyModel.DealChance(Situation.OtherHunters(run, sim, hunter), DealMaxOthers(run, sim), units, Situation.VaultTech(sim), t.DealChanceAlone, t.DealShareMin);
     }
 
-    public static int DealPrice(Run run, int units) => (int)Math.Round(units * run.T.Tech.Value(run.State) * T(run).DealPriceFactor);
+    public static int DealPrice(Run run, int units) => (int)Math.Round(units * run.TechValue() * T(run).DealPriceFactor);
 
     public static float DemandSurrender(Run run, SimRoot sim, int player, Ship ai)
     {
@@ -76,7 +76,7 @@ public static class Quotes
     }
 
     /// <summary>Credits of event money units at the sector tier (spec 73).</summary>
-    public static int Money(Run run, float units) => EventRunner.Credits(run, units, 0f, run.CurrentTier, run.T.Tech.Value(run.State));
+    public static int Money(Run run, float units) => EventRunner.Credits(run, units, 0f, run.CurrentTier, run.TechValue());
 
     /// <summary>A hunter within HoldHunterRadius of the friendly ship blocks every hold.</summary>
     public static bool HunterNear(Run run, SimRoot sim, Ship ship) =>
@@ -96,7 +96,7 @@ public static class Quotes
         return DiplomacyModel.FeeChance(run.State.Heat, Situation.Reputation(run, ship), t.FeeChanceBase, t.FeePerHeat, t.FeePerReputation);
     }
 
-    public static int FeePrice(Run run, int units) => (int)Math.Round(units * run.T.Tech.Value(run.State) * T(run).FeePerUnit);
+    public static int FeePrice(Run run, int units) => (int)Math.Round(units * run.TechValue() * T(run).FeePerUnit);
 
     public static float Betray(Run run, SimRoot sim, Ship ship, HeldTech held)
     {
