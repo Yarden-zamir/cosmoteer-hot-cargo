@@ -19,7 +19,7 @@ internal sealed class HiredStrategyRules : AIStrategyModuleRules
 }
 
 /// <summary>
-/// Spec 580 to 583. A hired ship fights the enemies of its employer near the employer's nearest ship, and follows it when no enemy is near.
+/// Spec 580 to 582. A hired ship fights the enemies of its employer near the employer's nearest ship, and follows it when no enemy is near.
 /// Below its flee health it gives up: it runs from the nearest enemy until clear, then the contract ends and the vanilla modules take over.
 /// The hire lives in the run state, so this module keeps no state of its own. Ships that nobody hired fall through to the vanilla modules.
 /// </summary>

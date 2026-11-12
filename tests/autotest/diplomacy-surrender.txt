@@ -1,4 +1,4 @@
-# Surrender (spec 567 to 572): demand that a hunter surrenders (payout, fuel, fuel overflow into space), the once-per-ship rule,
+# Surrender (spec 567 to 573): demand that a hunter surrenders (payout, fuel, fuel overflow into space), the once-per-ship rule,
 # a hunter's own surrender offer, and the players' surrender to a normal enemy.
 newgame run
 wait 8
@@ -30,39 +30,39 @@ dip_fillfuel
 dip_mark
 spawnstage Warning
 wait 2
-dip_near hunter1
+dip_near fresh
 wait 1
-dip demandsurrender hunter1
+dip demandsurrender fresh
 wait 1
 expect dip_surrendered == 1
 expect dip_moneyspent < 0
 expect dip_fuelgain == 0
 expect fuelnuggets >= 40
 wait 8
-expect hunters == 1
+expect dip_leaving == 0
 # Accepted demand with room: the fuel goes into the tanks.
 dip_dropfuel 1000
 dip_mark
 spawnstage Warning
 wait 2
-dip_near hunter1
+dip_near fresh
 wait 1
-dip demandsurrender hunter1
+dip demandsurrender fresh
 wait 1
 expect dip_surrendered == 2
 expect dip_fuelgain >= 40
 wait 8
-expect hunters == 1
+expect dip_leaving == 0
 # A beaten hunter offers its surrender and hails; accepting it gives the same loot.
 dip_set HunterYieldChance 1
 spawnstage Warning
 wait 2
-dip_near hunter1
+dip_near fresh
 damagehunters 0.2
 wait 3
 expect dip_hailing >= 1
 dip_mark
-dip acceptyield hunter1
+dip acceptyield fresh
 wait 1
 expect dip_surrendered == 3
 expect dip_fuelgain >= 1

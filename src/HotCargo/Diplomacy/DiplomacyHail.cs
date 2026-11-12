@@ -8,11 +8,15 @@ using HotCargo.Ui;
 namespace HotCargo.Diplomacy;
 
 /// <summary>
-/// The Hot Cargo options in ship comms (spec 560 to 585): the hunter demand page, surrender talk with enemies and the friendly ship page.
-/// <see cref="Answers"/> and <see cref="Allowed"/> read sim state only; <see cref="Build"/> is UI and sends <see cref="DiplomacyInput"/>.
+/// The Hot Cargo options in ship comms (spec 560 to 583): the hunter demand page, surrender talk with enemies and the friendly ship page.
+/// <see cref="Answers"/> and <see cref="Allowed"/> read sim state only; <see cref="Build"/> is UI; its choices go through <see cref="DiplomacyChoiceDomain"/>.
 /// </summary>
 public sealed class DiplomacyHail : IHailProvider
 {
+    public static readonly DiplomacyHail Instance = new();
+
+    DiplomacyHail() { }
+
     /// <summary>Which friendly sub-page each callee shows. Local UI state.</summary>
     static readonly Dictionary<ObjectID, string> Topics = new();
 
@@ -92,7 +96,7 @@ public sealed class DiplomacyHail : IHailProvider
                 if (!Situation.IsFriendlyShip(caller, callee) || !Situation.Hireable(callee) || merc) { why = "not a friendly armed ship"; return false; }
                 if (S(run).Hires.Any(h => h.Ship == callee.UniqueID)) { why = "already hired"; return false; }
                 if (Situation.WantedAnywhere(sim, player)) { why = "wanted"; return false; }
-                if (amount < 0 || !Situation.CanPay(run, player, amount)) { why = "money"; return false; }
+                if (amount < 0 || !Situation.CanPay(run, player, amount * Quotes.HireStep(run))) { why = "money"; return false; }
                 return true;
             case Offer.Merc:
                 if (!Situation.IsFriendlyShip(caller, callee) || !merc) { why = "not a mercenary"; return false; }
@@ -111,6 +115,9 @@ public sealed class DiplomacyHail : IHailProvider
         var run = Run.Current ?? throw new InvalidOperationException("no run");
         var sim = caller.Sim ?? throw new InvalidOperationException("caller has no sim");
         int player = run.Game.LocalPlayerIndex;
+        // One shared choice domain per page (CommsHail limit): a page that another provider owns (an event page) shows no diplomacy options.
+        if (page.Shared is { } owner && owner.Domain != DiplomacyChoiceDomain.Name) return;
+        page.Shared = (DiplomacyChoiceDomain.Name, DiplomacyChoiceDomain.Serial(callee));
         if (S(run).Results.FirstOrDefault(r => r.Ship == callee.UniqueID) is { } result) page.AddText(result.Text);
         if (caller.IsEnemiesWith(callee))
         {
@@ -124,8 +131,7 @@ public sealed class DiplomacyHail : IHailProvider
     {
         if (S(run).WasUsed(callee.UniqueID, offer)) return;
         bool ok = Allowed(run, sim, player, caller, callee, offer, amount, out string why);
-        page.AddButton(xml, () => run.Game.NetManager.EnqueueInput(new DiplomacyInput(caller, callee, offer, amount)), ok,
-            ok ? null : DipText.Format("WhyNotFmt", why), close);
+        page.AddChoice(xml, DiplomacyChoiceDomain.Option(offer, amount), ok, ok ? null : DipText.Format("WhyNotFmt", why), close);
     }
 
     static string Pct(float chance) => DipText.Format("ChanceFmt", (int)MathF.Round(chance * 100f));
@@ -198,13 +204,13 @@ public sealed class DiplomacyHail : IHailProvider
             }
             case "hire" when !merc && hire is null && !Done(run, ship, Offer.Hire):
             {
-                int fair = Quotes.HireFair(run);
-                int step = Math.Max(1, fair / 10);
-                var spec = new SliderSpec("hire", DipText.Text("SliderOffer"), 0, step * 20, step, fair, v => Events.EventText.Money(v));
+                int step = Quotes.HireStep(run);
+                var spec = new SliderSpec("hire", DipText.Text("SliderOffer"), 0, 20, 1, 10, v => Events.EventText.Money(v * step));
                 page.Slider = spec;
-                int offer = CommsHail.SliderValue(ship, spec);
+                int steps = CommsHail.SliderValue(ship, spec);
+                int offer = steps * step;
                 if (Situation.WantedAnywhere(sim, player)) page.AddText(DipText.Text("HireWanted"));
-                Button(run, sim, player, caller, ship, page, Offer.Hire, offer,
+                Button(run, sim, player, caller, ship, page, Offer.Hire, steps,
                     DipText.Format("HireFmt", Events.EventText.Money(-offer), (int)Math.Ceiling(run.T.Diplomacy.HireSeconds / 60.0), Pct(Quotes.Hire(run, sim, player, ship, offer))));
                 break;
             }

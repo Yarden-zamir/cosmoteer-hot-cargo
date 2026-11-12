@@ -11,7 +11,7 @@ using HotCargo.Tech;
 namespace HotCargo.Diplomacy;
 
 /// <summary>
-/// The sim side of diplomacy (spec 561, 572, 577, 582 to 585): AI hails, leaving hunters, held tech and the end of hires.
+/// The sim side of diplomacy (spec 561, 572, 577, 582 to 584): AI hails, leaving hunters, held tech and the end of hires.
 /// Runs inside the sim tick (Run.Hooks.Tick). Rolls use a FastRand seeded from the ship, once per ship and kind.
 /// </summary>
 static class DiplomacyTick
@@ -158,7 +158,7 @@ static class DiplomacyTick
                 Hail(sim, hunter, human);
             }
         }
-        // Spec 584 and 585: mercenaries near stations, and their offers.
+        // Spec 583: mercenaries near stations, and their offers.
         foreach (var ship in sim.Ships.ToList())
         {
             if (ship.AI is null || ship.IsHumanPlayerShip || !ship.IsSignificant || ship.IsJunk || Situation.IsStation(ship) || Situation.IsHunter(ship)) continue;

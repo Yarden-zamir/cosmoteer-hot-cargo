@@ -30,6 +30,7 @@ Fields not listed in the "Not now" column apply Now.
 | SharedChoice | (none) | `VoteTimeoutSeconds` applies to open votes at once: the timeout counts from the first vote. |
 | Worlds | `PassWaveDistance`: next spawned ships. `ArrivalLine`, `ArrivalLineDelaySeconds`: next new system | Before a run is active (the first system of a new career), sim code uses the defaults (spec 227). |
 | Ux | `RunIntro`: new runs only. `StageAlertSeconds`, `CommsStayOnMap`, `PauseOnComms`, `PauseOnCommsMultiplayer`: next time it shows | All other switches apply on the next frame. Known limit: in an open event window, the dialogue key numbers keep their state until the page changes. |
+| Diplomacy | (none) | Chances and prices apply to the next choice and the open dialogue. Hail and mercenary rolls happen once per ship, so a ship that rolled keeps its result; ships that did not roll yet use the new value. A running hire keeps its end time. |
 | Debug | (none) | |
 
 ## Values that a change cannot reach

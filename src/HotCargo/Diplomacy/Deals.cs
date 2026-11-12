@@ -9,27 +9,27 @@ using HotCargo.Tech;
 namespace HotCargo.Diplomacy;
 
 /// <summary>
-/// Runs a hail choice (spec 561 to 585). Called only from <see cref="DiplomacyInput"/>, so every machine runs it at the same tick.
+/// Runs a hail choice (spec 561 to 583). Called only from the shared choice input (<see cref="DiplomacyChoiceDomain"/>), so every machine runs it at the same tick.
 /// It checks the choice again, marks the once-per-ship offer as used, rolls with a seed from the ship and the tick, and writes a result.
 /// </summary>
 public static class Deals
 {
     static DiplomacyState S(Run run) => run.State.Diplomacy;
 
-    public static void Choose(Run run, SimRoot sim, int player, Ship caller, Ship callee, Offer offer, int amount)
+    public static bool Choose(Run run, SimRoot sim, int player, Ship caller, Ship callee, Offer offer, int amount)
     {
         var t = run.T.Diplomacy;
-        if (!t.Enabled || run.State.Result == RunResult.Lost) return;
+        if (!t.Enabled || run.State.Result == RunResult.Lost) return false;
         if (!caller.ExistsInSim(sim) || !callee.ExistsInSim(sim) || !caller.IsHumanPlayerShip || !caller.Commands.CanExecuteCrewCommandsFrom(player))
         {
             Log.Info($"diplomacy: {offer} refused, the ships are gone or not the player's");
-            return;
+            return false;
         }
-        if (S(run).WasUsed(callee.UniqueID, offer)) { Log.Info($"diplomacy: {offer} to {callee.Metadata.PlainShipName} was already made"); return; }
+        if (S(run).WasUsed(callee.UniqueID, offer)) { Log.Info($"diplomacy: {offer} to {callee.Metadata.PlainShipName} was already made"); return false; }
         if (!DiplomacyHail.Allowed(run, sim, player, caller, callee, offer, amount, out string why))
         {
             Log.Info($"diplomacy: {offer} {amount} to {callee.Metadata.PlainShipName} refused: {why}");
-            return;
+            return false;
         }
         if (!DiplomacyState.Repeatable(offer)) S(run).Used.Add(DiplomacyState.Key(callee.UniqueID, offer));
         var rand = new FastRand(((ulong)(uint)callee.UniqueID << 32) | (uint)offer, (ulong)(uint)sim.Tick + (ulong)S(run).Serial);
@@ -150,15 +150,16 @@ public static class Deals
                 break;
             case Offer.Hire:
             {
-                float chance = Quotes.Hire(run, sim, player, callee, amount);
+                int credits = amount * Quotes.HireStep(run);
+                float chance = Quotes.Hire(run, sim, player, callee, credits);
                 if (DiplomacyModel.Succeeds(roll, chance))
                 {
-                    Pay(run, player, amount);
+                    Pay(run, player, credits);
                     AddHire(run, callee, player, t.HireSeconds, merc: false);
                     Result(run, callee, DipText.Format("HireYesFmt", name, Minutes(t.HireSeconds)));
                 }
                 else Result(run, callee, DipText.Format("HireNoFmt", name));
-                Log.Info($"diplomacy: hire for {amount} roll {roll:0.00} chance {chance:0.00}");
+                Log.Info($"diplomacy: hire for {credits} roll {roll:0.00} chance {chance:0.00}");
                 break;
             }
             case Offer.Merc:
@@ -171,6 +172,7 @@ public static class Deals
             }
             default: throw new ArgumentOutOfRangeException(nameof(offer), offer, null);
         }
+        return true;
     }
 
     static int Minutes(double seconds) => (int)Math.Ceiling(seconds / 60.0);
@@ -292,5 +294,6 @@ public static class Deals
         // Keeps the saved list short: results of ships that are long gone do not matter.
         if (s.Results.Count > 40) s.Results.RemoveAt(0);
         Ux.UxKit.ChatLine(run.Game, xml);
+        Ui.CommsHail.Unlock(DiplomacyChoiceDomain.Name, DiplomacyChoiceDomain.Serial(ship));
     }
 }

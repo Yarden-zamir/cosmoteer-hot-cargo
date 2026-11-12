@@ -26,7 +26,7 @@ HotCargoDiplomacy
 	YieldFmt = "<b>{0}:</b> <i>\"Enough! We give up. Take what you want.\"</i>"
 	AcceptYieldFmt = "<i>\"We accept.\"</i> Take {0} and all their fuel."
 
-	// Surrender (spec 567 to 572)
+	// Surrender (spec 567 to 573)
 	EnemyFmt = "<b>{0}:</b> <i>\"Talk fast.\"</i>"
 	DemandSurrenderFmt = "<i>\"Surrender, and you live.\"</i> {0}"
 	OfferSurrenderFmt = "<i>\"We surrender.\"</i> Pay {0}. {1}"
@@ -36,7 +36,7 @@ HotCargoDiplomacy
 	OfferNoFmt = "<b>{0}:</b> <i>\"No deals. Only wrecks.\"</i>"
 	LootDroppedFmt = "<gray>No room for {0} fuel. It floats in space next to your ship.</gray>"
 
-	// Friendly ships (spec 573 to 585)
+	// Friendly ships (spec 574 to 583)
 	FriendHelloFmt = "<b>{0}:</b> <i>\"What do you need?\"</i>"
 	MercHelloFmt = "<b>{0}:</b> <i>\"Guns for hire. We fight, you pay by the minute.\"</i>"
 	HoldsFmt = "<fame>They hold {0} of your tech.</fame>"

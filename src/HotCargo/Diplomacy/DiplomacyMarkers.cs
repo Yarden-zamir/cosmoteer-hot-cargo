@@ -14,7 +14,7 @@ static class DipText
 }
 
 /// <summary>
-/// Spec 578 and 583: ship marker labels. A ship that holds tech shows "HOLDS n TECH" (where the held tech is), a hired ship its time
+/// Spec 578: ship marker labels. A ship that holds tech shows "HOLDS n TECH" (where the held tech is), a hired ship its time
 /// left or "QUITTING", a mercenary "MERCENARY". Reads run state only.
 /// </summary>
 [HarmonyPatch(typeof(ShipIndicatorSource), nameof(ShipIndicatorSource.GetNonMouseoverText))]

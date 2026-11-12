@@ -8,7 +8,8 @@ public static class DiplomacyArea
 {
     public static void Register()
     {
-        CommsHail.Providers.Add(new DiplomacyHail());
+        CommsHail.Providers.Add(DiplomacyHail.Instance);
+        SharedChoice.SharedChoices.Register(DiplomacyChoiceDomain.Instance);
         Run.Hooks.Tick += DiplomacyTick.OnTick;
         Run.Hooks.SystemEntered += DiplomacyTick.OnSystemEntered;
         // Spec 575: tech that a friendly ship holds counts in the fleet tech count, so it is not lost (loss rule) and the corporation

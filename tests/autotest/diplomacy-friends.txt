@@ -1,4 +1,4 @@
-# Friendly ships (spec 573 to 585): hold tech and its return, the fee, betrayal, held tech against the loss rule,
+# Friendly ships (spec 574 to 583): hold tech and its return, the fee, betrayal, held tech against the loss rule,
 # hired help that joins and runs, the wanted rule, mercenaries that hail and take pay by the minute.
 newgame run
 wait 8
@@ -90,13 +90,31 @@ dip_damage friend 0.3
 wait 3
 expect dip_hirefleeing == 1
 dip_log fleeing
+# Mercenaries: an armed friendly ship near a station rolls mercenary, hails, and takes pay by the minute (slider).
+tostation
+wait 2
+dip_set MercChance 1
+dip_set MercHailChance 1
+dip_spawn friend 250
+wait 4
+expect dip_friendmerc == 1
+expect dip_hailing >= 1
+dip_page friend merc
+expect dip_pageslider == 1
+dip_mark
+dip merc friend 2
+wait 1
+expect dip_friendhired == 1
+expect dip_moneyspent > 0
+dip_log merc
 # Wanted: nobody helps.
 wanted
 wait 1
+dip_set MercChance 0
 dip_spawn friend 300
 wait 2
+dip_expect hire friend 20 == 0
 dip hire friend 0
 wait 1
-expect dip_hires <= 1
-expect dip_friendattacking == 0
+expect dip_friendhired == 0
 quit

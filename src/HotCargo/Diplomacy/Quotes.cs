@@ -107,6 +107,9 @@ public static class Quotes
 
     public static int HireFair(Run run) => Math.Max(1, Money(run, T(run).HireFairUnits));
 
+    /// <summary>Credits per step of the help offer slider: a tenth of the fair price. The slider goes from 0 to 20 steps.</summary>
+    public static int HireStep(Run run) => Math.Max(1, HireFair(run) / 10);
+
     public static float Hire(Run run, SimRoot sim, int player, Ship ship, int offer)
     {
         var t = T(run);

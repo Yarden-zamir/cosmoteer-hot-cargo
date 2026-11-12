@@ -13,7 +13,7 @@ public enum Offer
     Hire, Merc,
 }
 
-/// <summary>Saved diplomacy state (spec 586). Everything here changes only in the sim tick, the AI tick and <see cref="DiplomacyInput"/>.</summary>
+/// <summary>Saved diplomacy state (spec 586). Everything here changes only in the sim tick, the AI tick and shared choice inputs (<see cref="DiplomacyChoiceDomain"/>).</summary>
 [ReflectiveSerialization(Explicit = true)]
 public sealed class DiplomacyState
 {
@@ -21,7 +21,7 @@ public sealed class DiplomacyState
     [Serialize(Optional = true)] public HashSet<string> Used = new();
     /// <summary>Ships that already rolled a hail of this kind: "shipId:demand", "shipId:yield", "shipId:merc", "shipId:merchail".</summary>
     [Serialize(Optional = true)] public HashSet<string> Rolled = new();
-    /// <summary>Friendly ships that rolled mercenary (spec 584).</summary>
+    /// <summary>Friendly ships that rolled mercenary (spec 583).</summary>
     [Serialize(Optional = true)] public HashSet<ObjectID> Mercs = new();
     /// <summary>Run game seconds of the last hunter demand hail.</summary>
     [Serialize(Optional = true)] public double LastDemandAt = -1e9;
@@ -47,7 +47,7 @@ public sealed class DiplomacyState
     public bool WasUsed(ObjectID ship, Offer offer) => !Repeatable(offer) && Used.Contains(Key(ship, offer));
 }
 
-/// <summary>Tech that a friendly ship holds for a player (spec 573 to 578).</summary>
+/// <summary>Tech that a friendly ship holds for a player (spec 574 to 578).</summary>
 [ReflectiveSerialization(Explicit = true)]
 public sealed class HeldTech
 {
@@ -64,7 +64,7 @@ public sealed class HeldTech
     [Serialize] public Vector2 Location;
 }
 
-/// <summary>A friendly ship that fights for a player until Until (spec 579 to 583).</summary>
+/// <summary>A friendly ship that fights for a player until Until (spec 579 to 582).</summary>
 [ReflectiveSerialization(Explicit = true)]
 public sealed class Hire
 {

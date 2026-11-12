@@ -53,7 +53,7 @@ public sealed class DiplomacyTunables
     /// <summary>Deal price per unit, times the tech value.</summary>
     [Serialize(Optional = true)] public float DealPriceFactor = 1f;
 
-    // ---- Surrender (spec 567 to 572)
+    // ---- Surrender (spec 567 to 573)
 
     /// <summary>Base chance that an enemy accepts the players' demand to surrender.</summary>
     [Serialize(Optional = true)] public float SurrenderChanceBase = 0.1f;
@@ -96,7 +96,7 @@ public sealed class DiplomacyTunables
     /// <summary>Price factor when the enemy's faction wants the players.</summary>
     [Serialize(Optional = true)] public float OfferWantedPriceFactor = 1.5f;
 
-    // ---- Friendly ships hold tech (spec 573 to 578)
+    // ---- Friendly ships hold tech (spec 574 to 578)
 
     /// <summary>Base chance that a friendly ship agrees to hold tech.</summary>
     [Serialize(Optional = true)] public float HoldChanceBase = 0.7f;
@@ -129,7 +129,7 @@ public sealed class DiplomacyTunables
     /// <summary>Betrayal chance change when the players paid a fee.</summary>
     [Serialize(Optional = true)] public float BetrayFeePaid = -0.05f;
 
-    // ---- Hired help and mercenaries (spec 579 to 589)
+    // ---- Hired help and mercenaries (spec 579 to 583)
 
     /// <summary>Fair price for help, in event money units. The offer slider goes up to twice this.</summary>
     [Serialize(Optional = true)] public float HireFairUnits = 1f;

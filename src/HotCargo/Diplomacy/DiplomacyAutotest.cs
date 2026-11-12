@@ -20,7 +20,7 @@ namespace HotCargo.Diplomacy;
 
 /// <summary>
 /// Autotest commands and fields of the Diplomacy area. Targets: hunter (first hunter by ID), hunterN, friend or enemy (the last ship
-/// that dip_spawn made). Commands that change the sim run with "mp" in co-op tests; "dip" sends the real MP input like a click.
+/// that dip_spawn made), fresh (the first hunter that got no offer yet). Commands that change the sim run with "mp" in co-op tests; "dip" sends the real MP input like a click.
 /// </summary>
 static class DiplomacyAutotest
 {
@@ -36,6 +36,13 @@ static class DiplomacyAutotest
     internal static Ship Target(string name)
     {
         var sim = Sim();
+        if (name == "fresh")
+        {
+            var used = R().State.Diplomacy.Used;
+            return HunterSpawner.Hunters(sim).OrderBy(h => h.UniqueID)
+                .FirstOrDefault(h => !Enum.GetValues<Offer>().Any(o => used.Contains(DiplomacyState.Key(h.UniqueID, o))))
+                ?? throw new InvalidOperationException("no hunter without offers");
+        }
         if (name.StartsWith("hunter", StringComparison.Ordinal))
         {
             int i = name.Length > 6 ? Int(name[6..]) : 0;
@@ -49,14 +56,14 @@ static class DiplomacyAutotest
 
     internal static void Register()
     {
-        // dip <offer> <target> [amount]: sends the choice as the acting player, through the MP input.
+        // dip <offer> <target> [amount]: sends the choice as the local player, through the shared choice input like a click.
         Autotest.Commands["dip"] = arg =>
         {
             var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (p.Length is < 2 or > 3) throw new InvalidOperationException("dip needs: offer target [amount]");
             var offer = Enum.Parse<Offer>(p[0], ignoreCase: true);
             var target = Target(p[1]);
-            R().Game.NetManager.EnqueueInput(new DiplomacyInput(Me(), target, offer, p.Length == 3 ? Int(p[2]) : 0));
+            R().Game.NetManager.EnqueueInput(DiplomacyChoiceDomain.Pick(target, offer, p.Length == 3 ? Int(p[2]) : 0));
         };
         Autotest.Commands["dip_set"] = arg => Autotest.SetField(R().T.Diplomacy, arg);
         // dip_spawn friend|enemy|trader [distance]: a tier-1 combat ship (or a trade ship) near the acting ship, with chances off for hails.
@@ -158,6 +165,7 @@ static class DiplomacyAutotest
         Autotest.Fields["dip_held"] = () => R().State.Diplomacy.Held.Sum(h => h.Units);
         Autotest.Fields["dip_asks"] = () => R().State.Diplomacy.FeeAsks.Count;
         Autotest.Fields["dip_hires"] = () => R().State.Diplomacy.Hires.Count;
+        Autotest.Fields["dip_friendhired"] = () => _friend is { } f && R().State.Diplomacy.Hires.Any(h => h.Ship == f) ? 1 : 0;
         Autotest.Fields["dip_hirefleeing"] = () => R().State.Diplomacy.Hires.Count(h => h.Fleeing);
         Autotest.Fields["dip_mercs"] = () => R().State.Diplomacy.Mercs.Count;
         Autotest.Fields["dip_friendmerc"] = () => _friend is { } f && R().State.Diplomacy.Mercs.Contains(f) ? 1 : 0;
@@ -198,7 +206,7 @@ static class DiplomacyAutotest
             Offer.DemandSurrender => Quotes.DemandSurrender(run, sim, player, target),
             Offer.OfferSurrender => Quotes.OfferSurrender(run, sim, player, target),
             Offer.Hold => Quotes.Hold(run, sim, target, amount),
-            Offer.Hire => Quotes.Hire(run, sim, player, target, amount),
+            Offer.Hire => Quotes.Hire(run, sim, player, target, amount * Quotes.HireStep(run)),
             _ => throw new InvalidOperationException($"no chance for {offer}"),
         };
     }

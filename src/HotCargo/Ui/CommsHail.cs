@@ -18,6 +18,22 @@ public sealed class HailPage : AIDialogueModule.DialogueExchange
     /// <summary>Adds a paragraph under the text that is there.</summary>
     public void AddText(string xml) => PrimaryDialogue = PrimaryDialogue.Length == 0 ? xml : PrimaryDialogue + "\n\n" + xml;
 
+    /// <summary>
+    /// The shared choice domain and page serial of the page's choice buttons (spec 600 and later), or null when no provider set it.
+    /// The first provider that sets it owns the page's shared options.
+    /// </summary>
+    public (string Domain, int Serial)? Shared { get; set; }
+
+    /// <summary>A choice that goes through the shared choice input of <see cref="Shared"/>: co-op players see hovers and can vote.</summary>
+    public HailChoice AddChoice(string xml, int option, bool active = true, string? tooltip = null, bool close = false)
+    {
+        if (Shared is null) throw new InvalidOperationException("set HailPage.Shared before adding a shared choice");
+        var b = new HailChoice(option) { Text = xml, Tooltip = tooltip, SelfInputActive = active, CloseOnClick = close };
+        Buttons.Add(b);
+        return b;
+    }
+
+    /// <summary>A local button: navigation inside the page, no sim change.</summary>
     public AIDialogueModule.DialogueButton AddButton(string xml, Action? onClick, bool active = true, string? tooltip = null, bool close = false)
     {
         var b = new AIDialogueModule.DialogueButton { Text = xml, Tooltip = tooltip, SelfInputActive = active, CloseOnClick = close };
@@ -25,6 +41,12 @@ public sealed class HailPage : AIDialogueModule.DialogueExchange
         Buttons.Add(b);
         return b;
     }
+}
+
+/// <summary>A button that stands for a shared choice option. CommsHail sets its click to the shared choice panel.</summary>
+public sealed class HailChoice(int option) : AIDialogueModule.DialogueButton
+{
+    public int Option { get; } = option;
 }
 
 /// <summary>
@@ -40,8 +62,9 @@ public interface IHailProvider
 /// <summary>
 /// The one Hot Cargo hook into ship comms (spec 560). Providers register at boot. A ship with options from any provider answers
 /// calls and shows a dialogue tab; the page starts with the vanilla dialogue (surrender, bounty), then each provider adds its part.
-/// Buttons send MP inputs; this hook changes no sim state.
-/// Limit: one slider per page and providers in registration order. Revisit when a page needs two sliders or an order rule.
+/// Choice buttons go through the shared choice panel and input (co-op hovers and votes); this hook changes no sim state.
+/// Limits: one slider and one shared choice domain per page, providers in registration order. Revisit when a page needs two
+/// sliders, choices of two domains or an order rule.
 /// </summary>
 public static class CommsHail
 {
@@ -50,6 +73,19 @@ public static class CommsHail
     /// <summary>Slider values by callee and slider key. Local UI state, never saved and never sent except inside an input.</summary>
     static readonly Dictionary<(ObjectID, string), int> Values = new();
     static readonly ConditionalWeakTable<CommDialogueTab, SliderRow> Rows = new();
+    static readonly ConditionalWeakTable<CommDialogueTab, SharedState> Panels = new();
+
+    /// <summary>The shared choice panel of a dialogue tab and the lock after a first pick, like the event window.</summary>
+    sealed class SharedState(SharedChoice.SharedChoicePanel panel, string domain)
+    {
+        public readonly SharedChoice.SharedChoicePanel Panel = panel;
+        public readonly string Domain = domain;
+        public int LockedSerial;
+        public double LockedUntil;
+    }
+
+    /// <summary>Real seconds that the buttons stay locked after a first pick: longer than the MP input delay, like the event window.</summary>
+    const double LockSeconds = 3.0;
 
     public static int SliderValue(Ship callee, SliderSpec spec) =>
         spec.Snap(Values.TryGetValue((callee.UniqueID, spec.Key), out int v) ? v : spec.Default);
@@ -126,6 +162,7 @@ public static class CommsHail
             pageBox.Children.Insert(pageBox.Children.IndexOf(__instance._dialogueButtonsBox), row.Row);
             Rows.AddOrUpdate(__instance, row);
             Show(__instance, row);
+            UpdateShared(__instance, pageBox);
         });
     }
 
@@ -136,7 +173,50 @@ public static class CommsHail
         static void Postfix(CommDialogueTab __instance) => Errors.Guard("hail slider", () =>
         {
             if (Rows.TryGetValue(__instance, out var row)) Show(__instance, row);
+            UpdateShared(__instance, null);
         });
+    }
+
+    /// <summary>
+    /// Wires the choice buttons of a shared page to its panel: the click goes through the panel, the panel draws hovers and votes,
+    /// and a first pick locks the buttons until the result arrives or LockSeconds pass. A page without shared choices hides the panel.
+    /// </summary>
+    static void UpdateShared(CommDialogueTab tab, Halfling.Gui.ScrollBox? pageBox)
+    {
+        if (Run.Current is not { } run) return;
+        var page = tab._currentDialogue as HailPage;
+        var buttons = tab._dialogueButtonsBox.Children;
+        if (!Panels.TryGetValue(tab, out var shared))
+        {
+            if (page?.Shared is not { } first || pageBox is null) return;
+            shared = new SharedState(new SharedChoice.SharedChoicePanel(run, first.Domain), first.Domain);
+            pageBox.Children.Insert(pageBox.Children.IndexOf(tab._dialogueButtonsBox), shared.Panel.Bar);
+            Panels.AddOrUpdate(tab, shared);
+        }
+        if (page?.Shared is not { } s || s.Domain != shared.Domain) { shared.Panel.Hide(buttons); return; }
+        bool locked = shared.LockedSerial == s.Serial && Halfling.App.Clock.Time.Seconds < shared.LockedUntil;
+        var slots = new List<SharedChoice.OptionSlot>();
+        for (int i = 0; i < page.Buttons.Count && i < buttons.Count; i++)
+        {
+            if (page.Buttons[i] is not HailChoice choice) continue;
+            var widget = buttons[i];
+            if (locked) widget.SelfInputActive = false;
+            slots.Add(new SharedChoice.OptionSlot(widget, choice.Option));
+            choice.OnClick = (_, _) => Errors.Guard("hail choice", () =>
+            {
+                if (!shared.Panel.Click(s.Serial, choice.Option)) return;
+                shared.LockedSerial = s.Serial;
+                shared.LockedUntil = Halfling.App.Clock.Time.Seconds + LockSeconds;
+            });
+        }
+        shared.Panel.Update(s.Serial, slots);
+    }
+
+    /// <summary>Unlocks the buttons of every tab with this page, when its result arrived. Called by providers after a result changes.</summary>
+    public static void Unlock(string domain, int serial)
+    {
+        foreach (var (_, shared) in Panels)
+            if (shared.Domain == domain && shared.LockedSerial == serial) shared.LockedUntil = 0;
     }
 
     static void Show(CommDialogueTab tab, SliderRow row)

@@ -1,4 +1,4 @@
-// Hot Cargo diplomacy module for vanilla AIs (spec 580 to 583). mod/diplomacy/actions.rules appends it to the strategy modules of the
+// Hot Cargo diplomacy module for vanilla AIs (spec 580 to 582). mod/diplomacy/actions.rules appends it to the strategy modules of the
 // combat and trade AIs. It does nothing unless the players hired the ship; then it fights for them, follows them and runs when beaten.
 Hired
 {

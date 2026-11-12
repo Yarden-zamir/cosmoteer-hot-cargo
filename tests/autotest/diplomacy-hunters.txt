@@ -41,9 +41,9 @@ dip_log refused
 dip_set HunterLeaveSeconds 2
 spawnstage Warning
 wait 2
-dip_near hunter1 250
+dip_near fresh 250
 wait 1
-dip handover hunter1 3
+dip handover fresh 3
 wait 1
 expect dip_vaulttech == 5
 expect dip_leaving >= 1
