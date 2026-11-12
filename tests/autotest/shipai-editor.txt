@@ -1,0 +1,60 @@
+# Ship tactics editor (spec 419 to 422): condition terms (add, NOT, OR, remove), personal presets, apply to the selected ships.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+tactics_presets_reset
+tactics_editor open
+tactics_editor apply Aggressive
+# Row 1: HealthBelow=20 AND NOT CarryingTech OR EnemiesAtLeast=3 -> RetreatRepair.
+tactics_editor addterm 1
+tactics_editor cond 1 CarryingTech 2
+tactics_editor not 1 2
+tactics_editor addterm 1
+tactics_editor cond 1 EnemiesAtLeast 3
+tactics_editor param 1 3 3
+tactics_editor or 1 3
+wait 2
+expecttactics HC1:HealthBelow=20&!CarryingTech|EnemiesAtLeast=3>RetreatRepair;Always>TargetWeakest;Always>CloseIn;Always>FocusTarget
+# Remove the middle term; the OR stays with its term.
+tactics_editor removeterm 1 2
+wait 2
+expecttactics HC1:HealthBelow=20|EnemiesAtLeast=3>RetreatRepair;Always>TargetWeakest;Always>CloseIn;Always>FocusTarget
+# Facing action with its side.
+tactics_editor act 3 Face
+tactics_editor actparam 3 2
+wait 2
+expecttactics HC1:HealthBelow=20|EnemiesAtLeast=3>RetreatRepair;Always>TargetWeakest;Always>Face=2;Always>FocusTarget
+# Personal presets: save, apply after a change, delete. The file is a local preference, not sim state.
+expect tactics_presets == 0
+tactics_editor savepreset My brawler
+expect tactics_presets == 1
+tactics_editor apply Sniper
+wait 2
+expecttactics Sniper
+tactics_editor apply My brawler
+wait 2
+expecttactics HC1:HealthBelow=20|EnemiesAtLeast=3>RetreatRepair;Always>TargetWeakest;Always>Face=2;Always>FocusTarget
+# Saving under the same name replaces the preset.
+tactics_editor apply Escort
+tactics_editor savepreset My brawler
+expect tactics_presets == 1
+tactics_editor apply My brawler
+wait 2
+expecttactics Escort
+tactics_editor deletepreset My brawler
+expect tactics_presets == 0
+# Apply to selected: a second own ship gets the same rows and the Auto switch, through its own tactics input.
+tactics_editor auto on
+tactics_editor close
+tactics_ally
+tactics_select all
+tactics_editor open
+tactics_editor toselected
+wait 2
+tactics_ship 1
+expecttactics Escort
+expect tactics_auto == 1
+tactics_ship 0
+tactics_editor close
+quit

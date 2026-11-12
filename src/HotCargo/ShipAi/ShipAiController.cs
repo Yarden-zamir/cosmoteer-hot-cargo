@@ -225,7 +225,7 @@ internal static class ShipAiController
 
     /// <summary>
     /// Spec 414: flies to the nearest tech crate on radar and gives the vanilla crew collect order (as SalvageJob.OnPartSalvaged does
-    /// for salvage) for every tech crate within CollectRange of the hull.
+    /// for salvage) for every tech crate within the crew's safe distance of the hull, the limit of the vanilla collect tool.
     /// </summary>
     static void Collect(Ship ship, ShipTactics t, ShipAiTunables tun, View view)
     {
@@ -233,7 +233,7 @@ internal static class ShipAiController
         if (ship.DetWorldBoundingCircle.DistanceTo(nearest.DetWorldLocation) > tun.CollectDistance) MoveTo(ship, t, nearest.DetWorldLocation, tun.CollectDistance * 0.5f);
         else Stop(ship, t);
         foreach (var crate in view.Crates)
-            if (ship.DetWorldBoundingCircle.DistanceTo(crate.DetWorldLocation) <= tun.CollectRange) PickUp(ship, crate);
+            if (ship.DetWorldBoundingCircle.DistanceTo(crate.DetWorldLocation) < GameApp.Rules.Crew.LoseHomeShipWarningDistance) PickUp(ship, crate);
     }
 
     /// <summary>Same order as SalvageJob.OnPartSalvaged._CollectNugget: crew jobs for the part of the crate that no crew fetches yet.</summary>

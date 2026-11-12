@@ -41,6 +41,9 @@ internal static class TacticsPresets
         return true;
     }
 
+    /// <summary>Test only: deletes the file.</summary>
+    internal static void Reset() => File.Delete(FilePath);
+
     static void Write(List<(string Name, string Text)> presets)
     {
         File.WriteAllText(FilePath, ShipAiModel.FormatPresets(presets));

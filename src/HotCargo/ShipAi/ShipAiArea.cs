@@ -157,6 +157,21 @@ public static class ShipAiArea
             return hunters.MinBy(HunterOrders.HealthFraction)!.UniqueID == id ? 2 : 0;
         };
         Autotest.Fields["tactics_editor"] = () => TacticsEditor.IsOpen ? 1 : 0;
+        Autotest.Fields["tactics_facing_row"] = () => Tactics().FacingRow;
+        // The facing of the tactics attack order: the rotation offset in whole degrees while it has a rotation target, else -999.
+        Autotest.Fields["tactics_face"] = () => TestShip().Commands.CurConfirmedCommand is AttackCommand { RotationTarget: not null, Rotation: { } r }
+            ? (int)MathF.Round((float)r * 180f / MathF.PI) : -999;
+        Autotest.Fields["tactics_terms"] = () => ShipTactics.Of(TestShip())?.Rows.Sum(r => r.Terms.Length) ?? 0;
+        Autotest.Fields["tactics_presets"] = () => TacticsPresets.Load().Count;
+        // tactics_presets_reset: deletes this slot's personal preset file, so a test starts without presets. Test only.
+        Autotest.Commands["tactics_presets_reset"] = _ => TacticsPresets.Reset();
+        // tactics_select all|none: selects every own ship of the local player, like a drag box, or none. UI only.
+        Autotest.Commands["tactics_select"] = arg =>
+        {
+            var input = Sim().PlayerInput;
+            if (arg == "none") input.SelectShips([]);
+            else input.SelectShips(Sim().Ships.HumanPlayerShips.Where(s => s.Commands.IsCommandableByLocalPlayer).ToList());
+        };
         Autotest.Fields["design_rows"] = () => _loadedDesign is null ? -1 : ShipTactics.Of(_loadedDesign)?.Rows.Count ?? 0;
         Autotest.Fields["design_hash"] = () => ShipAiModel.StableHash(_loadedDesign is null ? "" : ShipTactics.Of(_loadedDesign)?.Text ?? "");
         Autotest.Fields["design_auto"] = () => _loadedDesign is not null && ShipTactics.Of(_loadedDesign) is { Auto: true } ? 1 : 0;

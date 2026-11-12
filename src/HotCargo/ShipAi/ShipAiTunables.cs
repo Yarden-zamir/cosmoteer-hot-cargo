@@ -27,8 +27,6 @@ public sealed class ShipAiTunables
     [Serialize(Optional = true)] public float MinHoldSeconds = 2f;
     /// <summary>Collect tech: the ship flies to the nearest tech crate until its hull is this close to the crate.</summary>
     [Serialize(Optional = true)] public float CollectDistance = 150f;
-    /// <summary>Collect tech: the crew go out for every tech crate within this distance of the hull.</summary>
-    [Serialize(Optional = true)] public float CollectRange = 600f;
     /// <summary>
     /// "Fire: disruptors" uses the weapons of these parts. Limit: no rule marks a weapon as a disruptor, so this list names them.
     /// Revisit if the game rules gain such a flag.
