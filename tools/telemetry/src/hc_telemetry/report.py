@@ -62,7 +62,9 @@ def line_chart(title: str, series: list[Series], marks: Sequence[tuple[float, st
         return None
     fig, ax = plt.subplots(figsize=(9, 3.2))
     for s in series:
-        ax.plot([x / xscale for x in s.x], s.y, label=s.label, linewidth=1.4)
+        # A log axis has no place for 0 or less; those points (an empty fleet in a jump) drop out.
+        points = [(x, y) for x, y in zip(s.x, s.y, strict=True) if not logy or y > 0]
+        ax.plot([x / xscale for x, _ in points], [y for _, y in points], label=s.label, linewidth=1.4)
     for x, label in marks:
         ax.axvline(x / xscale, color="#888", linestyle="--", linewidth=0.8)
         ax.text(x / xscale, ax.get_ylim()[1], label, fontsize=7, va="top", ha="left", color="#555")
@@ -70,7 +72,7 @@ def line_chart(title: str, series: list[Series], marks: Sequence[tuple[float, st
         ax.axvline(x / xscale, color="#d62728", linestyle=":", linewidth=0.8)
         ax.text(x / xscale, ax.get_ylim()[0], label, fontsize=7, va="bottom", ha="right", rotation=90, color="#d62728")
     if logy:
-        ax.set_yscale("symlog")
+        ax.set_yscale("log")
     ax.set_title(title, fontsize=10)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -100,7 +102,7 @@ def run_charts(r: RunReport) -> list[str]:
         bar_chart("Heat by source", r.heat_sources),
         bar_chart("Stay per sector visit (game seconds)", dict(r.sector_stays)),
         bar_chart("AI strategy switches logged, by target module", r.ai_modules),
-        line_chart("Performance per window", r.perf, xlabel="real time (min)"),
+        line_chart("Performance per window", r.perf, xlabel="real time of the session (min)"),
     ]
     return [c for c in charts if c]
 
