@@ -1,0 +1,29 @@
+# Asteroid cover (spec 366): with rocks nearby, a covering ship hides behind one so the rock blocks the line to its target.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+tacticlog on
+# Only cover moves these ships: the other behaviors would pull them elsewhere.
+aiset FleeOnVanilla false
+aiset RegroupOnVanilla false
+aiset CallOnVanilla false
+aiset BaitEnabled false
+aiset FallBackEnabled false
+aiset TeamEnabled false
+aitrait Pirate Raiders Cover 1
+aitrait Pirate Ambushers Cover 1
+aitrait Pirate Raiders Brawl 0
+aitrait Pirate Ambushers Brawl 0
+aiset CoverPeekSeconds 3
+aiset CoverHideSeconds 30
+airocks 8 600
+aispawn pirates 6 1
+wait 2
+aiprofiles cover
+expect ai_has_cover >= 1
+waitfor ai_hiding >= 1 60
+waitfor ai_covered >= 1 40
+aiprofiles hiding
+expect tactic_cover > 0
+quit

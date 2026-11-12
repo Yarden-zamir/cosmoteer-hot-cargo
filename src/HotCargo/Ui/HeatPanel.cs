@@ -108,7 +108,7 @@ sealed class HeatPanel : LayoutBox
         DetectStageStart(run, now);
 
         _sector.Text = UxKit.Format("SectorFmt", s.SectorIndex, t.Journey.RunSectorCount);
-        float mult = HeatModel.Multiplier(t.Heat.HeatMultiplierByUnits, s.FleetTech);
+        float mult = run.HeatMultiplier(s.FleetTech);
         _status.Text = s.Result switch
         {
             RunResult.Won => $"<good>{UxKit.Format("StatusWonFmt", s.Score.ToString("N0"))}</good>",
@@ -116,7 +116,7 @@ sealed class HeatPanel : LayoutBox
             _ when !s.HeatEnabled => $"<gray>{UxKit.Text("StatusHeatOff")}</gray>",
             _ => StatusLine(s, t.Heat, run.TimeHeatPerMinute(s.FleetTech) + Contracts.ContractBook.TrailPerMinute(run, Contracts.ContractBook.OpenWeight(run))),
         };
-        long value = t.Tech.Value(s);
+        long value = run.TechValue();
         _tech.Text = UxKit.Format("TechFmt", s.FleetTech, value.ToString("N0"));
         string? contracts = Contracts.ContractsUi.HeatPanelLine(run);
         _contracts.SelfActive = contracts is not null;

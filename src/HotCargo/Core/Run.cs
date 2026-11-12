@@ -2,6 +2,7 @@ using Cosmoteer.Game;
 using Cosmoteer.Modes.Career;
 using Cosmoteer.Simulation;
 using Halfling.Events;
+using HotCargo.RunModes;
 
 namespace HotCargo.Core;
 
@@ -28,6 +29,8 @@ public sealed class Run
         public static event Action<Run>? NewRunStarted;
         /// <summary>Runs inside each sim tick while the run is Running, after FleetTech is updated. Arguments: run, sim, tick seconds.</summary>
         public static event Action<Run, SimRoot, double>? Tick;
+        /// <summary>Runs once when the run is won or lost, after State.Result and State.EndReason are set. Sim logic.</summary>
+        public static event Action<Run>? RunEnded;
         /// <summary>Factor on time heat in the current system (spec 24). Set by the Factions area: shelter and corporate ally space.</summary>
         public static Func<Run, float> TimeHeatFactor = _ => 1f;
         /// <summary>Factor on notoriety gains in the current system (spec 19). Set by the Factions area: corporate ally space.</summary>
@@ -35,6 +38,7 @@ public sealed class Run
         /// <summary>Factor on Heat.HeatCarryOverFraction for the system switch that runs now (spec 28). Set by the Factions area: relay or blind jump.</summary>
         public static Func<Run, float> CarryOverFactor = _ => 1f;
 
+        internal static void RaiseRunEnded(Run r) => Each(RunEnded, h => h(r));
         internal static void RaiseStageStarted(Run r, SimRoot s, int i) => Each(StageStarted, h => h(r, s, i));
         internal static void RaiseStrikeWave(Run r, SimRoot s) => Each(StrikeWave, h => h(r, s));
         internal static void RaiseSystemEntered(Run r, bool first) => Each(SystemEntered, h => h(r, first));
@@ -136,16 +140,21 @@ public sealed class Run
 
     /// <summary>Time heat per game minute with this fleet tech count, in the current system (spec 24 and the Factions factor).</summary>
     public float TimeHeatPerMinute(int fleetTech) =>
-        HeatModel.TimeHeat(T.Heat.HeatPerGameMinute, HeatModel.Multiplier(T.Heat.HeatMultiplierByUnits, fleetTech), 60.0) * Hooks.TimeHeatFactor(this);
+        HeatModel.TimeHeat(T.Heat.HeatPerGameMinute, HeatMultiplier(fleetTech), 60.0) * Hooks.TimeHeatFactor(this);
 
     void OnFameChanged(object? sender, ValueChangedEventArgs<int> e)
     {
         if (!PressureActive) return;
         int gained = e.NewValue - e.OldValue;
         if (gained <= 0) return;
-        float mult = HeatModel.Multiplier(T.Heat.HeatMultiplierByUnits, State.FleetTech);
-        AddHeat(HeatModel.FameHeat(T.Heat.HeatPerStandardMission, mult, gained, (int)Math.Round(StandardMissionFamePaid(CurrentTier))), Game.Sim);
+        AddHeat(HeatModel.FameHeat(T.Heat.HeatPerStandardMission, HeatMultiplier(State.FleetTech), gained, (int)Math.Round(StandardMissionFamePaid(CurrentTier))), Game.Sim);
     }
+
+    /// <summary>
+    /// Multiplier of time and fame heat (spec 24, 25) for a fleet tech count: the tech table (spec 26) × the difficulty heat rate (spec 681).
+    /// Every heat gain from time or fame and every shown heat rate uses it.
+    /// </summary>
+    public float HeatMultiplier(int units) => HeatModel.Multiplier(T.Heat.HeatMultiplierByUnits, units) * this.Pressure().HeatRate;
 
     /// <summary>
     /// Fame that a standard mission of the tier pays: the vanilla table value times the same factors as the payout
@@ -218,6 +227,7 @@ public sealed class Run
         State.Result = RunResult.Lost;
         State.EndReason = reason;
         Log.Info($"run lost: {reason}");
+        Hooks.RaiseRunEnded(this);
     }
 
     /// <summary>Ends the run as won. Heat stops; the career can continue.</summary>
@@ -228,6 +238,7 @@ public sealed class Run
         State.HeatEnabled = false;
         State.EndReason = reason;
         Log.Info($"run won: {reason}");
+        Hooks.RaiseRunEnded(this);
     }
 
     /// <summary>

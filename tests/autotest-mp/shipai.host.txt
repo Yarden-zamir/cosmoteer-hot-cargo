@@ -1,0 +1,31 @@
+# Co-op ship tactics, host side (spec 409, 411): edits by either player go through the tactics input and stay in sync,
+# and both machines run the same decisions in a fight.
+mphost {PORT}
+mpstart 2
+mp ev_set Enabled false
+mp godmode on
+mp aiset FleeEnabled false
+tactics Defensive
+tacticsauto on
+waitfor tactics_any_auto >= 2 90
+expecttacticsany Sniper
+expecttacticsany Defensive
+# The client edits in the editor window.
+waitfor mpmark >= 1 120
+expecttacticsany HC1:HealthBelow=25>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
+mp spawnstage Patrol
+wait 40
+expect tactics_evals > 20
+expect desyncs == 0
+# A resync sends the host's game to every machine (late join, desync recovery). The tactics travel with the ships.
+mpresync
+waitfor mpgames >= 2 120
+waitfor active == 1 60
+expecttacticsany Defensive
+expecttacticsany HC1:HealthBelow=25>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
+expect tactics_any_auto == 2
+wait 10
+expect desyncs == 0
+mp mpmark 2
+waitfor mpconnected == 0 240
+quit

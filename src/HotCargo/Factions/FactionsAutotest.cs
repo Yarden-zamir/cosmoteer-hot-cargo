@@ -169,7 +169,7 @@ static class FactionsAutotest
         R().Game.Sim.Mode.GetResourceBuyCost(PricedResource(), TechAutotest.NearestStation().Metadata.PlayerIndex);
 
     static double SellRatio(FactionRules f) =>
-        R().Game.Sim.Mode.GetResourceSellRefund(Vaults.TechId, f.CivilianPlayerIndex) / (double)R().T.Tech.Value(R().State);
+        R().Game.Sim.Mode.GetResourceSellRefund(Vaults.TechId, f.CivilianPlayerIndex) / (double)R().TechValue();
 
     static double CrewPrice()
     {

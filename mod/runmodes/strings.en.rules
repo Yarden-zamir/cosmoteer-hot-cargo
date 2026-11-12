@@ -1,0 +1,12 @@
+HotCargoRunModes
+{
+	DifficultyFmt = "<gray>DIFFICULTY</gray>  {0}\nThe corporation adjusts: {1}."
+	HeatFmt = "heat ×{0:0.##}"
+	ShipsFmt = "hunter ships ×{0:0.##}"
+	TiersFmt = "hunter tier {0}"
+	FeesFmt = "contract fees ×{0:0.##}"
+	TechFmt = "tech value ×{0:0.##}"
+	IronmanIntro = "IRONMAN: lose the tech and this save is deleted."
+	IronmanLoss = "IRONMAN: the save is deleted. This run cannot be reloaded."
+	IronmanWin = "IRONMAN: your score is final."
+}

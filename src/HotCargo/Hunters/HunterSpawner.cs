@@ -10,6 +10,7 @@ using Cosmoteer.Simulation.Stasis;
 using Halfling;
 using Halfling.Geometry;
 using HotCargo.Core;
+using HotCargo.RunModes;
 
 namespace HotCargo.Hunters;
 
@@ -84,8 +85,9 @@ public static class HunterSpawner
         if (sim != run.Game.Sim) return;
         var r = Response(run, stageName);
         float progress = WaveModel.Progress(run.State.SectorIndex, run.T.Journey.RunSectorCount);
-        int ships = WaveModel.ShipCount(r.ShipCount, r.EarlyScale, progress);
-        int tier = run.CurrentTier + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress);
+        // Spec 682 and 686: the difficulty factors and the fame title prototype change ships and tier on top of the stage scaling.
+        int ships = run.Pressure().Ships(WaveModel.ShipCount(r.ShipCount, r.EarlyScale, progress));
+        int tier = run.CurrentTier + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + RunModes.Difficulty.ExtraHunterTiers(run);
         int[] groups = WaveModel.SplitWaves(ships, r.Waves);
         var later = Enumerable.Range(1, groups.Length - 1).Select(i => new PendingWave
         {

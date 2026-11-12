@@ -25,12 +25,17 @@ public static class Mod
             Tactics.TacticsArea.Register();
             Events.EventsArea.Register();
             Chains.ChainsArea.Register();
+            SharedChoice.SharedChoiceArea.Register();
             Contracts.ContractsArea.Register();
             Ux.UxArea.Register();
             Worlds.WorldsArea.Register();
+            ShipAi.ShipAiArea.Register();
             Scaling.ScalingArea.Register();
+            RunModes.RunModesArea.Register();
             Factions.FactionsArea.Register();
             TunablesMenu.TunablesMenuArea.Register();
+            // Last: its run log hooks run after the hooks of the other areas.
+            Onboarding.OnboardingArea.Register();
             Log.Info($"harmony patched {harmony.GetPatchedMethods().Count()} methods; mod root {ModRoot}");
         }
         catch (Exception ex)

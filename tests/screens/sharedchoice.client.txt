@@ -1,0 +1,9 @@
+# Co-op shared choice screenshots, client side (headless).
+mpjoin 127.0.0.1:{PORT}
+mpready
+waitfor ev_pending == 1 60
+hover 3
+waitfor sc_votemode == 1 120
+vote 2
+waitfor mpmark >= 1 120
+quit
