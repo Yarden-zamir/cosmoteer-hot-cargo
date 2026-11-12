@@ -169,7 +169,7 @@ internal sealed class CallStrategy(CallStrategyRules rules) : AIStrategyModule
     bool Assist(Ship ship, Time now)
     {
         if (_assist is null) return false;
-        if (now >= _assistUntil || _assist.IsDisposed || _assist.IsJunk || !ship.IsEnemiesWith(_assist))
+        if (now >= _assistUntil || !_assist.IsLiveWith(ship) || !ship.IsEnemiesWith(_assist))
         {
             _assist = null;
             return false;
