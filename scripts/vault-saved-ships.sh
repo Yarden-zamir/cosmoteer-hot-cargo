@@ -2,12 +2,19 @@
 # Build Tech Vaults into ship designs with the game's own code (autotest command vaultdesigns, spec 1016-1018).
 # Usage:
 #   vault-saved-ships.sh               the player's saved ships (<save folder>\Saved Ships, Paths.SavedShipsFolder), changed in place after a full backup.
+#   vault-saved-ships.sh --from B      the same, but the designs come from the folder B in the save folder (an earlier backup,
+#                                      for example "Saved Ships.backup-20261112-222246"). B is only read.
 #   vault-saved-ships.sh --starters D  the vanilla starter ships; the new designs go to the local folder D (mod/tech/starters).
 # Runs in the player's game slot (main, the only slot with graphics), only when that game is closed, under the main-slot lock.
 # Then it installs origin/main back into the player's game (scripts/install-player.sh).
 set -euo pipefail
-MODE=saved; OUT=""
-if [[ "${1:-}" == "--starters" ]]; then MODE=starters; OUT="${2:?usage: vault-saved-ships.sh [--starters <local out dir>]}"; fi
+MODE=saved; OUT=""; FROM=""
+case "${1:-}" in
+  --starters) MODE=starters; OUT="${2:?usage: vault-saved-ships.sh [--from <backup folder> | --starters <local out dir>]}" ;;
+  --from) FROM="${2:?usage: vault-saved-ships.sh --from <backup folder>}" ;;
+  "") ;;
+  *) echo "usage: vault-saved-ships.sh [--from <backup folder> | --starters <local out dir>]"; exit 2 ;;
+esac
 source "$(dirname "$0")/autotest-lib.sh"
 export SLOT=main
 LOCK=/tmp/hot_cargo_main_slot.lock
@@ -32,7 +39,9 @@ if [[ "$MODE" == saved ]]; then
     Copy-Item $ships $backup -Recurse
     $a = @(Get-ChildItem $ships -Recurse -File).Count; $b = @(Get-ChildItem $backup -Recurse -File).Count
     if ($a -ne $b) { throw "backup has $b files, Ships has $a" }
-    "$ships|$ships|$backup|$a"' </dev/null | tr -d '\r')"
+    $from = "'"$FROM"'"; $src = if ($from) { Join-Path $mainRoot $from } else { $ships }
+    if (-not (Test-Path $src)) { throw "no folder $from in the save folder" }
+    "$src|$ships|$backup|$a"' </dev/null | tr -d '\r')"
   IFS='|' read -r SRC DST BACKUP COUNT <<<"$PATHS"
   echo "backup: $BACKUP ($COUNT files)"
 else

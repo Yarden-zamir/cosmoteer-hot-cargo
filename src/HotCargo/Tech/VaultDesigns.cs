@@ -58,6 +58,11 @@ static class VaultDesigns
     static bool _checkPassed;
     static int _checkVaults;
 
+    /// <summary>Real seconds that a new design runs in the sim before the save, so that its powered parts light up in the picture.</summary>
+    const double PowerUpSeconds = 3;
+
+    sealed record Batch(Cosmoteer.Game.GameRoot Game, string Src, string Dst, int Units, Queue<string> Files, List<string> Report);
+
     static void Run(string arg)
     {
         var dirs = arg.Split('|', StringSplitOptions.TrimEntries);
@@ -66,57 +71,97 @@ static class VaultDesigns
         if (!Directory.Exists(src)) throw new DirectoryNotFoundException(src);
         var game = Autotest.Game ?? throw new InvalidOperationException("vaultdesigns needs a running game");
         int units = NewGameCheck.RequiredUnits(coop: false);
-        var report = new List<string> { $"Tech Vaults for {units} starting tech. Source {src}, output {dst}." };
-        var files = Directory.EnumerateFiles(src, "*.ship.png", SearchOption.AllDirectories).Order(StringComparer.Ordinal).ToList();
-        foreach (var file in files)
-        {
-            string rel = Path.GetRelativePath(src, file);
-            string line;
-            try { line = Design(game, file, Path.Combine(dst, rel), units); }
-            // A design that fails is a report line, not a test failure: the source file stays as it was.
-            catch (Exception ex) { line = $"FAILED: {ex.Message}"; Log.Info($"vaultdesigns {rel}: {ex}"); }
-            report.Add($"{rel}: {line}");
-            Log.Info($"vaultdesigns {rel}: {line}");
-        }
-        int added = report.Count(l => l.Contains(": added ")), skipped = report.Count(l => l.Contains(": skipped ")), failed = report.Count(l => l.Contains(": FAILED"));
-        report.Add($"Total {files.Count}: {added} changed, {skipped} skipped, {failed} failed.");
-        File.WriteAllLines(Path.Combine(Mod.ModRoot, "vault-report.txt"), report);
-        Log.Info($"AUTOTEST vaultdesigns done: {report[^1]}");
+        var files = new Queue<string>(Directory.EnumerateFiles(src, "*.ship.png", SearchOption.AllDirectories).Order(StringComparer.Ordinal));
+        Next(new Batch(game, src, dst, units, files, [$"Tech Vaults for {units} starting tech. Source {src}, output {dst}."]));
     }
 
-    /// <summary>Adds vaults to one design and saves it. Returns the report line. Throws when the result is not a valid career starter.</summary>
-    static string Design(Cosmoteer.Game.GameRoot game, string file, string dest, int units)
+    /// <summary>Starts the next design. A changed design waits PowerUpSeconds in the sim (Autotest.WaitFor), then Finish saves it and calls Next again.</summary>
+    static void Next(Batch b)
     {
-        var sim = game.Sim;
+        while (b.Files.TryDequeue(out var file))
+        {
+            string rel = Path.GetRelativePath(b.Src, file), dest = Path.Combine(b.Dst, rel);
+            try
+            {
+                var (ship, line) = Build(b, file);
+                if (ship is null) { Add(b, rel, line); continue; }
+                double until = Halfling.App.Clock.Time.Seconds + PowerUpSeconds;
+                Autotest.WaitFor(() => Halfling.App.Clock.Time.Seconds >= until, PowerUpSeconds + 30, $"power-up of {rel}", () =>
+                {
+                    Add(b, rel, Finish(b, ship, file, dest, line));
+                    Next(b);
+                });
+                return;
+            }
+            catch (Exception ex) { Add(b, rel, Failed(file, dest, ex)); }
+        }
+        int added = b.Report.Count(l => l.Contains(": added ")), skipped = b.Report.Count(l => l.Contains(": skipped ")), failed = b.Report.Count(l => l.Contains(": UNCHANGED"));
+        b.Report.Add($"Total {added + skipped + failed}: {added} changed, {skipped} skipped, {failed} unchanged.");
+        File.WriteAllLines(Path.Combine(Mod.ModRoot, "vault-report.txt"), b.Report);
+        Log.Info($"AUTOTEST vaultdesigns done: {b.Report[^1]}");
+    }
+
+    static void Add(Batch b, string rel, string line)
+    {
+        b.Report.Add($"{rel}: {line}");
+        Log.Info($"vaultdesigns {rel}: {line}");
+    }
+
+    /// <summary>
+    /// A design that fails is a report line, not a test failure. The output keeps the source version:
+    /// with an output folder other than the source folder, the source file is copied over the output file.
+    /// </summary>
+    static string Failed(string file, string dest, Exception ex)
+    {
+        Log.Info($"vaultdesigns {file}: {ex}");
+        if (Path.GetFullPath(file) != Path.GetFullPath(dest)) File.Copy(file, dest, overwrite: true);
+        return $"UNCHANGED (place vaults by hand): {ex.Message}";
+    }
+
+    /// <summary>Loads the design into the sim near the player ship (out of stasis, so it runs) and builds the vaults. Null ship: skipped, with the reason.</summary>
+    static (Ship? Ship, string Line) Build(Batch b, string file)
+    {
+        var sim = b.Game.Sim;
         string name = Ship.GetNameFromFilename(file) ?? throw new InvalidOperationException($"no ship name in {file}");
         byte[] bytes = Ship.LoadBytes(file);
         using (var check = Ship.Load(bytes, name, blueprintsOnly: true))
         {
-            if (!GameApp.Rules.CareerMode.AllowedShipClasses.Contains(check.Rules.ID)) return $"skipped: ship class {check.Rules.ID} is not a career class";
+            if (!GameApp.Rules.CareerMode.AllowedShipClasses.Contains(check.Rules.ID)) return (null, $"skipped: ship class {check.Rules.ID} is not a career class");
             int vaults = check.BlueprintParts.Count(p => p.Rules.ID == Vaults.VaultId);
-            if (vaults > 0) return $"skipped: has {vaults} vault(s), they hold {NewGameCheck.VaultCapacity(check)} tech";
+            if (vaults > 0) return (null, $"skipped: has {vaults} vault(s), they hold {NewGameCheck.VaultCapacity(check)} tech");
         }
-        var ship = Ship.Load(bytes, name, game.LocalPlayerIndex, spawnWithCrew: false, builtByPlayer: true, randSeed: 1UL);
-        // Far from everything, so that the build steps never touch another ship.
-        ship.WorldCenter = Autotest.ClearSpotNear(sim, new Halfling.Geometry.Vector2(50000f, 50000f), 0f, ship.WorldBoundingRadius);
+        var near = Autotest.ActingShip(sim) ?? throw new InvalidOperationException("no player ship to build next to");
+        var ship = Ship.Load(bytes, name, b.Game.LocalPlayerIndex, spawnWithCrew: false, builtByPlayer: true, randSeed: 1UL);
+        ship.WorldCenter = Autotest.ClearSpotNear(sim, near.DetWorldCenter, near.WorldBoundingRadius + ship.WorldBoundingRadius + 500f, ship.WorldBoundingRadius);
         sim.Ships.Add(ship);
         try
         {
             int storageBefore = StorageParts(ship);
-            var (cells, outside) = StartingVault.BuildVaults(ship, units);
-            var finder = new BlueprintPathfinder(ship);
-            int noPath = ship.BlueprintParts.Count(p => p.Rules.ID == Vaults.VaultId && !StartingVault.HasCrewPath(finder, new PartInfo(p.Rules, p.Location, p.Rotation, p.FlipX)));
+            var cells = StartingVault.BuildVaults(ship, b.Units);
             if (!ship.BlueprintParts.IsValid || !ship.PhysicalMatchesBlueprints) throw new InvalidOperationException("the design is not valid after the vaults");
-            if (!GameApp.Rules.CareerMode.IsShipDesignLegal(ship) || NewGameCheck.VaultCapacity(ship) < units) throw new InvalidOperationException("the career new-game check refuses the design");
+            if (!GameApp.Rules.CareerMode.IsShipDesignLegal(ship) || NewGameCheck.VaultCapacity(ship) < b.Units) throw new InvalidOperationException("the career new-game check refuses the design");
+            // Full power and supplies, like a new career ship (CareerGameModeManager.FinishInitNewGame). Vaults start empty (InitToMaxResources = 0).
+            ship.InitializeToMax();
+            return (ship, $"added {cells.Count} vault(s) at {string.Join(" ", cells)}; {storageBefore - StorageParts(ship)} storage part(s) removed");
+        }
+        catch { sim.Ships.Remove(ship, dispose: true, handleLostShip: false); throw; }
+    }
+
+    /// <summary>Saves the design and removes the ship. Returns the report line.</summary>
+    static string Finish(Batch b, Ship ship, string file, string dest, string line)
+    {
+        try
+        {
             // A temporary file first, so a failed save never leaves half a design in place of the old one.
             string tmp = dest + ".tmp";
+            Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
             ship.SaveDesignAs(tmp, dialogOnError: false, out bool error);
             if (error) throw new InvalidOperationException($"the game could not save {tmp}");
             File.Move(tmp, dest, overwrite: true);
-            return $"added {cells.Count} vault(s) at {string.Join(" ", cells)}; {storageBefore - StorageParts(ship)} storage part(s) removed; " +
-                   $"{outside} outside the hull; {noPath} without crew path";
+            return line;
         }
-        finally { sim.Ships.Remove(ship, dispose: true, handleLostShip: false); }
+        catch (Exception ex) { return Failed(file, dest, ex); }
+        finally { b.Game.Sim.Ships.Remove(ship, dispose: true, handleLostShip: false); }
     }
 
     static int StorageParts(Ship ship) => ship.BlueprintParts.Count(p => p.Rules.Components.OfType<FlexResourceGridRules>().Any());

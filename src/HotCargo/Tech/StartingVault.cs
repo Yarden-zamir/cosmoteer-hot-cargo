@@ -52,37 +52,82 @@ internal static class StartingVault
             ? n : throw new InvalidOperationException($"{vault.ID} has no grid for {Vaults.TechId}");
 
     /// <summary>
-    /// Builds enough empty vaults into the ship for the units (spec 441): in place of storage bays first, then next to the hull.
-    /// Returns the vault cells and how many of them went outside the hull.
+    /// Builds enough empty vaults into the ship for the units (spec 441), only inside the hull and only where crew can walk to them.
+    /// The tiles of the smallest storage bay come first, then corridor tiles and enclosed empty tiles, nearest to the ship center first.
+    /// Each vault must keep a crew path to every part that had one. Returns the vault cells.
+    /// Throws NoRoomException when the hull has too few such tiles; the caller then keeps the old design.
     /// </summary>
-    internal static (List<IntVector2> Cells, int Outside) BuildVaults(Ship ship, int units)
+    internal static List<IntVector2> BuildVaults(Ship ship, int units)
     {
         PartRules vault = ship.Rules.PartsByID[Vaults.VaultId];
         int perVault = Capacity(vault);
         int count = (units + perVault - 1) / perVault;
+        // The game's grab rule names the corridor part: the part that a grabbed part leaves on each tile.
+        var corridors = ship.Rules.Parts.Select(p => p.CreatePartPerTileWhenGrabbed).Where(id => id != default).ToHashSet();
+        if (corridors.Count == 0) throw new InvalidOperationException("no part rules name a corridor part (CreatePartPerTileWhenGrabbed)");
+        var finder = new BlueprintPathfinder(ship);
+        var reachable = ship.BlueprintParts.Where(p => NeedsCrewAccess(p.Rules)).Select(Info).Where(p => HasCrewPath(finder, p)).ToList();
+        var center = Center2(ship);
+        var candidates = (GrabStorage(ship) ?? []).Concat(InteriorCells(ship, corridors).OrderBy(c => Distance2(new IntRect(c.X, c.Y, 1, 1), center))
+            .ThenBy(c => c.Y).ThenBy(c => c.X)).Distinct().ToList();
         var placed = new List<IntVector2>();
-        int outside = 0;
-        while (placed.Count < count)
+        foreach (var cell in candidates)
         {
-            if (ReplaceStorage(ship, vault, count - placed.Count) is { } inside) { placed.AddRange(inside); continue; }
-            placed.Add(PlaceOutside(ship, vault, requireCrewPath: true) ?? PlaceOutside(ship, vault, requireCrewPath: false)!.Value);
-            outside++;
+            if (placed.Count == count) break;
+            if (ship.BlueprintParts.HasPartAt(cell, condition: p => !corridors.Contains(p.Rules.ID))) continue;
+            if (!TryPlace(ship, vault, cell, reachable)) continue;
+            placed.Add(cell);
+            reachable.RemoveAll(p => p.Location == cell);
+            reachable.Add(new PartInfo(vault, cell, 0, flipX: false));
         }
-        return (placed, outside);
+        if (placed.Count < count) throw new NoRoomException($"room inside the hull for {placed.Count} of {count} vaults with a crew path");
+        return placed;
+    }
+
+    internal sealed class NoRoomException(string message) : Exception(message);
+
+    /// <summary>Parts that the build tool warns about without a crew path (crew quarters excluded: they are the path sources).</summary>
+    internal static bool NeedsCrewAccess(PartRules r) =>
+        r.HasDoorLocations && !r.NoAutoDoors && r.DoorAccessWarningLevel != AccessWarningLevel.None && r.CrewCapacity == 0;
+
+    static PartInfo Info(BlueprintPart p) => new(p.Rules, p.Location, p.Rotation, p.FlipX);
+
+    /// <summary>Puts a vault on the cell when crew can walk to it and every part in reachable keeps its crew path. The game adds doors like the build tool.</summary>
+    static bool TryPlace(Ship ship, PartRules vault, IntVector2 cell, List<PartInfo> reachable)
+    {
+        using var sui = ShipUpdateInfo.Alloc(ship);
+        if (!sui.TryAddBlueprintPart(vault, cell, 0, flipX: false, mirrorPhysical: true, allowOverwrite: true, addDoors: true, hireCrew: false, out _)) return false;
+        var finder = new BlueprintPathfinder(ship, sui);
+        if (!HasCrewPath(finder, new PartInfo(vault, cell, 0, flipX: false))) return false;
+        if (reachable.Any(p => p.Location != cell && !HasCrewPath(finder, p))) return false;
+        sui.Apply(ConstructionMode.InstantFree, builtByPlayer: true);
+        return true;
+    }
+
+    /// <summary>Corridor tiles, and empty tiles with a part on all four sides.</summary>
+    static IEnumerable<IntVector2> InteriorCells(Ship ship, HashSet<ID<PartRules>> corridors)
+    {
+        var parts = ship.BlueprintParts;
+        var cells = parts.SelectMany(p => p.Rect).ToHashSet();
+        foreach (var p in parts.Where(p => corridors.Contains(p.Rules.ID))) foreach (var c in p.Rect) yield return c;
+        int minX = cells.Min(c => c.X), maxX = cells.Max(c => c.X), minY = cells.Min(c => c.Y), maxY = cells.Max(c => c.Y);
+        for (int y = minY + 1; y < maxY; y++)
+            for (int x = minX + 1; x < maxX; x++)
+            {
+                var c = new IntVector2(x, y);
+                if (!cells.Contains(c) && new IntRect(x, y, 1, 1).GetAdjacentCells(includeCorners: false).All(cells.Contains)) yield return c;
+            }
     }
 
     /// <summary>True when crew can walk from crew quarters to the part, through doors, like the build tool's path check.</summary>
     internal static bool HasCrewPath(BlueprintPathfinder finder, PartInfo part) => float.IsFinite(finder.GetPathToNearestCrewSource(part, new List<IntVector2>()));
 
     /// <summary>
-    /// Swaps the smallest vanilla storage part (nearest to the ship center first) for vaults on its tiles.
-    /// The storage part goes like a part that the player grabs: corridor tiles take its place and keep its crew paths.
-    /// Then a vault replaces one corridor tile at a time, and the game adds its doors like the build tool.
-    /// Tiles with a door of the storage part come last: they lead into the room, so as corridors they keep a walkway through it.
-    /// Among the others, tiles nearest to the ship center come first.
-    /// Returns the vault cells, or null when the ship has no storage part.
+    /// Grabs the smallest vanilla storage part (nearest to the ship center first): corridor tiles take its place and keep its crew paths.
+    /// Returns its tiles in vault order: tiles with a door of the storage part last (as corridors they keep a walkway through the room),
+    /// the others nearest to the ship center first. Null when the ship has no storage part.
     /// </summary>
-    static List<IntVector2>? ReplaceStorage(Ship ship, PartRules vault, int count)
+    static List<IntVector2>? GrabStorage(Ship ship)
     {
         var center = Center2(ship);
         var bay = ship.BlueprintParts
@@ -95,19 +140,11 @@ internal static class StartingVault
         using (var sui = ShipUpdateInfo.Alloc(ship))
         {
             if (!sui.TryRemoveBlueprintPart(bay, mirrorPhysical: true, out var reasons, grabbed: true))
-                throw new InvalidOperationException($"cannot remove {bay.Rules.ID} at {bay.Location} for the starting vaults: {reasons}");
+                throw new InvalidOperationException($"cannot remove {bay.Rules.ID} at {bay.Location} for the vaults: {reasons}");
             sui.Apply(ConstructionMode.InstantFree, builtByPlayer: true);
         }
-        var cells = rect.OrderBy(doorTiles.Contains).ThenBy(c => Distance2(new IntRect(c.X, c.Y, 1, 1), center)).ThenBy(c => c.Y).ThenBy(c => c.X).Take(count).ToList();
-        foreach (var cell in cells)
-        {
-            using var sui = ShipUpdateInfo.Alloc(ship);
-            if (!sui.TryAddBlueprintPart(vault, cell, 0, flipX: false, mirrorPhysical: true, allowOverwrite: true, addDoors: true, hireCrew: false, out var reasons))
-                throw new InvalidOperationException($"cannot place a starting vault at {cell} in place of {bay.Rules.ID}: {reasons}");
-            sui.Apply(ConstructionMode.InstantFree, builtByPlayer: true);
-        }
-        Log.Info($"starting vaults replace {bay.Rules.ID} at {rect.Location}: {cells.Count} vault(s), {rect.Area - cells.Count} corridor tile(s)");
-        return cells;
+        Log.Info($"vaults: {bay.Rules.ID} at {rect.Location} became corridor");
+        return rect.OrderBy(doorTiles.Contains).ThenBy(c => Distance2(new IntRect(c.X, c.Y, 1, 1), center)).ThenBy(c => c.Y).ThenBy(c => c.X).ToList();
     }
 
     /// <summary>
