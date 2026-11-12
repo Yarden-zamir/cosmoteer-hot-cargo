@@ -210,3 +210,10 @@ The autotests cover the archetype mix on the map, the hazard tooltip, the curren
 10. Deep Space: is the lair search circle a fair size? Do the storms around the lair make the approach tense without killing the ship?
 11. Mix: in one run of 8 sectors, did you meet each archetype at least once? Did any feel like extra travel? The weights are in `mod/worlds/archetypes.rules` (restart needed).
 12. Co-op: both players see the current push and the same pass hold clock.
+
+## Wanted and hunted (spec 470-473)
+
+1. Attack a faction ship (or a station) so that police hunt you, and get heat to the first stage (25). Does the top message read clearly? Does the chat line explain the ways out well enough to act on?
+2. Try the vanilla payoff: hail one of the police ships. Does the "pay the bounty" option show, as the hint says?
+3. A Clean Record and Decoy Run: is the price fair against the vanilla bounty? Does the heat risk feel fair?
+4. Does the warning come back too often (it shows again each time you become both wanted and hunted)?
