@@ -6,6 +6,8 @@
 # Run it in the main worktree. Nothing is pushed unless every step passed. On a failure the merge commit stays local:
 # fix it with a new commit and run "integrate.sh --continue", or undo it with "git reset --hard origin/main".
 set -euo pipefail
+# Merge batches run every autotest of the touched areas, not only the smoke tier (tests/TIERS.md).
+export AUTOTEST_TIER=full
 cd "$(dirname "$0")/.."
 [[ "$(git branch --show-current)" == main ]] || { echo "integrate: run it on main"; exit 1; }
 ARG="${1:?usage: integrate.sh <branch>|--continue [--no-autotest]}"
