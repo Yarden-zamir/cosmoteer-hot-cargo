@@ -40,13 +40,13 @@ take_one_slot() {
     done
     # Only the numbered slot locks count; the co-op pair lock is a queue, not a slot.
     busy="$(ls -d /tmp/hot_cargo_slot_[0-9]*.lock 2>/dev/null | wc -l | tr -d ' ')"
-    if [[ $busy -ge $limit ]]; then sleep 5; continue; fi
+    if [[ $busy -ge $limit ]]; then sleep 2; continue; fi
     for ((i = 1; i <= SLOTS; i++)); do
       lock="$(slot_lock "t$i")"
       if mkdir "$lock" 2>/dev/null; then echo $$ > "$lock/pid"; echo "$REPO_ROOT" > "$lock/owner"; echo "t$i"; return; fi
       if [[ -f "$lock/pid" ]] && ! kill -0 "$(cat "$lock/pid")" 2>/dev/null; then rm -rf "$lock"; fi
     done
-    sleep 5
+    sleep 2
   done
 }
 
@@ -73,19 +73,58 @@ release_slot() {
   rm -rf "$(slot_lock "$1")"
 }
 
-# Deploys this worktree to the slot, installs the autotest script from stdin, clears the old log and starts the game.
+# Deploys this worktree to the slot, installs the autotest script from stdin and starts the game, in one PC call
+# (deploy.sh autotest mode). A test slot's running game is stopped first; the main slot fails if its game runs.
 start_slot() {
-  local slot="$1" script
-  # Read the script first: the PC commands below also read stdin.
-  script="$(cat)"
-  SLOT="$slot" "$LIB_DIR/stop.sh" >/dev/null </dev/null
-  SLOT="$slot" "$LIB_DIR/deploy.sh" </dev/null | tail -1
+  local slot="$1" script rc=0
+  script="$(mktemp)"
+  cat > "$script"
+  AUTOTEST_SCRIPT="$script" SLOT="$slot" "$LIB_DIR/deploy.sh" </dev/null || rc=$?
+  rm -f "$script"
+  return $rc
+}
+
+# Prints one line about the slot's game: "running=0|1 started=0|1 done=0|1 match=0|1".
+# started: the log has a script line. done: the log has AUTOTEST DONE. match: the log has the text in $2 (optional).
+# A small PC call, so polls can be frequent. Prints nothing when the PC call fails.
+slot_status() {
   (
-    export SLOT="$slot"
+    export SLOT="$1"
     source "$LIB_DIR/pc.sh"
-    pc "$PS_PATHS"'$in = [Console]::In.ReadToEnd(); [IO.File]::WriteAllText((Join-Path $modDir "autotest.txt"), $in); $l = Join-Path $modDir "csharp\hot_cargo_log.txt"; if (Test-Path $l) { Remove-Item $l }; "autotest script installed"' <<<"$script"
+    pc "$PS_PATHS"'$l = Join-Path $modDir "csharp\hot_cargo_log.txt"; $t = if (Test-Path $l) { [string](Get-Content $l -Raw) } else { "" }
+$m = "'"${2:-}"'"
+"running=" + [int][bool](Get-SlotProcess) + " started=" + [int]$t.Contains("AUTOTEST line") + " done=" + [int]$t.Contains("AUTOTEST DONE") + " match=" + [int]($m -ne "" -and $t.Contains($m))'
+  ) 2>/dev/null || true
+}
+
+# Waits until the slot's game exits or its log has AUTOTEST DONE for two polls in a row (the game then had time to
+# exit by itself), or until $2 seconds pass. Polls every AUTOTEST_POLL seconds (default 3).
+# Sets STARTED_AT (SECONDS when the first script line showed, empty if never) and ENDED_AT.
+wait_slot_end() {
+  local slot="$1" timeout="$2" from=$SECONDS status dones=0
+  STARTED_AT=""
+  while (( SECONDS - from < timeout )); do
+    sleep "${AUTOTEST_POLL:-3}"
+    status="$(slot_status "$slot")"
+    if [[ -z "$STARTED_AT" && "$status" == *started=1* ]]; then STARTED_AT=$SECONDS; fi
+    if [[ "$status" == *running=0* ]]; then break; fi
+    if [[ "$status" == *done=1* ]]; then dones=$((dones + 1)); [[ $dones -ge 2 ]] && break; fi
+  done
+  ENDED_AT=$SECONDS
+}
+
+# Test slots only: stops the slot's game and prints its Hot Cargo log, then the line <<<VANILLA LOG>>> and the tail of
+# its newest vanilla log, in one PC call. Fails when the PC call fails (then the game may still run).
+slot_finish() {
+  [[ "$1" != main ]] || { echo "slot_finish: never for the main slot" >&2; return 1; }
+  (
+    export SLOT="$1"
+    source "$LIB_DIR/pc.sh"
+    pc "$PS_PATHS"'$p = Get-SlotProcess; if ($p) { $p | Stop-Process -Force; $p | Wait-Process -Timeout 20 -ErrorAction SilentlyContinue }; if (Test-Path $pidFile) { Remove-Item $pidFile -Force }
+$l = Join-Path $modDir "csharp\hot_cargo_log.txt"; if (Test-Path $l) { Get-Content $l -Raw }
+"<<<VANILLA LOG>>>"
+$cl = Get-ChildItem (Join-Path $root "Logs") -Filter "*.txt" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if ($cl) { "=== " + $cl.Name; Get-Content $cl.FullName -Tail 150 }'
   )
-  SLOT="$slot" "$LIB_DIR/run.sh" </dev/null
 }
 
 # Prints the slot's Hot Cargo log, and the line <<GAME EXITED>> when the slot's game no longer runs.
@@ -95,15 +134,6 @@ slot_log() {
     source "$LIB_DIR/pc.sh"
     pc "$PS_PATHS"'$l = Join-Path $modDir "csharp\hot_cargo_log.txt"; if (Test-Path $l) { Get-Content $l -Raw }; if (-not (Get-SlotProcess)) { "<<GAME EXITED>>" }'
   )
-}
-
-# Prints the tail of the slot's newest vanilla Cosmoteer log (rules errors and crashes show there).
-slot_game_log() {
-  (
-    export SLOT="$1"
-    source "$LIB_DIR/pc.sh"
-    pc "$PS_PATHS"'$cl = Get-ChildItem (Join-Path $root "Logs") -Filter "*.txt" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if ($cl) { "=== " + $cl.Name; Get-Content $cl.FullName -Tail 150 }'
-  ) 2>&1 || true
 }
 
 # True when a log (stdin) passed: it has AUTOTEST DONE and no AUTOTEST FAIL or ERROR line.

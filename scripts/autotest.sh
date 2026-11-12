@@ -5,6 +5,8 @@
 # - Keeps the full log in $LOG_DIR (see autotest-lib.sh) and prints only the lines that explain a failure.
 # - Retries a failed run once (AUTOTEST_RETRY, default 1). A pass on the retry prints "AUTOTEST FLAKY" and exits 0,
 #   so timing problems and PC link errors do not block work. Limit: a real failure costs two runs.
+# - Prints one "== timing" line per run with the seconds of each phase: wait (for a slot), deploy (stop, deploy, start),
+#   start (game start to the first script line), script (to the end of the script), teardown (log fetch, stop, release).
 # Exit code 0 only if a run has AUTOTEST DONE and no AUTOTEST FAIL or ERROR line.
 set -euo pipefail
 SCRIPT="${1:?usage: autotest.sh <script> [timeout]}"
@@ -18,25 +20,30 @@ trap '[[ -n "$SLOT" ]] && release_slot "$SLOT"' EXIT
 
 # One run. Sets RUN_LOG and RUN_SLOT; returns 0 on a pass.
 run_once() {
+  local t0=$SECONDS t1 t2 t3 out log
   SLOT="$(take_slot)"
+  t1=$SECONDS
   RUN_SLOT="$SLOT"
   RUN_LOG="$LOG_DIR/$NAME.$(date +%Y%m%d-%H%M%S).$SLOT.log"
   echo "== $NAME: slot $SLOT, log $RUN_LOG"
   # telename labels the telemetry of this test with the script name (TELEMETRY.md).
   { echo "telename $NAME"; cat "$SCRIPT"; } | start_slot "$SLOT" > "$RUN_LOG.deploy" 2>&1 || true
-  local log="" t
-  for ((t = 0; t < TIMEOUT; t += 10)); do
-    sleep 10
-    log="$(slot_log "$SLOT" 2>&1 || true)"
-    if grep -q '<<GAME EXITED>>' <<<"$log"; then break; fi
-  done
-  { cat "$RUN_LOG.deploy"; grep -v '<<GAME EXITED>>' <<<"$log" || true; } > "$RUN_LOG"
-  rm -f "$RUN_LOG.deploy"
+  t2=$SECONDS
+  wait_slot_end "$SLOT" "$TIMEOUT"
+  # A failed PC call leaves an empty log, which never passes.
+  if out="$(slot_finish "$SLOT" 2>&1)"; then rm -rf "$(slot_lock "$SLOT")"; else release_slot "$SLOT"; fi
+  SLOT=""
+  log="${out%%<<<VANILLA LOG>>>*}"
+  { cat "$RUN_LOG.deploy"; echo "$log"; } > "$RUN_LOG"
   local ok=1
   log_passed < "$RUN_LOG" && ok=0
-  if [[ $ok -ne 0 ]]; then { echo; echo "=== vanilla game log"; slot_game_log "$SLOT"; } >> "$RUN_LOG"; fi
-  release_slot "$SLOT"
-  SLOT=""
+  if [[ $ok -ne 0 && "$out" == *"<<<VANILLA LOG>>>"* ]]; then { echo; echo "=== vanilla game log"; echo "${out#*<<<VANILLA LOG>>>}"; } >> "$RUN_LOG"; fi
+  t3=$SECONDS
+  local started="${STARTED_AT:-$ENDED_AT}" upload=hit
+  grep -q "uploaded build" "$RUN_LOG.deploy" && upload=uploaded
+  rm -f "$RUN_LOG.deploy"
+  local timing="== timing $NAME wait=$((t1 - t0)) deploy=$((t2 - t1)) start=$((started - t2)) script=$((ENDED_AT - started)) teardown=$((t3 - ENDED_AT)) total=$((t3 - t0)) build=$upload"
+  echo "$timing" | tee -a "$RUN_LOG"
   return $ok
 }
 
