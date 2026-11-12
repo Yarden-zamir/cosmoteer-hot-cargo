@@ -37,7 +37,8 @@ public static class PursuitArea
             Hacker.Tick(run, sim);
         });
         Run.Hooks.SystemEntered += OnSystemEntered;
-        CommsHail.Providers.Add(Hacker.Instance);
+        // First provider: the hacker owns his page's shared choices (one domain per page), and diplomacy then adds nothing there.
+        CommsHail.Providers.Insert(0, Hacker.Instance);
         SharedChoices.Register(Hacker.Instance);
         AddAutotest();
     }
