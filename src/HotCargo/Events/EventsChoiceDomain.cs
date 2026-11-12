@@ -35,9 +35,13 @@ internal sealed class EventsChoiceDomain : ISharedChoiceDomain
 [HarmonyPatch(typeof(CareerGameModeManager), nameof(CareerGameModeManager.Update))]
 static class EventFramePatch
 {
+    static double _next;
+
     static void Postfix(CareerGameModeManager __instance)
     {
-        if (Run.Current is not { } run || run.Mode != __instance) return;
+        // Spec 872: the dialog builds its page from sim state, so it updates every HudRefreshSeconds, not in every frame.
+        // Clicks do not wait: the buttons send their input at once.
+        if (Run.Current is not { } run || run.Mode != __instance || !Ux.UxKit.HudDue(ref _next)) return;
         // Errors.Guard logs once, so a broken dialog does not write the log every frame.
         Errors.Guard("event dialog", () => EventDialog.Update(run));
     }
