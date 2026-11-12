@@ -2,6 +2,7 @@ using Cosmoteer.Modes.Career.Comms;
 using Cosmoteer.Data;
 using Cosmoteer.Resources;
 using Halfling;
+using Halfling.Geometry;
 using HotCargo.Dev;
 using HotCargo.Tech;
 
@@ -54,11 +55,10 @@ static class UxAutotest
             var run = Autotest.RequireRun();
             LowSupplies.Poll(run.Game, run.Game.Sim, run.T.Ux);
         };
-        // commstab trade|dialogue: selects a tab in the open comms window with the nearest station (the tab builds on first show).
+        // commstab trade|dialogue: selects a tab in the comms window that comms open opened (the tab builds on first show).
         Autotest.Commands["commstab"] = arg =>
         {
-            if (!CommWindow.s_openWindows.TryGetValue(TechAutotest.NearestStation(), out var window))
-                throw new InvalidOperationException("no comms window with the nearest station");
+            var window = UxArea.OpenComms;
             var tab = arg switch
             {
                 "trade" => window._tradeTab,
@@ -71,21 +71,44 @@ static class UxAutotest
         // (or the first offer), so a screenshot shows its info panel with the contract terms. Test only.
         Autotest.Commands["commsmission"] = _ =>
         {
-            if (!CommWindow.s_openWindows.TryGetValue(TechAutotest.NearestStation(), out var window))
-                throw new InvalidOperationException("no comms window with the nearest station");
+            var window = UxArea.OpenComms;
             window._tabs.TabsListBox.SelectedWidget = window._missionsTab ?? throw new InvalidOperationException("the station has no missions tab");
         };
-        Autotest.Commands["commsselect"] = _ =>
+        // commsselect [text]: selects the offer whose name contains text, else the offer that contract_pick chose, else the first.
+        Autotest.Commands["commsselect"] = arg => SelectMission(UxArea.OpenComms, arg, Contracts.ContractsArea.PickedForTests);
+        // missionlog open|close: opens or closes the career log window, as the HUD button does.
+        Autotest.Commands["missionlog"] = arg =>
         {
-            if (!CommWindow.s_openWindows.TryGetValue(TechAutotest.NearestStation(), out var window))
-                throw new InvalidOperationException("no comms window with the nearest station");
-            var panel = Walk(window).OfType<Cosmoteer.Modes.Career.Missions.MissionsPanel>().FirstOrDefault()
-                ?? throw new InvalidOperationException("no missions panel in the comms window; run commsmission first");
-            var picked = Contracts.ContractsArea.PickedForTests;
-            var item = panel.FirstOrDefault(i => i.Mission == picked) ?? panel.FirstOrDefault()
-                ?? throw new InvalidOperationException("the missions panel lists no offers");
-            item.IsSelected = true;
+            var mode = Autotest.RequireRun().Mode;
+            bool open = mode._missionLog is { SelfActive: true, Parent: not null };
+            if ((arg == "open") != open) mode.OnMissionLogClicked(null, EventArgs.Empty);
         };
+        // logselect [text]: selects the mission in the open mission log whose name contains text, else the first.
+        Autotest.Commands["logselect"] = arg =>
+            SelectMission(Autotest.RequireRun().Mode._missionLog ?? throw new InvalidOperationException("no mission log; run missionlog open first"), arg, null);
+        // tipshow map|mapcur|station|fame|text <xml>: shows that tooltip at a fixed spot, for screenshots. The capture hides hover
+        // tooltips, because the real cursor rests somewhere over the hidden window. tipclear removes it.
+        Autotest.Commands["tipshow"] = arg =>
+        {
+            var run = Autotest.RequireRun();
+            var parts = arg.Split(' ', 2);
+            string text = parts[0] switch
+            {
+                "map" => run.Mode.GetMapNodeToolTip(NearestOtherNode(run)) ?? "",
+                "mapcur" => run.Mode.GetMapNodeToolTip(run.Game.CurrentMapNode) ?? "",
+                "station" => run.Game.Sim.Mode.GetShipMouseOverText(TechAutotest.NearestStation()),
+                "fame" => Walk(run.Game.Gui.RootWidget).OfType<Cosmoteer.Game.Gui.PlayerFameLabel>().First().ToolTips.TextProvider?.Text ?? "",
+                "text" when parts.Length == 2 => parts[1],
+                _ => throw new InvalidOperationException("tipshow needs: map | mapcur | station | fame | text <xml>"),
+            };
+            TipClear(run.Game.Gui);
+            var screen = run.Game.Gui.RootWidget.ScreenRect;
+            _tip = new Cosmoteer.Gui.ToolTips.MultiToolTipBox(run.Game.Gui.ToolTipRight);
+            run.Game.Gui.AddDropTarget(_tip);
+            _tip.SetToolTipSource(new FixedTip(text, new Rect(screen.Width * 0.55f, screen.Height * 0.3f, 1f, 1f)));
+            Log.Info($"ux: tooltip {parts[0]}: {text}");
+        };
+        Autotest.Commands["tipclear"] = _ => TipClear(Autotest.RequireRun().Game.Gui);
         Autotest.Commands["tradehint"] = _ => Log.Info($"ux: trade hint\n{TradeText()}");
         Autotest.Commands["wantedline"] = _ => Log.Info($"ux: wanted line: {WantedTimer.Text(Autotest.RequireRun().Mode)}");
 
@@ -98,6 +121,7 @@ static class UxAutotest
         Autotest.Fields["ux_parts_xml"] = () => MultiPartInfo.HealthLabel?.TextRenderer.XmlFormatting == true ? 1 : 0;
         Autotest.Fields["ux_damage_hits"] = () => DamagePings.Hits;
         Autotest.Fields["ux_supply_alerts"] = () => LowSupplies.AlertsShown;
+        Autotest.Fields["ux_event_open"] = () => Events.EventDialog.IsShown ? 1 : 0;
         Autotest.Fields["ux_dialogue_picks"] = () => DialogueKeys.Picks;
         Autotest.Fields["ux_trade_hint"] = () => TradeText().Length;
         Autotest.Fields["ux_wanted_line"] = () => WantedTimer.Text(Autotest.RequireRun().Mode).Length;
@@ -139,6 +163,41 @@ static class UxAutotest
 
     static string TradeText() =>
         TradeHints.Last?.TryGetTarget(out var tab) == true ? TradeHints.Text(tab) : throw new InvalidOperationException("no trade tab was opened");
+
+    static Cosmoteer.Gui.ToolTips.MultiToolTipBox? _tip;
+
+    static void TipClear(Cosmoteer.Game.Gui.GameGui gui)
+    {
+        if (_tip is not null) gui.RemoveDropTarget(_tip);
+        _tip = null;
+    }
+
+    sealed class FixedTip(string xml, Rect at) : Halfling.Gui.Components.ToolTips.IToolTipSource
+    {
+        public Halfling.Gui.Components.Text.ITextProvider TextProvider { get; } = new Halfling.Gui.Components.Text.SimpleTextProvider(xml, null);
+        public Halfling.Gui.Components.Rects.IRectProvider RectProvider { get; } = new Halfling.Gui.Components.Rects.SimpleRectProvider(at, null);
+        public Halfling.Gui.Edges BoundingEdges => Halfling.Gui.Edges.None;
+        public void OnAboutToBeDisplayed() { }
+    }
+
+    /// <summary>The map node nearest to the current one, for a tooltip of a system that the players have not visited.</summary>
+    static Cosmoteer.GalaxyMap.MapNode NearestOtherNode(Core.Run run)
+    {
+        var here = run.Game.CurrentMapNode;
+        return run.Game.Map.Nodes.Where(n => n != here).MinBy(n => n.Location.DistanceSquaredTo(here.Location))
+            ?? throw new InvalidOperationException("the map has one node");
+    }
+
+    static void SelectMission(Halfling.Gui.Widget window, string text, Cosmoteer.Modes.Career.Missions.Mission? fallback)
+    {
+        var panel = Walk(window).OfType<Cosmoteer.Modes.Career.Missions.MissionsPanel>().FirstOrDefault()
+            ?? throw new InvalidOperationException("no missions panel in the window");
+        var item = (text.Length > 0 ? panel.FirstOrDefault(i => i.Mission.Name.Text.Contains(text, StringComparison.OrdinalIgnoreCase)) : null)
+            ?? panel.FirstOrDefault(i => i.Mission == fallback) ?? panel.FirstOrDefault()
+            ?? throw new InvalidOperationException("the missions panel lists no missions");
+        item.IsSelected = true;
+        Log.Info($"ux: selected mission {item.Mission.Name.Text}");
+    }
 
     static IEnumerable<Halfling.Gui.Widget> Walk(Halfling.Gui.Widget w) => w.GetChainedWidgets(recursive: true).Prepend(w);
 }

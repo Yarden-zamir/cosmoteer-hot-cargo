@@ -31,6 +31,13 @@ public static class ContractsArea
     /// <summary>Test only: the offer that contract_pick chose, for UI tests and screenshots.</summary>
     internal static Mission? PickedForTests => _picked;
 
+    /// <summary>Test only: the live station ship that offers the picked contract.</summary>
+    internal static Cosmoteer.Ships.Ship PickedStationForTests() => StationOf(Picked());
+
+    static Cosmoteer.Ships.Ship StationOf(Mission m) =>
+        SpaceStation.GetStations(Sim(), onlyOperating: false).FirstOrDefault(s => s.GetProvidedMissions()?.ContainsMission(m) == true).PhysicalShip
+        ?? throw new InvalidOperationException("the picked offer's station is not live; is the offer still there?");
+
     static void RegisterAutotest()
     {
         // contract_pick <any|paid|free|flatheat|rival|informant|discreet> [metatype]: picks the first station offer that matches,
@@ -63,10 +70,13 @@ public static class ContractsArea
                     };
                     if (!match) continue;
                     _picked = m;
-                    var at = station.DetWorldCenter;
-                    int i = 0;
+                    // Outside the station hull: a station in stasis has no size yet, so 300 stands in for its radius (as chain_tostation does).
+                    float offset = 600f + (station.PhysicalShip?.WorldBoundingRadius ?? 300f);
                     foreach (var ship in sim.Ships.HumanPlayerSignificantShips.ToList())
-                        Autotest.Teleport(ship, at + new Halfling.Geometry.Vector2(600 + 250 * i++, 0));
+                    {
+                        Autotest.Teleport(ship, station.DetWorldCenter + new Halfling.Geometry.Vector2(offset + ship.WorldBoundingRadius, 0));
+                        offset += 2 * ship.WorldBoundingRadius + 100f;
+                    }
                     Log.Info($"AUTOTEST picked {m.MetatypeID} {m.MissionID}: fee={t.Fee} bonus={t.Bonus} flatHeat={t.FlatHeat} trail={t.TrailWeight} rival='{t.RivalGroup}' informant={t.InformantChance:0.00}");
                     Autotest.Wait(3);
                     return;
@@ -78,10 +88,7 @@ public static class ContractsArea
         Autotest.Commands["contract_accept"] = _ =>
         {
             var m = Picked();
-            var sim = Sim();
-            var station = SpaceStation.GetStations(sim, onlyOperating: false)
-                .FirstOrDefault(s => s.GetProvidedMissions()?.ContainsMission(m) == true);
-            if (station.PhysicalShip is not { } ship) throw new InvalidOperationException("the picked offer's station is not live; is the offer still there?");
+            var ship = StationOf(m);
             _markedMoney = R().Game.LocalPlayerMoney;
             R().Game.NetManager.EnqueueInput(new CommMissionsTab.MPAcceptMissionInput(CommMissionsTab.MissionSourceType.Ship, ship, m));
             Autotest.Wait(2);

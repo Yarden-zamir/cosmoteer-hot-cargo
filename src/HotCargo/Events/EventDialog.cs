@@ -26,6 +26,9 @@ internal sealed class EventDialog : WindowBox
     static bool _pausedByUs;
     static bool _broken;
 
+    /// <summary>True while the window shows. For autotests.</summary>
+    internal static bool IsShown => _open is { Parent: not null };
+
     static CommsGuiRules Comms => GameApp.Rules.CareerMode.Gui.Comms;
 
     readonly Run _forRun;
