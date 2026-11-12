@@ -20,7 +20,9 @@ usable_slots() {
   now="$(date +%s)"
   age=$(( now - $(stat -f %m "$PLAYING_CACHE" 2>/dev/null || echo 0) ))
   if [[ $age -gt 60 ]]; then
-    if [[ -n "$(SLOT=main bash -c 'source "$0/pc.sh"; pc "$PS_PATHS"Get-SlotProcess' "$LIB_DIR" 2>/dev/null)" ]]; then echo yes > "$PLAYING_CACHE"; else echo no > "$PLAYING_CACHE"; fi
+    # A failed PC call counts as playing, so a broken link never lets tests load the player's game.
+    local out
+    if out="$(SLOT=main bash -c 'source "$0/pc.sh"; pc "$PS_PATHS"'"'"'if (Get-SlotProcess) { "running" } else { "closed" }'"'"'' "$LIB_DIR" 2>/dev/null)" && [[ "$out" == *closed* ]]; then echo no > "$PLAYING_CACHE"; else echo yes > "$PLAYING_CACHE"; fi
   fi
   if [[ "$(cat "$PLAYING_CACHE" 2>/dev/null)" == yes ]]; then echo "${HOT_CARGO_SLOTS_WHILE_PLAYING:-3}"; else echo "$SLOTS"; fi
 }
@@ -31,7 +33,13 @@ take_one_slot() {
   local i lock limit busy
   while :; do
     limit="$(usable_slots)"
-    busy="$(ls -d /tmp/hot_cargo_slot_*.lock 2>/dev/null | wc -l | tr -d ' ')"
+    # The integrator's runs (main worktree) always keep one slot free of agent runs, so merges never starve.
+    if [[ "$(basename "$REPO_ROOT")" != main && $limit -gt 1 ]]; then limit=$((limit - 1)); fi
+    for lock in /tmp/hot_cargo_slot_[0-9]*.lock; do
+      if [[ -f "$lock/pid" ]] && ! kill -0 "$(cat "$lock/pid")" 2>/dev/null; then rm -rf "$lock"; fi
+    done
+    # Only the numbered slot locks count; the co-op pair lock is a queue, not a slot.
+    busy="$(ls -d /tmp/hot_cargo_slot_[0-9]*.lock 2>/dev/null | wc -l | tr -d ' ')"
     if [[ $busy -ge $limit ]]; then sleep 5; continue; fi
     for ((i = 1; i <= SLOTS; i++)); do
       lock="$(slot_lock "t$i")"
