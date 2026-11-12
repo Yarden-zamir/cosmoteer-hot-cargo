@@ -1,7 +1,7 @@
 # Hot Cargo balance
 
 A balance audit of Hot Cargo against vanilla Cosmoteer 0.30.5a, and the tuning that follows from it.
-`docs/balance.html` shows the same numbers as charts. SPEC.md section 28 (requirements 300 to 303) holds the rules.
+`docs/balance.html` shows the same numbers as charts. SPEC.md section 35 (requirements 300 to 304) holds the rules.
 
 ## Method
 
@@ -75,11 +75,14 @@ Heat sources and sinks in one sector (8 units held, multiplier 1.2, after the ch
 
 ### 5. Fuel
 
-- **Gate jumps cost no fuel.** A hyperdrive jump costs fuel: about mass × light years ÷ 1,000 (vanilla). So fuel never blocks progress, but it is the only way to leave a system at once: the escape from a Strike.
+- **Every jump to another system costs fuel.** The ships fly to a relay (gate), and a human ship needs FTL drives and the map jump fuel (`FtlManager`: the spin-up checks `GetTotalFtlMapJumpFuelCost` for a gate jump of a human ship). Cost: about mass × light years ÷ 1,000 (vanilla). A blind jump (factions, requirement 651) costs 1.5 ×. So fuel is the travel currency and the escape from a Strike, and a fleet without fuel is stuck.
 - Vanilla fuel was not a decision: a tier 12 jump cost about 17 fuel = 850 credits, 0.2 % of a mission. Stations sold 180 to 1,900 fuel per system.
 - **Changes** (requirement 300, `mod/balance/actions.rules`): price 50 → **150**; stack 20 → **10** (a tile or a crew trip holds half); station stock 80–90 % → **25–40 %** of typed fuel tiles and 0–10 % → **0–2 %** of untyped tiles; jump fuel cost **× 2**; hunters carry **60** fuel (was 40).
-- Measured after, same map seed: stations hold **19 to 300 fuel per system** (was 180 to 1,940). A tier 12 jump of 7.5 LY costs about 33 fuel at full drive efficiency (more with poor drive coverage). A destroyed hunter drops about 30 fuel, a salvaged wreck 60. So late in the run a station sells 1 to 9 jumps, and each hunter kill pays about one jump.
-- Money is not the limit (a jump costs about 2 % of a mission); the stock is. Hunters and hyperium asteroids are now the best sources.
+- Vanilla stations hold less than their trade target: after the target, `CareerSimModeManager.OnShipSpawned` scales every NPC fuel storage by 25 % to 75 % (`NpcSpawnedResourceFractions`).
+- Measured after, same map seed, before the floor below: stations hold **19 to 300 fuel per system** (was 180 to 1,940). A tier 12 jump of 7.5 LY costs about 33 fuel at full drive efficiency (more with poor drive coverage). A destroyed hunter drops about 30 fuel, a salvaged wreck 60. So late in the run a station sells 1 to 9 jumps, and each hunter kill pays about one jump.
+- **Fuel floor** (requirement 304, `Balance.StationFuelPerMillion` 100, `StationFuelMinimum` 10): every trade station keeps at least one worst-case relay jump for sale: a fleet of the next tier, 10 LY, 70 % drive efficiency. That is 10 fuel at tier 1, 30 at tier 7 and 100 at tier 12. A system has 2 or 3 trade stations (the start 1), so it always sells enough for the next jump, and the random stock adds more. Trade ships do not take the floor away; players can buy all of it. So a run never gets stuck on fuel, and fuel above the floor (an escape, a blind jump, a spare) still comes from hunters, mining and lucky stations.
+- Money is not the limit (a jump costs about 2 % of a mission); the stock is. Hunters and hyperium asteroids are now the best sources above the floor.
+- Factions (requirements 655 and 657): from heat 75, stations charge up to 2 × for fuel, and from heat 90 each station refuses with chance 0.5. A player who stays until heat 90 can lose the floor of a refusing station. Buy the next jump before the Hunt stage.
 - Hyperium events cost 20 + 5 per tier fuel (80 at tier 12, about 2.5 jumps). That is now a real price. No change.
 
 ### 6. System scaling
@@ -112,6 +115,7 @@ Heat sources and sinks in one sector (8 units held, multiplier 1.2, after the ch
 | Hyperium stack | 20 | 10 | 300 |
 | Station fuel stock (typed, untyped) | 80–90 %, 0–10 % | 25–40 %, 0–2 % | 300 |
 | Jump fuel cost (map, local) | 1 per 100 mass per 10 LY, 25 km | per 5 LY, 12.5 km | 300 |
+| `Balance.StationFuelPerMillion`, `StationFuelMinimum` (new) | no floor | 100 per million of the next tier's ship value, at least 10 | 304 |
 | Convoy reward sort value | int.MinValue (the sum wrapped) | 0 | — |
 
 ## Dependencies on other areas

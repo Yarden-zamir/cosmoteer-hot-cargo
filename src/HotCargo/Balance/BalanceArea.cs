@@ -15,6 +15,8 @@ public static class BalanceArea
 {
     public static void Register()
     {
+        Run.Hooks.NewRunStarted += StationFuelFloor.OnNewRun;
+        Run.Hooks.SystemEntered += StationFuelFloor.OnSystemEntered;
         RegisterContractTests();
         Autotest.Commands["balance_census"] = arg => BalanceCensus.Log(arg.Length > 0 ? arg : "census");
         Autotest.Commands["balance_visit"] = arg => BalanceCensus.Visit(int.Parse(arg, System.Globalization.CultureInfo.InvariantCulture));
@@ -45,7 +47,7 @@ public static class BalanceArea
 
     static float _fameHeatExpected;
 
-    /// <summary>Fields and commands of tests/autotest/balance-rules.txt: the contracts of spec 300 to 303.</summary>
+    /// <summary>Fields and commands of tests/autotest/balance-rules.txt: the contracts of spec 300 to 304.</summary>
     static void RegisterContractTests()
     {
         // Paid blueprint price ÷ (rules cost × the station faction's reputation factor). Expect Journey.TechCostScale. Needs tostation first.
@@ -78,6 +80,11 @@ public static class BalanceArea
                 .Single(d => d.ResourceType == GameApp.Rules.FtlFuelResource).PercentOfTypedTiles.Max;
         Autotest.Fields["balance_jump_cost_per_mass_ly"] = () =>
             (SimQueries.FirstHumanShip(Autotest.RequireRun().Game.Sim) ?? throw new InvalidOperationException("no human ship")).Rules.MapJumpFuelCostPerMassDistance;
+        // balance_set <BalanceTunables field> <value>: changes a live tunable for this run. Test only.
+        Autotest.Commands["balance_set"] = arg => Autotest.SetField(Autotest.RequireRun().T.Balance, arg);
+        Autotest.Fields["balance_station_fuel_floor"] = () => StationFuelFloor.CurrentFloor(Autotest.RequireRun().Game.Sim);
+        // The least fuel of a station with a stock minus the floor. Expect 0 or more (spec 304).
+        Autotest.Fields["balance_station_fuel_gap"] = () => StationFuelFloor.LeastStationFuel(Autotest.RequireRun()) - StationFuelFloor.CurrentFloor(Autotest.RequireRun().Game.Sim);
         Autotest.Fields["balance_peak_tier_cap"] = () =>
         {
             var run = Autotest.RequireRun();

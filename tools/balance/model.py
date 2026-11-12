@@ -118,10 +118,10 @@ JUMP_LY = statistics.mean(distances) if distances else 7.5
 
 OLD = dict(name="before", RewardScale=2.0, HeatPerGameMinute=2.0, HeatPerStandardMission=15.0, FameCapLeak=True,
            EscortHeatChange=-15, TechCostScale=1.0, FuelPrice=50, FuelStack=20, StationFuelTyped=0.85, StationFuelUntyped=0.05,
-           JumpCostScale=1.0, HunterFuel=40, ChainsPerSystem=None)
+           JumpCostScale=1.0, HunterFuel=40, ChainsPerSystem=None, StationFuelPerMillion=0)
 NEW = dict(name="after", RewardScale=1.0, HeatPerGameMinute=1.2, HeatPerStandardMission=1.5, FameCapLeak=False,
            EscortHeatChange=-8, TechCostScale=2.5, FuelPrice=150, FuelStack=10, StationFuelTyped=0.325, StationFuelUntyped=0.01,
-           JumpCostScale=2.0, HunterFuel=60, ChainsPerSystem=2)
+           JumpCostScale=2.0, HunterFuel=60, ChainsPerSystem=2, StationFuelPerMillion=100)
 MULT = 1.2  # heat multiplier with 8 tech units
 CARRY = 0.25
 CONTRACT_HEAT = MISSION_FLAT + MISSION_INFORMANT * 0.75 * 15  # flat heat and expected informant heat per accepted contract
@@ -163,6 +163,11 @@ def run(p):
         fleet += spend
         money -= spend
         jump_fuel = p["JumpCostScale"] * HUNTER.get(tier, HUNTER[max(HUNTER)])["mass"] * JUMP_LY / 1000
+        # Relay jumps cost fuel (FtlManager checks the map jump cost for a gate jump of a human ship). Worst case of one jump:
+        # a fleet of the next tier, 10 LY, 70 % drive efficiency. Spec 304 keeps this much fuel at every trade station.
+        next_mass = HUNTER[min((k for k in HUNTER if k >= tier + 1), default=max(HUNTER))]["mass"]
+        worst_jump = p["JumpCostScale"] * next_mass * 10 / 1000 / 0.7
+        station_floor = max(10, -(-tvm(tier + 1) * p["StationFuelPerMillion"] // 1_000_000)) if p["StationFuelPerMillion"] else 0
         rows.append(dict(sector=sector, tier=tier, stdMoney=round(std), income=round(income), salvage=round(salvage_income),
                          incomeShipFraction=round((income + salvage_income) / tvm(tier), 2), fleetTarget=target,
                          fleet=round(fleet), bank=round(money), fame=round(fame), fameCap=cap, heatIn=round(heat_in, 1),
@@ -170,7 +175,7 @@ def run(p):
                          heatOut=round(heat_out, 1), heatRaw=round(raw, 1), missionsToStrike=round(missions_to_strike, 1),
                          techValue=round(tech_value(tier, hours, notoriety)), techValueShipFraction=round(tech_value(tier, hours, notoriety) / tvm(tier), 2),
                          techUnitInMissions=round(tech_value(tier, hours, notoriety) / (PICK_MONEY * std), 1),
-                         jumpFuel=round(jump_fuel, 1), jumpFuelMoney=round(jump_fuel * p["FuelPrice"]),
+                         jumpFuel=round(jump_fuel, 1), worstJumpFuel=round(worst_jump, 1), stationFuelFloor=int(station_floor), jumpFuelMoney=round(jump_fuel * p["FuelPrice"]),
                          jumpFuelInMissions=round(jump_fuel * p["FuelPrice"] / (PICK_MONEY * std), 3)))
         heat_in = heat_out * CARRY
     total_income = sum(r["income"] + r["salvage"] for r in rows)
@@ -197,7 +202,7 @@ for k in ("before", "after"):
     for s in r["sectors"]:
         print("  ", {x: s[x] for x in ("sector", "tier", "income", "incomeShipFraction", "fleet", "bank", "fame", "heatIn", "heatMissions",
                                          "heatTime", "heatContracts", "heatRaw", "missionsToStrike", "techValueShipFraction", "techUnitInMissions",
-                                         "jumpFuel", "jumpFuelInMissions")})
+                                         "jumpFuel", "worstJumpFuel", "stationFuelFloor", "jumpFuelInMissions")})
 print("board after", board_after, "fuel after", fuel_after)
 print("pick money", PICK_MONEY, "mission fame", MISSION_FAME, "contract heat", CONTRACT_HEAT, "techs", TECH_BASE, TECH_OVERCLOCK)
 print("hunters", HUNTER)
