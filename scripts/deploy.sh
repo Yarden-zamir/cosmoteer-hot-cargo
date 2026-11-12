@@ -16,7 +16,7 @@ STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
 "$REPO_ROOT/scripts/assemble-mod.sh" "$STAGE/hot_cargo"
 mkdir -p "$STAGE/hot_cargo/csharp" "$STAGE/loader"
-cp "$BUILD/HotCargo.dll" "$BUILD/HotCargo.pdb" "$BUILD/0Harmony.dll" "$STAGE/hot_cargo/csharp/"
+cp "$BUILD/HotCargo.dll" "$BUILD/HotCargo.pdb" "$BUILD/HotCargo.xml" "$BUILD/0Harmony.dll" "$STAGE/hot_cargo/csharp/"
 cp "$LOADER" "$REPO_ROOT/src/HotCargo.Loader/VERSION" "$STAGE/loader/"
 # The tunables file is staged under a temporary name. The PC side decides if it overwrites the live copy.
 if [[ -f "$STAGE/hot_cargo/tunables.rules" ]]; then mv "$STAGE/hot_cargo/tunables.rules" "$STAGE/hot_cargo/tunables.rules.deploy"; fi
