@@ -130,17 +130,17 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 12. Hunter AI tactics
 
-43. Hunters use new tactics. Each tactic has an on/off switch (`<Tactic>Enabled`) and a minimum stage (`<Tactic>MinStage`, a stage name or empty) in the tunables file. A minimum stage that is not a `Heat.Stages` name is a tunables error (requirement 53). With no active run, or with a tactic off, the hunter AI uses the vanilla module for that job. Requirements 193 to 202 add enemy AI behaviors (flee, calls for help, focus fire, regroup) for hunters and for the vanilla combat AIs.
+43. Hunters use new tactics, and requirements 360 to 369 give them to every hostile AI, with a personality that picks the tactics of each ship. Each tactic has an on/off switch (`<Tactic>Enabled`) and a minimum stage (`<Tactic>MinStage`, a stage name or empty) in the tunables file. The minimum stage applies to the hunter AI only. A minimum stage that is not a `Heat.Stages` name is a tunables error (requirement 53). With no active run, or with a tactic off, the AI uses the vanilla module for that job. Requirements 193 to 202 add enemy AI behaviors (flee, calls for help, focus fire, regroup) for hunters and for the vanilla combat AIs.
 44. **Kite**: ships with a longer weapon range than the target hold at `KiteRangeFraction` (default 0.9) of their range, edge to edge. A ship kites only when that distance is outside the target's longest weapon range.
-45. **Pincer**: in a group of two or more on the same target, ships split and attack from sides that are `PincerAngleDegrees` (default 120°) apart, alternating left and right of the group leader. With more ships than fit in a circle at that angle, the angle shrinks to 360° ÷ group size. The leader turns the whole formation a little every 10 to 20 s.
+45. **Pincer**: in a group of two or more allies with the pincer on the same target, ships split and attack from sides that are `PincerAngleDegrees` (default 120°) apart, alternating left and right of the group leader. With more ships than fit in a circle at that angle, the angle shrinks to 360° ÷ group size. The leader turns the whole formation a little every 10 to 20 s.
 46. **Disable**: ships aim all weapons at the nearest weapon or thruster part of the target. Default minimum stage: Hunt.
-47. **Fall back**: a ship below `FallBackHealthFraction` (default 0.35) moves `FallBackDistance` (default 1,500) away from the nearest player ship and repairs. It returns at `FallBackRecoverFraction` (default 0.6) or after `FallBackMaxSeconds` (default 45 s), and cannot fall back again for the same time. Health is the cost of each part times its health fraction, summed and divided by the blueprint cost. Destroyed parts count as 0. A ship that flees (requirement 193) does not fall back: flee has the higher priority.
-48. **Bait**: in a group of two or more, the ship with the most thrust per mass comes within `BaitCloseDistance` (default 150) of the nearest player ship, then pulls back to the middle of its group for `BaitPullBackSeconds` (default 12 s), and repeats. Default minimum stage: Strike.
-49. Each tactic has a visible tell, so the players can read it and counter it. For example, a kiting ship keeps its distance, and a ship that falls back turns away. The behaviors of requirements 193 to 202 have tells too: a ring and a label for a call, a label and a jump countdown for a fleeing ship, a label for a ship that regroups.
+47. **Fall back**: a ship below `FallBackHealthFraction` (default 0.35) moves `FallBackDistance` (default 1,500) away from the nearest enemy player ship on its team radar and repairs. It returns at `FallBackRecoverFraction` (default 0.6) or after `FallBackMaxSeconds` (default 45 s), and cannot fall back again for the same time. Health is the cost of each part times its health fraction, summed and divided by the blueprint cost. Destroyed parts count as 0. A ship that flees (requirement 193) does not fall back: flee has the higher priority.
+48. **Bait**: in a group of two or more (the ship and its allies within `RegroupSearchRange`), the ship with the bait on and the most thrust per mass comes within `BaitCloseDistance` (default 150) of the nearest enemy player ship on its radar, then pulls back to the middle of its group for `BaitPullBackSeconds` (default 12 s), and repeats. Default minimum stage: Strike.
+49. Each tactic has a visible tell, so the players can read it and counter it. For example, a kiting ship keeps its distance, and a ship that falls back turns away. The behaviors of requirements 193 to 202 have tells too: a ring and a label for a call, a label and a jump countdown for a fleeing ship, a label for a ship that regroups. Requirement 368 lists the tells of personalities, teams and cover.
 
 ## 13. Tunables, debug and live tuning
 
-50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78, 100 to 104, 130 to 141, 160 to 175, 190 to 202 and 221 to 225 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
+50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78, 100 to 104, 130 to 141, 160 to 175, 190 to 202, 221 to 225 and 360 to 367 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
 51. The file uses the game's `.rules` format.
 52. The mod watches the file. When the file changes, the mod reloads it on the next frame, without a game restart.
 53. If the file has an error, the mod keeps the last valid values and shows the error in game. Errors include values that break sim logic later, for example a stage name that `Hunters.Stages` or a tactic does not match (`TunablesFile.Validate`).
@@ -217,6 +217,12 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `CallBlockedInNebulas`, `CallStormStrength` | [ion_storm, electron], 0.5 | 199 |
 | `FocusWeakFactor` | 1.5 | 200 |
 | `RegroupFirepowerRatio`, `RegroupRadius`, `RegroupMinGroup`, `RegroupMaxSeconds` | 0.75, 1200, 2, 25 s | 201 |
+| `PersonalitiesEnabled`, `PersonalityThreshold`, `ProfileRefreshSeconds` | on, 0.45, 10 s | 360, 362, 363 |
+| `Personalities` | see section 28 | 361 |
+| `Profile` (build score ends) | see `ProfileScaleTunables` | 362 |
+| `TeamRadius`, `TeamFlankDegrees` | 2500, 90° | 364, 365 |
+| `CoverSearchRange`, `CoverEngageRange`, `CoverPeekSeconds`, `CoverHideSeconds` | 2000, 1500, 8 s, 6 s | 366 |
+| `BrawlRangeFraction` | 0.5 | 365, 367 |
 | `Mechanics.<Mission>Chance` | 0.15 to 0.25 | 131 |
 | `Mechanics.Siege`, `Guard`, `Scan` (hold-out profiles) | see MISSIONS.md | 132, 137, 140 |
 | `Mechanics.DeliveryRadius` | 800 | 134 |
@@ -244,7 +250,7 @@ mod/                       rules content; scripts/assemble-mod.sh builds mod.rul
   missions/                mission spawners, shady ambush
   missions/mechanics/      mechanics missions (sysgen_mechanics.rules), Helion Ore, Prototype Core
   tactics/ai_hunter.rules  hunter AI (HotCargoHunter)
-  tactics/ai_vanilla.rules enemy AI modules that actions.rules appends to the vanilla combat AIs
+  tactics/ai_vanilla.rules enemy AI modules and tactics that actions.rules appends to the vanilla combat AIs
   events/                  choice events (events.rules), outcome spawns (spawns.rules), signal POIs
   chains/                  story chains (chains.rules), stage missions (missions.rules), chain pages (pages.rules)
   worlds/                  system archetypes: sector types, run map weights, archetype spawners, current nebula, wave spawns
@@ -254,7 +260,7 @@ src/HotCargo/
   Core/                    Run, RunState (save), Tunables, TunablesFile (live reload, validation), HeatModel,
                            CareerPatches (lifecycle), Activation (requirement 63), Errors, SimQueries, DebugKeys
   Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/ Chains/ Worlds/   one folder for each area: <Area>Area.Register, tunables, patches
-  Ai/                      enemy AI behaviors (flee, call, regroup, focus); TacticsArea registers it, Tactics tunables
+  Ai/                      enemy AI behaviors (flee, call, regroup, focus) and personalities; TacticsArea registers it, Tactics tunables
   Ui/                      overlay, heat panel, run intro and end panels
   Dev/Autotest.cs          headless test commands
 tests/HotCargo.Tests/      fast unit tests for the pure model files
@@ -264,7 +270,7 @@ scripts/                   pull-game, deploy, run, stop, logs, autotest, release
 
 Rules:
 
-- The model files (`HeatModel`, `TechModel`, `MissionModel`, `TacticsModel`, `EventModel`, `MechanicsModel`, `WaveModel`, `AiModel`) have no game types, so that they are testable on the Mac without the game.
+- The model files (`HeatModel`, `TechModel`, `MissionModel`, `TacticsModel`, `EventModel`, `MechanicsModel`, `WaveModel`, `AiModel`, `PersonalityModel`) have no game types, so that they are testable on the Mac without the game.
 - Patches stay thin. They call into the mod classes.
 - One tunables record type. The overlay and the code read the same values.
 
@@ -342,7 +348,7 @@ Tunables: `Hunters` (requirements 190 to 192) and `Tactics` (requirements 193 to
 191. **Waves.** A stage response arrives in `Waves` groups, `WaveGapSeconds` apart. Defaults: Strike 3 groups 45 s apart (one ship at a time), other stages 1 group. The first group arrives when the stage starts, with the stage alert. Each later group plays the alert sound with the "more ships" text. The repeat Strike waves of requirement 30 split the same way. The run state saves the waiting groups. A jump to another system drops them: a jump is how the players escape a strike.
 192. **Hunter fuel.** Every hunter carries at least `MinFuel` (default 40) hyperium, the FTL fuel resource. Built-in ships spawn with full hyperdrive tanks. A hunter with less fuel gets the rest in any storage that takes hyperium. Some built-in ships have no hyperdrive and no such storage; the run state holds the fuel that does not fit, and it drops with the same roll when the hunter is destroyed or becomes derelict. Vanilla drop rates apply when it dies: hyperdrive tanks drop their fuel when destroyed (`DropResourcesWhenDestroyed`), each unit with the hyperium `StorageDestroyed` chance (50 %), and crew salvage recovers all of it (`StorageSalvaged` 100 %). Hunters never surrender (requirement 33), so death and salvage are the ways to get their fuel. A hunter that jumps out (requirement 195) takes its fuel with it.
 
-The enemy AI behaviors are the rules modules `HcFlee`, `HcCall` and `HcRegroup` and a patch on `SimModeManager.ModifyAIAttackValue`. The modules are in the hunter AI (`mod/tactics/ai_hunter.rules`) and at the end of the strategy modules of the vanilla combat AIs Normal, Easy, Wanderer, StationGuard and Police (`mod/tactics/ai_vanilla.rules`). Priority, highest first: flee, call (answering ally), then for hunters fall back, bait and regroup, and for vanilla AIs regroup, then the vanilla modules.
+The enemy AI behaviors are the rules modules `HcFlee`, `HcCall` and `HcRegroup` and a patch on `SimModeManager.ModifyAIAttackValue`. The modules are in the hunter AI (`mod/tactics/ai_hunter.rules`) and at the end of the module lists of the vanilla combat AIs Normal, Easy, Wanderer, StationGuard and Police (`mod/tactics/ai_vanilla.rules`), together with the tactics and personality modules of section 28. Strategy priority, highest first, for every one of these AIs: personality (measures only), flee, call (answering ally), fall back, bait, cover, regroup, team, then the hunter chase or the vanilla modules.
 
 193. **Flee on damage.** A ship below `FleeHealthFraction` (default 0.25) health rolls once against `FleeChance` (default 0.5). On success it flees. It rolls again only after its health is back at or above `FleeHealthFraction`. Health is as in requirement 47.
 194. **Flee unarmed.** A ship without an offensive weapon part always flees. Point defense and other defensive-only weapons do not count.
@@ -424,3 +430,28 @@ WORLDS.md holds the design. The archetypes give each system an identity, a hazar
 228. Contract terms (`HotCargoContract`, requirement 100 and later): Hold the Pass is free, flat heat 6, trail weight 1, informant chance 10 %. Sundive costs 0.3 standard mission pay, flat heat 2, trail weight 0.5, informant chance 5 %. Raid the Lair is free, flat heat 4, trail weight 1, informant chance 20 %. Pay: Hold the Pass 2 × a standard mission's money and fame, Sundive 3 × money and 1.5 × fame, Raid the Lair 2.5 × money and 2 × fame.
 229. Archetype objects fit the smaller Hot Cargo systems (requirement 105): the belt lies between the trade station ring (up to 11,000 from the center) and the FTL gates (13,500 to 16,000). The hub world keeps 2,500 from the gates. The autotest `worlds-fit` checks that real system generation places each archetype mission and keeps the archetype objects clear of stations and gates.
 
+## 28. AI personalities
+
+Every hostile AI fights with a personality: a weighted mix of tactics, set per faction, varied per ship and fitted to the ship's build. Tunables: `Tactics`. Pure math: `Ai/PersonalityModel.cs`. Code: `Ai/PersonalityStrategy.cs` (`HcPersonality`), `Tactics/TeamStrategy.cs` (`HcTeam`), `Tactics/RoleTactic.cs` (`HcRole`), `Tactics/CoverStrategy.cs` (`HcCover`).
+
+360. **Scope.** The tactics of requirements 44 to 48, the behaviors of requirements 193 to 202 and the new tactics of requirements 364 to 367 run in the hunter AI (corporate hunters, shady trap and event ambushers) and in the vanilla combat AIs Normal (pirates, bounties, ambushes, faction military), Wanderer, Easy, StationGuard and Police. They act only while the ship is hostile to at least one human player (police and faction ships when the players are wanted) and has not surrendered. Friendly and neutral ships keep the vanilla AI. Defense platforms, military stations, space stations and trade ships keep the vanilla AI: they do not move or do not fight. The Easy AI gets no Disable, because it has no targeting modules. With `PersonalitiesEnabled` off, hunters use every tactic (requirements 43 to 48) and the vanilla AIs use none. The behaviors of requirements 193 to 202 keep their own switches.
+361. **Personalities.** `Personalities` lists the personalities. Each has a `Name`, `Groups`, a `Chance`, a `Jitter` and a weight from 0 to 1 for each trait: `Kite`, `Pincer`, `Disable`, `FallBack`, `Bait`, `Team`, `Cover`, `Brawl` and `Call`. A ship's group is `hunters` for the hunter AI, else its faction ID (`monolith`, `cabal`, `imperium`, `fringe`, `io`), else `pirates`. A ship rolls one personality of its group by `Chance`, among those not named in `PersonalitiesOff`. Each trait weight then moves by up to ± `Jitter` (default 0.3), clamped to 0 to 1. The roll and the jitter come from a hash of the ship ID, so two ships of one faction differ, and a ship keeps its personality after a load. A ship of a group without a personality uses no trait. With personalities on, only ships with the `Call` trait call for help (requirement 196). Every ship can answer. Defaults (two per group, the first at chance 2, the second at 1) and their strongest traits:
+
+     | Group | Chance 2 | Chance 1 |
+     |---|---|---|
+     | monolith | Monolith Phalanx: team, brawl, call | Monolith Lancers: team, kite, disable |
+     | cabal | Cabal Zealots: brawl, pincer | Cabal Inquisitors: disable, pincer |
+     | imperium | Imperial Line: team, call, fall back, kite | Imperial Hussars: pincer, bait, kite |
+     | fringe | Fringe Skirmishers: kite, cover, fall back, bait | Fringe Scrappers: brawl, cover, fall back |
+     | io | Io Disruptors: disable, kite, cover | Io Swarm: pincer, team, bait |
+     | pirates | Pirate Raiders: fall back, pincer, bait, cover | Pirate Ambushers: cover, fall back, kite |
+     | hunters | Corporate Hunters: call, disable, pincer, team | Corporate Sweepers: team, call, brawl |
+
+362. **Build profile.** `HcPersonality` measures the ship in the AI tick, again after `ProfileRefreshSeconds` (default 10 s), and saves the numbers with the ship: acceleration (thrust of the working thrusters ÷ mass), turn (summed thruster torque ÷ rotational inertia), the longest active weapon range, the armor share of the part cells, the shield parts and the bounding radius. Each number maps to a score from 0 to 1 between its two ends in `Profile`: agility, turn, range, protection (the higher of the armor score and the score of shield parts per unit of radius) and size. Agility 0 (acceleration at or below `AccelHeavy`, default 20) marks a heavy ship. The defaults come from a census of the built-in combat ships (autotest command `aicensus`).
+363. **Build fit.** A trait is on when its jittered weight × its build fit is at least `PersonalityThreshold` (default 0.45). Fits, from the build scores: Kite = (0.5 + 0.5 agility)(0.3 + 0.7 range). Bait = agility (1 − 0.5 size). Pincer = 0.3 + 0.35 (agility + turn). Brawl = (1 − range)(0.5 + 0.5 protection). Cover = (1 − 0.7 protection)(1 − 0.6 size). Disable, FallBack, Team and Call = 1. A heavy ship never kites or baits. Brawl excludes Kite and Cover: the higher score wins. So fast light ships kite, bait and flank, long-range ships hold distance, short-range protected ships brawl, and unprotected small ships use cover.
+364. **Team.** Allies with the Team trait within `TeamRadius` (default 2,500) of a ship form its team, ordered by ID. The member with the lowest ID leads. The team target is the leader's attack target while it is an enemy on the team radar, else the nearest enemy human ship on the leader's radar. Every member attacks the team target, so the team focuses one ship until it dies or leaves radar. A team needs two members.
+365. **Roles.** Each team member gets a role from its build scores. The tank (the highest protection + size) closes to `BrawlRangeFraction` (0.5) of its range. The sniper (the longest range among the others, with a range score of 0.5 or more) holds at `KiteRangeFraction` (0.9) of its range. Other members with agility 0.5 or more flank from `TeamFlankDegrees` (90°) left and right of the tank's side, in turn. The rest hold the line: the vanilla and pincer modules move them. Ties go to the lower ID.
+366. **Cover.** A ship with the Cover trait whose target is within `CoverEngageRange` (default 1,500, edge to edge) fights for `CoverPeekSeconds` (8 s), then hides for `CoverHideSeconds` (6 s), and repeats. To hide, it flies to the far side of a rock from its target, `CoverGap` (30) clear of the rock. Rocks are junk ships whose rules block weapon fire (`JunkBlocksWeaponLOS`: asteroids and megaroids) within `CoverSearchRange` (2,000) of the ship, with a radius of at least `CoverMinRockFactor` (0.5) × the ship's radius, and not next to the target. The ship picks the rock with the nearest hiding spot. Without a rock, it fights on.
+367. **Brawl.** A ship with the Brawl trait and no team role closes to `BrawlRangeFraction` of its longest weapon range, edge to edge.
+368. **Tells.** A hiding ship's marker shows "IN COVER". A team turns on one ship together: its tank closes in, its sniper hangs back and its flankers swing wide. The mouseover of a hostile ship shows its personality, its traits and its team role, for example "Monolith Phalanx: team play, brawls, calls for help (tank)". Tells read AI state only and change no sim state.
+369. **Determinism and switches.** Personality rolls and jitter hash the ship ID. The build profile, the team role, leader and target, and the cover phase, rock and target are module state: saved with the ship and part of the integrity hash. Team members and rocks are sorted by ID. All decisions run in the AI tick. Each tactic has `<Tactic>Enabled` (new: `TeamEnabled`, `CoverEnabled`, `BrawlEnabled`). `PersonalitiesOff` switches personalities off by name. Every number is a live tunable. The co-op test `tests/autotest-mp/ai` fights pirates, Monolith ships and strike hunters among rocks on two machines with no desync.

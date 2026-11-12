@@ -1,22 +1,33 @@
 using Cosmoteer.Ships;
+using HotCargo.Ai;
 using HotCargo.Core;
 
 namespace HotCargo.Tactics;
 
-public enum Tactic { Kite, Pincer, Disable, FallBack, Bait }
+/// <summary>The traits that are tactics. Each value is its Trait value, so (Trait)tactic converts.</summary>
+public enum Tactic
+{
+    Kite = Trait.Kite, Pincer = Trait.Pincer, Disable = Trait.Disable, FallBack = Trait.FallBack, Bait = Trait.Bait,
+    Team = Trait.Team, Cover = Trait.Cover, Brawl = Trait.Brawl,
+}
 
 /// <summary>
-/// Decides if a tactic is on now (spec 43). With no active run, every tactic is off, so the modules fall through to the vanilla ones.
-/// Reads the live tunables and run state. Both are the same on all multiplayer clients, so the result is deterministic.
+/// Decides if a tactic is on for a ship now (spec 43, 360). With no active run, every tactic is off, so the modules fall through
+/// to the vanilla ones. Reads the live tunables, the run state and sim state. All are the same on every multiplayer client.
 /// </summary>
 public static class TacticGate
 {
-    public static TacticsTunables? Active(Tactic tactic)
+    public static TacticsTunables? Active(Tactic tactic, Ship ship)
     {
         if (Run.Current is not { } run) return null;
         var t = run.T.Tactics;
         var (enabled, minStage) = Settings(t, tactic);
-        return enabled && StageReached(run, minStage) ? t : null;
+        if (!enabled) return null;
+        bool hunter = AiGate.IsHunterAi(ship);
+        if (hunter && !StageReached(run, minStage)) return null;
+        if (AiGate.Surrendered(ship) || !AiGate.HostileToPlayers(ship)) return null;
+        if (!t.PersonalitiesEnabled) return hunter ? t : null;
+        return PersonalityStrategy.Traits(ship, t).Has((Trait)tactic) ? t : null;
     }
 
     public static (bool Enabled, string MinStage) Settings(TacticsTunables t, Tactic tactic) => tactic switch
@@ -26,6 +37,9 @@ public static class TacticGate
         Tactic.Disable => (t.DisableEnabled, t.DisableMinStage),
         Tactic.FallBack => (t.FallBackEnabled, t.FallBackMinStage),
         Tactic.Bait => (t.BaitEnabled, t.BaitMinStage),
+        Tactic.Team => (t.TeamEnabled, t.TeamMinStage),
+        Tactic.Cover => (t.CoverEnabled, t.CoverMinStage),
+        Tactic.Brawl => (t.BrawlEnabled, t.BrawlMinStage),
         _ => throw new ArgumentOutOfRangeException(nameof(tactic), tactic, null),
     };
 

@@ -34,7 +34,7 @@ internal sealed class KiteTactic(KiteTacticRules rules) : AITacticsModule
     {
         float ownRange = 0f, targetRange = 0f;
         float? hold = null;
-        if (TacticGate.Active(Tactic.Kite) is { } t)
+        if (TacticGate.Active(Tactic.Kite, ac.Ship) is { } t)
         {
             ownRange = HunterOrders.MaxWeaponRange(ac.Ship, onlyActive: true);
             targetRange = HunterOrders.MaxWeaponRange(ac.Target, onlyActive: false);
