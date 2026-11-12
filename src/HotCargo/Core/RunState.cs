@@ -55,4 +55,6 @@ public sealed class RunState
     [Serialize(Optional = true)] public float BuyerPriceMultiplier = 1f;
     /// <summary>Spec 330: the new-game enemy scaling setting, the enemy multiplier with 2 players. Set once at run start.</summary>
     [Serialize(Optional = true)] public float EnemyScale = Scaling.ScalingModel.DefaultSetting;
+    /// <summary>Factions area state: the blind jump switch (spec 650).</summary>
+    [Serialize(Optional = true)] public Factions.FactionsState Factions = new();
 }

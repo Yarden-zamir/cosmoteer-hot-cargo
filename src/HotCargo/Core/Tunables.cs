@@ -2,6 +2,7 @@ using Halfling.Serialization;
 using HotCargo.Chains;
 using HotCargo.Contracts;
 using HotCargo.Events;
+using HotCargo.Factions;
 using HotCargo.Hunters;
 using HotCargo.Journey;
 using HotCargo.Missions;
@@ -33,6 +34,7 @@ public sealed class Tunables
     [Serialize(Optional = true)] public ContractsTunables Contracts = new();
     [Serialize(Optional = true)] public UxTunables Ux = new();
     [Serialize(Optional = true)] public WorldsTunables Worlds = new();
+    [Serialize(Optional = true)] public FactionsTunables Factions = new();
     [Serialize(Optional = true)] public DebugTunables Debug = new();
 }
 

@@ -114,7 +114,7 @@ sealed class HeatPanel : LayoutBox
             RunResult.Won => $"<good>{UxKit.Format("StatusWonFmt", s.Score.ToString("N0"))}</good>",
             RunResult.Lost => $"<bad>{UxKit.Text("StatusLost")}</bad>",
             _ when !s.HeatEnabled => $"<gray>{UxKit.Text("StatusHeatOff")}</gray>",
-            _ => StatusLine(s, t.Heat, mult * t.Heat.HeatPerGameMinute + Contracts.ContractBook.TrailPerMinute(run, Contracts.ContractBook.OpenWeight(run))),
+            _ => StatusLine(s, t.Heat, run.TimeHeatPerMinute(s.FleetTech) + Contracts.ContractBook.TrailPerMinute(run, Contracts.ContractBook.OpenWeight(run))),
         };
         long value = t.Tech.Value(s);
         _tech.Text = UxKit.Format("TechFmt", s.FleetTech, value.ToString("N0"));

@@ -29,6 +29,7 @@ public static class Mod
             Ux.UxArea.Register();
             Worlds.WorldsArea.Register();
             Scaling.ScalingArea.Register();
+            Factions.FactionsArea.Register();
             TunablesMenu.TunablesMenuArea.Register();
             Log.Info($"harmony patched {harmony.GetPatchedMethods().Count()} methods; mod root {ModRoot}");
         }

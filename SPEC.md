@@ -76,7 +76,7 @@ Out of scope for this batch:
 18. Players sell tech through the normal station trade screen. The mod adds no special sell screen.
 19. Tech value = ship value × (`TechShipFraction` + `TechShipFractionPerGameHour` × game hours + `TechShipFractionPer100Notoriety` × notoriety ÷ 100), rounded to 100.
     - Ship value = the vanilla `TierValueMaximums` entry (`Data/modes/career/tier_tables.rules`) of the peak tier: the highest low tier of a system that the players were in. It is the most that a ship of that tier is worth.
-    - Notoriety = the sum of every heat gain in the run (time, fame, contracts, events, debug keys). Heat losses do not lower it. The run state saves it.
+    - Notoriety = the sum of every heat gain in the run (time, fame, contracts, events, debug keys), times `Factions.AllyNotorietyFactor` in corporate ally space (requirement 642). Heat losses do not lower it. The run state saves it.
     - Game time, notoriety and the peak tier never go down, so the tech value never goes down. Time and notoriety count in whole steps (`PriceStepMinutes` 1 min, `NotorietyStep` 5), so a sale in flight sees one price.
     - Defaults 0.25, 0.10 and 0.05. Purpose: 1 or 2 units pay for a ship of even power for the current stage. Examples: start (tier 1) 15,000, a quarter of a tier 1 ship. Mid-run (tier 7, 1.2 h, 250 notoriety) about 114,000 = 0.5 × 230,000, so 2 units buy a full tier 7 ship. Late (tier 12, 2.5 h, 600 notoriety) 640,000 = 0.8 × 800,000. A later sale pays more.
     - Against rewards: a standard mission pays 0.05 × the tier's ship value × the difficulty money factor × `RewardScale`. On the default Fast economy (2×) with `RewardScale` 2 that is 0.2 × ship value, so one unit mid-run is worth about 2.5 standard missions. Ship prices do not change with difficulty, so the tech value does not use the money factors.
@@ -87,12 +87,12 @@ Out of scope for this batch:
 ## 9. Heat
 
 23. Heat belongs to the current sector and starts at 0 in sector 1.
-24. Each simulation tick, heat increases by heat multiplier × `HeatPerGameMinute` × elapsed game minutes. Default: 2 heat per minute. Open contracts add a trail on top (requirement 101).
+24. Each simulation tick, heat increases by heat multiplier × `HeatPerGameMinute` × the zone factor × elapsed game minutes. Default: 2 heat per minute. The zone factor comes from the controlling faction of the system (requirements 641 and 643), else 1. Open contracts add a trail on top (requirement 101).
 25. When the players earn fame, heat increases by heat multiplier × `HeatPerStandardMission` × (fame earned ÷ standard mission fame of the sector tier). Default: 15 heat for each standard mission. The standard mission fame includes the same factors as the payout: the difficulty fame factor and `RewardScale`.
     The division keeps "heat per mission" stable across tiers, so that the tunable reads as "missions per sector".
 26. Heat multiplier = `HeatMultiplierByUnits[fleet tech count]`. Default table for 0 to 8 units: `[0.25, 0.4, 0.52, 0.64, 0.76, 0.88, 1.0, 1.1, 1.2]`. A count above the table uses the last entry.
 27. Heat does not increase while the game is paused. Game speed changes the rate, as it does for all game time.
-28. When the players enter a new sector, heat = old heat × `HeatCarryOverFraction` (default 0.25).
+28. When the players enter a new sector, heat = old heat × `HeatCarryOverFraction` (default 0.25) × the factor of the jump kind (requirement 650).
 29. Heat stays in the range 0 to 100.
 
 With defaults and 8 units held (no contract trail), a sector reaches the top stage after about 6 missions, or after about 40 minutes with no missions.
@@ -140,17 +140,17 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 13. Tunables, debug and live tuning
 
-50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78, 100 to 104, 130 to 141, 160 to 175, 190 to 202 and 221 to 225 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
+50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78, 100 to 104, 130 to 141, 160 to 175, 190 to 202, 221 to 225 and 640 to 660 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
 51. The file uses the game's `.rules` format.
 52. The mod watches the file. When the file changes, the mod reloads it on the next frame, without a game restart. The settings menu (requirement 500) writes the same file.
 53. If the file has an error, the mod keeps the last valid values and shows the error in game. Errors include values that break sim logic later, for example a stage name that `Hunters.Stages` or a tactic does not match (`TunablesFile.Validate`).
 54. Part, resource and mission definitions are mod `.rules` content. A change to them needs a game restart.
-55. A heat panel shows heat as a bar with a mark for each stage, the heat rate (time heat plus the contract trail), the open contracts and the trail rate when any are open, the fleet tech count, the tech value, the stage, the next stage and the sector index. After a win it shows the score. With debug keys on, it also shows the heat value, the heat multiplier and the tunables hash. F8 toggles it. With `Ux.HeatPanel = false`, a text overlay shows the same values. UI switches are in UX.md.
+55. A heat panel shows heat as a bar with a mark for each stage, the heat rate (time heat with the zone factor, plus the contract trail), the open contracts and the trail rate when any are open, the fleet tech count, the tech value, the stage, the next stage and the sector index. After a win it shows the score. With debug keys on, it also shows the heat value, the heat multiplier and the tunables hash. F8 toggles it. With `Ux.HeatPanel = false`, a text overlay shows the same values. UI switches are in UX.md.
 56. When `Debug.DebugKeys = true` (default false), debug keys work: add or remove heat, set the stage, add or remove tech units (F11 / Shift+F11, one unit), and spawn the next stage.
 
 ## 14. Persistence and multiplayer
 
-57. Heat, the stages that already started, the sector index, the run result, notoriety and the peak tier (requirement 19), the event state (requirement 76), the chain state (requirement 172), the contract state (requirement 107) and the enemy scaling setting (requirement 330) are saved with the career save and loaded with it. Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
+57. Heat, the stages that already started, the sector index, the run result, notoriety and the peak tier (requirement 19), the event state (requirement 76), the chain state (requirement 172), the contract state (requirement 107), the enemy scaling setting (requirement 330) and the blind jump switch (requirement 650) are saved with the career save and loaded with it. Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
 58. All logic that changes simulation state runs in the deterministic simulation tick. It uses the simulation random source, not `System.Random`. The integrity hash includes heat, sector, stages, result, fleet tech, delivered units, run time, the loss timer, the event serials, notoriety, the peak tier, the contract counts and the tunables hash, so a divergence starts a resync at once. Each desync that the game detects writes an `MP DESYNC` line to the Hot Cargo log.
 59. The fleet tech count and the loss rule count all human players together. A loss ends the run for everyone.
 60. In multiplayer, the mod does not reload tunables. A new co-op run starts with the default tunables on every machine. On its first frame the host sends its `tunables.rules` as a multiplayer input (`HotCargoTunables`), and every machine applies it at the same tick. The starting vault and the first system's offers exist before that and use the defaults. A loaded game uses the tunables in the save. The client's file has no effect. Changes in the host's settings menu use the same input (requirement 504). The heat panel shows a short hash of the tunables in effect, so players can compare.
@@ -229,6 +229,15 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `Worlds.SundiveSalvageSeconds`, `HeatWarnDepth` | 5 s, 0.5 | 223 |
 | `Worlds.LairDiscoverDistance` | 2000 | 224 |
 | `Worlds.ArrivalLine`, `ArrivalLineDelaySeconds` | on, 4 s | 225 |
+| `Factions.AllyFaction`, `RivalFaction` | picked from the galaxy seed | 640 |
+| `Factions.AllyHeatFactor`, `AllyMoneyFactor`, `AllyNotorietyFactor` | 1.5, 1.3, 1.5 | 641, 642 |
+| `Factions.ShelterReputation`, `ShelterHeatFactor` | 500, 0.6 | 643 |
+| `Factions.RivalFencePremium` | 1.5 | 644 |
+| `Factions.RelayCarryOverFactor`, `BlindCarryOverFactor`, `BlindFuelFactor` | 1, 0.3, 1.5 | 650, 651 |
+| `Factions.MarkupStartHeat`, `MarkupMaxFactor`, `PriceHeatStep` | 75, 2, 5 | 655 |
+| `Factions.CrewPriceAtMaxHeat` | 2 | 656 |
+| `Factions.RefuseHeat`, `RefuseChance` | 90, 0.5 | 657 |
+| `Factions.MapMarkers` | on | 660 |
 
 The defaults are first guesses. Live tuning sets the real values.
 
@@ -250,12 +259,13 @@ mod/                       rules content; scripts/assemble-mod.sh builds mod.rul
   chains/                  story chains (chains.rules), stage missions (missions.rules), chain pages (pages.rules)
   worlds/                  system archetypes: sector types, run map weights, archetype spawners, current nebula, wave spawns
   scaling/                 co-op enemy scaling: the fleet opt-in tag on the vanilla ambush, slider strings
+  factions/                strings of the faction roles, jumps, station prices and map markers (no rules content)
 src/HotCargo.Loader/       startup hook entry point, assembly resolve
 src/HotCargo/
   Mod.cs                   Harmony setup, area registration
   Core/                    Run, RunState (save), Tunables, TunablesFile (live reload, validation), HeatModel,
                            CareerPatches (lifecycle), Activation (requirement 63), Errors, SimQueries, DebugKeys
-  Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/ Chains/ Worlds/ Scaling/   one folder for each area: <Area>Area.Register, tunables, patches
+  Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/ Chains/ Worlds/ Scaling/ Factions/   one folder for each area: <Area>Area.Register, tunables, patches
   Ai/                      enemy AI behaviors (flee, call, regroup, focus); TacticsArea registers it, Tactics tunables
   Ui/                      overlay, heat panel, run intro and end panels
   Dev/Autotest.cs          headless test commands
@@ -266,7 +276,7 @@ scripts/                   pull-game, deploy, run, stop, logs, autotest, release
 
 Rules:
 
-- The model files (`HeatModel`, `TechModel`, `MissionModel`, `TacticsModel`, `EventModel`, `MechanicsModel`, `WaveModel`, `AiModel`, `ScalingModel`) have no game types, so that they are testable on the Mac without the game.
+- The model files (`HeatModel`, `TechModel`, `MissionModel`, `TacticsModel`, `EventModel`, `MechanicsModel`, `WaveModel`, `AiModel`, `ScalingModel`, `FactionsModel`) have no game types, so that they are testable on the Mac without the game.
 - Patches stay thin. They call into the mod classes.
 - One tunables record type. The overlay and the code read the same values.
 
@@ -459,3 +469,34 @@ TUNABLES.md lists when each tunable takes effect. Code: `src/HotCargo/TunablesMe
 504. Multiplayer: only the host can change values. The host's change goes to every machine as the `HotCargoTunables` input (requirement 60), so every machine applies it at the same sim tick. Clients see the window read-only. Live reload of the file stays single player only.
 505. Each row with a delayed effect has a tag: next time it shows, next spawned ships, next mission offers, next new system, or new runs only. TUNABLES.md has the full list. The list lives in `TunablesMenu/TunableTiming.cs`, and the mod checks at startup that each entry names a field.
 506. The autotests `menu-live` (single player) and `menu` (co-op) change tunables through the window rows and check the effect in the sim, the file, the rejections, the read-only client and that no desync happens.
+
+## 38. Factions, jumps and station prices
+
+The vanilla factions take sides in the chase. Hot zones pay for their danger, like the hazard beacons of FTL, so a route through them is a real choice. Code: `src/HotCargo/Factions`. Strings: `mod/factions`. Numbers: the `Factions` tunables section. Pure math: `Factions/FactionsModel.cs`.
+
+The trade-off, with the default values:
+
+| Route | Cost | Pay |
+|---|---|---|
+| Corporate ally space (hot zone) | Time heat ×1.5. No shelter. | Offers pay ×1.3 money. Notoriety ×1.5, so the tech value and the Buyer score grow faster. |
+| Rival space | — | Fences pay ×1.5 for tech and never refuse. |
+| Space of a faction that likes you | You need 500 reputation with it. | Time heat ×0.6 (shelter). Its stations never refuse. |
+| Blind jump | ×1.5 fuel. | The jump keeps 30 % of the heat that a relay jump keeps. |
+
+640. **Roles.** Each run, one vanilla faction is the corporation's ally and another one is its rival. `AllyFaction` and `RivalFaction` name a faction ID; an empty value picks one from the galaxy seed (`GameInit.RandSeed`). The pick is a pure function of the seed and the faction list, so it needs no save state and every co-op machine gets the same roles. The two roles always differ.
+641. **Hot zone.** A system whose controlling faction (`MapNode.ControllingFaction`, the faction with the most strength) is the ally is corporate ally space. Its time heat (requirement 24) × `AllyHeatFactor` (1.5).
+642. **Hot zone pay.** A mission money reward × `AllyMoneyFactor` (1.3) when the mission was offered in a hot zone (`Mission.SpawnedAt`). The patch is on the vanilla money reward (`MoneyReward.GetScaledMoney`), so the reward text, the sort value and the payout agree. The contract bonus (requirement 102) does not change. Fame does not change, so the heat of a mission does not change. Notoriety gains in a hot zone × `AllyNotorietyFactor` (1.5): the tech value (requirement 19) and with it the Buyer score grow faster.
+643. **Shelter.** A controlling faction that is not the ally shelters the players while their reputation with it is `ShelterReputation` (500, vanilla Friend) or more. In its systems, time heat × `ShelterHeatFactor` (0.6).
+644. **Fences.** Stations and trade ships of the rival faction (its player indexes) pay the tech value × `RivalFencePremium` (1.5). Buy-back of tech there costs the same factor more, so a sell and buy-back loop still loses money. The Buyer (Neutral index) never changes.
+645. **Where the player decides.** The galaxy map tooltip of a system shows its zone: corporate ally space with its factors, shelter, or the reputation that shelter needs (and the current one), and "Fences" in rival space. The label under the system name shows HOT ZONE (ally) or FENCES (rival). On arrival in a hot zone, rival space or a shelter, a chat line names it.
+650. **Relay and blind jumps.** Vanilla has one way to change system: the ships fly to a Hyper-Jump Relay and pay hyperium. A relay jump keeps `HeatCarryOverFraction` × `RelayCarryOverFactor` (1) of the heat: the corporation watches the relays. A blind jump keeps `HeatCarryOverFraction` × `BlindCarryOverFactor` (0.3). A switch to a system where own ships wait, without a jump, keeps `HeatCarryOverFraction`. Any player sets the blind switch through the MP input `HotCargoBlindJump`. The run state saves the switch. It turns off after a blind jump, so it holds for one jump. The kind of a jump is fixed when the jump charges its fuel (`GameRoot.DoHumanPlayersFtlJump`), so a later click does not change it.
+651. **Blind fuel.** With the blind switch on, the map jump fuel of each human ship × `BlindFuelFactor` (1.5), rounded up. The patch is on `FtlManager.GetTotalFtlMapJumpFuelCost`, the one source of the fuel labels, the spin-up check and the charge.
+652. **Jump UI.** The spin-up window shows a button under ENGAGE: "Relay jump: keep N% heat", or "BLIND jump: keep N% heat" when the switch is on. Its tooltip explains both kinds. The galaxy map tooltip of a system in jump range shows the heat on arrival for a relay jump and for a blind jump, and the blind fuel factor.
+655. **Station prices by heat.** From `MarkupStartHeat` (75) heat, what stations and trade ships of a faction charge × a factor that rises in a straight line to `MarkupMaxFactor` (2) at heat 100: resources (fuel included), tech buy-back, the resources that construction buys there, and blueprints. Heat counts in whole steps of `PriceHeatStep` (5), so a price holds between steps. Sale refunds do not change. Limit: a resource trade carries its price in the MP input, and the sim drops a trade whose price changed (vanilla `MPMoveResourcesInput`), so a click in the moment that heat crosses a step can be lost.
+656. **Crew price.** The crew hire price × a factor that rises in a straight line from 1 at heat 0 to `CrewPriceAtMaxHeat` (2) at heat 100, in the same heat steps, rounded up to the vanilla hire price multiple. The hire tab shows the price and a line "Heat: crew cost +N%".
+657. **Refusals.** From `RefuseHeat` (90) heat, each station (trade and military) refuses with chance `RefuseChance` (0.5). The roll is seeded by the station and the sector index, so it holds for the visit. A station that refuses does not answer a hail, an open comms window with it closes, and crew cannot trade with it. Fences (rival stations), the Buyer, stations of a faction that shelters the players and a station that owes the caller a mission reward never refuse.
+658. **Refusal message.** A hail to a station that refuses shows a toast and a chat line: "<station> refuses to talk: "You are too hot. Go away."". Each time heat rises into the markup band or the refusal band (for example after a jump lowered it), a toast and a chat line say so.
+659. **Comms badges.** The comms list shows badges after the service badges: FENCE ×N tech, SHELTER, CORPORATE ALLY, REFUSES and PRICES ×N.
+660. **Map markers.** With `MapMarkers` on, the galaxy map draws the vanilla custom marker icon (`CareerMode.CustomMarkerIcon`, custom_marker.png) at the upper right of each system that holds a target, and its tooltip lists the targets by name. Targets: accepted contracts (missions with terms, requirement 100) and Hot Cargo missions (event, chain and Buyer missions, metatype IDs that start with "HotCargo") at the system of their nearest objective, and story chains that wait at their station's system (a station offer or a return stage). Vanilla already draws its mission icon on the systems of accepted missions; the vanilla custom marker is a point in the current system, not on the galaxy map, so the mod draws the icon itself. The markers are UI only and add no save state.
+661. **Determinism.** Every rule reads sim state only: heat, the sector index, reputation, map node factions, the galaxy seed, the station ID and the run tunables. The prices are patched where both the UI and the MP inputs read them. The blind switch changes only through its MP input and the system switch. All effects stop after a win (heat off).
+662. **Tests.** Headless: `factions-zones` (hot zone heat, money and notoriety, shelter, fence price, markers), `factions-prices` (markup at 75, 90 and 100 heat, crew price, refusals and the message), `factions-jumps` (relay and blind heat and fuel). Co-op: `factions` (a fence sale and a marked-up buy pass the exact price check with no desync). Unit tests: `FactionsModelTests`.

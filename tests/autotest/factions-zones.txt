@@ -1,0 +1,45 @@
+# Factions: hot zone (corporate ally), shelter, rival fence prices, hot zone offer money, notoriety, tooltip lines and markers.
+newgame
+wait 8
+ev_set Enabled false
+godmode on
+pause off
+tostation
+fa_roles - -
+fa_tooltip
+fa_base
+expect fa_zone == 0
+expect fa_timefactor == 1
+expect fa_offerratio == 1
+# Spec 644: the rival faction pays the fence premium for tech; another faction pays the tech value.
+expect fa_rivalsell == 1.5
+expect fa_plainsell == 1
+# Spec 641, 642: this system becomes corporate ally space.
+fa_roles here other
+expect fa_zone == 1
+expect fa_timefactor == 1.5
+expect fa_offerratio >= 1.29
+expect fa_offerratio <= 1.31
+fa_mark
+wait 20
+log ally
+expect fa_rateratio >= 0.97
+expect fa_rateratio <= 1.03
+expect fa_notorietyratio >= 1.49
+expect fa_notorietyratio <= 1.51
+# Spec 643: shelter needs reputation with a faction that is not the ally.
+fa_roles other -
+expect fa_zone == 0
+fa_rep 600
+expect fa_zone == 2
+expect fa_timefactor == 0.6
+fa_mark
+wait 20
+expect fa_rateratio >= 0.97
+expect fa_rateratio <= 1.03
+expect fa_notorietyratio >= 0.99
+expect fa_notorietyratio <= 1.01
+# Spec 660: the station chain offers of this system are marked.
+expect fa_markershere >= 1
+fa_tooltip
+quit

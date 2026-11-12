@@ -28,6 +28,7 @@ Fields not listed in the "Not now" column apply Now.
 | Contracts | `FeeChance`, `FeeMin`, `FeeMax`, `PaidBonusFactor`, `MoneyRoundTo`, `RivalPairChance`, `InformantShare`, `InformantChanceMin`, `InformantChanceMax`, `InformantDelayMin`, `InformantDelayMax`, `ExcludedCategories`, `Metatypes`: next mission offers | The terms of an offer are saved within a second of its first scan (spec 100). Fixed in this change: `RivalsEnabled` off now also stops the rival groups that offers got before the switch. The trail, `InformantHeat` and `InformantShips` apply now. |
 | Chains | `StationChance`, `LaterDelaySeconds`: next new system. `StoryLines`: next time it shows | `Enabled` and `PageTriggerDistance` apply now. |
 | Worlds | `PassWaveDistance`: next spawned ships. `ArrivalLine`, `ArrivalLineDelaySeconds`: next new system | Before a run is active (the first system of a new career), sim code uses the defaults (spec 227). |
+| Factions | `RelayCarryOverFactor`, `BlindCarryOverFactor`: next new system (read on each jump) | The roles, zone factors, fence premium, price factors and refusal values apply at once, also to offers that exist (their money reward is computed when it shows and when it pays) and to an open comms window. |
 | Ux | `RunIntro`: new runs only. `StageAlertSeconds`, `CommsStayOnMap`, `PauseOnComms`, `PauseOnCommsMultiplayer`: next time it shows | All other switches apply on the next frame. Known limit: in an open event window, the dialogue key numbers keep their state until the page changes. |
 | Debug | (none) | |
 
