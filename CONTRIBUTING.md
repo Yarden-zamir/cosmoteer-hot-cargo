@@ -31,9 +31,10 @@ The mod checks at the first frame of a run that each trigger has a page and each
 1. Create `scripts/pc.local.sh` with `PC_MACHINE="<T3 name of the PC>"` (see the top of `scripts/pc.sh`). Then run `scripts/pull-game.sh` once. It copies the game DLLs and rules from the PC to `../.game` and decompiles them to `../.game/decompiled`.
 2. Build: `dotnet build src/HotCargo/HotCargo.csproj -c Release`.
 3. Unit tests (pure math only): `cd tests/HotCargo.Tests && dotnet run`.
-4. Game test on the PC: `scripts/autotest.sh tests/autotest/<name>.txt`. It deploys, turns the mod on, runs the game minimized and prints the log. Commands are in `src/HotCargo/Dev/Autotest.cs`.
-5. Other PC scripts: `deploy.sh`, `run.sh`, `stop.sh`, `logs.sh`, `mod-toggle.sh on|off`.
-6. Telemetry: every game writes a JSONL file per session (TELEMETRY.md). `scripts/pull-telemetry.sh` copies the files to `../.telemetry`, and `cd tools/telemetry && uv run hc-telemetry` writes a report. `scripts/autotest-all.sh --telemetry` does both after a test pass.
+4. Game test on the PC: `scripts/autotest.sh tests/autotest/<name>.txt`. It deploys, turns the mod on, runs the game headless in a test slot and prints the result and a `== timing` line (seconds per phase). Commands are in `src/HotCargo/Dev/Autotest.cs`.
+5. Other PC scripts: `deploy.sh`, `run.sh`, `stop.sh`, `logs.sh`, `mod-toggle.sh on|off`. `stage.sh <dir>` builds and stages the mod with a content hash. The PC keeps the 30 newest builds in `%USERPROFILE%\HotCargoSlots\_builds\<hash>`, so `deploy.sh` uploads a build only once.
+6. Suites: `scripts/autotest-all.sh [--detach] [timeout] [tests...]` and `scripts/autotest-affected.sh [--detach]`. A suite stages once, and all its tests run that build. `--detach` runs it safe from a killed shell; `scripts/suite-wait.sh <log>` waits for it.
+7. Telemetry: every game writes a JSONL file per session (TELEMETRY.md). `scripts/pull-telemetry.sh` copies the files to `../.telemetry`, and `cd tools/telemetry && uv run hc-telemetry` writes a report. `scripts/autotest-all.sh --telemetry` does both after a test pass.
 
 ### Co-op (multiplayer) tests
 
@@ -62,7 +63,7 @@ The game runs on a Windows PC that a person also uses. `autotest.sh` runs headle
 
 ## Git
 
-- Feature work: push a feature branch and open a draft pull request. CI builds it and runs the unit tests and the private-data check. The game tests run on the PC: `scripts/integrate.sh <branch>` merges into `main` after they pass, so the PR shows as merged. Small fixes may go straight to `main`.
+- Feature work: push a feature branch and open a draft pull request. CI builds it and runs the unit tests and the private-data check. The game tests run on the PC: `scripts/integrate.sh <branch|PR>...` merges into `main` after they pass, so the PR shows as merged. Several branches merge as one batch with one test suite and one push; on a failure it names the branches whose areas own the failed tests. `--full` runs the full suite, `--detach` runs it in the background. Small fixes may go straight to `main`.
 - Use conventional commits (`feat:`, `fix:`, `docs:`, `chore:`).
 - Feature branches are local only. Merge them into `main`, build, run the tests, then push.
 

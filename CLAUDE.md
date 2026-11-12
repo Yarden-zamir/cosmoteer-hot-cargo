@@ -12,7 +12,7 @@ Procedures are skills in `.claude/skills/`:
 ## Git
 
 - Feature work goes through a draft pull request: push the feature branch and open a draft PR with a short summary and screenshots of visible changes (`gh-pr-images` skill). CI checks it (build, unit tests, private data). Start PR descriptions and comments with 🤖; keep them short. Small fixes may go straight to `main`. Conventional commits.
-- Feature work happens in a worktree of the bare repo (`../.bare`), one branch for each feature. The integrator merges into `main` with `scripts/integrate.sh <branch>`: merge, build, unit tests, private-data check, affected autotests, push, install. It pushes only when every step passed.
+- Feature work happens in a worktree of the bare repo (`../.bare`), one branch for each feature. The integrator merges into `main` with `scripts/integrate.sh <branch|PR>...` (several branches make one batch): merge, build, unit tests, private-data check, affected autotests, push, install. It pushes only when every step passed.
 - Never credit an AI, model or tool in commits or files.
 - Never commit personal machine data. `scripts/check-private.sh` checks this, and CI runs it.
 
