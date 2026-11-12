@@ -3,7 +3,7 @@
 # Slots t1..tN (N = HOT_CARGO_SLOTS, default 8) are headless test instances on the PC (see pc.sh).
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$LIB_DIR/.." && pwd)"
-SLOTS="${HOT_CARGO_SLOTS:-8}"
+SLOTS="${HOT_CARGO_SLOTS:-6}"
 # Full logs of every run stay here, one folder per worktree, so a later run in the same slot cannot overwrite them.
 # Logs, flaky list and pass markers live in <container>/.state (next to .bare and .game), not in /tmp, so they survive a restart.
 STATE_DIR="${HOT_CARGO_STATE:-$(cd "$REPO_ROOT/.." && pwd)/.state}"
@@ -33,8 +33,15 @@ take_one_slot() {
   local i lock limit busy
   while :; do
     limit="$(usable_slots)"
-    # The integrator's runs (main worktree) always keep one slot free of agent runs, so merges never starve.
-    if [[ "$(basename "$REPO_ROOT")" != main && $limit -gt 1 ]]; then limit=$((limit - 1)); fi
+        # Off by default: HOT_CARGO_INTEGRATOR_RESERVE slots stay free for the main worktree, if contention returns.
+    if [[ "$(basename "$REPO_ROOT")" != main && ${HOT_CARGO_INTEGRATOR_RESERVE:-0} -gt 0 && $limit -gt ${HOT_CARGO_INTEGRATOR_RESERVE:-0} ]]; then limit=$((limit - HOT_CARGO_INTEGRATOR_RESERVE)); fi
+    # Off by default: with HOT_CARGO_SLOTS_PER_AGENT > 0, an agent worktree holds at most that many slots, so one agent's big batch
+    # cannot starve the others. The main worktree (the integrator) has no cap.
+    if [[ "$(basename "$REPO_ROOT")" != main && ${HOT_CARGO_SLOTS_PER_AGENT:-0} -gt 0 ]]; then
+      local mine=0 l
+      for l in /tmp/hot_cargo_slot_[0-9]*.lock; do [[ "$(cat "$l/owner" 2>/dev/null)" == "$REPO_ROOT" ]] && mine=$((mine + 1)); done
+      if [[ $mine -ge ${HOT_CARGO_SLOTS_PER_AGENT:-0} ]]; then sleep 5; continue; fi
+    fi
     for lock in /tmp/hot_cargo_slot_[0-9]*.lock; do
       if [[ -f "$lock/pid" ]] && ! kill -0 "$(cat "$lock/pid")" 2>/dev/null; then rm -rf "$lock"; fi
     done
