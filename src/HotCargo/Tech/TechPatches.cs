@@ -71,15 +71,17 @@ static class VaultHeatPatch
 }
 
 /// <summary>
-/// Spec 65, 66: damage to a vault destroys tech inside it. A destroyed vault drops nothing, because the resource has no drop rates.
-/// Repair raises health, which costs nothing and brings nothing back.
+/// Spec 65, 66: damage to a vault destroys tech inside it. Repair raises health, which costs nothing and brings nothing back.
+/// Salvage (crew salvage a derelict, or take a vault apart for a move) is not damage here: the tech drops as crates when the vault goes.
 /// </summary>
 [HarmonyPatch(typeof(Part), "OnHealthChanged")]
 static class VaultDamagePatch
 {
-    static void Postfix(Part __instance, int oldHealth, int newHealth) => Errors.Guard("vault damage", () =>
+    static void Postfix(Part __instance, int oldHealth, int newHealth, int oldSalvageDamage, int newSalvageDamage) => Errors.Guard("vault damage", () =>
     {
         if (newHealth >= oldHealth || newHealth == 0 || __instance.Rules.ID != Vaults.VaultId) return;
+        // A salvage hit adds its damage to SalvageDamage too (Part.OnHit with DamageType.Salvage).
+        if (newSalvageDamage - oldSalvageDamage >= oldHealth - newHealth) return;
         if (__instance.Ship?.Sim is null || Run.Current is not { } run) return;
         var grid = __instance.Components.OfType<TypedResourceGrid>().FirstOrDefault(g => g.ResourceType == Vaults.TechId);
         if (grid is null || grid.Resources == 0) return;

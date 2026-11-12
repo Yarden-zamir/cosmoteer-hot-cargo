@@ -76,6 +76,17 @@ static class TechAutotest
         Autotest.Fields["shipvalid"] = () => Vaults.HumanShips(Active().Game.Sim).All(s => s.BlueprintParts.IsValid && s.PhysicalMatchesBlueprints) ? 1 : 0;
         Autotest.Fields["livetech"] = () => Vaults.CountFleetTech(Active().Game.Sim);
         // Spec 449: units in every vault grid in the sim, whoever owns the ship: what the vault art shows. Must equal tech while no crew carry tech.
+        // Vault builds and teardowns that crew still have to do on human ships. 0 when a move is done.
+        Autotest.Fields["vaultsbusy"] = () => Vaults.HumanShips(Active().Game.Sim).Sum(s => s.OptionalConstructionManager is not { } cm ? 0
+            : cm.QueuedPartConstructions.Count(q => q.Part.Rules.ID == Vaults.VaultId) + cm.QueuedPartDeconstructions.Count(q => q.Part.Rules.ID == Vaults.VaultId));
+        // The fleet count plus tech crates in space: no tech may vanish in a move.
+        Autotest.Fields["techall"] = () =>
+        {
+            var sim = Active().Game.Sim;
+            int crates = 0;
+            for (int i = 0; i < sim.Nuggets.Count; i++) if (sim.Nuggets[i].ResourceType == Vaults.TechId) crates += sim.Nuggets[i].Quantity;
+            return Active().State.FleetTech + crates;
+        };
         Autotest.Fields["vaultunits"] = () => Active().Game.Sim.Ships.AllShips.Sum(Vaults.ShipTech);
         Autotest.Fields["derelicttech"] = () => Vaults.Split(Active().Game.Sim, Active().Game.LocalPlayerIndex).Derelict;
         Autotest.Fields["mytech"] = () => Vaults.Split(Active().Game.Sim, Active().Game.LocalPlayerIndex).Player;
