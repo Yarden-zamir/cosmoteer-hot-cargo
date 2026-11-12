@@ -7,8 +7,8 @@ wait 8
 godmode
 tacticlog on
 # The starter ship cannot outlast every stage of five systems (crew die in fires, which godmode does not stop).
-# Fewer live hunters and frequent won fights keep it alive; a balance analysis must leave both out.
-maxhunters 2
+# One live hunter and frequent won fights keep it alive; a balance analysis must leave both out.
+maxhunters 1
 # System 1 (tier 1): the Start event, a contract, an escort, a sale, then time heat and a Warning scout.
 choose 1
 wait 2
@@ -57,25 +57,30 @@ event distress_beacon
 choose 1
 wait 5
 log system2
-# System 3: Hunt, a save and a load in the middle of the visit.
+# System 3 (tier 4): Patrol, a save and a load in the middle of the visit.
 jump
 # A jump out of a fight waits until the ships may leave (factions), so wait for the arrival.
 waitfor sector >= 3 120
 pause off
-wait 15
-heat 45
-wait 20
+wait 5
 damagehostiles 0.05
-wait 20
+heat 40
+wait 10
 damagehostiles 0.05
-wait 20
+wait 10
+damagehostiles 0.05
+wait 10
+damagehostiles 0.05
+wait 10
 save telerun
 wait 3
 load telerun
 pause off
-wait 20
+wait 10
 damagehostiles 0.05
-wait 20
+wait 10
+damagehostiles 0.05
+wait 10
 log system3
 # System 4 (tier 7): a starter ship does not outlast a tier 7 Hunt, so it sells at once and leaves at Patrol.
 jump
