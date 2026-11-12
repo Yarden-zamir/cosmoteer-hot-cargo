@@ -31,7 +31,8 @@ scripts/check-private.sh
 STAGE="$(mktemp -d)"; trap 'rm -rf "$STAGE"' EXIT
 ZIP="$(scripts/package.sh "$VERSION" "$STAGE")"
 
-PREV="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+# Dev prereleases (CI, one for each push) are not part of the changelog of a tested release.
+PREV="$(git describe --tags --abbrev=0 --exclude '*-dev.*' 2>/dev/null || true)"
 NOTES="$STAGE/notes.md"
 {
   echo "🤖 Hot Cargo $VERSION for Cosmoteer 0.30.5a (Windows)."

@@ -1,0 +1,58 @@
+# Each push to main publishes an untested "dev" prerelease: build, unit tests, private-data check, package.
+# Game tests need the Windows PC, so they are not run here. Tested releases still go through scripts/release.sh.
+name: dev release
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: dev-release
+  cancel-in-progress: false
+permissions:
+  contents: write
+env:
+  KEEP_DEV_RELEASES: 10
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+      # Cosmoteer.dll and HalflingCore.dll are game files. A private repo holds them; they never enter this repo or a release.
+      - uses: actions/checkout@v7.0.1
+        with:
+          repository: Yarden-zamir/cosmoteer-hot-cargo-game-refs
+          ssh-key: ${{ secrets.GAME_REFS_DEPLOY_KEY }}
+          path: .game-refs
+      - uses: actions/setup-dotnet@v6.1.0
+        with:
+          global-json-file: global.json
+      - run: scripts/check-private.sh
+      - run: dotnet run --project tests/HotCargo.Tests
+      - name: Package and publish
+        env:
+          CosmoteerBin: ${{ github.workspace }}/.game-refs
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          base="$(git describe --tags --abbrev=0 --exclude '*-dev.*')"
+          version="${base#v}-dev.${{ github.run_number }}"
+          prev="$(git describe --tags --abbrev=0 --match 'v*-dev.*' 2>/dev/null || echo "$base")"
+          zip="$(scripts/package.sh "$version" "$RUNNER_TEMP")"
+          {
+            echo "🤖 Untested dev build of Hot Cargo for Cosmoteer 0.30.5a (Windows), from ${GITHUB_SHA::7}."
+            echo "Built and unit tested, but not game tested. For a tested build, use the latest non-dev release."
+            echo
+            echo "Install: unzip, double-click \`install.bat\`, then turn on Hot Cargo in the game's Mods menu."
+            echo
+            echo "## Changes since $prev"
+            git log --no-merges --format='- %s' "$prev..HEAD"
+          } > "$RUNNER_TEMP/notes.md"
+          gh release create "v$version" "$zip" --target "$GITHUB_SHA" --prerelease \
+            --title "Hot Cargo $version (dev)" --notes-file "$RUNNER_TEMP/notes.md"
+      - name: Keep the newest dev releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --limit 200 --json tagName,createdAt \
+            --jq "[.[] | select(.tagName | contains(\"-dev.\"))] | sort_by(.createdAt) | reverse | .[$KEEP_DEV_RELEASES:] | .[].tagName" |
+          while read -r tag; do gh release delete "$tag" --yes --cleanup-tag; done
