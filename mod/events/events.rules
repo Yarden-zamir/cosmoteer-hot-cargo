@@ -90,6 +90,8 @@ Events
 		ID = broken_down
 		Trigger = Arrival
 		Weight = 8
+		// Spec 767: the freighter carries the page. It hails you; its comms show the choices.
+		Carrier = BrokenFreighter
 		Title = "Dead in Space"
 		Text = "A freighter drifts with its drive dark. Its engineer hails you, hands black with soot. \"Main coupling is fried. We need parts to patch it, or a tow to the nearest station. We can pay either way.\""
 		Choices
@@ -102,7 +104,7 @@ Events
 			{
 				Text = "Tow them to the nearest station."
 				Need { Parts = ["cosmoteer.tractor_beam_emitter"] }
-				Outcomes [ { Text = "You lock a tractor beam onto their hull. Pull them to the station and keep them in one piece; the crew pays on arrival."; Spawn = TowJob } ]
+				Outcomes [ { Text = "You lock a tractor beam onto their hull. Pull them to the station and keep them in one piece; the crew pays on arrival."; Spawn = TowMission } ]
 			}
 			{
 				Text = "Strip their cargo while they cannot run."
@@ -793,6 +795,63 @@ Events
 			{
 				Text = "Leave it for now."
 				Outcomes [ { Text = "The crate will wait. Its owners are not coming back." } ]
+			}
+		]
+	}
+
+	// ---- Hail lines (spec 769): extra Hot Cargo lines in the comms of stations and faction ships. Once per ship and line.
+
+	{
+		ID = off_books
+		Trigger = Hail
+		HailTarget = Station
+		HailLine = "Sell a crate off the books."
+		MaxPerRun = 0
+		Need { Tech = 2 }
+		Title = "Off the Books"
+		Text = "The dock officer lowers her voice. \"No trade log, no tax, no questions. We pay under market, but the sale never happened.\""
+		Choices
+		[
+			{
+				Text = "Sell one crate."
+				Need { Tech = 1 }
+				Cost { Tech = 1 }
+				Outcomes [ { Text = "The sale never happened. Neither did your last port call."; MoneyTech = 0.85; Heat = -10 } ]
+			}
+			{
+				Text = "Changed my mind."
+				Outcomes [ { Text = "\"Suit yourself.\"" } ]
+			}
+		]
+	}
+
+	{
+		ID = hunter_intel
+		Trigger = Hail
+		HailTarget = FactionShip
+		HailLine = "Ask about hunters nearby."
+		MaxPerRun = 0
+		Need { MinHeat = 10 }
+		Title = "Patrol Chatter"
+		Text = "The pilot shrugs. \"Corporate ships? We see them. Information costs, though.\""
+		Choices
+		[
+			{
+				Text = "Pay for their patrol logs."
+				Cost { Money = 0.2 }
+				Outcomes [ { Text = "They send the corporate patrol routes. You plot around them."; Heat = -8 } ]
+			}
+			{
+				Text = "Ask nicely."
+				Outcomes
+				[
+					{ Weight = 50; Text = "\"Fine. They went that way.\" It helps a little."; Heat = -4 }
+					{ Weight = 50; WeightPerHeat = 0.3; Text = "They log your question. The corporation reads those logs."; Heat = 5 }
+				]
+			}
+			{
+				Text = "Never mind."
+				Outcomes [ { Text = "The channel closes." } ]
 			}
 		]
 	}

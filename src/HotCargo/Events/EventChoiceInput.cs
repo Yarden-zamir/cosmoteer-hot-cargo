@@ -37,7 +37,7 @@ static class AllowEventChoicePatch
 {
     static void Postfix(MPInput mpInput, ref bool __result)
     {
-        if (mpInput is EventChoiceInput) __result = true;
+        if (mpInput is EventChoiceInput or EventHailInput) __result = true;
     }
 }
 

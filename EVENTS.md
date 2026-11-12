@@ -320,12 +320,28 @@ One per run, in a sector from 2 to the one before the Buyer. Within 3,000 the va
 | Recover the crate | 1 vault slot | +1 tech. 15 % + 0.1 × heat: also a corporate patrol. |
 | Leave it for now | — | Nothing; it waits. |
 
+### Events in ship comms (spec 767-771)
+
+Events do not only pop up. Ships carry them and talk:
+- **Ship-carried pages.** An event with a `Carrier` spawns its ship when it opens. The ship calls ("Courier is calling. Fly within comms range to answer, or hail it."), hails you in comms range, and its comms tab shows the page and the choices. It stays a real ship: attack it and the page closes ("The ship is gone, and so is the offer"), or leave it behind. Dead in Space now comes from its freighter, and the tow choice tows that freighter.
+- **Stations hail.** A Station event (The Fence, Smugglers' Den, The Informant, The Archive) comes from the station's comms.
+- **Hot Cargo lines in vanilla hails.** Stations offer "Sell a crate off the books." Faction ships offer "Ask about hunters nearby." (heat 10+). Once per ship and line.
+
+#### 33. Off the Books (Hail line, trade stations; 2+ tech)
+Sell one crate: 0.85 × tech value, heat −10. Or change your mind.
+
+#### 34. Patrol Chatter (Hail line, faction ships; heat 10+)
+Pay 0.2 money units for patrol logs (heat −8), ask nicely (50 %: heat −4; 50 % + 0.3 × heat: heat +5, they log your question), or never mind.
+
+Hunter demands ("hand over the tech") are the diplomacy area's, through the same comms hook.
+
 All catalog items are implemented.
 
 ## 4. Content rules for authors
 
 - Do not write counts that live elsewhere (the starting tech, spawn counts in spawns.rules): they drift. Use `{crates}` for the live fleet tech count. Counts that the same choice's Cost sets are fine.
 - Do not number the choices: the UX area draws the key numbers next to the buttons.
+- A page that a ship should say (a hail, a demand, a deal) gets a `Carrier` or is a `Hail` line, so it shows in that ship's comms.
 - Keep text to 2 to 4 short sentences. Name concrete things (a crate, a cutter, a forger), not abstractions.
 - Put the cost on the button (`Cost`), not in the text. The window adds "(-10,000 credits)" for you.
 - Hide story options (`HideIfUnmet = true`) when a flag gates them. Show part and crew options greyed out, so players learn what to build.

@@ -133,6 +133,13 @@ internal sealed class TowObjective : Objective
     {
         if (Mission is null || Completion != CompletionState.InProgress || sim != Mission.Game.Sim) return;
         if (sim.NodeId() != Towed.MapNodeID || Towed.Location is not { } at) return;
+        // A towed ship with an AI (an event carrier answers comms) would fly back to its spot. Its spot follows it instead.
+        if (Towed.TargetShip?.AI is { Parameters: { PatrolOrigin: { } origin } } ai && origin.DistanceTo(at) > 100f)
+        {
+            var p = ai.Parameters.Clone();
+            p.PatrolOrigin = at;
+            ai.Parameters = p;
+        }
         if (at.DistanceTo(Destination) > ArrivalRadius) return;
         Log.Info($"towed ship {Towed.GetPlainTargetName(sim)} reached the station");
         Complete();

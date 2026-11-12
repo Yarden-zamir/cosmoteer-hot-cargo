@@ -27,6 +27,17 @@ public enum EventTrigger
     Abandoned,
     /// <summary>When a human ship comes close to the run's relic ship (spec 765).</summary>
     Relic,
+    /// <summary>A line in the comms of a station or faction ship (HailLine, HailTarget). Clicking it opens the page there (spec 769).</summary>
+    Hail,
+}
+
+/// <summary>Which ships show a Hail event's line in their comms (spec 769).</summary>
+public enum HailTarget
+{
+    /// <summary>Trade stations (not the Buyer).</summary>
+    Station,
+    /// <summary>Faction ships that are not stations and not hostile.</summary>
+    FactionShip,
 }
 
 /// <summary>A computed offer that an event page carries (spec 760-762). Its contents come from the tech tree when the page opens.</summary>
@@ -161,6 +172,16 @@ public sealed class EventRules
     [Serialize] public string ID = "";
     [Serialize(Optional = true)] public EventTrigger Trigger;
     [Serialize(Optional = true)] public EventCategory Category;
+    /// <summary>
+    /// A generator in spawns.rules for the ship that carries the page (spec 767). It spawns when the page opens; its ship must have
+    /// the tag hc_ev_carrier. The page shows in that ship's comms, not in the event window.
+    /// </summary>
+    [Serialize(Optional = true)] public string Carrier = "";
+    /// <summary>True: the carrier hails the players when the page opens. False: the players must hail it.</summary>
+    [Serialize(Optional = true)] public bool CarrierHails = true;
+    /// <summary>Hail events: the button text in the target's comms.</summary>
+    [Serialize(Optional = true)] public string HailLine = "";
+    [Serialize(Optional = true)] public HailTarget HailTarget;
     /// <summary>A computed offer. The event can open only when the offer can be built.</summary>
     [Serialize(Optional = true)] public OfferKind Offer;
     [Serialize(Optional = true)] public float Weight = 10f;
@@ -258,6 +279,8 @@ public static class EventLibrary
         string at = $"event '{e.ID}'";
         if (e.ID.Length == 0) throw new InvalidDataException("an event has no ID");
         if (e.Title.Length == 0 || e.Text.Length == 0) throw new InvalidDataException($"{at} needs a Title and a Text");
+        if (e.Trigger == EventTrigger.Hail && e.HailLine.Length == 0) throw new InvalidDataException($"{at}: a Hail event needs a HailLine");
+        if (e.Carrier.Length > 0) Spawn(e.Carrier);
         if (e.Choices.Length is < 1 or > MaxChoices) throw new InvalidDataException($"{at} needs 1 to {MaxChoices} choices");
         if (e.Weight < 0) throw new InvalidDataException($"{at}: Weight must not be negative");
         ValidateNeed(e.Need, at);

@@ -107,6 +107,10 @@ public static class EventText
 
     public static string Researched(IEnumerable<string> techs) => W.GoodTextColor.FormatWithXml($"Researched: {string.Join(", ", techs)}");
 
+    /// <summary>Spec 767: a ship that carries an event calls the players. UI only and local.</summary>
+    public static void ShowCalling(GameRoot game, string shipName) =>
+        Ux.UxKit.ChatLine(game, Unlocked.FormatWithXml(Strings.FormatText("HotCargoEvents/CarrierCallingFmt", shipName)));
+
     /// <summary>Spec 765: the vault senses the relic ship. UI only and local.</summary>
     public static void ShowRelicMessage(GameRoot game)
     {

@@ -15,6 +15,8 @@ public sealed class EventsState
     [Serialize(Optional = true)] public Dictionary<string, int> FlagSectors = new();
     /// <summary>True while the wanted-and-hunted warning is up; it fires again only after the players stop being both.</summary>
     [Serialize(Optional = true)] public bool WantedWarned;
+    /// <summary>Hail lines already used, as "eventId@shipId": each ship offers each line once per run (spec 769).</summary>
+    [Serialize(Optional = true)] public HashSet<string> HailUsed = new();
     /// <summary>Vanilla abandoned ships that already rolled an Abandoned event (spec 764).</summary>
     [Serialize(Optional = true)] public HashSet<ObjectID> AbandonedSeen = new();
     /// <summary>The sector of the run's relic ship (spec 765), or -1 when the run has none.</summary>
@@ -55,6 +57,10 @@ public sealed class PendingEvent
     [Serialize] public long TechValue;
     /// <summary>Heat when the page opened, for costs that grow with heat (Cost.MoneyPerHeat).</summary>
     [Serialize(Optional = true)] public float Heat;
+    /// <summary>The ship that carries the page (spec 767): its comms show the page. Null: the event window shows it.</summary>
+    [Serialize(Optional = true)] public ObjectID? Carrier;
+    /// <summary>True until the carrier hails: it waits until a player ship is in comms range, like a vanilla AI hail.</summary>
+    [Serialize(Optional = true)] public bool HailDue;
     /// <summary>The page's computed offer (spec 760-762): tech IDs, the tech units it asks for, its research value, the sale price.</summary>
     [Serialize(Optional = true)] public string[] OfferTechs = [];
     [Serialize(Optional = true)] public int OfferUnits;

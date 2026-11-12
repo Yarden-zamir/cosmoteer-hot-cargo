@@ -47,6 +47,7 @@ public static class EventRunner
         var s = State(run);
         if (sim != run.Game.Sim) return;
         CheckWanted(run, sim);
+        CheckCarrier(run, sim);
         if (!t.Enabled || EventLibrary.LoadError is not null || s.Pending is not null) return;
         double now = run.State.GameSeconds;
         if (s.StartDueSeconds >= 0 && now >= s.StartDueSeconds)
@@ -88,6 +89,18 @@ public static class EventRunner
         if (t.Enabled && EventLibrary.LoadError is null && s.Pending is null) TryTrigger(run, sim, EventTrigger.Wanted, t.WantedEventChance, limited: false);
     }
 
+    /// <summary>Spec 770: a carried page closes when its ship is gone (destroyed, or left behind in another system).</summary>
+    static void CheckCarrier(Run run, SimRoot sim)
+    {
+        var s = State(run);
+        if (s.Pending is not { Carrier: { } carrier } p) return;
+        if (p.HailDue && EventHail.TryHail(sim, carrier)) p.HailDue = false;
+        if (EventHail.CarrierAlive(sim, carrier)) return;
+        s.Pending = null;
+        s.LastResult = new EventResult { Serial = p.Serial, Title = EventLibrary.Get(p.EventId).Title, Text = Cosmoteer.Localization.Strings.GetText("HotCargoEvents/CarrierGone") };
+        Log.Info($"event {p.EventId}: its carrier is gone, the page closes");
+    }
+
     /// <summary>A human ship that reaches a signal POI removes it and opens a Signal event.</summary>
     static void CheckSignals(Run run, SimRoot sim)
     {
@@ -123,7 +136,8 @@ public static class EventRunner
             if (roll < run.T.Events.CourierChance) OfferCourier(sim, station);
             else Log.Info($"events: courier roll {roll:0.00} >= chance {run.T.Events.CourierChance:0.00}, no offer");
         }
-        if (s.StationRolled.Add(node)) TryTrigger(run, sim, EventTrigger.Station, run.T.Events.StationEventChance, limited: true);
+        // Spec 768: a Station event is carried by that station. It hails the players, and its comms show the page.
+        if (s.StationRolled.Add(node)) TryTrigger(run, sim, EventTrigger.Station, run.T.Events.StationEventChance, limited: true, carrier: station.UniqueID);
     }
 
     /// <summary>
@@ -142,7 +156,7 @@ public static class EventRunner
     /// Rolls the chance, then picks an eligible event of the trigger by weight and opens it.
     /// limited: the cooldown and the per-system cap apply (Arrival and Station).
     /// </summary>
-    static void TryTrigger(Run run, SimRoot sim, EventTrigger trigger, float chance, bool limited)
+    static void TryTrigger(Run run, SimRoot sim, EventTrigger trigger, float chance, bool limited, ObjectID? carrier = null)
     {
         var t = run.T.Events;
         var s = State(run);
@@ -168,7 +182,7 @@ public static class EventRunner
         // Every triggered event starts the cooldown, so an Arrival or Station event does not follow right after another dialog.
         s.LastEventSeconds = run.State.GameSeconds;
         if (limited) s.NodeEvents[node] = s.NodeEvents.GetValueOrDefault(node) + 1;
-        Open(run, sim, candidates[pick], lead: "");
+        Open(run, sim, candidates[pick], lead: "", carrier, carrierHails: carrier is not null);
     }
 
     /// <summary>A trigger without the cooldown and the per-system cap: Abandoned and Relic (the player chose to fly there).</summary>
@@ -193,7 +207,11 @@ public static class EventRunner
     }
 
     /// <summary>Opens an event page. Public for the autotest command that forces an event.</summary>
-    public static void Open(Run run, SimRoot sim, EventRules e, string lead)
+    /// <summary>
+    /// carrier: the ship whose comms show the page (spec 767, 768). Without one, an event with a Carrier spawn gets its own ship, which
+    /// hails when CarrierHails is on. carrierHails: the given carrier hails the players (a station event).
+    /// </summary>
+    public static void Open(Run run, SimRoot sim, EventRules e, string lead, ObjectID? carrier = null, bool carrierHails = false)
     {
         var s = State(run);
         s.Seen[e.ID] = s.Seen.GetValueOrDefault(e.ID) + 1;
@@ -208,6 +226,14 @@ public static class EventRunner
             Lead = lead,
         };
         ResearchOffers.Fill(run, s.Pending, e.Offer);
+        if (carrier is null && e.Carrier.Length > 0)
+        {
+            carrier = EventHail.SpawnCarrier(sim, e, s.Pending.Seed);
+            carrierHails = e.CarrierHails;
+        }
+        s.Pending.Carrier = carrier;
+        s.Pending.HailDue = carrier is not null && carrierHails;
+        if (carrier is { } c && carrierHails) EventText.ShowCalling(run.Game, sim.Ships[c]?.Metadata.PlainShipName ?? e.Title);
         Log.Info($"event opened: {e.ID} serial {s.Pending.Serial} tier {s.Pending.Tier} heat {run.State.Heat:0.0} tech {run.State.FleetTech}");
     }
 
@@ -248,7 +274,8 @@ public static class EventRunner
         if (outcome.Next.Length > 0)
         {
             string lead = string.Join("\n", new[] { outcomeText }.Concat(lines).Where(l => l.Length > 0));
-            Open(run, sim, EventLibrary.Get(outcome.Next), lead);
+            // A follow-up page stays on the ship that carried this one.
+            Open(run, sim, EventLibrary.Get(outcome.Next), lead, p.Carrier);
         }
         else
         {

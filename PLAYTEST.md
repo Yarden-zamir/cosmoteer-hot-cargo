@@ -210,3 +210,11 @@ The autotests cover the archetype mix on the map, the hazard tooltip, the curren
 3. Data Broker: is the sale price tempting without being free money late in the run?
 4. Fly to an abandoned ship ("?" POI). Does the event open when you are close? Is a corporate trap at high heat a fair surprise?
 5. Find the relic ship (one per run, sector 2 or later). Does the vault message make you want to look for it? Is the "?" easy to spot?
+
+## Events in ship comms (spec 767-771)
+
+1. Dead in Space: does the freighter call you, and does its hail show the page in the comms window? Is "Fly within comms range to answer, or hail it" clear?
+2. Dock at a trade station and open its comms. Do "Sell a crate off the books" and station events read well inside the comms window? Do the gold key numbers work there?
+3. Hail a faction patrol ship at heat 10+. Does "Ask about hunters nearby" show?
+4. Shoot the freighter while its page is open. Does the page close with "The ship is gone"?
+5. Co-op: both players open the same ship's comms. One chooses. Does the other's window update, with no double effect?

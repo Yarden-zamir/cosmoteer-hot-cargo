@@ -30,6 +30,7 @@ public static class EventsArea
         Run.Hooks.SystemEntered += EventRunner.OnSystemEntered;
         Run.Hooks.Tick += EventRunner.OnTick;
         Run.Hooks.NewRunStarted += Abandoned.OnNewRun;
+        Ui.CommsHail.Providers.Add(new EventHailProvider());
         Run.Hooks.SystemEntered += Abandoned.OnSystemEntered;
         AddAutotest();
     }
@@ -314,6 +315,49 @@ public static class EventsArea
                 ?? throw new InvalidOperationException("no live abandoned ship in this system");
             MoveNextTo(sim, wreck.WorldCenter, wreck.WorldBoundingRadius + 150f);
         };
+        // Comms (spec 767-771). ev_comms <target> <button text>: clicks the comms button whose plain text contains the text.
+        Autotest.Commands["ev_comms"] = arg =>
+        {
+            int space = arg.IndexOf(' ');
+            if (space < 0) throw new InvalidOperationException("ev_comms needs: target text");
+            string which = arg[..space], text = arg[(space + 1)..];
+            var page = CommsPage(which) ?? throw new InvalidOperationException($"the {which} ship shows no Hot Cargo comms page");
+            var button = page.Buttons.FirstOrDefault(b => EventView.Plain(b.Text).Contains(text, StringComparison.Ordinal))
+                ?? throw new InvalidOperationException($"no comms button with '{text}' on the {which} ship; buttons: {string.Join(" | ", page.Buttons.Select(b => EventView.Plain(b.Text)))}");
+            if (!button.SelfInputActive) throw new InvalidOperationException($"comms button '{text}' is disabled");
+            button.OnClick?.Invoke(null, EventArgs.Empty);
+            Autotest.Wait(2);
+        };
+        // expectcomms <target> <text> 1|0: the target's Hot Cargo comms page has (1) or lacks (0) a button or line with the text.
+        Autotest.Commands["expectcomms"] = arg =>
+        {
+            var parts = arg.Split(' ');
+            string which = parts[0], want = parts[^1], text = string.Join(' ', parts[1..^1]);
+            var page = CommsPage(which);
+            string all = page is null ? "" : EventView.Plain(page.PrimaryDialogue) + "\n" + string.Join("\n", page.Buttons.Select(b => EventView.Plain(b.Text)));
+            bool has = all.Contains(text, StringComparison.Ordinal);
+            Autotest.Check(has == (want == "1"), $"{which} comms {(want == "1" ? "show" : "do not show")} '{text}'");
+        };
+        Autotest.Fields["ev_carrier"] = () => RequireRun().State.Events.Pending?.Carrier is null ? 0 : 1;
+        // 1 when the pending page's carrier is hailing the local player (vanilla hailer list).
+        Autotest.Fields["ev_hailing"] = () =>
+        {
+            var run = RequireRun();
+            if (run.State.Events.Pending?.Carrier is not { } id) return 0;
+            var mode = (CareerSimModeManager)RequireSim().Mode;
+            return mode.ShipsHailingPlayer.TryGetValue(run.Game.LocalPlayerIndex, out var list) && list.Any(h => h.Item1.UniqueID == id) ? 1 : 0;
+        };
+        Autotest.Commands["ev_carrier_goto"] = _ =>
+        {
+            var ship = CommsTarget("carrier");
+            MoveNextTo(RequireSim(), ship.WorldCenter, ship.WorldBoundingRadius + 100f);
+        };
+        Autotest.Commands["ev_kill_carrier"] = _ =>
+        {
+            var ship = CommsTarget("carrier");
+            RequireSim().Ships.Remove(ship, dispose: true, handleLostShip: false);
+            Autotest.Wait(2);
+        };
         Autotest.Fields["ev_buyer_mult"] = () => RequireRun().State.BuyerPriceMultiplier;
         Autotest.Fields["ev_pending"] = () => RequireRun().State.Events.Pending is null ? 0 : 1;
         Autotest.Fields["ev_seen"] = () => RequireRun().State.Events.Seen.Values.Sum();
@@ -376,10 +420,34 @@ public static class EventsArea
         return _lastTow ?? throw new InvalidOperationException("no accepted mission has a HotCargoTow objective");
     }
 
+    /// <summary>The pending page as either surface shows it (the event window, or a carrier's comms), or the last result.</summary>
     static EventPage? CurrentView()
     {
         var run = RequireRun();
+        if (run.State.Events.Pending is { } p) return EventView.Pending(run, RequireSim(), p, run.Game.LocalPlayerIndex);
         return EventView.Current(run, RequireSim(), run.Game.LocalPlayerIndex, lastResultShown: int.MaxValue);
+    }
+
+    /// <summary>The ship a comms test talks to: carrier (the pending page's ship), station (nearest trade station), faction (nearest faction ship).</summary>
+    static Ship CommsTarget(string which)
+    {
+        var sim = RequireSim();
+        var caller = SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("no player ship");
+        Ship? found = which switch
+        {
+            "carrier" => RequireRun().State.Events.Pending?.Carrier is { } id ? sim.Ships[id] : null,
+            "station" => sim.Ships.Where(s => EventHail.TargetOf(s, caller) == HailTarget.Station).MinBy(s => s.DetWorldCenter.DistanceSquaredTo(caller.DetWorldCenter)),
+            "faction" => sim.Ships.Where(s => EventHail.TargetOf(s, caller) == HailTarget.FactionShip).MinBy(s => s.DetWorldCenter.DistanceSquaredTo(caller.DetWorldCenter)),
+            _ => throw new InvalidOperationException($"unknown comms target '{which}' (carrier, station, faction)"),
+        };
+        return found ?? throw new InvalidOperationException($"no live {which} ship for comms");
+    }
+
+    /// <summary>The Hot Cargo comms page of a target, as the dialogue tab builds it (vanilla part left out).</summary>
+    static Ui.HailPage? CommsPage(string which)
+    {
+        var caller = SimQueries.FirstHumanShip(RequireSim()) ?? throw new InvalidOperationException("no player ship");
+        return Ui.CommsHail.Page(caller, CommsTarget(which), vanilla: null);
     }
 
     static IEnumerable<(string Name, Func<double> Value)> Gauges()

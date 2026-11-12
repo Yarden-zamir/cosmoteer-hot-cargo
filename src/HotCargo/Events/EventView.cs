@@ -15,7 +15,8 @@ public static class EventView
     public static EventPage? Current(Run run, SimRoot sim, int localPlayer, int lastResultShown)
     {
         var s = run.State.Events;
-        if (s.Pending is { } p) return Pending(run, sim, p, localPlayer);
+        // A page carried by a ship shows in that ship's comms (EventHailProvider), not here.
+        if (s.Pending is { } p && !EventHail.IsCarried(p)) return Pending(run, sim, p, localPlayer);
         if (s.LastResult is { } r && r.Serial > lastResultShown) return Result(r);
         return null;
     }
