@@ -33,6 +33,7 @@ public static class Mod
             ShipAi.ShipAiArea.Register();
             Scaling.ScalingArea.Register();
             RunModes.RunModesArea.Register();
+            Factions.FactionsArea.Register();
             TunablesMenu.TunablesMenuArea.Register();
             Diplomacy.DiplomacyArea.Register();
             // Last: its run log hooks run after the hooks of the other areas.

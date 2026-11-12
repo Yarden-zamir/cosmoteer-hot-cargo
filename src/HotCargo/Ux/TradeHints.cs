@@ -96,9 +96,8 @@ static class TradeHints
         int n = Math.Clamp(row is { Delta: < 0 } ? -row.Delta : 1, 1, held);
         long refund = -tab.GetTradeCost(Vaults.TechId, -n);
         if (refund <= 0) return; // The station does not buy tech.
-        var heat = run.T.Heat;
-        float before = run.HeatMultiplier(held) * heat.HeatPerGameMinute;
-        float after = run.HeatMultiplier(held - n) * heat.HeatPerGameMinute;
+        float before = run.TimeHeatPerMinute(held);
+        float after = run.TimeHeatPerMinute(held - n);
         // The Journey score rule (spec 7): sell now (the refund is money) against keep (the units count as held, at the Buyer price).
         // The other money and the other held units are the same base for both, so they are left out.
         long price = Buyer.UnitPrice(run);

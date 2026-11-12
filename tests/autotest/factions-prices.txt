@@ -1,0 +1,46 @@
+# Factions: station prices by heat (spec 655, 656), refusals and the refusal message (spec 657, 658).
+newgame
+wait 8
+ev_set Enabled false
+godmode on
+pause off
+tostation
+fa_roles - -
+fa_base
+expect fa_markup == 1
+# Crew hire scales with heat from 0: at about 30 heat x1.3.
+heat 30
+expect fa_crewmarkup == 1.3
+expect fa_crewratio >= 1.25
+expect fa_crewratio <= 1.4
+# Spec 655: from 75 heat goods cost more, up to x2 at 100, in 5-heat steps.
+heat 45
+expect fa_markup == 1
+expect fa_buyratio == 1
+heat 15
+expect fa_markup == 1.6
+expect fa_buyratio >= 1.59
+expect fa_buyratio <= 1.62
+expect fa_crewratio >= 1.85
+fa_tooltip
+# Spec 657: from 90 heat a station can refuse. With chance 1 every station refuses, except fences and shelter.
+fa_set RefuseChance 1
+expect fa_refuses == 1
+expect fa_answers == 0
+expect fa_trade == 0
+fa_hail
+wait 4
+expect fa_refusal == 1
+fa_roles - station
+expect fa_refuses == 0
+expect fa_answers == 1
+expect fa_trade == 1
+fa_roles - -
+fa_set RefuseChance 0
+expect fa_refuses == 0
+heat 20
+expect fa_markup == 2
+expect fa_buyratio >= 1.99
+expect fa_buyratio <= 2.02
+fa_tooltip
+quit

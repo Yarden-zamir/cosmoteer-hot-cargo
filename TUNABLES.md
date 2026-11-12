@@ -29,6 +29,7 @@ Fields not listed in the "Not now" column apply Now.
 | Chains | `StationChance`, `LaterDelaySeconds`: next new system. `StoryLines`: next time it shows | `Enabled` and `PageTriggerDistance` apply now. |
 | SharedChoice | (none) | `VoteTimeoutSeconds` applies to open votes at once: the timeout counts from the first vote. |
 | Worlds | `PassWaveDistance`: next spawned ships. `ArrivalLine`, `ArrivalLineDelaySeconds`: next new system | Before a run is active (the first system of a new career), sim code uses the defaults (spec 227). |
+| Factions | `RelayCarryOverFactor`, `BlindCarryOverFactor`: next new system (read on each jump) | The roles, zone factors, fence premium, price factors and refusal values apply at once, also to offers that exist (their money reward is computed when it shows and when it pays) and to an open comms window. |
 | Ux | `RunIntro`: new runs only. `StageAlertSeconds`, `CommsStayOnMap`, `PauseOnComms`, `PauseOnCommsMultiplayer`: next time it shows | All other switches apply on the next frame. Known limit: in an open event window, the dialogue key numbers keep their state until the page changes. |
 | Diplomacy | (none) | Chances and prices apply to the next choice and the open dialogue. Hail and mercenary rolls happen once per ship, so a ship that rolled keeps its result; ships that did not roll yet use the new value. A running hire keeps its end time. |
 | Onboarding | (none) | `VanillaTutorialDelaySeconds` counts run time, so a loaded run that is older than the delay does not hold vanilla tutorials. |
