@@ -43,6 +43,8 @@ To see sell-outs fast, put `Contracts { InformantShare = 1  InformantChanceMin =
 
 ## Hunters and tactics (spec 30-35, 43-49)
 
+Each hunter uses only the tactics of its personality (spec 361). To see every tactic on every hunter, set `Tactics { PersonalitiesEnabled = false }`.
+
 1. Press F10 four times, a few seconds apart. Each stage shows its message at the top of the screen and plays the wanted alert.
 2. Each wave comes in from one side with the FTL jump-in effect. Do the ships appear far enough away (2,000 to 3,000)? Is one side per wave readable?
 3. Hunters show the "Corporate" name prefix. Is that enough to tell them apart from pirates and police? If not, a colored name or icon needs C# work.
@@ -72,6 +74,19 @@ Switch a behavior off to compare: `Tactics { CallEnabled = false }` for hunters,
 10. Focus fire: let one of your ships get badly hurt. Do the enemies switch to it? Is that too punishing (lower `FocusWeakFactor`)?
 11. Regroup: a lone weak enemy near stronger friends should turn toward them (label REGROUPING) and attack together. Does it look smart, or like hesitation? Is 25 s too long?
 12. Co-op: run a strike with calls and flees for 20 minutes. Check for no desync.
+
+## AI personalities (spec 360-369)
+
+Hover an enemy ship: the mouseover names its personality, its traits and its team role. Switch personalities off to compare: `Tactics { PersonalitiesEnabled = false }` (hunters use every tactic, pirates and faction ships use none). Switch one off by name: `Tactics { PersonalitiesOff = ["Cabal Zealots"] }`.
+
+1. Fight pirates, then a faction that wants you (attack one of its ships). Do the two feel different? Can you name a faction's style after one or two fights?
+2. Two ships of one faction: do they behave a little differently (one calls, one does not; one flanks, one brawls)? Or does the jitter make factions blur together (lower `Jitter`)?
+3. Heavy ships: a big, slow ship never kites or baits. Does any big ship still dance at long range? Report its name and the mouseover line.
+4. Fast, light, long-range ships: do they hold distance and back off? Fast short-range ships: do they flank? Short-range armored ships: do they close in?
+5. Cover: fight pirates or Fringe ships in an asteroid field. Does a small ship duck behind a rock (label IN COVER), then come out to shoot? Can you flank it, or does it feel like cheating? Tune `CoverPeekSeconds` and `CoverHideSeconds`.
+6. Teams (Monolith, Imperium, hunters): do the team's ships all turn on one of your ships? Does the tank lead, the sniper hang back and the flankers swing wide? Put two of your ships in the fight: does the team stay on one?
+7. Do the profile scores match the ships? `Debug { TacticsLog = true }` writes each ship's scores to `hot_cargo_log.txt` ("tactic personality"). If too many ships count as heavy or protected, tune `Tactics { Profile { ... } }`.
+8. Co-op: fight a faction team among asteroids for 10 minutes. Check for no desync.
 
 ## Run and UX
 
@@ -196,9 +211,35 @@ The autotests cover the archetype mix on the map, the hazard tooltip, the curren
 11. Mix: in one run of 8 sectors, did you meet each archetype at least once? Did any feel like extra travel? The weights are in `mod/worlds/archetypes.rules` (restart needed).
 12. Co-op: both players see the current push and the same pass hold clock.
 
+## Ship tactics (spec 400-412)
+
+The autotests `shipai-basic`, `shipai-save` and the co-op test `shipai` cover row order, most conditions and actions, saves, designs and sync. These checks need a person.
+
+1. Select your ship and press Ctrl+K, or click the "AI" button in the ships card. Does the window fit the game's look? Are the drop lists easy to read?
+2. Apply each preset with Auto on and fight a Patrol stage (F10 with debug keys). Does each preset behave the way its name says? Which one feels useless?
+3. Sniper: does the ship keep its distance, and does it still hit? Note any target that it never reaches.
+4. Give a move order while Auto is on. Does the ship obey at once, and do the tactics take over again when it arrives?
+5. Put two weapons in part group 1 (build menu, part groups) and add a row "Always → Fire: hold, group 1". Do only those two stop firing?
+6. Save the ship design, then start a new career with it (or use "Load ship (replace)" in the build menu). Do the rows and the Auto switch come back?
+7. Copy the tactics of one ship and paste them into another. Paste text from a chat message. Does a bad text show a clear message?
+8. Buy a second ship and give it the Escort preset. Does it stay with your first ship and fight the enemies that attack it?
+9. Flee and jump: give a ship with an FTL drive "My health below 40% → Move: flee (FTL jump)". Does it jump to an ally when hurt?
+10. Co-op: each player edits their own ship's tactics with the window open on both machines. Does the other player see the change? Is a "resyncing" message shown?
+11. Is something missing from the condition or action lists that you wanted in a fight?
 ## Wanted and hunted (spec 470-473)
 
 1. Attack a faction ship (or a station) so that police hunt you, and get heat to the first stage (25). Does the top message read clearly? Does the chat line explain the ways out well enough to act on?
 2. Try the vanilla payoff: hail one of the police ships. Does the "pay the bounty" option show, as the hint says?
 3. A Clean Record and Decoy Run: is the price fair against the vanilla bounty? Does the heat risk feel fair?
 4. Does the warning come back too often (it shows again each time you become both wanted and hunted)?
+
+## How to Play and the run log (spec 720-734)
+
+The autotests `onboarding-hints` and `onboarding-log` cover each trigger, the order and the log lines. These checks need a person.
+
+1. In the game settings, click "Reset Tutorials", then start a new career. Do the Hot Cargo pages show in the "How to Play" list before the vanilla ones? Does each page show at a moment when it helps?
+2. Open each Hot Cargo page. Is it short enough to read in a fight? Is a term unclear or a page missing?
+3. Do the vanilla tutorials come back after about 5 minutes, once you read the Hot Cargo pages? Is that too early or too late?
+4. Turn "Show tutorials" off in the game settings. Do the Hot Cargo pages stop too?
+5. Open the career log (the mission log button) and the "Hot Cargo run" tab. Does it tell the story of your run? Is a line missing, or is one noise?
+6. Co-op: do both players see the same run log lines?

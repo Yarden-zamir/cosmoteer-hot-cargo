@@ -6,6 +6,9 @@ using HotCargo.Hunters;
 using HotCargo.Journey;
 using HotCargo.Missions;
 using HotCargo.Missions.Mechanics;
+using HotCargo.RunModes;
+using HotCargo.SharedChoice;
+using HotCargo.ShipAi;
 using HotCargo.Tactics;
 using HotCargo.Tech;
 using HotCargo.Ux;
@@ -30,12 +33,17 @@ public sealed class Tunables
     [Serialize(Optional = true)] public TacticsTunables Tactics = new();
     [Serialize(Optional = true)] public EventsTunables Events = new();
     [Serialize(Optional = true)] public ChainsTunables Chains = new();
+    [Serialize(Optional = true)] public SharedChoiceTunables SharedChoice = new();
     [Serialize(Optional = true)] public ContractsTunables Contracts = new();
     [Serialize(Optional = true)] public UxTunables Ux = new();
     [Serialize(Optional = true)] public WorldsTunables Worlds = new();
+    [Serialize(Optional = true)] public ShipAiTunables ShipAi = new();
+    [Serialize(Optional = true)] public Onboarding.OnboardingTunables Onboarding = new();
+    [Serialize(Optional = true)] public RunModesTunables RunModes = new();
     [Serialize(Optional = true)] public DebugTunables Debug = new();
 }
 
+/// <summary>How fast heat rises, the tech multiplier, the carry-over on a jump and the stage thresholds.</summary>
 [ReflectiveSerialization(Explicit = true)]
 public sealed class HeatTunables
 {
@@ -46,10 +54,11 @@ public sealed class HeatTunables
     /// so it adds about 5 heat, and six missions with the time and contract heat fill a sector.
     /// </summary>
     [Serialize(Optional = true)] public float HeatPerStandardMission = 1.5f;
-    /// <summary>Index = fleet tech count. A count above the table uses the last entry.</summary>
+    /// <summary>Heat multiplier for each fleet tech count, from 0 units up. A count above the table uses the last entry.</summary>
     [Serialize(Optional = true)] public float[] HeatMultiplierByUnits = [0.25f, 0.4f, 0.52f, 0.64f, 0.76f, 0.88f, 1.0f, 1.1f, 1.2f];
+    /// <summary>Share of the heat that stays after a jump to a new system (0 to 1).</summary>
     [Serialize(Optional = true)] public float HeatCarryOverFraction = 0.25f;
-    /// <summary>Ordered by Heat. Hunters/HunterTunables.Stages has the response for each stage, matched by Name.</summary>
+    /// <summary>Heat stages, ordered by Heat. Hunters.Stages has the response for each stage, matched by Name.</summary>
     [Serialize(Optional = true)] public StageThreshold[] Stages =
     [
         new() { Name = "Warning", Heat = 25f },
@@ -62,10 +71,13 @@ public sealed class HeatTunables
 [ReflectiveSerialization(Explicit = true)]
 public sealed class StageThreshold
 {
+    /// <summary>Stage name. Hunters.Stages and the tactic minimum stages refer to it.</summary>
     [Serialize] public string Name = "";
+    /// <summary>Heat at which the stage starts (0 to 100).</summary>
     [Serialize] public float Heat;
 }
 
+/// <summary>Debug keys and test logs.</summary>
 [ReflectiveSerialization(Explicit = true)]
 public sealed class DebugTunables
 {

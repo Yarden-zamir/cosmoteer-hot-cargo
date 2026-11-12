@@ -1,0 +1,183 @@
+// Hot Cargo How to Play pages (spec 720 to 726). mod/onboarding/actions.rules puts this list before the vanilla pages.
+// The trigger of each page is in C# (Onboarding/OnboardingArea.cs). Page IDs start with hc_.
+CodexPages
+[
+	{
+		ID = hc_run
+		TitleKey = "HotCargoCodex/Run/Title"
+		TabNameKey = "HotCargoCodex/Tab"
+		Entries
+		[
+			{ TextKey = "HotCargoCodex/Run/Goal" }
+			{ TextKey = "HotCargoCodex/Run/Sectors" }
+			{ TextKey = "HotCargoCodex/Run/Score" }
+			{ TextKey = "HotCargoCodex/Run/Loss" }
+		]
+	}
+	{
+		ID = hc_vault
+		TitleKey = "HotCargoCodex/Vault/Title"
+		TabNameKey = "HotCargoCodex/Tab"
+		Entries
+		[
+			{ TextKey = "HotCargoCodex/Vault/Store" }
+			{ TextKey = "HotCargoCodex/Vault/Repair" }
+			{ TextKey = "HotCargoCodex/Vault/Spread" }
+			{ TextKey = "HotCargoCodex/Vault/Target" }
+		]
+	}
+	{
+		ID = hc_heat
+		TitleKey = "HotCargoCodex/Heat/Title"
+		TabNameKey = "HotCargoCodex/Tab"
+		Entries
+		[
+			{ TextKey = "HotCargoCodex/Heat/What" }
+			{ TextKey = "HotCargoCodex/Heat/Tech" }
+			{ TextKey = "HotCargoCodex/Heat/Stages" }
+			{ TextKey = "HotCargoCodex/Heat/Cool" }
+		]
+	}
+	{
+		ID = hc_hunters
+		TitleKey = "HotCargoCodex/Hunters/Title"
+		TabNameKey = "HotCargoCodex/Tab"
+		Entries
+		[
+			{ TextKey = "HotCargoCodex/Hunters/Know" }
+			{ TextKey = "HotCargoCodex/Hunters/Pick" }
+			{ TextKey = "HotCargoCodex/Hunters/Tactics" }
+			{ TextKey = "HotCargoCodex/Hunters/Call" }
+			{ TextKey = "HotCargoCodex/Hunters/Fuel" }
+		]
+	}
+	{
+		ID = hc_selling
+		TitleKey = "HotCargoCodex/Selling/Title"
+		TabNameKey = "HotCargoCodex/Tab"
+		Entries
+		[
+			{ TextKey = "HotCargoCodex/Selling/Where" }
+			{ TextKey = "HotCargoCodex/Selling/Trade" }
+			{ TextKey = "HotCargoCodex/Selling/Value" }
+			{ TextKey = "HotCargoCodex/Selling/BuyBack" }
+		]
+	}
+	{
+		ID = hc_contracts
+		TitleKey = "HotCargoCodex/Contracts/Title"
+		TabNameKey = "HotCargoCodex/Tab"
+		Entries
+		[
+			{ TextKey = "HotCargoCodex/Contracts/Terms" }
+			{ TextKey = "HotCargoCodex/Contracts/Fee" }
+			{ TextKey = "HotCargoCodex/Contracts/Trail" }
+			{ TextKey = "HotCargoCodex/Contracts/Rivals" }
+			{ TextKey = "HotCargoCodex/Contracts/Informants" }
+		]
+	}
+	{
+		ID = hc_missions
+		TitleKey = "HotCargoCodex/Missions/Title"
+		TabNameKey = "HotCargoCodex/Tab"
+		Entries
+		[
+			{ TextKey = "HotCargoCodex/Missions/New" }
+			{ TextKey = "HotCargoCodex/Missions/Shady" }
+			{ TextKey = "HotCargoCodex/Missions/Mechanics" }
+			{ TextKey = "HotCargoCodex/Missions/Worlds" }
+		]
+	}
+	{
+		ID = hc_chains
+		TitleKey = "HotCargoCodex/Chains/Title"
+		TabNameKey = "HotCargoCodex/Tab"
+		Entries
+		[
+			{ TextKey = "HotCargoCodex/Chains/What" }
+			{ TextKey = "HotCargoCodex/Chains/Parts" }
+			{ TextKey = "HotCargoCodex/Chains/Log" }
+		]
+	}
+	{
+		ID = hc_events
+		TitleKey = "HotCargoCodex/Events/Title"
+		TabNameKey = "HotCargoCodex/Tab"
+		Entries
+		[
+			{ TextKey = "HotCargoCodex/Events/What" }
+			{ TextKey = "HotCargoCodex/Events/Needs" }
+			{ TextKey = "HotCargoCodex/Events/Coop" }
+		]
+	}
+	{
+		ID = hc_worlds
+		TitleKey = "HotCargoCodex/Worlds/Title"
+		TabNameKey = "HotCargoCodex/Tab"
+		Entries
+		[
+			{ TextKey = "HotCargoCodex/Worlds/What" }
+			{ TextKey = "HotCargoCodex/Worlds/TradeHub" }
+			{ TextKey = "HotCargoCodex/Worlds/MiningBelt" }
+			{ TextKey = "HotCargoCodex/Worlds/SolarZone" }
+			{ TextKey = "HotCargoCodex/Worlds/DeepSpace" }
+		]
+	}
+	{
+		ID = hc_wanted
+		TitleKey = "HotCargoCodex/Wanted/Title"
+		TabNameKey = "HotCargoCodex/Tab"
+		Entries
+		[
+			{ TextKey = "HotCargoCodex/Wanted/Worst" }
+			{ TextKey = "HotCargoCodex/Wanted/Out" }
+		]
+	}
+	{
+		ID = hc_buyer
+		TitleKey = "HotCargoCodex/Buyer/Title"
+		TabNameKey = "HotCargoCodex/Tab"
+		Entries
+		[
+			{ TextKey = "HotCargoCodex/Buyer/Here" }
+			{ TextKey = "HotCargoCodex/Buyer/Sell" }
+			{ TextKey = "HotCargoCodex/Buyer/Keep" }
+			{ TextKey = "HotCargoCodex/Buyer/After" }
+		]
+	}
+	{
+		ID = hc_settings
+		TitleKey = "HotCargoCodex/Settings/Title"
+		TabNameKey = "HotCargoCodex/Tab"
+		Entries
+		[
+			{ TextKey = "HotCargoCodex/Settings/Where" }
+			{ TextKey = "HotCargoCodex/Settings/What" }
+			{ TextKey = "HotCargoCodex/Settings/Coop" }
+		]
+	}
+	{
+		ID = hc_ship_tactics
+		TitleKey = "HotCargoCodex/ShipTactics/Title"
+		TabNameKey = "HotCargoCodex/Tab"
+		Entries
+		[
+			{ TextKey = "HotCargoCodex/ShipTactics/Open" }
+			{ TextKey = "HotCargoCodex/ShipTactics/Rows" }
+			{ TextKey = "HotCargoCodex/ShipTactics/Orders" }
+			{ TextKey = "HotCargoCodex/ShipTactics/Save" }
+		]
+	}
+	{
+		ID = hc_coop
+		TitleKey = "HotCargoCodex/Coop/Title"
+		TabNameKey = "HotCargoCodex/Tab"
+		Entries
+		[
+			{ TextKey = "HotCargoCodex/Coop/Scale" }
+			{ TextKey = "HotCargoCodex/Coop/Tech" }
+			{ TextKey = "HotCargoCodex/Coop/Fees" }
+			{ TextKey = "HotCargoCodex/Coop/Host" }
+		]
+	}
+]

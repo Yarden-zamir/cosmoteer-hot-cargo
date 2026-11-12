@@ -1,0 +1,93 @@
+# Onboarding (spec 720 to 726): each trigger shows its How to Play page once, and Hot Cargo pages come before vanilla tutorials.
+codex_reset
+tutorials on
+newgame run
+wait 8
+closepanel
+# The run page shows after a few seconds of play. The Start event shows the events page.
+expect hint_hc_run == 1
+expectpage hc_run shown
+expectevent getaway
+expect hint_hc_events == 1
+choose 3 1
+ev_set Enabled false
+# Spec 723: vanilla tutorials wait in the first minutes of a run and while a Hot Cargo page is new. Hot Cargo buttons come first.
+expect hints_unread == 1
+expect codex_vanilla_shown == 0
+expect codex_hud_first_hc == 1
+# The first new system (sector 2) is a Hot Cargo archetype: the settings and system type pages. Jump before any fight; combat blocks the jump.
+worlds jumpto hc_trade_hub
+expect sector == 2
+expect hint_hc_worlds == 1
+expect hint_hc_settings == 1
+# Comms with a station, with contract offers and Hot Cargo missions in the system.
+ev_tostation
+tostation
+hc_generate all
+wait 3
+comms open
+wait 2
+expect hint_hc_selling == 1
+expect hint_hc_contracts == 1
+expect hint_hc_missions == 1
+comms close
+# A story chain offer.
+chain_force fence_ledger
+comms open
+wait 2
+expect hint_hc_chains == 1
+comms close
+# First vault damage, even without a tech loss.
+vault damage 0.05
+wait 1
+expect hint_hc_vault == 1
+# First heat stage, then the hunters that it sends.
+heat 30
+wait 2
+expect hint_hc_heat == 1
+waitfor hunters >= 1 30
+wait 1
+expect hint_hc_hunters == 1
+# Each page shows once: heat that drops and rises again does not show it again.
+heat -100
+heat 30
+wait 2
+expect hint_hc_heat == 1
+# Wanted while heat is at a stage: the Wanted warning.
+wanted
+wait 2
+expect ev_wanted_warned == 1
+expect hint_hc_wanted == 1
+buyer spawn
+wait 2
+expect hint_hc_buyer == 1
+# The Hunt stage: the ship tactics page.
+heat 80
+wait 2
+expect hint_hc_ship_tactics == 1
+expect hint_hc_coop == 0
+# The page state lives in the game settings, so a load does not show a page again.
+save onboarding
+load onboarding
+wait 3
+expect hint_hc_heat == 1
+expectpage hc_heat shown
+# Spec 723: the vanilla tutorials show again once the Hot Cargo pages are read and the delay is over.
+onboarding VanillaTutorialDelaySeconds 0
+codex_read all
+wait 3
+expect hints_unread == 0
+expect codex_vanilla_shown >= 1
+expect codex_hud_first_hc == 1
+# Spec 722: with the game's "Show tutorials" off, no Hot Cargo page shows.
+tutorials off
+codex_reset
+wait 3
+expectpage hc_run unshown
+expect hint_hc_run == 1
+codex_restore
+# Run log (spec 731): the loss.
+lose
+wait 1
+expect runlog_lost == 1
+quit

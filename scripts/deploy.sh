@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build the mod on this Mac and install it on the PC, in the slot that SLOT selects (see pc.sh).
 # - Assembles mod/ (rules content) and copies the C# build into <slot Mods>/hot_cargo.
-# - Keeps a backup of the slot's tunables file when it differs from the repo copy.
+# - Keeps the slot's tunables file as it is (the player edits it in game); installs the repo copy only when none exists.
 # - Installs the startup hook loader into the game Bin folder (only when it changed) and points
 #   Cosmoteer.runtimeconfig.json at it (backup kept as .hot_cargo_orig). Writes Bin/steam_appid.txt.
 # - Test slots get their own settings.rules that turns the mod on.
@@ -20,7 +20,7 @@ trap 'rm -rf "$STAGE"' EXIT
 DEV_VERSION="$(git -C "$REPO_ROOT" describe --tags --always --dirty)"
 sed -i '' "s/^Version = .*/Version = ${DEV_VERSION#v}/" "$STAGE/hot_cargo/mod.rules"
 mkdir -p "$STAGE/hot_cargo/csharp" "$STAGE/loader"
-cp "$BUILD/HotCargo.dll" "$BUILD/HotCargo.pdb" "$BUILD/0Harmony.dll" "$STAGE/hot_cargo/csharp/"
+cp "$BUILD/HotCargo.dll" "$BUILD/HotCargo.pdb" "$BUILD/HotCargo.xml" "$BUILD/0Harmony.dll" "$STAGE/hot_cargo/csharp/"
 cp "$LOADER" "$REPO_ROOT/src/HotCargo.Loader/VERSION" "$STAGE/loader/"
 # The tunables file is staged under a temporary name. The PC side decides if it overwrites the live copy.
 if [[ -f "$STAGE/hot_cargo/tunables.rules" ]]; then mv "$STAGE/hot_cargo/tunables.rules" "$STAGE/hot_cargo/tunables.rules.deploy"; fi
@@ -42,12 +42,11 @@ if (Test-Path (Join-Path $modDir "tunables.rules")) { Copy-Item (Join-Path $modD
 if (Test-Path $modDir) { Get-ChildItem $modDir | Where-Object { $_.Name -notlike "tunables.rules*" } | Remove-Item -Recurse -Force }
 Copy-Item (Join-Path $tmpDir "hot_cargo") $mods -Recurse -Force
 $new = Join-Path $modDir "tunables.rules.deploy"; $live = Join-Path $modDir "tunables.rules"
+# The player edits tunables in the game (settings window) and by hand. Never overwrite them:
+# in the player slot, install the repo copy only when it has no tunables file yet.
 if (Test-Path $new) {
-  if ((Test-Path $keep) -and ((Get-FileHash $keep).Hash -ne (Get-FileHash $new).Hash)) {
-    $bak = Join-Path $modDir ("tunables.rules.bak-" + (Get-Date -Format "yyyyMMdd-HHmmss"))
-    Copy-Item $keep $bak; "tunables in slot $slot differed from repo; backup: $bak"
-  }
-  Move-Item $new $live -Force
+  # Test slots always start from the repo copy, so the settings of one test never leak into the next.
+  if ($slot -eq "main" -and (Test-Path $keep)) { Copy-Item $keep $live -Force; Remove-Item $new -Force } else { Move-Item $new $live -Force }
 }
 
 # Startup hook loader. A running game locks it, and every worktree builds different bytes,

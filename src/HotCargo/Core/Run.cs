@@ -2,6 +2,7 @@ using Cosmoteer.Game;
 using Cosmoteer.Modes.Career;
 using Cosmoteer.Simulation;
 using Halfling.Events;
+using HotCargo.RunModes;
 
 namespace HotCargo.Core;
 
@@ -28,7 +29,10 @@ public sealed class Run
         public static event Action<Run>? NewRunStarted;
         /// <summary>Runs inside each sim tick while the run is Running, after FleetTech is updated. Arguments: run, sim, tick seconds.</summary>
         public static event Action<Run, SimRoot, double>? Tick;
+        /// <summary>Runs once when the run is won or lost, after State.Result and State.EndReason are set. Sim logic.</summary>
+        public static event Action<Run>? RunEnded;
 
+        internal static void RaiseRunEnded(Run r) => Each(RunEnded, h => h(r));
         internal static void RaiseStageStarted(Run r, SimRoot s, int i) => Each(StageStarted, h => h(r, s, i));
         internal static void RaiseStrikeWave(Run r, SimRoot s) => Each(StrikeWave, h => h(r, s));
         internal static void RaiseSystemEntered(Run r, bool first) => Each(SystemEntered, h => h(r, first));
@@ -54,6 +58,9 @@ public sealed class Run
 
     /// <summary>A new multiplayer run waits for the host to send its tunables (TunablesInput). Local, not saved.</summary>
     internal bool HostTunablesPending;
+
+    /// <summary>The host sent its file and the input has not executed yet. The settings menu waits, so its edit does not start from the defaults.</summary>
+    internal bool HostTunablesInFlight;
 
     Run(GameRoot game, CareerGameModeManager mode, RunState state)
     {
@@ -122,8 +129,7 @@ public sealed class Run
             State.PeakTier = Math.Max(State.PeakTier, Math.Min(CurrentTier, Journey.TierCapSpawner.PeakTierCap(Mode, State.SectorIndex) ?? int.MaxValue));
         Hooks.RaiseTick(this, sim, dt);
         if (State.Result != RunResult.Running || !State.HeatEnabled) return;
-        float mult = HeatModel.Multiplier(T.Heat.HeatMultiplierByUnits, State.FleetTech);
-        AddHeat(HeatModel.TimeHeat(T.Heat.HeatPerGameMinute, mult, dt), sim);
+        AddHeat(HeatModel.TimeHeat(T.Heat.HeatPerGameMinute, HeatMultiplier(State.FleetTech), dt), sim);
         TickStrikeWaves(sim, dt);
     }
 
@@ -132,9 +138,14 @@ public sealed class Run
         if (!PressureActive) return;
         int gained = e.NewValue - e.OldValue;
         if (gained <= 0) return;
-        float mult = HeatModel.Multiplier(T.Heat.HeatMultiplierByUnits, State.FleetTech);
-        AddHeat(HeatModel.FameHeat(T.Heat.HeatPerStandardMission, mult, gained, (int)Math.Round(StandardMissionFamePaid(CurrentTier))), Game.Sim);
+        AddHeat(HeatModel.FameHeat(T.Heat.HeatPerStandardMission, HeatMultiplier(State.FleetTech), gained, (int)Math.Round(StandardMissionFamePaid(CurrentTier))), Game.Sim);
     }
+
+    /// <summary>
+    /// Multiplier of time and fame heat (spec 24, 25) for a fleet tech count: the tech table (spec 26) × the difficulty heat rate (spec 681).
+    /// Every heat gain from time or fame and every shown heat rate uses it.
+    /// </summary>
+    public float HeatMultiplier(int units) => HeatModel.Multiplier(T.Heat.HeatMultiplierByUnits, units) * this.Pressure().HeatRate;
 
     /// <summary>
     /// Fame that a standard mission of the tier pays: the vanilla table value times the same factors as the payout
@@ -206,6 +217,7 @@ public sealed class Run
         State.Result = RunResult.Lost;
         State.EndReason = reason;
         Log.Info($"run lost: {reason}");
+        Hooks.RaiseRunEnded(this);
     }
 
     /// <summary>Ends the run as won. Heat stops; the career can continue.</summary>
@@ -216,6 +228,7 @@ public sealed class Run
         State.HeatEnabled = false;
         State.EndReason = reason;
         Log.Info($"run won: {reason}");
+        Hooks.RaiseRunEnded(this);
     }
 
     /// <summary>
@@ -238,6 +251,11 @@ public sealed class Run
     {
         State.Tunables = file.Values;
         State.TunablesHash = file.Hash;
+        // New stage thresholds re-baseline like a system entry: stages at or below the current heat count as started and
+        // spawn nothing, higher stages wait for heat. This keeps StagesStarted inside a shorter Heat.Stages table too.
+        int reached = HeatModel.StagesReached(State.Heat, T.Heat.Thresholds());
+        if (reached != State.StagesStarted) Log.Info($"tunables: stages started {State.StagesStarted} -> {reached} for the new thresholds");
+        State.StagesStarted = reached;
         Log.Info($"tunables in effect: {file.Hash}");
     }
 

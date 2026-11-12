@@ -20,7 +20,7 @@ static class FameCapHeat
     {
         int missing = uncapped - Math.Max(0, gained);
         if (missing <= 0 || Run.Current is not { } run || run.Game != game || !run.PressureActive) return;
-        float mult = HeatModel.Multiplier(run.T.Heat.HeatMultiplierByUnits, run.State.FleetTech);
+        float mult = run.HeatMultiplier(run.State.FleetTech);
         int standard = (int)Math.Round(run.StandardMissionFamePaid(run.CurrentTier));
         run.AddHeat(HeatModel.FameHeat(run.T.Heat.HeatPerStandardMission, mult, missing, standard), game.Sim);
     }

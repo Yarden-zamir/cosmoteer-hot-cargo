@@ -26,12 +26,14 @@ internal sealed class TunablesInput : MPInput
     {
         run.HostTunablesPending = false;
         if (!run.Game.NetManager.IsHost || TunablesFile.ReadBytes() is not { } bytes) return;
+        run.HostTunablesInFlight = true;
         run.Game.NetManager.EnqueueInput(new TunablesInput(bytes));
     }
 
     public override void Execute(GameRoot game, int playerIndex, MessengerID playerID, bool force = false)
     {
         if (Run.Current is not { } run || run.Game != game) return;
+        run.HostTunablesInFlight = false;
         // Parse runs on every machine with the same bytes, so a bad file fails the same way everywhere and the defaults stay.
         Errors.Guard("host tunables", () => run.ApplyTunables(TunablesFile.Parse(Bytes)));
     }

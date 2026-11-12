@@ -1,0 +1,43 @@
+# Personalities (spec 360-363): factions roll different personalities, builds gate the traits, heavy ships never kite or bait.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+tacticlog on
+# Hostile ships of three groups. Faction ships make the players wanted by their faction, so its police join too.
+aispawn monolith 3
+aispawn fringe 5
+aispawn pirates 3
+wait 3
+aiprofiles spawn
+expect ai_groups >= 3
+expect ai_personalities >= 3
+expect ai_personality > 0
+# Monolith fights in teams (every Monolith personality has Team 0.9 or more); Fringe never does (Team 0.1 at most).
+aigroup monolith
+expect ai_g_count >= 3
+expect ai_g_team >= 3
+aigroup fringe
+expect ai_g_count >= 5
+expect ai_g_team == 0
+expect ai_heavy_kiters == 0
+# Every Fringe personality now wants to kite and bait; the agile Fringe ships take it up. No jitter, so weight 1 means 1.
+aijitter 0
+aitrait Fringe Skirmishers Bait 1
+aitrait Fringe Scrappers Bait 1
+aitrait Fringe Skirmishers Kite 1
+aitrait Fringe Scrappers Kite 1
+expect ai_g_bait >= 1
+# Without thrusters every ship is heavy (spec 363): none kites or baits, whatever its personality wants.
+aiset ProfileRefreshSeconds 1
+aiheavy
+wait 4
+aiprofiles heavy
+expect ai_heavy >= 5
+expect ai_g_bait == 0
+expect ai_g_kite == 0
+expect ai_heavy_kiters == 0
+# Switched off, the vanilla AIs use no tactics.
+aiset PersonalitiesEnabled false
+expect ai_heavy_kiters == 0
+quit

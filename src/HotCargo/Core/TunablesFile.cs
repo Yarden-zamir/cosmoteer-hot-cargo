@@ -39,6 +39,14 @@ public static class TunablesFile
         }
     }
 
+    /// <summary>Writes the file and records its time, so that the change watcher does not read the same values back.</summary>
+    public static void Write(byte[] bytes)
+    {
+        File.WriteAllBytes(FilePath, bytes);
+        _lastWrite = File.GetLastWriteTimeUtc(FilePath);
+        LastError = null;
+    }
+
     /// <summary>Reads the file bytes or null when the file is missing. For the host's tunables input in multiplayer.</summary>
     public static byte[]? ReadBytes() => File.Exists(FilePath) ? File.ReadAllBytes(FilePath) : null;
 
@@ -95,5 +103,7 @@ public static class TunablesFile
         Require(t.Journey.RewardScale > 0 && t.Journey.TechCostScale >= 0, "Journey.RewardScale must be above 0 and Journey.TechCostScale must not be negative");
         Require(t.Chains.MaxNewChainsPerSystem >= 0, "Chains.MaxNewChainsPerSystem must not be negative");
         Missions.Mechanics.MechanicsTunables.Validate(t.Mechanics);
+        // Level IDs are checked once the game rules exist; the boot-time check of the defaults runs before that.
+        t.RunModes.Validate(Require, Cosmoteer.GameApp.Assets?.Rules is null ? null : RunModes.Difficulty.IsVanillaLevel);
     }
 }

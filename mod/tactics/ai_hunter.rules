@@ -1,4 +1,4 @@
-// Hot Cargo hunter AI (spec 32, 34, 43-49). Based on Data/ai/ai_normal.rules.
+// Hot Cargo hunter AI (spec 32, 34, 43-49, 360-369). Based on Data/ai/ai_normal.rules.
 // Modules run last to first: the last module in each list has the highest priority.
 // Hc* module types come from the Hot Cargo C# assembly. Each tactic falls through to the vanilla module
 // below it when the tactic is off in tunables.rules (or when no Hot Cargo run is active).
@@ -23,10 +23,18 @@ StrategyModules
 		TargetSwitchThresholdFactor = 1.5
 		ChaseMoveTolerance = 300
 	}
+	// Fight as a team on the leader's target, with roles (spec 364-365).
+	{
+		Type = HcTeam
+	}
 	// Wait for allies instead of charging alone into a stronger target (spec 201).
 	{
 		Type = HcRegroup
 		ForHunters = true
+	}
+	// Hide behind asteroids between bursts of fire (spec 366).
+	{
+		Type = HcCover
 	}
 	{
 		Type = HcBait
@@ -43,12 +51,16 @@ StrategyModules
 		Type = HcCall
 		ForHunters = true
 	}
-	// Run and jump out when beaten or unarmed (spec 193-195). Highest priority.
+	// Run and jump out when beaten or unarmed (spec 193-195).
 	{
 		Type = HcFlee
 		ForHunters = true
 		AvoidableDoodadTags = [sun]
 		AvoidableDoodadBuffer = 100
+	}
+	// Measures the build for the personality (spec 362). Runs first and never takes over the ship.
+	{
+		Type = HcPersonality
 	}
 ]
 
@@ -75,6 +87,10 @@ TacticsModules
 		Type = HcPincer
 		TurnInterval = [10, 20]
 		TurnDelta = [-30d, 30d]
+	}
+	// Team roles and brawling (spec 365, 367).
+	{
+		Type = HcRole
 	}
 ]
 

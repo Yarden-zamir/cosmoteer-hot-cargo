@@ -1,0 +1,7 @@
+	// Spec 332: the vanilla ambush encounter is one ship with its own mission. The tag lets co-op enemy scaling grow it into a fleet;
+	// its mission objectives target the whole fleet (LimitToFleet), so the extra ships count. A single bounty target has no tag.
+	{
+		Action = Add
+		AddTo = "<modes/career/encounters/encounter_ambush.rules>/EncounterGenerator/Spawners/0/Tags"
+		ToAdd = hc_scale_fleet
+	}

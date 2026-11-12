@@ -66,7 +66,7 @@ public static class BalanceArea
             run.Mode.PlayerFame = Math.Max(run.Mode.PlayerFame, 100);
             var reward = new FameReward(int.Parse(arg, System.Globalization.CultureInfo.InvariantCulture), maxFame: 10);
             int uncapped = (int)(reward.Fame * Journey.RewardScalePatch.FameFactor(run.Mode.EconDifficulty));
-            float mult = HeatModel.Multiplier(run.T.Heat.HeatMultiplierByUnits, run.State.FleetTech);
+            float mult = run.HeatMultiplier(run.State.FleetTech);
             _fameHeatExpected = run.State.Heat + HeatModel.FameHeat(run.T.Heat.HeatPerStandardMission, mult, uncapped, (int)Math.Round(run.StandardMissionFamePaid(run.CurrentTier)));
             reward.GiveReward(run.Game);
         };
