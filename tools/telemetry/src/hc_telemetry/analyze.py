@@ -364,11 +364,20 @@ def combat_section(rep: RunReport) -> None:
         rep.tables.append(Table("Damage by the side that took it", ["side", "damage", "repaired", "parts lost"],
                                 [[s, fmt(c["damage"]), fmt(c["repaired"]), c["parts_lost"]] for s, c in damage.items()]))
     deaths = [e for e in ev if e["e"] == "combat.crew_died"]
-    lost_ships = [e for e in destroyed if e["side"] == "player"]
+    lost_ships = player_ships_lost(ev)
     if hunters:
         killed = sum(1 for k, _ in fate.values() if k == "destroyed")
         rep.findings.append(f"Hunters: {len(hunters)} spawned, {killed} destroyed ({100 * killed / len(hunters):.0f} %), "
                             f"player ships lost {len(lost_ships)}, crew lost {len(deaths)}.")
+
+
+def player_ships_lost(events: list[dict]) -> list[dict]:
+    """
+    Player ships that became derelicts. A ship that breaks apart junks its pieces too, so only ships that a snapshot listed
+    as a player ship count.
+    """
+    known = {s["ship"] for e in events if e["e"] == "snap" for s in e.get("ships", [])}
+    return [e for e in events if e["e"] == "combat.destroyed" and e["side"] == "player" and e["ship"] in known]
 
 
 # ---- AI

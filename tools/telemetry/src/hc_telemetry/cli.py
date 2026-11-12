@@ -37,7 +37,8 @@ def conclusions(reports: list[a.RunReport]) -> list[str]:
         killed = {e["ship"] for e in events if e["e"] == "combat.destroyed"} & hunters
         fled = {e["ship"] for e in events if e["e"] == "combat.removed" and e.get("src") == "flee_jump"} & hunters
         out.append(f"Hunters: {len(hunters)} spawned, {len(killed)} destroyed, {len(fled)} jumped out; the rest were alive when the players left or the run ended.")
-    lost = [e for e in events if e["e"] == "tech.count" and e.get("from") is not None and e["delta"] < 0]
+    # A jump empties the count until the ships arrive; that drop comes back, so it is no loss.
+    lost = [e for e in events if e["e"] == "tech.count" and e.get("from") is not None and e["delta"] < 0 and e["cause"] != "jump"]
     if lost:
         by_cause: dict[str, int] = {}
         for e in lost:
@@ -46,9 +47,9 @@ def conclusions(reports: list[a.RunReport]) -> list[str]:
     first_stage = [e["since_entry_s"] for e in events if e["e"] == "heat.stage" and e.get("stage") == 0 and "since_entry_s" in e]
     if first_stage:
         out.append(f"First stage (Warning) after system entry: median {a.mmss(statistics.median(first_stage))} game time (n={len(first_stage)}).")
-    destroyed_players = [e for e in events if e["e"] == "combat.destroyed" and e["side"] == "player"]
-    if destroyed_players:
-        out.append(f"Player ships lost: {len(destroyed_players)}, in sectors {sorted({e['sec'] for e in destroyed_players})}.")
+    lost_ships = a.player_ships_lost(events)
+    if lost_ships:
+        out.append(f"Player ships lost: {len(lost_ships)}, in sectors {sorted({e['sec'] for e in lost_ships})}.")
     return out
 
 
