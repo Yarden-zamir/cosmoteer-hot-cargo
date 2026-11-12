@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
-# Run a co-op autotest: one headless instance hosts a multiplayer career, a second one joins it over 127.0.0.1.
-# Usage: autotest-mp.sh <host script> <client script> [timeout-seconds]
-# "{PORT}" in both scripts becomes the host's UDP port (35870 + host slot number), so parallel MP tests do not collide.
+# Run a co-op session: one headless instance hosts a multiplayer career, a second one joins it over 127.0.0.1 and follows.
+# Usage: autotest-mp.sh tests/autotest-mp/<session>.txt [timeout-seconds]
+# The session file is the host's script. Its "client: <command>" lines are the client's commands before the join (local
+# settings). The client then runs tests/autotest-mp/client.txt: join, then follow the host.
+# "{PORT}" becomes the host's UDP port (35870 + host slot number), so parallel sessions do not collide.
 # The host starts first. The client starts when the host log shows "AUTOTEST hosting".
-# Exit code 0 only if both logs pass (AUTOTEST DONE, no AUTOTEST FAIL, no ERROR, so no "MP DESYNC")
-# and the MPSTATE lines that both machines log at the same sim ticks are equal.
+# scripts/coop-report.sh gives the verdict from both logs. A run is retried only when nothing ran (empty host log).
 set -euo pipefail
-HOST_SCRIPT="${1:?usage: autotest-mp.sh <host script> <client script> [timeout]}"
-CLIENT_SCRIPT="${2:?usage: autotest-mp.sh <host script> <client script> [timeout]}"
-TIMEOUT="${3:-600}"
+SESSION="${1:?usage: autotest-mp.sh <session file> [timeout]}"
+TIMEOUT="${2:-600}"
 source "$(dirname "$0")/autotest-lib.sh"
 
 RETRY="${AUTOTEST_RETRY:-1}"
-NAME="$(basename "$HOST_SCRIPT" .host.txt)"
+NAME="$(basename "$SESSION" .txt)"
+CLIENT_SCRIPT="$(dirname "$SESSION")/client.txt"
+[[ -f "$SESSION" && -f "$CLIENT_SCRIPT" ]] || { echo "no session $SESSION or no $CLIENT_SCRIPT"; exit 2; }
 # Both slots at once, so parallel co-op tests cannot deadlock (see take_slots).
 BEGIN_AT=$SECONDS
 read -r HOST CLIENT <<<"$(take_slots 2)"
@@ -21,7 +23,7 @@ SLOTS_AT=$SECONDS
 PORT=$((35870 + ${HOST#t}))
 echo "== host slot $HOST, client slot $CLIENT, port $PORT"
 
-{ echo "telename $(basename "$HOST_SCRIPT" .txt)"; sed "s/{PORT}/$PORT/g" "$HOST_SCRIPT"; } | start_slot "$HOST"
+{ echo "telename $NAME.host"; grep -v '^client:' "$SESSION" | sed "s/{PORT}/$PORT/g"; } | start_slot "$HOST"
 DEPLOYED_AT=$SECONDS
 # Small status calls every AUTOTEST_POLL seconds; the full logs are fetched once at the end.
 CLIENT_STARTED=no LINK_REFUSED=no
@@ -31,7 +33,7 @@ while (( SECONDS - DEPLOYED_AT < TIMEOUT )); do
   if [[ "$HOST_STATUS" == *"$LINK_REFUSED_TEXT"* ]]; then LINK_REFUSED=yes; break; fi
   if [[ "$CLIENT_STARTED" == no ]]; then
     if [[ "$HOST_STATUS" == *match=1* ]]; then
-      { echo "telename $(basename "$CLIENT_SCRIPT" .txt)"; sed "s/{PORT}/$PORT/g" "$CLIENT_SCRIPT"; } | start_slot "$CLIENT"
+      { echo "telename $NAME.client"; sed -n 's/^client: *//p' "$SESSION"; sed "s/{PORT}/$PORT/g" "$CLIENT_SCRIPT"; } | start_slot "$CLIENT"
       CLIENT_STARTED=yes
     elif [[ "$HOST_STATUS" == *running=0* ]]; then
       break
@@ -56,32 +58,25 @@ echo "$TIMING" | tee -a "$RUN_LOG"
 echo "== $NAME: log $RUN_LOG"
 
 if [[ "$LINK_REFUSED" == yes ]] || grep -q "$LINK_REFUSED_TEXT" "$RUN_LOG"; then
-  echo "== MP AUTOTEST LINK REFUSED $NAME: the PC refused the calls, because this agent's turn is not active (log $RUN_LOG)"; exit 3
+  echo "== result: FAIL: PC link (the PC refused the calls, because this agent's turn is not active)"
+  echo "== MP AUTOTEST LINK REFUSED $NAME (log $RUN_LOG)"; exit 3
 fi
-OK=yes
-# Each log must be this run's own (first script line "telename <script name>"), not a stale log of another test in the slot.
-if ! log_passed <<<"$HOST_LOG" || ! grep -qF "telename $(basename "$HOST_SCRIPT" .txt)" <<<"$HOST_LOG"; then echo "== host log failed"; OK=no; fi
-if ! log_passed <<<"$CLIENT_LOG" || ! grep -qF "telename $(basename "$CLIENT_SCRIPT" .txt)" <<<"$CLIENT_LOG"; then echo "== client log failed"; OK=no; fi
-# Compare the state lines of ticks that both machines logged, without the log time stamps.
-states() { grep -o 'MPSTATE .*' <<<"$1" | tr -d '\r' | sort -u || true; }
-HOST_STATES="$(states "$HOST_LOG")" CLIENT_STATES="$(states "$CLIENT_LOG")"
-ticks() { grep -o 'tick=[0-9]*' <<<"$1" | sort -u || true; }
-COMMON="$(comm -12 <(ticks "$HOST_STATES") <(ticks "$CLIENT_STATES"))"
-DIFF="$(diff <(grep -wFf <(printf '%s\n' ${COMMON:-none}) <<<"$HOST_STATES" || true) <(grep -wFf <(printf '%s\n' ${COMMON:-none}) <<<"$CLIENT_STATES" || true) || true)"
-echo "== MPSTATE: $(grep -c . <<<"$COMMON" || true) common ticks compared"
-if [[ -n "$DIFF" ]]; then echo "== MPSTATE differs between host and client:"; echo "$DIFF"; OK=no; fi
-if [[ "$OK" == yes ]]; then echo "== MP AUTOTEST OK $NAME (host $HOST, client $CLIENT)"; exit 0; fi
+# Each log must be this run's own (first script line "telename <session>.<side>"), not a stale log of another test in the slot.
+REPORT_RC=0
+if ! grep -qF "telename $NAME.host" <<<"$HOST_LOG"; then
+  echo "== result: FAIL: no host log of this run (PC link or deploy)"; REPORT_RC=1
+  grep -v '^$' <<<"$HOST_LOG" | head -5 | sed 's/^/   /'
+else
+  [[ -n "$CLIENT_LOG" ]] && ! grep -qF "telename $NAME.client" <<<"$CLIENT_LOG" && CLIENT_LOG=""
+  "$LIB_DIR/coop-report.sh" <(echo "$HOST_LOG") <(echo "$CLIENT_LOG") | tee -a "$RUN_LOG" || REPORT_RC=1
+fi
+if [[ "$REPORT_RC" == 0 ]]; then echo "== MP AUTOTEST OK $NAME (host $HOST, client $CLIENT)"; exit 0; fi
 { echo; echo "=== vanilla game log, host"; [[ "$HOST_OUT" == *"<<<VANILLA LOG>>>"* ]] && echo "${HOST_OUT#*<<<VANILLA LOG>>>}"
   echo "=== vanilla game log, client"; [[ "$CLIENT_OUT" == *"<<<VANILLA LOG>>>"* ]] && echo "${CLIENT_OUT#*<<<VANILLA LOG>>>}"; } >> "$RUN_LOG"
-failure_lines "$RUN_LOG"
-# One retry, like autotest.sh: a pass on the retry is FLAKY, not FAILED.
-if [[ "$RETRY" -ge 1 ]]; then
+# Retry only when nothing ran: a session that ran reports each step, and a rerun would hide a flaky step.
+if [[ "$RETRY" -ge 1 ]] && ! grep -q 'AUTOTEST line' <<<"$HOST_LOG"; then
   release_slot "$HOST"; release_slot "$CLIENT"; trap - EXIT
-  if AUTOTEST_RETRY=0 "$0" "$HOST_SCRIPT" "$CLIENT_SCRIPT" "$TIMEOUT" > "$RUN_LOG.retry" 2>&1; then
-    echo "== MP AUTOTEST FLAKY $NAME (failed once, passed on retry; first log $RUN_LOG)"
-    echo "$(date +%F\ %T) mp-$NAME $RUN_LOG" >> "$STATE_DIR/flaky.log"
-    exit 0
-  fi
-  tail -20 "$RUN_LOG.retry"
+  echo "== nothing ran in the host; one more try"
+  exec env AUTOTEST_RETRY=0 "$0" "$SESSION" "$TIMEOUT"
 fi
 echo "== MP AUTOTEST FAILED $NAME (log $RUN_LOG)"; exit 1

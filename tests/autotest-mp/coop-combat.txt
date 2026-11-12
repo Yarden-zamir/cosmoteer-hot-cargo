@@ -1,0 +1,172 @@
+# Co-op session: enemy scaling, diplomacy, missions, AI personalities, currents, the loss timer and the win.
+# See coop-core.txt for "client:", "as 1", "on 1" and steps.
+# Before the join: the host's enemy slider is 2.0 and the client's is 1.0. The host's value counts, so every step of this
+# session runs with an enemy factor of 2 (2 players).
+enemysetting 2.0
+client: enemysetting 1.0
+mphost {PORT}
+mpstart 2
+mp godmode on
+mp ev_set Enabled false
+
+step scaling.generation
+# Spec 330 to 336: the host's value reaches the client. Both machines generate the first system with factor 2:
+# pirate wanderers are [9, 11] (mod/contracts/actions.rules), so 18 to 22. The state hash compares the ship counts.
+expect enemysetting == 2
+expect enemyfactor == 2
+on 1 expect enemysetting == 2
+on 1 expect enemyfactor == 2
+counttag pirate
+expect tagcount >= 18
+
+step diplomacy.handover
+# Spec 587: the client hands tech to a hunter through the shared choice input. The punishment draft is shared, so both players
+# change it. Both machines see the hunters leave and the same vault tech.
+mp aiset FleeEnabled false
+mp aiset CallEnabled false
+mp dip_set DemandHailChance 0
+mp dip_set MercChance 0
+mp dip_set HandOverChanceMin 1
+mp dip_set HandOverChanceMax 1
+mp dip_set HunterLeaveSeconds 2
+mp dip_set HireChanceBase 5
+mp dip_set PunishChanceCap 1
+mp dip_set PunishTalkChance 5
+as 1 spawnstage Warning
+waitfor hunters >= 1 30
+as 1 dip_near hunters
+wait 2
+as 1 dip handover hunter 2
+waitfor dip_vaulttech == 6 30
+waitfor dip_punishment == 1 30
+as 1 dip_pick talk
+waitfor dip_picks >= 1 30
+dip_pick money 5
+waitfor dip_picks >= 2 30
+as 1 dip_punish submit
+waitfor dip_leaving >= 1 60
+waitfor dip_punishment == 0 30
+waitfor hunters == 0 60
+
+step diplomacy.hire
+as 1 dip_spawn friend 250
+wait 3
+as 1 dip hire friend 0
+waitfor dip_friendhired == 1 30
+waitfor dip_hires >= 1 30
+
+step scaling.waves
+# A hunter wave and an event group get twice the ships on both machines.
+mp spawnstage Patrol
+waitfor hunters >= 4 30
+expect hunters == 4
+mp ev_spawn TollGuards
+mp counttag hc_ev_toll
+waitfor tagcount >= 6 30
+expect tagcount == 6
+
+step missions.escort
+# Offers and sides, then the escort: the freighter steers to the jump point when a player is near, and arrival completes it.
+mp hc_generate all
+waitfor hc_offers_escort >= 1 20
+expect hc_allies_vs_player == 0
+expect hc_allies_vs_target >= 2
+expect hc_escort_vs_player == 0
+expect hc_raiders_vs_player >= 2
+mp hc_accept escort
+waitfor hc_active_escort == 1 20
+mp hc_escort_goto
+wait 5
+expect hc_escort_steering == 1
+mp hc_escort_arrive
+waitfor hc_escort_done == 1 30
+
+step missions.shady-roll
+# The client accepts the shady offer and flies there. The trap rolls on arrival with sim.Rand and the heat formula.
+mp heat 50
+as 1 hc_accept shady
+as 1 hc_shady_goto
+waitfor hc_trap_state >= 1 30
+
+step missions.trap
+# A forced trap. The client kills the ambush; the reward pays both players. Spec 331 raises the base 2 ambushers.
+mp hc_generate shady
+mp hc_accept shady
+waitfor hc_trap_state == 0 20
+mp hc_shady_spring
+waitfor hc_trap_state == 2 20
+expect hc_ambushers >= 2
+hc_mark
+on 1 hc_mark
+as 1 hc_kill_ambush
+waitfor hc_trap_done == 1 30
+expect hc_money_gain > 0
+on 1 expect hc_money_gain > 0
+
+step ai.personalities
+# Spec 369: hostile pirates and hunters with personalities, cover rocks and teams fight both players' ships.
+mp tacticlog on
+mp airocks 6 600
+mp aispawn pirates 3 2
+mp spawnstage Strike
+mp aispawn monolith 3 2
+wait 40
+aiprofiles host
+expect ai_personality > 0
+on 1 aiprofiles client
+on 1 expect ai_personality > 0
+
+step worlds.current
+# Spec 221, 227: a current painted on both machines pushes the host's ship the same way on both. Co-op tests cannot jump,
+# so "worlds paint" makes the current in the starting system.
+mp worlds paint
+mp worlds goto current
+wait 3
+expect worlds_ship_in_current > 0.5
+wait 5
+expect worlds_flow_speed > 2
+on 1 expect worlds_ship_in_current > 0.5
+on 1 expect worlds_flow_speed > 2
+
+step tech.loss-timer
+# Spec 443, in a new run (8 tech): tech at 0 starts the timer on both machines, tech back stops it, and the timer ends the run.
+mprestart
+mp godmode on
+mp ev_set Enabled false
+mp tech_set LossGraceSeconds 30
+mp tech drop 8
+waitfor losstimer == 1 30
+expect techcrates == 8
+expect losstimerleft <= 30
+on 1 expect losstimer == 1
+on 1 expect techcrates == 8
+as 1 tech add 2
+waitfor losstimer == 0 30
+expect lost == 0
+mp tech remove 2
+waitfor losstimer == 1 30
+waitfor lost == 1 60
+on 1 waitfor lost == 1 30
+
+step journey.buyer-win
+# A new run: the Buyer appears, the client flies to it and sells tech from its own machine, and the run is won on both.
+mprestart
+mp ev_set Enabled false
+mp buyer spawn
+waitfor buyers == 1 30
+# The first goto loads the Buyer out of stasis, the second puts the client's ship next to it.
+as 1 buyer goto
+wait 15
+as 1 buyer goto
+wait 3
+on 1 expect buyertrades == 1
+on 1 buyer sell 2
+waitfor won == 1 90
+expect delivered >= 1
+expect score > 0
+# Heat stays off after the win.
+mp heat -100
+wait 10
+expect heat == 0
+
+end

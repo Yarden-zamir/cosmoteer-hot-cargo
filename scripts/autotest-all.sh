@@ -5,8 +5,8 @@
 #   scripts/suite-wait.sh <log>.
 # --telemetry: after the tests, copy the telemetry of every slot to ../.telemetry (scripts/pull-telemetry.sh) and write a report
 #   of the runs that these tests made (tools/telemetry). The report path is printed at the end.
-# - No test names: every tests/autotest/*.txt and every co-op test (tests/autotest-mp/<name>.host.txt).
-# - Test names: only those, for example "tech-sell mp:trade" (autotest-affected.sh passes its list this way).
+# - No test names: every tests/autotest/*.txt and every co-op session (mp:<session>, see coop_sessions in autotest-lib.sh).
+# - Test names: only those, for example "tech-sell mp:coop-economy" (autotest-affected.sh passes its list this way).
 # Each test retries once (see autotest.sh); a pass on the retry counts as FLAKY, not as a failure.
 # The suite builds and stages the mod once (scripts/stage.sh) and every test deploys that stage (HOT_CARGO_STAGE),
 # so all tests run the same build. Changes made in the worktree during the suite are not in it.
@@ -37,7 +37,7 @@ CLEAN_AT_START="$([[ -z "$(git status --porcelain)" && $# -eq 0 ]] && echo yes |
 TESTS=()
 if [[ $# -gt 0 ]]; then TESTS=("$@"); else
   for t in tests/autotest/*.txt; do TESTS+=("$(basename "$t" .txt)"); done
-  for h in tests/autotest-mp/*.host.txt; do TESTS+=("mp:$(basename "$h" .host.txt)"); done
+  for n in $(coop_sessions); do TESTS+=("mp:$n"); done
 fi
 
 # Build and stage once before the parallel runs. The PC caches the build by hash, so only the first deploy uploads it.
@@ -48,14 +48,15 @@ run_test() {
   local t="$1" out="$RUN_DIR/$1.out"
   if [[ "$t" == mp:* ]]; then
     local n="${t#mp:}"
-    scripts/autotest-mp.sh "tests/autotest-mp/$n.host.txt" "tests/autotest-mp/$n.client.txt" "$((TIMEOUT + 200))" > "$out" 2>&1
+    scripts/autotest-mp.sh "tests/autotest-mp/$n.txt" "$((TIMEOUT + 200))" > "$out" 2>&1
   else
     scripts/autotest.sh "tests/autotest/$t.txt" "$TIMEOUT" > "$out" 2>&1
   fi
   local rc=$?
   # Exit code 3: the PC refuses calls (this agent's turn is not active). Later tests would only hold slots for nothing.
   if [[ $rc -eq 3 ]]; then touch "$RUN_DIR/link-refused"; fi
-  if [[ $rc -ne 0 ]]; then echo "FAIL $t"; elif grep -q "AUTOTEST FLAKY" "$out"; then echo "FLAKY $t"; else echo "PASS $t"; fi
+  # A co-op session prints one result line with the reason (join failed, steps failed: ..., desync, PC link).
+  if [[ $rc -ne 0 ]]; then echo "FAIL $t$(grep -m1 "^== result: FAIL" "$out" | sed "s/^== result: FAIL:/ --/")"; elif grep -q "AUTOTEST FLAKY" "$out"; then echo "FLAKY $t"; else echo "PASS $t"; fi
 }
 
 # At most SLOTS tests wait for slots at the same time; take_slots hands out the slots.

@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Reflection;
+using System.Security.Cryptography;
 using Cosmoteer;
 using Cosmoteer.Game;
 using Cosmoteer.Game.Multiplayer;
@@ -43,6 +45,23 @@ public static class MpAutotest
     /// <summary>Set by "mp mpresync": the next out-of-sync call is a test resync, not a desync.</summary>
     internal static bool ExpectResync;
     static int _mark;
+
+    /// <summary>Set when a command from the host ("on") failed on this client. The next "mpack" reports it and clears it.</summary>
+    internal static bool OnCommandFailed;
+    /// <summary>Commands from the host for this machine ("mpon"), filled in the sim and run by "follow".</summary>
+    static readonly System.Collections.Concurrent.ConcurrentQueue<string> _inbox = new();
+    /// <summary>The host ended the session ("mpend"): a following client quits.</summary>
+    static bool _ended;
+    /// <summary>"on" commands: the last number sent (host) and the last number acknowledged (sim, every machine), with the failed ones.</summary>
+    static int _onSent, _acked;
+    static readonly HashSet<int> _failedAcks = [];
+
+    const double OnTimeoutSeconds = 120;
+    /// <summary>A following client waits this long for the next command or the end. Longer than any session.</summary>
+    const double FollowSeconds = 1800;
+    /// <summary>A following client fails when it is in no game and no game setup for this long (the host is gone).</summary>
+    const double LostHostSeconds = 30;
+    const double JoinSeconds = 45;
 
     internal static void AddCommands()
     {
@@ -92,16 +111,74 @@ public static class MpAutotest
         Autotest.Commands["mpmark"] = arg => _mark = int.Parse(arg, CultureInfo.InvariantCulture);
         Autotest.Fields["mpmark"] = () => _mark;
 
+        // as <player> <command>: runs the command in the sim on every machine as that player index (0 the host, 1 the first client).
+        // Inputs that the command sends run at once as that player (SimInputPatch). Use it for choices that only read sim state.
+        Autotest.Commands["as"] = arg =>
+        {
+            var (player, line) = PlayerAndLine(arg, "as");
+            RequireMpGame().NetManager.EnqueueInput(new AutotestInput(line, player));
+        };
+        // on <player> <command>: runs the command on that player's own machine and waits until it reports back. For what must
+        // happen there: its UI, its view, and inputs that it sends over the network like a real click. A failure there fails the step.
+        Autotest.Commands["on"] = arg =>
+        {
+            var (player, line) = PlayerAndLine(arg, "on");
+            int number = ++_onSent;
+            RequireMpGame().NetManager.EnqueueInput(new AutotestInput($"mpon {player} {number} {line}"));
+            Autotest.WaitFor(() => _acked >= number, OnTimeoutSeconds, $"player {player} to run '{line}'", () =>
+            {
+                if (_failedAcks.Contains(number)) throw new InvalidOperationException($"CHECK FAILED: player {player}: '{line}' (the client log has the reason)");
+            });
+        };
+        // Sim side of "on": the target machine queues the command and its acknowledgement for "follow".
+        Autotest.Commands["mpon"] = arg =>
+        {
+            var parts = arg.Split(' ', 3, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length != 3) throw new InvalidOperationException("mpon needs: player number command");
+            if (RequireMpGame().LocalPlayerIndex != int.Parse(parts[0], CultureInfo.InvariantCulture)) return;
+            _inbox.Enqueue(parts[2]);
+            _inbox.Enqueue($"mpack {parts[1]}");
+        };
+        // mpack <number> (local): reports a finished "on" command to every machine, with its result.
+        Autotest.Commands["mpack"] = arg =>
+        {
+            RequireMpGame().NetManager.EnqueueInput(new AutotestInput($"mpacked {arg} {(OnCommandFailed ? 0 : 1)}"));
+            OnCommandFailed = false;
+        };
+        Autotest.Commands["mpacked"] = arg =>
+        {
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            int number = int.Parse(parts[0], CultureInfo.InvariantCulture);
+            _acked = Math.Max(_acked, number);
+            if (parts[1] == "0") _failedAcks.Add(number);
+        };
+        Autotest.Commands["mpstep"] = arg => Autotest.SimStep = arg;
+        Autotest.Commands["mpend"] = _ => _ended = true;
+        // follow (client): says ready in every game setup, runs the commands that the host sends ("on"), and quits when the host ends.
+        Autotest.Commands["follow"] = _ =>
+        {
+            Autotest.Following = true;
+            Follow();
+        };
+        // mprestart (host): back to the game setup with the connections kept, then a new run. For steps after a won or lost run.
+        Autotest.Commands["mprestart"] = _ =>
+        {
+            var host = RequireMpGame().NetManager as MPHostManager ?? throw new InvalidOperationException("mprestart is for the host");
+            host.Abort();
+            Autotest.WaitFor(() => Setup() is not null && Autotest.Game is null, 60, "the game setup screen", () => Start(2));
+        };
+
         // tunablesfile <rules text>: replaces the slot's tunables.rules, before mphost. Test slots only; deploy restores the repo file.
         Autotest.Commands["tunablesfile"] = arg => File.WriteAllText(TunablesFile.FilePath, arg);
-        // mpchoose <serial> <choice number>: sends an event choice for any page serial, like a click on a page that another player
-        // already answered. The sim must ignore a serial that is not the pending page.
+        // mpchoose <serial|marked> <choice number>: sends an event choice for any page serial, like a click on a page that another player
+        // already answered. "marked": the page that was pending at the last ev_mark. The sim must ignore a serial that is not the pending page.
         Autotest.Commands["mpchoose"] = arg =>
         {
             var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length != 2) throw new InvalidOperationException("mpchoose needs: serial choice");
-            RequireMpGame().NetManager.EnqueueInput(Events.EventsChoiceDomain.Pick(
-                int.Parse(parts[0], CultureInfo.InvariantCulture), int.Parse(parts[1], CultureInfo.InvariantCulture) - 1));
+            if (parts.Length != 2) throw new InvalidOperationException("mpchoose needs: serial|marked choice");
+            int serial = parts[0] == "marked" ? Events.EventsArea.MarkedSerial : int.Parse(parts[0], CultureInfo.InvariantCulture);
+            if (serial <= 0) throw new InvalidOperationException("mpchoose marked needs an ev_mark while a page is pending");
+            RequireMpGame().NetManager.EnqueueInput(Events.EventsChoiceDomain.Pick(serial, int.Parse(parts[1], CultureInfo.InvariantCulture) - 1));
         };
 
         Autotest.Fields["heatperminute"] = () => Autotest.RequireRun().T.Heat.HeatPerGameMinute;
@@ -168,18 +245,90 @@ public static class MpAutotest
         Log.Info($"AUTOTEST hosting on port {port}");
     }
 
-    /// <summary>mpjoin &lt;address:port&gt;: starts networking and joins the game like Direct Connect in the LAN lobby.</summary>
+    /// <summary>
+    /// mpjoin &lt;address:port&gt;: starts networking and joins the game like Direct Connect in the LAN lobby.
+    /// A failed join (timeout, refusal dialog) logs the reason and tries once more.
+    /// </summary>
     static void Join(string address)
     {
         if (GameApp.s_messenger is not null) throw new InvalidOperationException("networking already started");
         // Any free port, so the client never takes a port that a host test needs.
         Port = 0;
         var net = GameApp.InitializeNetworking();
-        var endPoint = net.ParseIPEndPoint(address, MPConfig.Port);
+        JoinOnce(address, net.ParseIPEndPoint(address, MPConfig.Port), retry: true);
+    }
+
+    static void JoinOnce(string address, System.Net.IPEndPoint endPoint, bool retry)
+    {
         var lobby = new LanLobbyScreen(Title().Background.Clone(showLogoShip: false));
         App.Director.PushState(lobby);
         lobby.JoinGame(endPoint, sameServer: false);
-        Autotest.WaitFor(() => Setup() is { } gss && gss._playersByID.ContainsKey(GameApp.Messenger.UniqueID), 60, $"joining {address}");
+        Autotest.WaitFor(() => Setup() is { } gss && gss._playersByID.ContainsKey(GameApp.Messenger.UniqueID), JoinSeconds, $"joining {address}",
+            onTimeout: retry ? () =>
+            {
+                Log.Info($"AUTOTEST join failed; states: {Autotest.StateNames()}. Joining again.");
+                App.Director.PopStatesUntil(s => s is TitleScreen, including: false);
+                JoinOnce(address, endPoint, retry: false);
+            } : null);
+    }
+
+    static (int Player, string Line) PlayerAndLine(string arg, string command)
+    {
+        var parts = arg.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 2 || !int.TryParse(parts[0], CultureInfo.InvariantCulture, out int player))
+            throw new InvalidOperationException($"{command} needs: <player index> <command>");
+        if (!RequireMpGame().HumanPlayersByID.Values.Contains(player)) throw new InvalidOperationException($"no human player {player}");
+        return (player, parts[1]);
+    }
+
+    /// <summary>The "step" command: the sim logs the step too, so a failed sim line counts for the step in which it ran.</summary>
+    internal static void OnStepStarted(string step)
+    {
+        if (Autotest.Game is { NetManager: BaseMPManager mp }) mp.EnqueueInput(new AutotestInput($"mpstep {step}"));
+    }
+
+    /// <summary>The "end" command of the host: sends the client away, waits until it left, then quits. False outside a co-op game as host.</summary>
+    internal static bool EndSession()
+    {
+        if (Autotest.Game is not { NetManager: BaseMPManager { IsHost: true } mp }) return false;
+        mp.EnqueueInput(new AutotestInput("mpend"));
+        Autotest.WaitFor(() => mp._connections.ConnectionCount == 0, 120, "the client to quit", () => Autotest.Inject(["quit"]),
+            onTimeout: () => { Log.Info("AUTOTEST the client did not quit"); Autotest.Inject(["quit"]); });
+        return true;
+    }
+
+    /// <summary>The "follow" wait of a client. It ends when a command from the host or the end arrives, or when the host is gone.</summary>
+    static void Follow()
+    {
+        double nextClick = 0, lostSince = -1;
+        Autotest.WaitFor(() =>
+        {
+            if (!_inbox.IsEmpty || _ended) return true;
+            double now = App.Clock.Time.Seconds;
+            if (Autotest.Game is { NetManager.IsMultiplayer: true }) { lostSince = -1; return false; }
+            if (Setup() is { } gss)
+            {
+                lostSince = -1;
+                // A host setting change (for example a loaded save) sets every player to not ready, so this clicks ready again.
+                if (now >= nextClick && gss._playersByID.TryGetValue(GameApp.Messenger.UniqueID, out var me))
+                {
+                    nextClick = now + 3;
+                    if (NeedsShip(gss, me)) AddStarterShip(gss, me);
+                    else if (!me.IsReady) gss.OnReadyClicked(null, EventArgs.Empty);
+                }
+                return false;
+            }
+            if (lostSince < 0) lostSince = now;
+            return now - lostSince > LostHostSeconds;
+        }, FollowSeconds, "the host's next command", () =>
+        {
+            if (_ended) { Log.Info("AUTOTEST the host ended the session"); Autotest.Inject(["quit"]); return; }
+            if (_inbox.IsEmpty) throw new InvalidOperationException($"lost the host; states: {Autotest.StateNames()}");
+            var lines = new List<string>();
+            while (_inbox.TryDequeue(out var line)) lines.Add(line);
+            lines.Add("follow");
+            Autotest.Inject(lines);
+        });
     }
 
     /// <summary>
@@ -243,10 +392,41 @@ public static class MpAutotest
         gss._requestAddShipRpc(player.PlayerID, null, shipStream.ToArray(), iconStream.ToArray(), ship.Metadata.PlainShipName, RpcReceivers.Server);
     }
 
+    /// <summary>Every saved member of RunState, by name. The state hash covers all of them, so a new feature field is covered too.</summary>
+    static readonly (string Name, Type Type, Func<RunState, object?> Get)[] StateMembers = typeof(RunState)
+        .GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+        .Where(m => m.IsDefined(typeof(SerializeAttribute), inherit: true))
+        .Select(m => m switch
+        {
+            FieldInfo f => (f.Name, f.FieldType, (Func<RunState, object?>)f.GetValue),
+            PropertyInfo p => (p.Name, p.PropertyType, (Func<RunState, object?>)p.GetValue),
+            _ => throw new InvalidOperationException($"RunState member {m.Name} is a {m.MemberType}, not a field or property"),
+        })
+        .OrderBy(m => m.Name, StringComparer.Ordinal)
+        .ToArray();
+
+    static readonly HashSet<string> _hashErrorsLogged = [];
+
+    /// <summary>The first 4 bytes of the SHA-256 of the value in the game's binary serializer, as hex. "error" when it cannot serialize.</summary>
+    static string Hash(string name, object? value, Type type)
+    {
+        try
+        {
+            using var stream = new MemoryStream();
+            using (var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, leaveOpen: true)) App.BinarySerializer.Write(writer, value, type);
+            return Convert.ToHexString(SHA256.HashData(stream.ToArray()), 0, 4);
+        }
+        catch (Exception ex)
+        {
+            if (_hashErrorsLogged.Add(name)) Log.Info($"MPHASH cannot serialize {name} ({type.Name}): {ex.Message}");
+            return "error";
+        }
+    }
+
     /// <summary>
-    /// Logs a fingerprint of the Hot Cargo and game state every StateLogTicks sim ticks, in MP autotests only.
-    /// Lockstep machines log at the same ticks, and scripts/autotest-mp.sh compares the lines of host and client.
-    /// It catches divergence that the game's integrity hash does not cover.
+    /// Every StateLogTicks sim ticks in co-op autotests, logs a hash of the whole Hot Cargo run state and of key vanilla values
+    /// (MPHASH), and one hash per RunState member (MPFIELDS). Lockstep machines log at the same ticks; scripts/coop-report.sh
+    /// compares them and names the members that differ. It catches divergence that the game's integrity hash does not cover.
     /// </summary>
     static void LogState(Run run, SimRoot sim, double dt)
     {
@@ -255,22 +435,54 @@ public static class MpAutotest
         var players = new List<PlayerState>();
         run.Game.GetHumanPlayerStates(players, deterministic: true);
         var humans = sim.Ships.HumanPlayerShips.OrderBy(h => h.UniqueID).ToList();
-        Log.Info($"MPSTATE tick={sim.Tick} heat={s.Heat:0.000} stages={s.StagesStarted} sector={s.SectorIndex} tech={s.FleetTech} result={s.Result} " +
-                 $"score={s.Score} delivered={s.DeliveredUnits} event={s.Events.Pending?.EventId ?? "-"}/{s.Events.Pending?.Serial ?? 0} " +
-                 $"money=[{string.Join(",", players.Select(p => p.Money))}] fame={run.Mode.PlayerFame} ships={sim.Ships.Count} " +
-                 $"human=[{string.Join(",", humans.Select(h => $"{h.Metadata.PlayerIndex}:{h.Parts.Count}"))}] rand={sim.Rand._a ^ sim.Rand._b:x}");
+        string vanilla = $"money=[{string.Join(",", players.Select(p => p.Money))}] fame={run.Mode.PlayerFame} ships={sim.Ships.Count} " +
+                         $"human=[{string.Join(",", humans.Select(h => $"{h.Metadata.PlayerIndex}:{h.Parts.Count}"))}] rand={sim.Rand._a ^ sim.Rand._b:x}";
+        var fields = StateMembers.Select(m => (m.Name, Hash: Hash(m.Name, m.Get(s), m.Type))).ToList();
+        string all = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(string.Join(",", fields.Select(f => f.Hash)) + vanilla)), 0, 4);
+        Log.Info($"MPHASH tick={sim.Tick} all={all} heat={s.Heat:0.000} tech={s.FleetTech} result={s.Result} {vanilla}");
+        Log.Info($"MPFIELDS tick={sim.Tick} {string.Join(" ", fields.Select(f => $"{f.Name}={f.Hash}"))}");
     }
 
-    /// <summary>Runs a test command inside the sim on every machine, for the "mp" command. Allowed only in autotests.</summary>
+    /// <summary>Runs a test command inside the sim on every machine, for "mp" and "as". Allowed only in autotests.</summary>
     [ReflectiveSerialization(Explicit = true)]
     [SerialDerivedType(TypeName = "HotCargoAutotest")]
     internal sealed class AutotestInput : MPInput
     {
         [Serialize] public string Line { get; private set; }
+        /// <summary>The player that the command acts for ("as"). -1: the sender.</summary>
+        [Serialize(Optional = true)] public int AsPlayer { get; private set; } = -1;
 
-        public AutotestInput(string line) => Line = line;
+        public AutotestInput(string line, int asPlayer = -1)
+        {
+            Line = line;
+            AsPlayer = asPlayer;
+        }
 
-        public override void Execute(GameRoot game, int playerIndex, MessengerID playerID, bool force = false) => Autotest.RunInSim(Line, playerIndex);
+        public override void Execute(GameRoot game, int playerIndex, MessengerID playerID, bool force = false) =>
+            Autotest.RunInSim(Line, AsPlayer >= 0 ? AsPlayer : playerIndex);
+    }
+
+    /// <summary>
+    /// Inside the sim ("mp", "as"), every machine runs the same command. An input that the command sends would leave every machine
+    /// once, so it runs at once as the acting player instead, after the same AllowMPInput check as a received input.
+    /// </summary>
+    [HarmonyPatch(typeof(BaseMPManager), nameof(BaseMPManager.EnqueueInput))]
+    static class SimInputPatch
+    {
+        static bool Prefix(BaseMPManager __instance, MPInput input)
+        {
+            if (Autotest.SimPlayer is not { } player || input.IsEmpty) return true;
+            var game = __instance.Game;
+            var id = game.HumanPlayersByID.Where(p => p.Value == player).Select(p => (MessengerID?)p.Key).FirstOrDefault()
+                ?? throw new InvalidOperationException($"no human player {player}");
+            if (!game.Mode.AllowMPInput(input, player, id))
+            {
+                Log.Info($"AUTOTEST {input.GetType().Name} refused for player {player}");
+                return false;
+            }
+            input.Execute(game, player, id);
+            return false;
+        }
     }
 
     [HarmonyPatch(typeof(CareerGameModeManager), nameof(CareerGameModeManager.AllowMPInput))]
@@ -312,7 +524,7 @@ static class DesyncPatch
         }
         MpAutotest.Desyncs++;
         var s = Run.Current?.State;
-        Log.Error($"MP DESYNC at input tick {__instance._curInputTick} (host={__instance.IsHost}); the game resyncs from the host. " +
+        Log.Error($"MP DESYNC at input tick {__instance._curInputTick}, sim tick={Autotest.Game?.Sim.Tick} (host={__instance.IsHost}); the game resyncs from the host. " +
                   $"Hot Cargo state: heat={s?.Heat:0.000} stages={s?.StagesStarted} sector={s?.SectorIndex} tech={s?.FleetTech} result={s?.Result}");
     }
 }

@@ -178,6 +178,9 @@ slot_log() {
   )
 }
 
+# Prints the names of the co-op sessions: every tests/autotest-mp/*.txt except client.txt (the generic client).
+coop_sessions() { local f; for f in "$REPO_ROOT"/tests/autotest-mp/*.txt; do [[ "$(basename "$f")" == client.txt ]] || basename "$f" .txt; done; }
+
 # True when a log (stdin) passed: it has AUTOTEST DONE and no AUTOTEST FAIL or ERROR line.
 log_passed() {
   local log

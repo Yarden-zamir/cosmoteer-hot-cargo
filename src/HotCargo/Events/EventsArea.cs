@@ -42,6 +42,9 @@ public static class EventsArea
 
     static readonly Dictionary<string, double> Marks = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>The serial of the page that was pending at the last ev_mark. 0: none.</summary>
+    internal static int MarkedSerial;
+
     static void AddAutotest()
     {
         // event <id>: opens the event now, replacing any pending page. Test only (single player, from a frame).
@@ -115,9 +118,11 @@ public static class EventsArea
             Autotest.Check(EventLibrary.InOrder.Count >= 10, $"{EventLibrary.InOrder.Count} events load and render");
         };
         // ev_mark: remembers money, heat, vault tech, fame, crew and every resource, for the fields ev_money_gain, ev_heat_gain,
-        // ev_tech_gain, ev_fame_gain, ev_crew_gain and ev_res_<resource id>_gain.
+        // ev_tech_gain, ev_fame_gain, ev_crew_gain and ev_res_<resource id>_gain. It also remembers the serial of the pending page,
+        // for the field ev_answered and for "mpchoose marked".
         Autotest.Commands["ev_mark"] = _ =>
         {
+            MarkedSerial = RequireRun().State.Events.Pending?.Serial ?? 0;
             foreach (var (name, f) in Gauges()) Marks[name] = f();
             foreach (var (name, f) in Gauges()) Autotest.Fields[$"ev_{name}_gain"] = () => f() - Marks[name];
         };
@@ -366,6 +371,8 @@ public static class EventsArea
         Autotest.Fields["ev_pending"] = () => RequireRun().State.Events.Pending is null ? 0 : 1;
         Autotest.Fields["ev_seen"] = () => RequireRun().State.Events.Seen.Values.Sum();
         Autotest.Fields["ev_result"] = () => RequireRun().State.Events.LastResult?.Serial ?? 0;
+        // 1 when the page that was pending at the last ev_mark has a result.
+        Autotest.Fields["ev_answered"] = () => MarkedSerial > 0 && RequireRun().State.Events.LastResult?.Serial >= MarkedSerial ? 1 : 0;
         Autotest.Fields["ev_signals"] = () => RequireSim().Doodads.Count(d => d.Tags?.Contains(EventRunner.SignalTag) == true);
         Autotest.Fields["ev_stdmoney"] = () => EventRunner.Credits(RequireRun(), 1f, 0f, RequireRun().CurrentTier, 0);
     }
