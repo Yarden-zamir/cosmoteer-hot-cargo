@@ -99,9 +99,10 @@ internal static class StartingVault
     /// <summary>
     /// Puts a part on a free spot next to the hull: the most sheltered spot first (most hull tiles next to it), then the one nearest to the ship center.
     /// The game adds its doors like the build tool. With requireCrewPath, a spot counts only when crew can walk to the part.
+    /// The mode says how the part gets built: at once (default), or like a player's blueprint (the game's construction mode).
     /// Returns the part location, or null when requireCrewPath finds no spot. Throws when no spot is free at all.
     /// </summary>
-    internal static IntVector2? PlaceOutside(Ship ship, PartRules rules, bool requireCrewPath)
+    internal static IntVector2? PlaceOutside(Ship ship, PartRules rules, bool requireCrewPath, ConstructionMode mode = ConstructionMode.InstantFree)
     {
         var parts = ship.BlueprintParts;
         var cells = parts.SelectMany(p => p.Rect).ToHashSet();
@@ -122,7 +123,7 @@ internal static class StartingVault
             using var sui = ShipUpdateInfo.Alloc(ship);
             if (!sui.TryAddBlueprintPart(rules, rect.Location, 0, flipX: false, mirrorPhysical: true, allowOverwrite: false, addDoors: true, hireCrew: false, out _)) continue;
             if (requireCrewPath && !HasCrewPath(new BlueprintPathfinder(ship, sui), new PartInfo(rules, rect.Location, 0, flipX: false))) continue;
-            sui.Apply(ConstructionMode.InstantFree, builtByPlayer: true);
+            sui.Apply(mode, builtByPlayer: true);
             Log.Info($"{rules.ID} placed outside the hull of {ship.Name} at {rect.Location}, crew path required={requireCrewPath}");
             return rect.Location;
         }

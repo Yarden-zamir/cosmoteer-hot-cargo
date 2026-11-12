@@ -5,7 +5,7 @@ HotCargoTech
 	StolenTechDesc = "Stolen corporate technology. Only a Tech Vault holds it. Its value rises with each sector and over time. If the fleet holds none and gets none back in time, the run is lost."
 	TechVault = "Tech Vault"
 	TechVaultIcon = "Tech Vault"
-	TechVaultDesc = "Armored storage for Stolen Tech. Holds 2 units. Crew carry tech between vaults. Damage destroys the tech inside, and repairs do not bring it back."
+	TechVaultDesc = "Armored storage for Stolen Tech. Holds 2 units. Crew carry tech between vaults. Damage destroys the tech inside; a destroyed vault drops it as crates. Resists sun heat."
 	VaultOutside = "A Tech Vault has no door. Add one so that crew can reach the tech."
 	LossNoTech = "The fleet held no Stolen Tech for too long."
 	LossTimerStarted = "No tech left! Get some back within {0}, or the run is lost."
@@ -13,4 +13,9 @@ HotCargoTech
 	LossTimerFmt = "<bad><b>NO TECH</b>   run lost in <b>{0}</b></bad>\n<gray>{1}</gray>"
 	MarkerTag = "<fame_color><b>TECH {0}</b></fame_color>"
 	MarkerCrate = "<fame_color><b>TECH</b></fame_color>"
+	MarkerHeldTag = "<bad><b>HAS {0} TECH</b></bad>"
+	VaultBurnedFmt = "A vault blew apart: {0} tech destroyed."
+	HunterGrabbedFmt = "<bad>{0} grabbed {1} tech!</bad> Destroy it to get the tech back."
+	HunterWreckFmt = "The wreck of {0} spilled {1} tech."
+	HunterGoneFmt = "{0} escaped with {1} tech."
 }

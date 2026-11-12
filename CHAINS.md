@@ -1,6 +1,6 @@
 # Hot Cargo chains
 
-Story chains: missions in parts, one chain per station. Spec requirements 160 to 175 (SPEC.md section 25) describe the system. This file holds the design and the catalog.
+Story chains: missions in parts, one chain per station. Spec requirements 160 to 175 (`spec/25-chains.md`) describe the system. This file holds the design and the catalog.
 
 The content files are the source of truth: `mod/chains/chains.rules` (chains, stages, result rows), `mod/chains/missions.rules` (stage missions) and `mod/chains/pages.rules` (choice pages). When you change a chain, update its graph here.
 

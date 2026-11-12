@@ -1,6 +1,6 @@
 # Hot Cargo system archetypes
 
-Spec: SPEC.md section 27, requirements 220 to 229.
+Spec: `spec/27-system-archetypes.md`, requirements 220 to 229.
 
 Cosmoteer's Career 2.0 dev blog ([Steam news](https://store.steampowered.com/news/app/799600/view/698779962638862457)) splits star systems into sector types. Hot Cargo takes the part that fits a short, tense run: each system gets an identity, one hazard and one mission that uses the hazard. Archetypes add no jumps and no long flights. The objects sit inside the smaller Hot Cargo systems.
 

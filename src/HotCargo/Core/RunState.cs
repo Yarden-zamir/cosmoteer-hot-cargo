@@ -7,7 +7,7 @@ public enum RunResult { Running, Won, Lost }
 
 /// <summary>Everything Hot Cargo saves in the career save, under the "HotCargo" path.</summary>
 [ReflectiveSerialization(Explicit = true)]
-public sealed class RunState
+public sealed partial class RunState
 {
     [Serialize] public RunResult Result = RunResult.Running;
     [Serialize(Optional = true)] public string EndReason = "";
@@ -41,30 +41,10 @@ public sealed class RunState
     [Serialize(Optional = true)] public float Notoriety;
     /// <summary>Spec 19: highest low tier of a system that the players were in. It never goes down.</summary>
     [Serialize(Optional = true)] public int PeakTier = 1;
-    /// <summary>Contract economy state: resolved terms of offers and open contracts (spec 100 to 108).</summary>
-    [Serialize(Optional = true)] public Contracts.ContractsState Contracts = new();
-    /// <summary>Events area state: seen events, flags and the pending event page.</summary>
-    [Serialize(Optional = true)] public Events.EventsState Events = new();
-    /// <summary>Chains area state: the chain of each station, its stage, flags and story.</summary>
-    [Serialize(Optional = true)] public Chains.ChainsState Chains = new();
-    /// <summary>Co-op shared choices: the vote mode and the votes on open pages (spec 603, 607).</summary>
-    [Serialize(Optional = true)] public SharedChoice.SharedChoiceState SharedChoice = new();
-    /// <summary>Hunters area state: hunter groups that wait to arrive in the current system (spec 191).</summary>
-    [Serialize(Optional = true)] public Hunters.HunterState Hunters = new();
     /// <summary>True after the Buyer station spawned in this run (spec 1), so that a later RunSectorCount change spawns no second Buyer.</summary>
     [Serialize(Optional = true)] public bool BuyerSpawned;
     /// <summary>Multiplies the Buyer price (spec 7). Events lower it (an advance from the Buyer's agent); 1 means no change.</summary>
     [Serialize(Optional = true)] public float BuyerPriceMultiplier = 1f;
-    /// <summary>Tech area state: the loss timer (spec 443).</summary>
-    [Serialize(Optional = true)] public Tech.TechState Tech = new();
     /// <summary>Spec 330: the new-game enemy scaling setting, the enemy multiplier with 2 players. Set once at run start.</summary>
     [Serialize(Optional = true)] public float EnemyScale = Scaling.ScalingModel.DefaultSetting;
-    /// <summary>Diplomacy area state: once-per-ship offers, held tech, hires, mercenaries (spec 586).</summary>
-    [Serialize(Optional = true)] public Diplomacy.DiplomacyState Diplomacy = new();
-    /// <summary>Spec 592: the shared drafts of open multiselect pages.</summary>
-    [Serialize(Optional = true)] public MultiChoice.MultiChoiceState MultiChoice = new();
-    /// <summary>Spec 730: the run log that the career log window shows, oldest first.</summary>
-    [Serialize(Optional = true)] public List<Onboarding.RunLogEntry> Log = new();
-    /// <summary>Factions area state: the blind jump switch (spec 650).</summary>
-    [Serialize(Optional = true)] public Factions.FactionsState Factions = new();
 }

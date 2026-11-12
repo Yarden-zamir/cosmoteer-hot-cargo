@@ -1,19 +1,4 @@
 using Halfling.Serialization;
-using HotCargo.Chains;
-using HotCargo.Contracts;
-using HotCargo.Events;
-using HotCargo.Factions;
-using HotCargo.Hunters;
-using HotCargo.Journey;
-using HotCargo.Missions;
-using HotCargo.Missions.Mechanics;
-using HotCargo.RunModes;
-using HotCargo.SharedChoice;
-using HotCargo.ShipAi;
-using HotCargo.Tactics;
-using HotCargo.Tech;
-using HotCargo.Ux;
-using HotCargo.Worlds;
 
 namespace HotCargo.Core;
 
@@ -23,27 +8,9 @@ namespace HotCargo.Core;
 /// Missing fields keep the defaults written here.
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
-public sealed class Tunables
+public sealed partial class Tunables
 {
     [Serialize(Optional = true)] public HeatTunables Heat = new();
-    [Serialize(Optional = true)] public TechTunables Tech = new();
-    [Serialize(Optional = true)] public JourneyTunables Journey = new();
-    [Serialize(Optional = true)] public HunterTunables Hunters = new();
-    [Serialize(Optional = true)] public MissionTunables Missions = new();
-    [Serialize(Optional = true)] public MechanicsTunables Mechanics = new();
-    [Serialize(Optional = true)] public TacticsTunables Tactics = new();
-    [Serialize(Optional = true)] public EventsTunables Events = new();
-    [Serialize(Optional = true)] public ChainsTunables Chains = new();
-    [Serialize(Optional = true)] public SharedChoiceTunables SharedChoice = new();
-    [Serialize(Optional = true)] public ContractsTunables Contracts = new();
-    [Serialize(Optional = true)] public UxTunables Ux = new();
-    [Serialize(Optional = true)] public WorldsTunables Worlds = new();
-    [Serialize(Optional = true)] public Diplomacy.DiplomacyTunables Diplomacy = new();
-    [Serialize(Optional = true)] public ShipAiTunables ShipAi = new();
-    [Serialize(Optional = true)] public Onboarding.OnboardingTunables Onboarding = new();
-    [Serialize(Optional = true)] public RunModesTunables RunModes = new();
-    [Serialize(Optional = true)] public FactionsTunables Factions = new();
-    [Serialize(Optional = true)] public Balance.BalanceTunables Balance = new();
     [Serialize(Optional = true)] public DebugTunables Debug = new();
 }
 

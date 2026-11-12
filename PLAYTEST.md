@@ -23,7 +23,8 @@ Mission checks are in [tests/playtest/missions.md](tests/playtest/missions.md).
 5. Sell 1 unit through the trade window. Check that the money rises by the shown price and the overlay tech count drops by 1.
 6. In the trade window, check that the station offers the sold unit back at 1.5 × the sell price.
 7. Try to move tech into a normal storage bay with the transfer window. Check that the game refuses it.
-8. Let an enemy shoot a vault. Check that it loses 1 unit at half health and the other when it is destroyed, that other vaults keep their tech, and that repair does not bring units back.
+8. Let an enemy shoot a vault. Check that it loses 1 unit at half health, that the destroyed vault drops its last unit as a crate (rarely it burns, with a toast), that other vaults keep their tech, and that repair does not bring units back. Collect the crate. Check that hunters near loose crates go for them, and that a wrecked hunter drops them again.
+8a. Dive into a Solar Zone heat zone. Check that the ship takes heat damage while the vaults take much less.
 9. Sell the last unit. Check that a toast says "No tech left!", and that the heat panel shows "NO TECH, run lost in 3:00" and counts down. Wait it out. Check that the loss dialog "The corporation recovered the tech." shows at 0:00.
 10. Press F11 and Shift+F11. Check that the overlay tech count goes up and down by 1.
 11. Remove all tech with Shift+F11, then press F11 before the countdown ends. Check that the NO TECH line goes away and the run goes on.

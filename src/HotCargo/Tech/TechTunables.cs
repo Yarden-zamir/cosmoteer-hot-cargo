@@ -26,6 +26,19 @@ public sealed class TechTunables
     [Serialize(Optional = true)] public float VaultDamagePerUnitLost = 0.5f;
     /// <summary>Spec 12, 443: game seconds of the loss timer. When the fleet holds no tech, the players have this long to get tech back.</summary>
     [Serialize(Optional = true)] public float LossGraceSeconds = 180f;
+    /// <summary>
+    /// Spec 448: vaults take this share of heat damage (the "thermal" damage of the heat status, mostly sun heat).
+    /// So a dive into a sun's heat zone risks the ship more than the tech.
+    /// </summary>
+    [Serialize(Optional = true)] public float VaultSunHeatFactor = 0.25f;
+    /// <summary>Spec 445: chance that a destroyed vault burns its tech instead of dropping it as crates.</summary>
+    [Serialize(Optional = true)] public float VaultTechLossChance = 0.1f;
+    /// <summary>Spec 446: chance that a hunter goes for a tech crate it sees. Rolled once for each hunter and crate.</summary>
+    [Serialize(Optional = true)] public float HunterGrabChance = 0.8f;
+    /// <summary>Spec 446: hunters see tech crates within this distance.</summary>
+    [Serialize(Optional = true)] public float HunterGrabRange = 3000f;
+    /// <summary>Spec 446: a hunter takes a crate within this distance of its hull.</summary>
+    [Serialize(Optional = true)] public float HunterGrabReach = 40f;
     /// <summary>Spec 444: map markers for tech in the system (tech held on ship blips, crates in space).</summary>
     [Serialize(Optional = true)] public bool TechMarkers = true;
 }

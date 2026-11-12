@@ -1,6 +1,6 @@
 # Hot Cargo missions
 
-SPEC.md section 24 holds the numbered requirements. This file describes how each mission plays. Numbers are defaults. The `Mechanics` section of `tunables.rules` holds the live numbers. Rewards are in `mod/missions/mechanics/sysgen_mechanics.rules`.
+`spec/24-mechanics-missions.md` holds the numbered requirements. This file describes how each mission plays. Numbers are defaults. The `Mechanics` section of `tunables.rules` holds the live numbers. Rewards are in `mod/missions/mechanics/sysgen_mechanics.rules`.
 
 ## Mechanics missions
 
