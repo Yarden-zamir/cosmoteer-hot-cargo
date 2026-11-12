@@ -8,6 +8,8 @@ HotCargoUx
 	NextFmt = "{0} at {1:0}"
 	NextMax = "max"
 	TechFmt = "<fame>{0}</fame> tech held   <gray>worth</gray> <money>{1}</money> <gray>each</gray>"
+	TechYouFmt = "you hold {0}"
+	TechDerelictFmt = "{0} in a derelict ship"
 	StatusWonFmt = "TECH DELIVERED   score {0}   heat is off"
 	StatusLost = "TECH LOST"
 	StatusHeatOff = "Heat is off"

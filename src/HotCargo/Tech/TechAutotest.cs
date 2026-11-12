@@ -75,6 +75,23 @@ static class TechAutotest
         };
         Autotest.Fields["shipvalid"] = () => Vaults.HumanShips(Active().Game.Sim).All(s => s.BlueprintParts.IsValid && s.PhysicalMatchesBlueprints) ? 1 : 0;
         Autotest.Fields["livetech"] = () => Vaults.CountFleetTech(Active().Game.Sim);
+        // Spec 449: units in every vault grid in the sim, whoever owns the ship: what the vault art shows. Must equal tech while no crew carry tech.
+        Autotest.Fields["vaultunits"] = () => Active().Game.Sim.Ships.AllShips.Sum(Vaults.ShipTech);
+        Autotest.Fields["derelicttech"] = () => Vaults.Split(Active().Game.Sim, Active().Game.LocalPlayerIndex).Derelict;
+        Autotest.Fields["mytech"] = () => Vaults.Split(Active().Game.Sim, Active().Game.LocalPlayerIndex).Player;
+        // Lowest health of a built vault on a human ship (spec 65: a vault starts at full health, so the first hits cost no tech).
+        Autotest.Fields["vaultminhealth"] = () => Vaults.HumanShips(Active().Game.Sim).SelectMany(Vaults.VaultParts).Where(p => !p.IsUnderConstruction).Min(p => (int?)p.Health) ?? -1;
+        // The heat panel tech line shows the fleet total (1), and the derelict part (spec 449).
+        Autotest.Fields["paneltotal"] = () => Ui.HeatPanel.TechText.Contains($"<fame>{Active().State.FleetTech}</fame>") ? 1 : 0;
+        Autotest.Fields["panelderelict"] = () => Ui.HeatPanel.TechText.Contains(string.Format(Ux.UxKit.Format("TechDerelictFmt", "{0}"), Vaults.Split(Active().Game.Sim, Active().Game.LocalPlayerIndex).Derelict)) ? 1 : 0;
+        // The blip of the first derelict ship with tech shows "TECH n" (spec 444, 449).
+        Autotest.Fields["derelicttag"] = () =>
+        {
+            var junk = Active().Game.Sim.Ships.AllShips.FirstOrDefault(s => s.IsJunk && Vaults.ShipTech(s) > 0);
+            if (junk is null) return 0;
+            int n = Vaults.ShipTech(junk);
+            return junk.IndicatorSource.GetNonMouseoverText()?.Contains($"TECH {n}") == true ? n : 0;
+        };
         Autotest.Fields["heatmult"] = () => Active().HeatMultiplier(Active().State.FleetTech);
         // Normal storage tiles on human ships that would accept tech. Must stay 0 (spec 14).
         Autotest.Fields["flexsinks"] = () => Vaults.HumanShips(Active().Game.Sim).Sum(s => FlexTilesTakingTech(s));
@@ -104,7 +121,7 @@ static class TechAutotest
 
     static int Int(string s) => int.Parse(s, CultureInfo.InvariantCulture);
 
-    /// <summary>tech add N | tech remove N | tech sell N | tech dump | tech drop N (takes N from the vaults and drops them as crates next to the player ship) | tech collect (crew fetch every tech crate) | tech drophunter N (crates near the first hunter) | tech wreckholder (the first hunter with tech becomes a wreck)</summary>
+    /// <summary>tech derelict (the acting player's ship becomes a derelict) | tech add N | tech remove N | tech sell N | tech dump | tech drop N (takes N from the vaults and drops them as crates next to the player ship) | tech collect (crew fetch every tech crate) | tech drophunter N (crates near the first hunter) | tech wreckholder (the first hunter with tech becomes a wreck)</summary>
     static void Tech(string arg)
     {
         var run = Active();
@@ -140,6 +157,12 @@ static class TechAutotest
                 int taken = Vaults.Remove(sim, Int(n));
                 HunterGrab.Drop(sim, hunter.DetWorldCenter + toward * 600f, taken);
                 Log.Info($"AUTOTEST tech dropped {taken} crates near {hunter.Metadata.PlainShipName}");
+                break;
+            case ["derelict"]:
+                // The acting player's ship loses its owner, like a ship without control rooms or a piece that broke off (ShipAlerts: junk).
+                var lost = PlayerShip();
+                sim.Mode.SetReducedShipAllegiance(lost, Cosmoteer.PlayerIndexes.Junk, -1);
+                Log.Info($"AUTOTEST derelict {lost.Metadata.PlainShipName} with {Vaults.ShipTech(lost)} tech");
                 break;
             case ["wreckholder"]:
                 var held = run.State.Tech.HunterHeld.FirstOrDefault() ?? throw new InvalidOperationException("no hunter holds tech");
