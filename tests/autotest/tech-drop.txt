@@ -1,0 +1,38 @@
+# Destroyed vaults (spec 65, 445): crates or burned tech by a forced roll. A new vault that crew build takes the crates back (spec 447).
+newgame run
+wait 8
+ev_set Enabled false
+tech_set LossGraceSeconds 600
+# A new empty vault, built like a player builds it (the career construction mode: crew and steel).
+vault steel 8
+vault build
+waitfor vaultsbuilt >= 5 240
+expect outsidetech == 0
+# Roll forced to drop: a destroyed vault leaves its 2 units as crates.
+tech_set VaultTechLossChance 0
+vault destroy
+wait 2
+expect tech == 6
+expect techcrates == 2
+expect vaultburned == 0
+# Roll forced to burn: the tech is gone, and a message says so.
+tech_set VaultTechLossChance 1
+vault destroy
+wait 2
+expect tech == 4
+expect techcrates == 2
+expect vaultburned == 1
+# The last two vaults with tech drop theirs. No tech is aboard, so the loss timer runs.
+tech_set VaultTechLossChance 0
+vault destroy
+vault destroy
+wait 2
+expect tech == 0
+expect techcrates == 6
+expect losstimer == 1
+# Crew bring crates into the new vault, the only one with room. The timer stops.
+tech collect
+waitfor losstimer == 0 90
+waitfor outsidetech == 2 240
+expect lost == 0
+quit

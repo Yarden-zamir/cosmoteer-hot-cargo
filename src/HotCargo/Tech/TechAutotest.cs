@@ -57,6 +57,21 @@ static class TechAutotest
             return cut.Count;
         });
         Autotest.Fields["outsidetech"] = () => OutsideVault()?.Resources ?? throw new InvalidOperationException("no vault from vault outside");
+        // Vault parts on human ships that are done building.
+        Autotest.Fields["vaultsbuilt"] = () => Vaults.HumanShips(Active().Game.Sim).Sum(s => Vaults.VaultParts(s).Count(p => !p.IsUnderConstruction));
+        // Health lost by vault parts, and by all other parts, of the player ship (spec 448).
+        Autotest.Fields["vaultdamage"] = () => PlayerShip().Parts.Where(p => p.Rules.ID == Vaults.VaultId).Sum(p => p.Rules.MaxHealth - p.Health);
+        Autotest.Fields["partdamage"] = () => PlayerShip().Parts.Where(p => p.Rules.ID != Vaults.VaultId).Sum(p => p.Rules.MaxHealth - p.Health);
+        Autotest.Fields["vaultburned"] = () => VaultDropPatch.LostMessages;
+        Autotest.Fields["wreckspills"] = () => HunterGrab.WreckSpills;
+        Autotest.Fields["hunterheld"] = () => Active().State.Tech.HunterHeld.Sum(h => h.Units);
+        // The units on the blip of the first hunter that holds tech, or 0 when the blip does not show them.
+        Autotest.Fields["holdertag"] = () =>
+        {
+            var held = Active().State.Tech.HunterHeld.FirstOrDefault();
+            if (held is null || Active().Game.Sim.Ships[held.Ship] is not { } ship) return 0;
+            return ship.IndicatorSource.GetNonMouseoverText()?.Contains($"HAS {held.Units} TECH") == true ? held.Units : 0;
+        };
         Autotest.Fields["shipvalid"] = () => Vaults.HumanShips(Active().Game.Sim).All(s => s.BlueprintParts.IsValid && s.PhysicalMatchesBlueprints) ? 1 : 0;
         Autotest.Fields["livetech"] = () => Vaults.CountFleetTech(Active().Game.Sim);
         Autotest.Fields["heatmult"] = () => Active().HeatMultiplier(Active().State.FleetTech);
@@ -82,7 +97,7 @@ static class TechAutotest
 
     static int Int(string s) => int.Parse(s, CultureInfo.InvariantCulture);
 
-    /// <summary>tech add N | tech remove N | tech sell N | tech dump | tech drop N (takes N from the vaults and drops them as crates next to the player ship) | tech collect (crew fetch every tech crate)</summary>
+    /// <summary>tech add N | tech remove N | tech sell N | tech dump | tech drop N (takes N from the vaults and drops them as crates next to the player ship) | tech collect (crew fetch every tech crate) | tech drophunter N (crates near the first hunter) | tech wreckholder (the first hunter with tech becomes a wreck)</summary>
     static void Tech(string arg)
     {
         var run = Active();
@@ -97,14 +112,33 @@ static class TechAutotest
             case ["collect"]:
                 // The input of the vanilla collect tool (SalvageCollectState): crew fetch each crate into the best vault with room.
                 var collector = PlayerShip();
+                int queued = 0;
                 for (int i = 0; i < sim.Nuggets.Count; i++)
                 {
                     var nugget = sim.Nuggets[i];
-                    if (nugget.ResourceType != Vaults.TechId) continue;
-                    var sink = collector.Resources.GetBestReceivingSink(nugget, nugget.Quantity, MPValueType.Displayed, out int room) ?? throw new InvalidOperationException("no vault room for a tech crate");
+                    // The vanilla tool skips crates beyond the crew's safe distance from the ship.
+                    if (nugget.ResourceType != Vaults.TechId || collector.WorldBoundingCircle.DistanceTo(nugget.WorldLocation) >= GameApp.Rules.Crew.LoseHomeShipWarningDistance) continue;
+                    // The vaults are full (pending pickups count): the rest of the crates stay, as with the vanilla tool.
+                    if (collector.Resources.GetBestReceivingSink(nugget, nugget.Quantity, MPValueType.Displayed, out int room) is not { } sink) break;
+                    queued++;
                     run.Game.NetManager.EnqueueInput(new MPMoveResourcesInput(nugget, sink, Math.Min(room, nugget.Quantity), collector.Jobs.AllocLocalJobID()));
                 }
-                Log.Info("AUTOTEST tech collect queued");
+                if (queued == 0) throw new InvalidOperationException("no tech crate within crew range, or no vault room");
+                Log.Info($"AUTOTEST tech collect queued {queued} crates");
+                break;
+            case ["drophunter", var n]:
+                // Crates 600 from the first hunter, between it and the player ship.
+                var hunter = Hunters.HunterSpawner.Hunters(sim).FirstOrDefault() ?? throw new InvalidOperationException("no hunter");
+                var toward = (PlayerShip().DetWorldCenter - hunter.DetWorldCenter).Normalize();
+                int taken = Vaults.Remove(sim, Int(n));
+                HunterGrab.Drop(sim, hunter.DetWorldCenter + toward * 600f, taken);
+                Log.Info($"AUTOTEST tech dropped {taken} crates near {hunter.Metadata.PlainShipName}");
+                break;
+            case ["wreckholder"]:
+                var held = run.State.Tech.HunterHeld.FirstOrDefault() ?? throw new InvalidOperationException("no hunter holds tech");
+                var holder = sim.Ships[held.Ship] ?? throw new InvalidOperationException("the holder is not live");
+                sim.Mode.SetReducedShipAllegiance(holder, Cosmoteer.PlayerIndexes.Junk, -1);
+                Log.Info($"AUTOTEST wrecked {holder.Metadata.PlainShipName}");
                 break;
             case ["drop", var n]:
                 int removed = Vaults.Remove(sim, Int(n));
@@ -118,10 +152,12 @@ static class TechAutotest
     }
 
     /// <summary>
-    /// vault damage F (fraction of max health) | vault destroy | vault repair: acts on the first vault, or on every vault with "all" at the end.
+    /// vault damage F (fraction of max health) | vault destroy | vault repair: acts on the first vault that holds tech (else the first vault),
+    /// or on every vault with "all" at the end.
     /// vault outside: builds one more vault outside the hull of the player ship, where crew can walk to it.
     /// vault move: moves the tech of the first full vault into the vault that "vault outside" built, with the input of the vanilla move resources tool.
-    /// vault focus: points the camera at the player ship and zooms in until the ship fills the view.
+    /// vault steel N: adds steel to the player ship, for a vault build.
+    /// vault focus [wide]: points the camera at the player ship and zooms in until the ship fills the view (wide: with the dropped crates).
     /// </summary>
     static void Vault(string arg)
     {
@@ -134,11 +170,31 @@ static class TechAutotest
             Log.Info($"AUTOTEST vault outside at {at}");
             return;
         }
-        if (parts is ["focus"])
+        if (parts is ["steel", var n])
         {
+            // Steel into the player ship's storage, like steel that a player bought at a station.
+            var ship = PlayerShip();
+            int added = ship.Resources.AddResources(new Cosmoteer.Data.ID<Cosmoteer.Resources.ResourceRules>("steel"), Int(n), excludeConstructionSinks: true);
+            Log.Info($"AUTOTEST vault steel: added {added} steel");
+            return;
+        }
+        if (parts is ["build"])
+        {
+            // A player's blueprint: the game's construction mode decides how it gets built (crew and steel in a normal career).
+            var ship = PlayerShip();
+            var mode = ship.Sim.Mode.GetConstructionMode(ship);
+            var at = StartingVault.PlaceOutside(ship, ship.Rules.PartsByID[Vaults.VaultId], requireCrewPath: true, mode) ?? throw new InvalidOperationException("no outside spot with a crew path");
+            _outside = at;
+            Log.Info($"AUTOTEST vault build at {at}, construction mode {mode}");
+            return;
+        }
+        if (parts is ["focus"] or ["focus", "wide"])
+        {
+            // "wide" also fits the crates that "tech drop" puts 150 beyond the hull.
             var ship = PlayerShip();
             ship.FocusCamera(playSound: false);
-            ship.Sim.Camera.ViewController.ZoomToFit(new Halfling.Geometry.Vector2(ship.WorldBoundingRadius * 2.4f));
+            float size = parts.Length == 2 ? (ship.WorldBoundingRadius + 200f) * 2.2f : ship.WorldBoundingRadius * 2.4f;
+            ship.Sim.Camera.ViewController.ZoomToFit(new Halfling.Geometry.Vector2(size));
             return;
         }
         if (parts is ["move"])
@@ -156,7 +212,8 @@ static class TechAutotest
         bool all = parts is [.., "all"];
         var grids = Vaults.All(Active().Game.Sim);
         if (grids.Count == 0) throw new InvalidOperationException("no vault");
-        foreach (var grid in all ? grids : grids.Take(1))
+        var first = grids.FirstOrDefault(g => g.Resources > 0) ?? grids[0];
+        foreach (var grid in all ? grids : [first])
         {
             Part part = grid.Part ?? throw new InvalidOperationException("vault grid has no part");
             switch (all ? parts[..^1] : parts)
@@ -279,6 +336,10 @@ static class TechAutotest
             foreach (var p in ship.BlueprintParts.OrderBy(p => p.Location.Y).ThenBy(p => p.Location.X))
                 Log.Info($"  part {p.Rules.ID} at {p.Location} rect {p.Rect}");
             foreach (var d in ship.BlueprintDoors) Log.Info($"  door {d.Location}");
+            var cm = ship.OptionalConstructionManager;
+            Log.Info($"  steel {ship.Resources.GetResourceTotal(new Cosmoteer.Data.ID<Cosmoteer.Resources.ResourceRules>("steel"))}, queued builds {cm?.QueuedPartConstructions.Count}, blocked {cm?.BlockedPartConstructions.Count}, needs resources {cm?.HasSinksNeedingResources}");
+            foreach (var v in Vaults.VaultParts(ship))
+                Log.Info($"  vault part at {v.Location}: health {v.Health}, flags {v.Flags}, destroyed={v.IsDestroyed}, tech {Vaults.OnShip(ship).FirstOrDefault(g => g.Part == v)?.Resources}");
         }
         foreach (var starter in GameApp.Rules.CareerMode.StarterShips)
         {

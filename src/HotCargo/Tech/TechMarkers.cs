@@ -48,7 +48,8 @@ public static class TechMarkers
             {
                 int units = ShipUnits(__instance.Ship);
                 if (units <= 0) return;
-                string tag = string.Format(Strings.GetText("HotCargoTech/MarkerTag"), units);
+                string key = __instance.Ship.IsHumanPlayerShip ? "HotCargoTech/MarkerTag" : "HotCargoTech/MarkerHeldTag";
+                string tag = string.Format(Strings.GetText(key), units);
                 result = result is null ? tag : tag + "\n" + result;
             });
             __result = result;

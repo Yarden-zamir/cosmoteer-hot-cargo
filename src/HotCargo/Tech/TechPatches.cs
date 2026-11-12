@@ -1,4 +1,5 @@
 using System.Reflection;
+using Cosmoteer;
 using Cosmoteer.Data;
 using Cosmoteer.Modes.Career;
 using Cosmoteer.Resources;
@@ -49,6 +50,23 @@ static class FlexGridBlocksTechPatch
     static void Postfix(FlexResourceGrid.ResourceTile __instance, ID<ResourceRules> resourceType, ref int __result)
     {
         if (__result > 0 && resourceType == Vaults.TechId && __instance.Grid.Ship is { IsHumanPlayerShip: true }) __result = 0;
+    }
+}
+
+/// <summary>
+/// Spec 448: vaults resist heat. The heat status (sun heat, also thermal missiles and overclock heat) is the only source of "thermal"
+/// damage, so a vault takes VaultSunHeatFactor of it. Limit: the status does not know where its heat came from, so non-sun heat
+/// is reduced too. Revisit if a weapon gets direct thermal damage.
+/// </summary>
+[HarmonyPatch(typeof(Part), nameof(Part.GetDamageResistance))]
+static class VaultHeatPatch
+{
+    static readonly ID<DamageType> Thermal = new("thermal");
+
+    static void Postfix(Part __instance, ID<DamageType> damageType, ref float __result)
+    {
+        if (damageType != Thermal || __instance.Rules.ID != Vaults.VaultId || Run.Current is not { } run) return;
+        __result = 1f - (1f - __result) * run.T.Tech.VaultSunHeatFactor;
     }
 }
 

@@ -13,6 +13,8 @@ public sealed class TechState
     [Serialize(Optional = true)] public bool LossTimerRunning;
     /// <summary>Player-facing reason that the heat panel shows under the countdown.</summary>
     [Serialize(Optional = true)] public string LossTimerReason = "";
+    /// <summary>Spec 446: tech that hunters took from crates, by hunter.</summary>
+    [Serialize(Optional = true)] public List<HunterTech> HunterHeld = new();
 }
 
 /// <summary>
