@@ -1,8 +1,30 @@
+# Checks every pushed branch and pull request: private data, build against the game references, unit tests.
+# Game tests need the Windows PC, so scripts/integrate.sh runs them before a merge into main.
 name: check
-on: [push]
+on:
+  push:
+  pull_request:
 jobs:
   private-data:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
       - run: scripts/check-private.sh
+  build:
+    runs-on: ubuntu-latest
+    # Pull requests from forks get no secrets, so they cannot read the private game references.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7.0.1
+        with:
+          repository: Yarden-zamir/cosmoteer-hot-cargo-game-refs
+          ssh-key: ${{ secrets.GAME_REFS_DEPLOY_KEY }}
+          path: .game-refs
+      - uses: actions/setup-dotnet@v6.1.0
+        with:
+          global-json-file: global.json
+      - run: dotnet build src/HotCargo/HotCargo.csproj -c Release -nologo -v quiet
+        env:
+          CosmoteerBin: ${{ github.workspace }}/.game-refs
+      - run: dotnet run --project tests/HotCargo.Tests
