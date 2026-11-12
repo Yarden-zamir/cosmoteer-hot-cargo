@@ -14,8 +14,8 @@ public sealed class ContractsTunables
     /// <summary>Spec 102: chance that an offer without rules terms has an accept fee.</summary>
     [Serialize(Optional = true)] public float FeeChance = 0.5f;
     /// <summary>Spec 102: fee range in standard mission pay at the mission tier (after difficulty and RewardScale).</summary>
-    [Serialize(Optional = true)] public float FeeMin = 0.3f;
-    [Serialize(Optional = true)] public float FeeMax = 0.8f;
+    [Serialize(Optional = true)] public float FeeMin = 0.15f;
+    [Serialize(Optional = true)] public float FeeMax = 0.4f;
     /// <summary>Spec 102: a paid contract pays fee × this on completion, on top of its normal rewards.</summary>
     [Serialize(Optional = true)] public float PaidBonusFactor = 2f;
     [Serialize(Optional = true)] public int MoneyRoundTo = 500;
