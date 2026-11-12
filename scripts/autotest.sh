@@ -45,7 +45,9 @@ run_once() {
   log="${out%%<<<VANILLA LOG>>>*}"
   { cat "$RUN_LOG.deploy"; echo "$log"; } > "$RUN_LOG"
   local ok=1
-  log_passed < "$RUN_LOG" && ok=0
+  # A pass needs this run's own log: the first script line is "telename <this test>". A stale log of another test or
+  # worktree in the same slot never counts as a pass.
+  if log_passed < "$RUN_LOG" && grep -qF "telename $NAME" "$RUN_LOG"; then ok=0; fi
   if [[ $ok -ne 0 && "$out" == *"<<<VANILLA LOG>>>"* ]]; then { echo; echo "=== vanilla game log"; echo "${out#*<<<VANILLA LOG>>>}"; } >> "$RUN_LOG"; fi
   t3=$SECONDS
   RUN_REFUSED=no

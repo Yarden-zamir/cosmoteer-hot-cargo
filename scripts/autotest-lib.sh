@@ -35,8 +35,9 @@ usable_slots() {
 # Waits for one free test slot, locks it for this shell process and prints its name.
 # A lock whose owner process is gone is stale and is taken over.
 take_one_slot() {
-  local i lock limit busy
+  local i lock limit busy deadline="${1:-}"
   while :; do
+    if [[ -n "$deadline" && $(date +%s) -ge $deadline ]]; then return 1; fi
     limit="$(usable_slots)"
     # Off by default: HOT_CARGO_INTEGRATOR_RESERVE slots stay free for the main worktree, if contention returns.
     if [[ "$(basename "$REPO_ROOT")" != main && ${HOT_CARGO_INTEGRATOR_RESERVE:-0} -gt 0 && $limit -gt ${HOT_CARGO_INTEGRATOR_RESERVE:-0} ]]; then limit=$((limit - HOT_CARGO_INTEGRATOR_RESERVE)); fi
@@ -66,16 +67,27 @@ take_one_slot() {
 # as it frees up. Only one taker at a time holds some slots while it waits for more, so they cannot deadlock, and
 # single-slot tests that grab every freed slot cannot starve a co-op test.
 take_slots() {
-  local want="${1:-1}" got=() pair=/tmp/hot_cargo_slot_pair.lock
+  local want="${1:-1}" got=() pair=/tmp/hot_cargo_slot_pair.lock s
   if [[ "$want" -eq 1 ]]; then take_one_slot; return; fi
-  until mkdir "$pair" 2>/dev/null; do
-    if [[ -f "$pair/pid" ]] && ! kill -0 "$(cat "$pair/pid")" 2>/dev/null; then rm -rf "$pair"; continue; fi
-    sleep 5
+  while :; do
+    until mkdir "$pair" 2>/dev/null; do
+      if [[ -f "$pair/pid" ]] && ! kill -0 "$(cat "$pair/pid")" 2>/dev/null; then rm -rf "$pair"; continue; fi
+      sleep 5
+    done
+    echo $$ > "$pair/pid"
+    got=()
+    while [[ ${#got[@]} -lt "$want" ]]; do
+      # The first slot waits as long as needed; later slots wait at most HOT_CARGO_PAIR_WAIT seconds (default 600).
+      # Then the taker gives its slots and the queue back and lines up again, so it never blocks every co-op test.
+      if [[ ${#got[@]} -eq 0 ]]; then got+=("$(take_one_slot)"); continue; fi
+      if s="$(take_one_slot "$(( $(date +%s) + ${HOT_CARGO_PAIR_WAIT:-600} ))")"; then got+=("$s"); else break; fi
+    done
+    if [[ ${#got[@]} -eq "$want" ]]; then rm -rf "$pair"; echo "${got[*]}"; return; fi
+    for s in "${got[@]}"; do rm -rf "$(slot_lock "$s")"; done
+    rm -rf "$pair"
+    echo "co-op test: no second slot within ${HOT_CARGO_PAIR_WAIT:-600} s; lining up again" >&2
+    sleep 30
   done
-  echo $$ > "$pair/pid"
-  while [[ ${#got[@]} -lt "$want" ]]; do got+=("$(take_one_slot)"); done
-  rm -rf "$pair"
-  echo "${got[*]}"
 }
 take_slot() { take_slots 1; }
 
