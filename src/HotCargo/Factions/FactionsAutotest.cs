@@ -95,7 +95,7 @@ static class FactionsAutotest
         {
             switch (arg)
             {
-                case "comms" or "close": R().Mode.CommsToolbox.SelfActive = arg == "comms"; break;
+                case "comms" or "close": R().Mode._commsBtn.IsSelected = arg == "comms"; break;
                 case "hire":
                     if (!Cosmoteer.Modes.Career.Comms.CommWindow.s_openWindows.TryGetValue(TechAutotest.NearestStation(), out var window))
                         throw new InvalidOperationException("no comms window with the nearest station");

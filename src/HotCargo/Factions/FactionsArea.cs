@@ -137,7 +137,7 @@ public static class FactionsArea
     }
 }
 
-/// <summary>Spec 658: a toast and a chat line each time heat rises into the markup or the refusal band. UI only.</summary>
+/// <summary>Spec 658: a chat line each time heat rises into the markup or the refusal band, and a toast for the refusal band. UI only.</summary>
 [HarmonyLib.HarmonyPatch(typeof(Cosmoteer.Modes.Career.CareerGameModeManager), nameof(Cosmoteer.Modes.Career.CareerGameModeManager.Update))]
 static class HeatBandAlerts
 {
@@ -154,7 +154,8 @@ static class HeatBandAlerts
         UxKit.Guard("heat band alert", () =>
         {
             string line = band == 2 ? FactionsArea.Text("RefuseBand") : FactionsArea.Text("MarkupBand");
-            run.Game.Gui.ShowAreaName(line);
+            // The markup band starts with the Hunt stage (both at 75 by default), whose alert takes the toast. So it gets a chat line only.
+            if (band == 2) run.Game.Gui.ShowAreaName(line);
             UxKit.ChatLine(run.Game, line);
         });
     }

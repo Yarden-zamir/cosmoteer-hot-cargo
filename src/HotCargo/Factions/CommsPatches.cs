@@ -58,11 +58,14 @@ static class CommsPatches
 
     internal static string RefusalLine(Ship station) => FactionsArea.Format("RefusalFmt", station.Metadata.XmlShipName);
 
-    /// <summary>Spec 659: badges for the fence, shelter, refusal and markup in the comms list, after the UX service badges.</summary>
+    /// <summary>
+    /// Spec 659: badges for the fence, shelter, refusal and markup in the comms list. Higher priority than the UX service badges,
+    /// so they come first: the list row cuts long text at its right edge.
+    /// </summary>
     [HarmonyPatch(typeof(CommsToolbox.CallShipItem), nameof(CommsToolbox.CallShipItem.Update))]
     static class CommsList
     {
-        [HarmonyPriority(Priority.Low)]
+        [HarmonyPriority(Priority.High)]
         static void Postfix(CommsToolbox.CallShipItem __instance)
         {
             if (__instance.IsHailingPlayer || Run.Current is not { PressureActive: true } run || run.Game != __instance.Ship.Game) return;
