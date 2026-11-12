@@ -1,11 +1,11 @@
 # Working on Hot Cargo
 
-Read SPEC.md first. It holds the design, the numbered requirements and the plan.
+Read SPEC.md and the section files in `spec/` first. They hold the design, the numbered requirements and the plan.
 
 ## Layout
 
 - `src/HotCargo/Core`, `Ui`, `Dev`: shared core. Change it only when an area cannot work through the hooks in `Core/Run.cs` (`Run.Hooks`), `Core/DebugKeys.cs` (`DebugKeys.Extra`) and `Dev/Autotest.cs` (`Autotest.Commands`, `Autotest.Fields`).
-- `src/HotCargo/<Area>`: one folder for each area (Tech, Journey, Hunters, Missions, Tactics, Ux, Events, Chains, Contracts, SharedChoice, Onboarding, RunModes, Factions, Diplomacy). Each area has `<Area>Area.Register()`, its tunables section class and its patches. Ship comms options go through `Ui/CommsHail.cs` (one provider per area); dialog sliders use `Ui/SliderRow.cs`, option rows `Ui/OptionRows.cs`, and multiselect pages `MultiChoice/` (register an `IMultiChoiceDomain`).
+- `src/HotCargo/<Area>`: one folder for each area. Each area has `<Area>Area.Register()`, its tunables section class and its patches. Ship comms options go through `Ui/CommsHail.cs` (one provider per area); dialog sliders use `Ui/SliderRow.cs`, option rows `Ui/OptionRows.cs`, and multiselect pages `MultiChoice/` (register an `IMultiChoiceDomain`).
 - Shared helpers in Core: `Errors.Guard` / `Errors.Report` for any failure in a patch, sim tick or UI frame (log once, show in the overlay, never crash the game), and `SimQueries` for tagged ships, human ships and sim lookups. Use them before you write a new one.
 - `mod/mod.header.rules`: the mod header. `scripts/assemble-mod.sh` builds `mod.rules` from it and from every `mod/<area>/actions.rules`.
 - `mod/<area>/actions.rules`: only Action objects `{ ... }`, without an outer list.
@@ -15,7 +15,7 @@ Read SPEC.md first. It holds the design, the numbered requirements and the plan.
 
 ## How to Play pages and the run log
 
-Each player-facing mechanic gets a How to Play page (SPEC.md 720 to 726) and writes its events to the run log (730 to 734). Add both in the same change as the mechanic.
+Each player-facing mechanic gets a How to Play page (spec 720 to 726) and writes its events to the run log (730 to 734). Add both in the same change as the mechanic.
 
 1. Write the page in `mod/<area>/codex.rules` as a `CodexPages` list. Copy a page from `mod/onboarding/codex.rules`. The ID starts with `hc_`. Use `TabNameKey = "HotCargoCodex/Tab"`. Start the title with "Hot Cargo:".
 2. Add the list before the vanilla pages in `mod/<area>/actions.rules`, for example for an area `diplomacy`: `{ Action = AddBase; AddBaseTo = "<codex/codex.rules>/CodexPages"; BaseToAdd = &<diplomacy/codex.rules>/CodexPages; Index = 0 }`.

@@ -1,7 +1,7 @@
 # Hot Cargo balance
 
 A balance audit of Hot Cargo against vanilla Cosmoteer 0.30.5a, and the tuning that follows from it.
-`docs/balance.html` shows the same numbers as charts. SPEC.md section 28 (requirements 300 to 303) holds the rules.
+`docs/balance.html` shows the same numbers as charts. `spec/35-balance.md` (requirements 300 to 303) holds the rules.
 
 ## Method
 

@@ -177,7 +177,8 @@ internal sealed class TunablesDialog : DialogBase
         _rows.Clear();
         var values = TunablesEditor.Current(_run);
         var defaults = new Tunables();
-        foreach (var field in TunablePath.Fields(typeof(Tunables)))
+        // Areas declare their sections in their own files (partial Tunables), so declaration order follows file order. Sort by label instead.
+        foreach (var field in TunablePath.Fields(typeof(Tunables)).OrderBy(f => TunableDocs.Label(f.Name), StringComparer.CurrentCulture))
         {
             var outer = new LayoutBox();
             outer.CopySettingsFrom(WidgetRules.Instance.HollowWidget);

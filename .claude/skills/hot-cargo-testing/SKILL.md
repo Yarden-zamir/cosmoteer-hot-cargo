@@ -7,7 +7,7 @@ description: Build Hot Cargo, run unit tests, headless game tests and co-op test
 
 ## Build and unit tests
 1. Build: `dotnet build src/HotCargo/HotCargo.csproj -c Release -nologo -v quiet`.
-2. Unit tests (pure math only, no game types): `cd tests/HotCargo.Tests && dotnet run`. Add a pure model file to the csproj `Compile Include` list when you add pure math.
+2. Unit tests (pure math only, no game types): `cd tests/HotCargo.Tests && dotnet run`. Pure math goes in a file named `*Model.cs` with no game types; the test project picks up every such file.
 
 ## Headless game tests
 - One test: `scripts/autotest.sh tests/autotest/<name>.txt [timeoutSeconds]`. It takes a free headless slot on the PC (t1..t8, own save, settings and cache folders, no window), deploys your worktree's build and runs the script. Exit 0 means pass.

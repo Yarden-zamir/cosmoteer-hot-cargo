@@ -7,26 +7,8 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Only pure model files, with no game types. Run with dotnet run in this folder. -->
-    <Compile Include="../../src/HotCargo/Core/HeatModel.cs" />
-    <Compile Include="../../src/HotCargo/Tech/TechModel.cs" />
-    <Compile Include="../../src/HotCargo/Missions/MissionModel.cs" />
-    <Compile Include="../../src/HotCargo/Tactics/TacticsModel.cs" />
-    <Compile Include="../../src/HotCargo/Events/EventModel.cs" />
-    <Compile Include="../../src/HotCargo/Contracts/ContractsModel.cs" />
-    <Compile Include="../../src/HotCargo/Worlds/WorldsModel.cs" />
-    <Compile Include="../../src/HotCargo/Chains/ChainModel.cs" />
-    <Compile Include="../../src/HotCargo/Hunters/WaveModel.cs" />
-    <Compile Include="../../src/HotCargo/Ai/AiModel.cs" />
-    <Compile Include="../../src/HotCargo/Ai/PersonalityModel.cs" />
-    <Compile Include="../../src/HotCargo/Missions/Mechanics/MechanicsModel.cs" />
-    <Compile Include="../../src/HotCargo/ShipAi/ShipAiModel.cs" />
-    <Compile Include="../../src/HotCargo/Scaling/ScalingModel.cs" />
-    <Compile Include="../../src/HotCargo/Diplomacy/DiplomacyModel.cs" />
-    <Compile Include="../../src/HotCargo/MultiChoice/MultiChoiceModel.cs" />
-    <Compile Include="../../src/HotCargo/SharedChoice/VoteModel.cs" />
-    <Compile Include="../../src/HotCargo/RunModes/PressureModel.cs" />
-    <Compile Include="../../src/HotCargo/Factions/FactionsModel.cs" />
+    <!-- Every pure model file (*Model.cs: no game types). Run with dotnet run in this folder. -->
+    <Compile Include="../../src/HotCargo/**/*Model.cs" Exclude="../../src/HotCargo/bin/**;../../src/HotCargo/obj/**" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="xunit.v3" Version="4.0.3" />

@@ -1,6 +1,6 @@
 # Tunables in a running game
 
-The settings menu (Esc, "Hot Cargo settings", SPEC.md requirements 500 to 506) changes any tunable while a run is active. This file says when each change takes effect. The in-game tags come from `src/HotCargo/TunablesMenu/TunableTiming.cs`. Keep the two in step.
+The settings menu (Esc, "Hot Cargo settings", spec requirements 500 to 506, `spec/29-settings-menu.md`) changes any tunable while a run is active. This file says when each change takes effect. The in-game tags come from `src/HotCargo/TunablesMenu/TunableTiming.cs`. Keep the two in step.
 
 Every change replaces the tunables of the run at once (single player) or at the same sim tick on every machine (multiplayer, host only). "Applies" says when the game reads the new value.
 

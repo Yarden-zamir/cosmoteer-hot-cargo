@@ -38,7 +38,7 @@ public sealed class RunModesTunables
 
     /// <summary>
     /// Spec 686, prototype: hunters get one more tier for each vanilla fame title tier above the system tier, up to FameTierCap.
-    /// Off by default. SPEC.md section 30 has the measured effect.
+    /// Off by default. spec/34-run-modes.md has the measured effect.
     /// </summary>
     [Serialize(Optional = true)] public bool FameTitleTiers;
     /// <summary>Spec 686: most extra hunter tiers that the fame title gives.</summary>
