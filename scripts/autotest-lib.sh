@@ -14,8 +14,13 @@ STATE_DIR="${HOT_CARGO_STATE:-$(cd "$REPO_ROOT/.." && pwd)/.state}"
 LOG_DIR="${HOT_CARGO_LOG_DIR:-$STATE_DIR/logs/$(basename "$REPO_ROOT")}"
 mkdir -p "$LOG_DIR"
 
-# True when a lock folder's owner process is gone. A lock with no pid yet (being created) or an empty pid is not stale.
-lock_is_stale() { local pid; pid="$(cat "$1/pid" 2>/dev/null)"; [[ -n "$pid" ]] && ! kill -0 "$pid" 2>/dev/null; }
+# True when a lock folder's owner process is gone. A lock with no pid yet is being created, so it is stale only when it
+# is older than 60 s (its owner died between mkdir and the pid write; otherwise it would block a slot forever).
+lock_is_stale() {
+  local pid; pid="$(cat "$1/pid" 2>/dev/null)"
+  if [[ -n "$pid" ]]; then ! kill -0 "$pid" 2>/dev/null; return; fi
+  [[ -d "$1" ]] && (( $(date +%s) - $(stat -f %m "$1" 2>/dev/null || echo 0) > 60 ))
+}
 # Writes this shell's pid into a lock folder in one rename, so a reader never sees an empty pid file.
 lock_write_pid() { echo $$ > "$1/pid.tmp" && mv -f "$1/pid.tmp" "$1/pid"; }
 
@@ -183,5 +188,5 @@ log_passed() {
 # Prints the lines of a log file that explain a failure, with a little context.
 failure_lines() {
   grep -n -B2 -A4 -E 'AUTOTEST FAIL| ERROR |Exception|MP DESYNC|MPSTATE MISMATCH' "$1" | head -60 || true
-  grep -q 'AUTOTEST DONE' "$1" || echo "(no AUTOTEST DONE: the game exited early, timed out, or the PC link failed)"
+  grep -q 'AUTOTEST DONE' "$1" || { echo "(no AUTOTEST DONE: the game exited early, timed out, or the PC link failed; first log lines:)"; grep -v "^$" "$1" | head -6; }
 }

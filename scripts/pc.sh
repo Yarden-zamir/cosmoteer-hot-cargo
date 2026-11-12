@@ -15,11 +15,12 @@ if [[ -f "$LOCAL_CONFIG" ]]; then source "$LOCAL_CONFIG"; fi
 PC_MACHINE="${PC_MACHINE:?set PC_MACHINE in scripts/pc.local.sh (see the top of scripts/pc.sh)}"
 PC_GAME_DIR="${PC_GAME_DIR:-C:\\Program Files (x86)\\Steam\\steamapps\\common\\Cosmoteer}"
 SLOT="${SLOT:-main}"
-T3="${T3:-$HOME/.t3/bin/t3}"
+# Path of the t3 CLI. A specific name, so a variable of a script that sources pc.sh cannot shadow it.
+T3_CLI="${T3_CLI:-$HOME/.t3/bin/t3}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SHARED_GAME="$REPO_ROOT/../.game"
 
-pc() { "$T3" machine exec "$PC_MACHINE" -- "$@"; }
+pc() { "$T3_CLI" machine exec "$PC_MACHINE" -- "$@"; }
 
 # The player hold: while <container>/.state/player-hold exists, the main slot belongs to the player.
 # Then nothing may start or stop a game in slot main, even when it looks closed (the player can be between two sessions).
@@ -38,9 +39,10 @@ refuse_if_player_hold() {
 #   $root     save folder of the selected slot
 #   $mods     Mods folder of the selected slot
 #   $modDir   hot_cargo folder in $mods
-#   $pidFile  file with the process id of the slot's game, for slots other than main
-# Get-SlotProcess for main counts every game that was not started with --headless (every test slot uses it).
-# It does not use the test slots' pid files: Windows reuses process ids, so a stale pid file can match the player's game.
+#   $pidFile  file with the process id of the slot's game, for slots other than main (information only)
+# Get-SlotProcess finds games by their command line, never by a pid file: Windows reuses process ids, so a stale pid
+# file can name the player's game (a stop of a test slot then kills it). main: every game without --headless.
+# A test slot: games with --headless and this slot's --rootsavepath folder (the closing quote keeps t1 apart from t10).
 #   $slotArgs extra game arguments for the slot
 PS_PATHS='$game="'"$PC_GAME_DIR"'"; $slot="'"$SLOT"'";
 $mainRoot = Get-ChildItem "$env:USERPROFILE\Saved Games\Cosmoteer" -Directory | Where-Object { Test-Path (Join-Path $_.FullName "Mods") } | Select-Object -First 1 -ExpandProperty FullName
@@ -49,7 +51,7 @@ $mainMods = Join-Path $mainRoot "Mods"
 if ($slot -eq "main") { $root = $mainRoot; $slotArgs = @() }
 else { $root = Join-Path $env:USERPROFILE "HotCargoSlots\$slot"; $slotArgs = @("--headless", "--nosteam", "--cores", "2", "--rootsavepath", "`"$root`"", "--rootcachepath", "`"$root\Caches`"") }
 $mods = Join-Path $root "Mods"; $modDir = Join-Path $mods "hot_cargo"; $pidFile = Join-Path $root "hot_cargo.pid";
-function Get-SlotProcess { if ($slot -eq "main") { $testPids = @(Get-CimInstance Win32_Process -Filter ("Name = " + [char]39 + "Cosmoteer.exe" + [char]39) | Where-Object { $_.CommandLine -like "*--headless*" } | ForEach-Object { [int]$_.ProcessId }); Get-Process Cosmoteer -ErrorAction SilentlyContinue | Where-Object { $testPids -notcontains $_.Id } } elseif (Test-Path $pidFile) { Get-Process -Id ([int](Get-Content $pidFile)) -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -eq "Cosmoteer" } } }
+function Get-SlotProcess { if ($slot -eq "main") { $testPids = @(Get-CimInstance Win32_Process -Filter ("Name = " + [char]39 + "Cosmoteer.exe" + [char]39) | Where-Object { $_.CommandLine -like "*--headless*" } | ForEach-Object { [int]$_.ProcessId }); Get-Process Cosmoteer -ErrorAction SilentlyContinue | Where-Object { $testPids -notcontains $_.Id } } else { $mark = "HotCargoSlots\" + $slot + [char]34; Get-CimInstance Win32_Process -Filter ("Name = " + [char]39 + "Cosmoteer.exe" + [char]39) | Where-Object { $_.CommandLine -like "*--headless*" -and $_.CommandLine -like "*$mark*" } | ForEach-Object { Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue } } }
 '
 
 # PowerShell snippet that starts the slot's game (needs PS_PATHS before it). run.sh and deploy.sh (autotest mode) use it.
