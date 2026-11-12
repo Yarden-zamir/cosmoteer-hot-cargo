@@ -14,7 +14,6 @@ HotCargoUx
 
 	// Stage alerts: one line for each stage name in Heat.Stages
 	StageWarning = "Corporate scouts found your trail."
-	StagePatrol = "A corporate patrol closes in."
 	StageHunt = "Hunters are here for the tech."
 	StageStrike = "Strike force inbound. Jump out!"
 	StageGeneric = "More corporate ships inbound."

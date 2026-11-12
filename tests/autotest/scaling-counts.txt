@@ -14,7 +14,9 @@ expect fleetships == 2
 expect fleettargets == 2
 scalebounty single
 expect fleetships == 1
-spawnstage Patrol
+# Two ships of the sector tier: the Warning response of the last sector.
+stageset Warning EarlyScale 1
+spawnstage Warning
 wait 1
 expect hunters == 2
 ev_spawn TollGuards
@@ -29,7 +31,7 @@ expect fleettargets == 3
 scalebounty single
 expect fleetships == 1
 expect fleettargets == 1
-spawnstage Patrol
+spawnstage Warning
 wait 1
 expect hunters == 5
 # 3 players: 2x.
@@ -40,7 +42,7 @@ expect fleetships == 4
 expect fleettargets == 4
 scalebounty single
 expect fleetships == 1
-spawnstage Patrol
+spawnstage Warning
 wait 1
 expect hunters == 9
 ev_spawn TollGuards

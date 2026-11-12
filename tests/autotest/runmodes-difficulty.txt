@@ -28,7 +28,9 @@ expect rm_rategap < 0.02
 rm_feecheck
 # Each fee rounds to 500, so the sum can drift a few percent.
 expect rm_feegap < 0.1
-spawnstage Patrol
+# Two ships of the sector tier: the Warning response of the last sector.
+stageset Warning EarlyScale 1
+spawnstage Warning
 wait 2
-rm_expect_stage Patrol
+rm_expect_stage Warning
 quit

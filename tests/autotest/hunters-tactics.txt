@@ -17,7 +17,7 @@ heat 100
 wait 1
 hunters start
 expect hunters == 5
-expect stages == 4
+expect stages == stagecount
 wait 45
 hunters engaged
 expect tactic_hunt > 0

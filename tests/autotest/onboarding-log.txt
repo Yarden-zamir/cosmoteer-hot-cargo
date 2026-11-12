@@ -15,7 +15,7 @@ expect runlog_sector == 2
 ev_tostation
 tostation
 # A heat stage.
-heat 30
+stage
 wait 2
 expect runlog_stage == 1
 # Vault damage that destroys tech: 60 % passes the half-health step (spec 442).

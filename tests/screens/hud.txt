@@ -28,15 +28,15 @@ wait 1
 uxpick 1
 wait 1
 # Stage start: heat panel strip, chat line, hunter center text.
-heat 27
+stage
 wait 1.5
 screenshot hud-07-heat-warning
 wait 6
-heat 50
+stage
 wait 1.5
 screenshot hud-08-heat-hunt
 wait 6
-heat 25
+stage
 wait 1.5
 screenshot hud-09-heat-strike
 # Ship alerts: damage ping, low supply, hull. Godmode would heal the damage at once.

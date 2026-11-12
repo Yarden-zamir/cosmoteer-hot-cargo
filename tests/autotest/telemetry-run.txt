@@ -5,7 +5,7 @@
 newgame run
 wait 8
 shieldplayers on
-# System 1: the Start event, a contract, a sale, an escort, mission fame and heat up to Patrol.
+# System 1: the Start event, a contract, a sale, an escort, mission fame and heat up to Warning.
 choose 1
 hc_generate all
 wait 3
