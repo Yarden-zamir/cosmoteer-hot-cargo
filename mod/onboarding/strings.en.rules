@@ -8,15 +8,15 @@ HotCargoCodex
 		Goal = "You stole corporate <fame_color>tech</fame_color>. Sell it to the <good>Buyer</good> in the last sector. The first delivery wins the run."
 		Sectors = "Each jump to a <b>new</b> system is one sector. The heat panel shows where you are. Danger rises with every sector."
 		Score = "Score = money + tech you still hold × the Buyer price. The Buyer pays far more than a station."
-		Loss = "If the last unit of tech is gone, the corporation wins. The run ends."
+		Loss = "If the last unit of tech is gone, a <bad>loss timer</bad> starts. Get tech back before it ends, or the corporation wins."
 	}
 
 	Vault
 	{
 		Title = "Hot Cargo: The Tech Vault"
-		Store = "Tech sits only in a <fame_color>Tech Vault</fame_color>. Damage to the vault <bad>destroys tech</bad> inside it, one unit per slice of health."
+		Store = "Tech sits only in a <fame_color>Tech Vault</fame_color>. Damage to the vault <bad>destroys tech</bad> inside it, one unit at half health. Each vault holds 2."
 		Repair = "Repairs fix the vault, not the tech. Lost tech is gone."
-		Spread = "Spread the risk: build a vault on a second ship and let the crew carry tech over."
+		Spread = "Spread the risk: each vault is one tile. Build more, spread them through the hull or onto a second ship, and let the crew carry tech over."
 		Target = "Hunters go for ships with a vault. Bury it deep in the hull, behind armor."
 	}
 
@@ -130,7 +130,7 @@ HotCargoCodex
 	{
 		Title = "Hot Cargo: Co-op"
 		Scale = "More players, more enemies. The host sets the extra ships per player on the new career screen."
-		Tech = "Each player starts with a vault and a share of the tech. The loss counts the whole fleet."
+		Tech = "Each player starts with vaults and a share of the tech. The loss counts the whole fleet."
 		Fees = "The player who accepts a contract pays its fee and gets its extra pay."
 		Host = "Only the host changes the Hot Cargo settings."
 	}

@@ -1,4 +1,4 @@
-// Tech Vault (spec 14, 15). A copy of the vanilla 2x2 storage bay with a tint and a single-type grid for Stolen Tech.
+// Tech Vault (spec 14, 15, 440). One tile: the vanilla 2x2 storage bay art at 1x1 scale, with a tint and a single-type grid for Stolen Tech.
 // The copy is on purpose: inheriting storage_2x2 would merge its FlexResourceGrid, which accepts any resource.
 Part : <./Data/ships/terran/base_part_terran.rules>/Part
 {
@@ -11,12 +11,12 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 	SelectionTypeID = "yarden_zamir.tech_vault"
 	Resources
 	[
-		[steel, 96]
+		[steel, 24]
 	]
-	Size = [2, 2]
+	Size = [1, 1]
 	IsRotateable = false
-	// Three times the vanilla storage bay. Spec 65: each 11% of this in damage destroys one unit.
-	MaxHealth = 12000
+	// Three times a vanilla storage tile (the 2x2 bay has 4,000 for 4 tiles), below 1x1 armor (4,000). Spec 65: each half of this in damage destroys one unit.
+	MaxHealth = 3000
 	TypeCategories = [storage]
 	ReceivableBuffs : ^/0/ReceivableBuffs []
 	IgnoreRotationForMirroredSelection = true
@@ -38,12 +38,12 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 			Type = CommandToggle
 		}
 
-		// 4 tiles x MaxStackSize 2 = 8 units. The grid covers the whole part, like the vanilla storage bay.
+		// 1 tile x MaxStackSize 2 = 2 units.
 		Storage
 		{
 			Type = TypedResourceGrid
 			ResourceType = yarden_zamir.stolen_tech
-			GridRect = [0, 0, 2, 2]
+			GridRect = [0, 0, 1, 1]
 			Layer = "doodads_low"
 			SpriteInset = 8/64
 			// The part cost counts InitToMaxResources x BuyPrice, and a new ship spawns filled to it. Tech comes only from the run start.
@@ -63,7 +63,7 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 		Graphics
 		{
 			Type = Graphics
-			Location = [1, 1]
+			Location = [0.5, 0.5]
 			OperationalToggle = IsOperational
 			Floor
 			{
@@ -72,17 +72,17 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 				[
 					{
 						File = "./Data/ships/terran/storage_2x2/floor.png"
-						Size = [2, 2]
+						Size = [1, 1]
 						VertexColor = &~/Part/TINT
 					}
 					{
 						File = "./Data/ships/terran/storage_2x2/floor_33.png"
-						Size = [2, 2]
+						Size = [1, 1]
 						VertexColor = &~/Part/TINT
 					}
 					{
 						File = "./Data/ships/terran/storage_2x2/floor_66.png"
-						Size = [2, 2]
+						Size = [1, 1]
 						VertexColor = &~/Part/TINT
 					}
 				]
@@ -93,8 +93,8 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 				DamageLevels
 				[
 					{
-						File = "./Data/ships/terran/darkness/darkness2x2.png"
-						Size = [2, 2]
+						File = "./Data/ships/terran/darkness/darkness1x1.png"
+						Size = [1, 1]
 						VertexColor = &~/Part/TINT
 					}
 				]
@@ -106,17 +106,17 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 				[
 					{
 						File = "./Data/ships/terran/storage_2x2/walls.png"
-						Size = [2, 2]
+						Size = [1, 1]
 						VertexColor = &~/Part/TINT
 					}
 					{
 						File = "./Data/ships/terran/storage_2x2/walls_33.png"
-						Size = [2, 2]
+						Size = [1, 1]
 						VertexColor = &~/Part/TINT
 					}
 					{
 						File = "./Data/ships/terran/storage_2x2/walls_66.png"
-						Size = [2, 2]
+						Size = [1, 1]
 						VertexColor = &~/Part/TINT
 					}
 				]
@@ -131,7 +131,7 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 		RoofDoorSprite
 		{
 			Type = OpenCloseSprite
-			Location = [1, 1]
+			Location = [0.5, 0.5]
 			OperationalToggle = RoofDoorOpenToggle
 			Layer = "roofs"
 			OpenDamageLevels
@@ -155,7 +155,7 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 						"./Data/ships/terran/storage_2x2/roof_normals5.png"
 						"./Data/ships/terran/storage_2x2/roof_normals6.png"
 					]
-					Size = [2, 2]
+					Size = [1, 1]
 					VertexColor = &~/Part/TINT
 					AnimationInterval = 0.06
 					AnimationStartTime = MinValue
@@ -180,7 +180,7 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 						"./Data/ships/terran/storage_2x2/roof_normals5_33.png"
 						"./Data/ships/terran/storage_2x2/roof_normals6_33.png"
 					]
-					Size = [2, 2]
+					Size = [1, 1]
 					VertexColor = &~/Part/TINT
 					AnimationInterval = 0.06
 					AnimationStartTime = MinValue
@@ -205,7 +205,7 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 						"./Data/ships/terran/storage_2x2/roof_normals5_66.png"
 						"./Data/ships/terran/storage_2x2/roof_normals6_66.png"
 					]
-					Size = [2, 2]
+					Size = [1, 1]
 					VertexColor = &~/Part/TINT
 					AnimationInterval = 0.06
 					AnimationStartTime = MinValue
@@ -233,7 +233,7 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 						"./Data/ships/terran/storage_2x2/roof_normals2.png"
 						"./Data/ships/terran/storage_2x2/roof_normals1.png"
 					]
-					Size = [2, 2]
+					Size = [1, 1]
 					VertexColor = &~/Part/TINT
 					AnimationInterval = 0.06
 					AnimationStartTime = MinValue
@@ -258,7 +258,7 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 						"./Data/ships/terran/storage_2x2/roof_normals2_33.png"
 						"./Data/ships/terran/storage_2x2/roof_normals1_33.png"
 					]
-					Size = [2, 2]
+					Size = [1, 1]
 					VertexColor = &~/Part/TINT
 					AnimationInterval = 0.06
 					AnimationStartTime = MinValue
@@ -283,7 +283,7 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 						"./Data/ships/terran/storage_2x2/roof_normals2_66.png"
 						"./Data/ships/terran/storage_2x2/roof_normals1_66.png"
 					]
-					Size = [2, 2]
+					Size = [1, 1]
 					VertexColor = &~/Part/TINT
 					AnimationInterval = 0.06
 					AnimationStartTime = MinValue
@@ -297,14 +297,14 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 		{
 			Type = DeathEffects
 			MediaEffects = &/COMMON_EFFECTS/MedPartDestroyedDry
-			Location = [1, 1]
+			Location = [0.5, 0.5]
 		}
 
 		Blueprints
 		{
 			Type = BlueprintSprite
 			File = "./Data/ships/terran/storage_2x2/blueprints.png"
-			Size = [2, 2]
+			Size = [1, 1]
 		}
 	}
 

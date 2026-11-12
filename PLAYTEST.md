@@ -16,16 +16,18 @@ Mission checks are in [tests/playtest/missions.md](tests/playtest/missions.md).
 
 ## Tech
 
-1. Look at the starting ship. Check that a tinted 2×2 Tech Vault replaces one storage bay, and that its 4 tiles show 2 units each (8 units).
-2. Start a career with the Model-M starter ship. Check that the vault is outside the hull with a door, and that crew can walk to it.
+1. Look at the starting ship. Check that 4 tinted 1×1 Tech Vaults replace one storage bay, and that each vault shows 2 units (8 units).
+2. Start a career with the Model-M starter ship. Check that 4 vaults replace 4 tiles of a 3×2 storage bay, with a corridor walkway between them, and that crew can walk to each vault.
 3. Open the build menu, Storage group. Check that "Tech Vault" is there with its name, description and tinted icon.
 4. Dock at a trade station and open the trade window. Check that "Stolen Tech" shows the overlay tech value as its sell price.
 5. Sell 1 unit through the trade window. Check that the money rises by the shown price and the overlay tech count drops by 1.
 6. In the trade window, check that the station offers the sold unit back at 1.5 × the sell price.
 7. Try to move tech into a normal storage bay with the transfer window. Check that the game refuses it.
-8. Let an enemy shoot the vault. Check that the stacks shrink as it takes damage, and that repair does not bring them back.
-9. Sell the last unit. Check that the loss dialog "The corporation recovered the tech." shows about 3 seconds after the delivery.
+8. Let an enemy shoot a vault. Check that it loses 1 unit at half health and the other when it is destroyed, that other vaults keep their tech, and that repair does not bring units back.
+9. Sell the last unit. Check that a toast says "No tech left!", and that the heat panel shows "NO TECH, run lost in 3:00" and counts down. Wait it out. Check that the loss dialog "The corporation recovered the tech." shows at 0:00.
 10. Press F11 and Shift+F11. Check that the overlay tech count goes up and down by 1.
+11. Remove all tech with Shift+F11, then press F11 before the countdown ends. Check that the NO TECH line goes away and the run goes on.
+12. Zoom out to the map view. Check that your ship blip shows "TECH 8". Deconstruct a full vault. Check that each crate in space shows the tech icon and "TECH", also as an arrow at the screen edge, and that the collect tool brings the crates back into a vault.
 
 ## Economy and contracts (spec 19, 100-108)
 
@@ -56,7 +58,7 @@ Each hunter uses only the tactics of its personality (spec 361). To see every ta
 9. Fall back: shoot a hunter to about a third of its value. Does it turn and run, then sit still and repair? Does it come back? Is the 45 s limit too long?
 10. Bait (Strike): does one small ship dive in alone and then run back to the group? Is it clear enough that chasing it is a trap?
 11. Save during a fight with hunters, load, and check that the fight continues the same way.
-12. With the Tech area merged: hunters prefer the ship with the Tech Vault (`VaultTargetFactor`). Put the vault on a second ship and check that hunters switch to it.
+12. With the Tech area merged: hunters prefer a ship with Tech Vaults (`VaultTargetFactor`). Move all vaults to a second ship and check that hunters switch to it.
 
 ## Strike waves and enemy AI (spec 190-202)
 
