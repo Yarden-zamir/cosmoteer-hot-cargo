@@ -57,7 +57,9 @@ selectparts
 wait 1
 screenshot hud-14-parts
 select
-# Station badges, trade tab, fame tooltip, map tooltips.
+# Station badges, trade tab, fame tooltip, map tooltips. At high heat stations refuse to trade, so heat goes back down first.
+heat -90
+wait 1
 tostation
 wait 2
 tipshow station

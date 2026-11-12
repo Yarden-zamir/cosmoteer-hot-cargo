@@ -62,16 +62,21 @@ public static class UxKit
         catch (Exception ex) { Errors.Report("ux center text", ex.Message, ex); }
     }
 
+    /// <summary>Center texts on screen now. A new one goes below them, so two alerts at once do not draw over each other.</summary>
+    static readonly List<Label> CenterTexts = [];
+
     static async Task ShowCenterText(GameRoot game, string xml)
     {
         var root = game.Gui.RootWidget;
         float w = Math.Min(1100f, root.ScreenRect.Width - 80f);
+        CenterTexts.RemoveAll(l => l.Root != game.Gui);
+        float y = 100f + CenterTexts.Sum(l => l.ScreenRect.Height + 8f);
         var lbl = new Label
         {
             AnchorRect = AnchorPresets.TopCenter,
             Left = -w / 2f,
             Right = w / 2f,
-            Y = 100f,
+            Y = y,
             Text = xml,
             InputBlockMode = InputBlockMode.Never,
         };
@@ -84,10 +89,18 @@ public static class UxKit
         lbl.TextRenderer.Clip = false;
         lbl.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
         root.AddChild(lbl);
-        await lbl.FadeIn(1f);
-        await App.Clock.UntilElapsed(2f);
-        await lbl.FadeOut(1f);
-        root.Children.Remove(lbl);
+        CenterTexts.Add(lbl);
+        try
+        {
+            await lbl.FadeIn(1f);
+            await App.Clock.UntilElapsed(2f);
+            await lbl.FadeOut(1f);
+        }
+        finally
+        {
+            CenterTexts.Remove(lbl);
+            root.Children.Remove(lbl);
+        }
     }
 
     /// <summary>Runs a UI patch body. A failure logs once, shows in the overlay, and the vanilla UI stays.</summary>
