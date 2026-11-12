@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run a screenshot script (tests/screens/<name>.txt) in the player's game (slot main) and copy the PNGs to this Mac.
 # Usage: screens.sh <script> <out-dir> [timeout-seconds, default 300]
-# Only the main slot has graphics. The script stops a running main-slot game, deploys this worktree,
+# Only the main slot has graphics. The script refuses while the player's game runs, deploys this worktree,
 # starts the game minimized, waits until the script quits the game, prints the log lines and copies the screenshots.
 # The lock /tmp/hot_cargo_main_slot.lock makes main-slot users on this Mac take turns.
 set -euo pipefail
@@ -18,10 +18,16 @@ until mkdir "$LOCK" 2>/dev/null; do
   sleep 15
 done
 echo $$ > "$LOCK/pid"
-trap '"$LIB_DIR/stop.sh" >/dev/null 2>&1 || true; rm -rf "$LOCK"' EXIT
+trap 'rm -rf "$LOCK"' EXIT
 
 source "$LIB_DIR/pc.sh"
-"$LIB_DIR/stop.sh" >/dev/null </dev/null
+# Never touch the player's game: when it runs (or the PC call fails), stop here. Retry when the player closes it.
+if ! STATE="$(pc "$PS_PATHS"'if (Get-SlotProcess) { "running" } else { "closed" }' </dev/null 2>&1)" || [[ "$STATE" != *closed* ]]; then
+  echo "screens: the player's game is running (or the PC did not answer); no screenshots taken" >&2
+  exit 2
+fi
+# From here the game in the main slot is ours, so stop it on exit.
+trap '"$LIB_DIR/stop.sh" >/dev/null 2>&1 || true; rm -rf "$LOCK"' EXIT
 "$LIB_DIR/mod-toggle.sh" on </dev/null | tail -1
 pc "$PS_PATHS"'$d = Join-Path $modDir "screenshots"; if (Test-Path $d) { Remove-Item $d -Recurse -Force }' </dev/null
 start_slot main < "$SCRIPT"
