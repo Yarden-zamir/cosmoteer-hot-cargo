@@ -1,18 +1,13 @@
-# Telemetry: a longer scripted run that makes data for a first report (tools/telemetry). It visits five systems,
-# takes missions and contracts, raises heat through the stages, fights hunters, sells tech, reloads and ends with a win.
-# The test commands stand in for the player: heat and fame steps for missions, damagehunters for won fights.
-# The checks are on the telemetry; the game areas have their own tests.
+# Telemetry: a short scripted run that makes data for a report (tools/telemetry) and checks that each event kind shows.
+# Three systems: the Start event, a contract, an escort, a sale, heat stages with hunters, won fights, a vault hit, an event,
+# a save and a load, and a win at the Buyer. It checks telemetry coverage, not balance, so the player's ships cannot be hurt
+# (shieldplayers) and damagehostiles stands in for won fights.
 newgame run
 wait 8
 pu_set Enabled false
-godmode
-tacticlog on
-# The starter ship cannot outlast every stage of five systems (crew die in fires, which godmode does not stop).
-# One live hunter and frequent won fights keep it alive; a balance analysis must leave both out.
-maxhunters 1
-# System 1 (tier 1): the Start event, a contract, an escort, a sale, then time heat and a Warning scout.
+shieldplayers on
+# System 1: the Start event, a contract, a sale, an escort, mission fame and heat up to Patrol.
 choose 1
-wait 2
 hc_generate all
 wait 3
 contract_money 200000
@@ -21,105 +16,76 @@ contract_accept
 tostation
 wait 3
 tech sell 1
-wait 30
+wait 25
 hc_accept escort
 hc_escort_goto
 pause off
 wait 5
 hc_escort_arrive
-wait 3
-damagehostiles 0.05
 fame 15
-heat 10
-wait 30
-damagehostiles 0.05
-wait 30
-log system1_warning
+heat 50
 wait 20
 damagehostiles 0.05
-wait 25
-log system1
-# System 2: a mission's worth of fame, Patrol, a vault hit and an event.
+wait 15
+# System 2: a vault hit, an event, a save and a load, Hunt.
 jump
-# A jump out of a fight waits until the ships may leave (factions), so wait for the arrival.
 waitfor sector >= 2 120
 pause off
-wait 15
-fame 15
-heat 25
-wait 20
-damagehostiles 0.05
-wait 25
-damagehostiles 0.05
-wait 25
+wait 5
+shieldplayers off
 vault damage 0.5
-wait 3
+shieldplayers on
 event distress_beacon
 choose 1
-wait 5
-log system2
-# System 3 (tier 4): Patrol, a save and a load in the middle of the visit.
+heat 75
+wait 15
+damagehostiles 0.05
+save telerun
+load telerun
+pause off
+wait 15
+# System 3: the Buyer and the win.
 jump
-# A jump out of a fight waits until the ships may leave (factions), so wait for the arrival.
 waitfor sector >= 3 120
 pause off
 wait 5
-damagehostiles 0.05
-heat 40
-wait 10
-damagehostiles 0.05
-wait 10
-damagehostiles 0.05
-wait 10
-damagehostiles 0.05
-wait 10
-save telerun
-wait 3
-load telerun
-pause off
-wait 10
-damagehostiles 0.05
-wait 10
-damagehostiles 0.05
-wait 10
-log system3
-# System 4 (tier 7): a starter ship does not outlast a tier 7 Hunt, so it leaves at Patrol. A supernova system can have no station in reach, so no sale here.
-jump
-# A jump out of a fight waits until the ships may leave (factions), so wait for the arrival.
-waitfor sector >= 4 120
-pause off
-wait 5
-damagehostiles 0.05
-wait 20
-heat 25
-wait 15
-damagehostiles 0.05
-wait 15
-log system4
-# System 5: the Buyer and the win.
-jump
-# A jump out of a fight waits until the ships may leave (factions), so wait for the arrival.
-waitfor sector >= 5 120
-pause off
-wait 20
 buyer spawn
 wait 3
 buyer goto
-wait 15
+wait 10
 buyer goto
 wait 3
 buyer sell 2
-wait 45
-expect won == 1
-log won
-wait 15
+waitfor won == 1 90
+wait 12
 teleflush
-telecount system.enter >= 4
-telecount heat.stage >= 3
-telecount combat.spawn >= 3
-telecount econ.trade >= 2
-telecount mission.accepted >= 2
+telecount system.enter >= 2
+telecount run.jump >= 2
+telecount run.loaded == 1
+telecount run.save >= 1
 telecount run.won == 1
+telecount heat.stage >= 3
+telecount heat.accrual >= 3
+telecount tech.count >= 3
+telecount tech.vault_hit >= 1
+telecount tech.value >= 1
+telecount econ.money >= 3
+telecount econ.fame >= 1
+telecount econ.trade >= 2
+telecount mission.offered >= 10
+telecount mission.accepted >= 2
+telecount event.shown >= 2
+telecount event.choice >= 2
+telecount event.result >= 1
+telecount chain.start >= 1
+telecount combat.census >= 2
+telecount combat.spawn >= 3
+telecount combat.damage >= 1
+telecount ai.switch >= 1
+telecount snap >= 4
+telecount perf >= 5
+telecount trace >= 5
+telecount log >= 20
 telestats
 expect tele_dropped == 0
 expect tele_overhead_pct < 1

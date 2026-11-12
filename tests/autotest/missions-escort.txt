@@ -17,10 +17,9 @@ wait 5
 expect hc_escort_steering == 1
 hc_mark
 hc_escort_diag before_flight
-wait 15
+# The freighter type is random, and a slow one can take a while to turn and speed up. Wait for progress instead of a fixed time.
+waitfor hc_escort_progress > 50 45
 hc_escort_diag after_flight
-# The freighter type is random. The slowest civilian freighters (Barrel's Bottom) make about 75 in 15 s, faster ones about 110.
-expect hc_escort_progress > 50
 expect hc_escort_done == 0
 hc_escort_arrive
 wait 3

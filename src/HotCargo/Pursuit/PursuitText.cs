@@ -20,11 +20,8 @@ static class PursuitText
     /// <summary>Local chat line. UI only, safe in the sim tick on every machine.</summary>
     public static void Chat(Run run, string xml) => Ux.UxKit.ChatLine(run.Game, xml);
 
-    /// <summary>
-    /// A big text in the middle of the screen. UI only.
-    /// Limit: uses the vanilla area name banner, because UxKit.CenterText is not on main yet; switch to it when it lands.
-    /// </summary>
-    public static void Center(Run run, string xml) => run.Game.Gui.ShowAreaName(xml);
+    /// <summary>A big text in the middle of the screen. UI only.</summary>
+    public static void Center(Run run, string xml) => Ux.UxKit.CenterText(run.Game, xml);
 }
 
 /// <summary>Ships that jump out: the FTL effect now, removal at its end. Saved in the run state, so a save in between keeps it.</summary>

@@ -162,6 +162,6 @@ public static class HunterGrab
     static void Tell(Run run, string text, bool toast) => Run.OnNextFrame(() =>
     {
         Ux.UxKit.ChatLine(run.Game, text);
-        if (toast) run.Game.Gui.ShowAreaName(text);
+        if (toast) Ux.UxKit.CenterText(run.Game, text);
     });
 }

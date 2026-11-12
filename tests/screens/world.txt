@@ -1,0 +1,71 @@
+# Visual pass, part 3: hunter tells, sector arrival lines, heat zone and current HUD, the Buyer.
+# Main slot only (needs graphics): scripts/screens.sh tests/screens/world.txt <out-dir>
+render on
+newgame run
+wait 8
+pu_set Enabled false
+closepanel
+wait 1
+uxpick 3
+wait 1
+uxpick 1
+ev_set Enabled false
+godmode on
+pause off
+# Hunter tells on screen: a calling ship, then a fleeing ship.
+aiset CallSeconds 60
+aiset FleeJumpSeconds 30
+aiset RegroupEnabled false
+spawnstage Strike
+wait 8
+hunternear 0 350
+wait 5
+screenshot world-01-hunter-calling
+killhunter 0
+aiset CallEnabled false
+aiset FleeChance 1
+spawnstage Strike
+wait 8
+hunternear 0 350
+damagehunter 0 0.2
+wait 3
+screenshot world-02-hunter-flee
+# Sector types: the arrival line, the current HUD, the heat zone HUD line.
+worlds jumpto hc_trade_hub
+wait 1
+screenshot world-03-arrival-hub
+worlds goto current
+wait 2
+screenshot world-04-current
+worlds jumpto hc_solar_zone
+wait 1
+screenshot world-05-arrival-solar
+worlds goto sun 0.3
+wait 2
+screenshot world-06-heat-zone
+worlds goto outside
+worlds jumpto hc_deep_space
+wait 1
+screenshot world-07-arrival-deep
+map on
+wait 3
+tipshow mapcur
+wait 1
+screenshot world-08-map-tip-deep
+tipclear
+map off
+# The Buyer: tag on its blip, the arrival text, the trade tab line.
+buyer spawn
+wait 3
+screenshot world-09-buyer-far
+buyer goto
+wait 15
+buyer goto
+wait 3
+screenshot world-10-buyer-near
+# Ship loss alert (last: the run ends without a ship).
+godmode off
+kill
+wait 1.5
+screenshot world-11-ship-lost
+quit

@@ -50,7 +50,10 @@ public sealed class ContractsTunables
 [ReflectiveSerialization(Explicit = true)]
 public sealed class MetatypeTerms
 {
+    /// <summary>The vanilla mission type ID, for example PirateBaseDestruction.</summary>
     [Serialize] public string Metatype = "";
+    /// <summary>Heat added when a player accepts a mission of this type.</summary>
     [Serialize(Optional = true)] public float FlatHeat;
+    /// <summary>How many open contracts one mission of this type counts as for the trail.</summary>
     [Serialize(Optional = true)] public float TrailWeight = 1f;
 }

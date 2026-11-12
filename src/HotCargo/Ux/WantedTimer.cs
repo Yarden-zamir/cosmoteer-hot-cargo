@@ -49,8 +49,13 @@ static class WantedTimer
         static void Postfix(WantedLabel __instance)
         {
             if (!Lines.TryGetValue(__instance, out var line)) return;
-            line.SelfActive = __instance.SelfActive && UxKit.On(s => s.WantedTimer);
-            if (line.SelfActive) UxKit.Guard("wanted timer", () => line.Text = Text(__instance._mode));
+            UxKit.Guard("wanted timer", () =>
+            {
+                // A hail shows its "HAILED BY" widget right under the WANTED label, so the line steps aside while one is up.
+                bool hail = __instance._mode.Game.Gui.RootWidget.Children.OfType<Cosmoteer.Modes.Career.Comms.CommsCallWidget>().Any(w => w.SelfActive);
+                line.SelfActive = __instance.SelfActive && !hail && UxKit.On(s => s.WantedTimer);
+                if (line.SelfActive) line.Text = Text(__instance._mode);
+            });
         }
     }
 
