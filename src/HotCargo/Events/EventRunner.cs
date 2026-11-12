@@ -95,9 +95,12 @@ public static class EventRunner
         var s = State(run);
         if (s.Pending is not { Carrier: { } carrier } p) return;
         if (p.HailDue && EventHail.TryHail(sim, carrier)) p.HailDue = false;
-        if (EventHail.CarrierAlive(sim, carrier)) return;
+        bool alive = EventHail.CarrierAlive(sim, carrier);
+        // A station that starts to refuse calls (factions, spec 657) closes its page too, so the page never waits forever.
+        bool refuses = alive && sim.Ships[carrier] is { } ship && Factions.FactionsArea.Refuses(run, null, ship);
+        if (alive && !refuses) return;
         s.Pending = null;
-        s.LastResult = new EventResult { Serial = p.Serial, Title = EventLibrary.Get(p.EventId).Title, Text = Cosmoteer.Localization.Strings.GetText("HotCargoEvents/CarrierGone") };
+        s.LastResult = new EventResult { Serial = p.Serial, Title = EventLibrary.Get(p.EventId).Title, Text = Cosmoteer.Localization.Strings.GetText(refuses ? "HotCargoEvents/CarrierRefuses" : "HotCargoEvents/CarrierGone") };
         Log.Info($"event {p.EventId}: its carrier is gone, the page closes");
     }
 
@@ -127,8 +130,10 @@ public static class EventRunner
         if (s.StationRolled.Contains(node) && s.CourierNodes.Contains(node)) return;
         float r = run.T.Events.StationTriggerDistance;
         var ships = sim.Ships.HumanPlayerSignificantShips.ToList();
+        // A station that refuses calls (factions, spec 657) cannot carry a page, so it does not count.
         Ship? station = sim.Ships.FirstOrDefault(st => st.HasTag(TradeStationTag) && !st.HasTag(BuyerTag) && !st.IsJunk
-            && ships.Any(sh => sh.DetWorldBoundingCircle.DistanceTo(st.DetWorldBoundingCircle) <= r));
+            && ships.Any(sh => sh.DetWorldBoundingCircle.DistanceTo(st.DetWorldBoundingCircle) <= r)
+            && !Factions.FactionsArea.Refuses(run, null, st));
         if (station is null) return;
         if (s.CourierNodes.Add(node))
         {

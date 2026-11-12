@@ -9,15 +9,17 @@ namespace HotCargo.Events;
 /// <summary>
 /// Research offers (spec 760-762), built from the vanilla tech tree in the game data (CareerModeRules.Techs), so mods that add or
 /// reprice techs show up. Research value = what buying the tech costs here: Cost × the players' TechBuyCostFactor with the faction
-/// that controls the system (1 without one), the same price as a vanilla Tech Provider there. All inputs are sim state.
+/// that controls the system (1 without one) × the factions heat markup, the same price as a Tech Provider there. All inputs are sim state.
 /// </summary>
 public static class ResearchOffers
 {
     static TechManager Techs(Run run) => run.Mode.Techs;
 
     /// <summary>The vanilla price factor for techs in this system (CommTechsTab.GetTechCost uses the provider's faction).</summary>
+    /// The factions area's heat markup on station services (its CommTechsTab.GetTechCost patch) applies too.
     static float PriceFactor(Run run) =>
-        run.Game.Sim?.MapNode?.ControllingFaction is { } f ? run.Mode.GetCurrentReputationTitle(f).TechBuyCostFactor : 1f;
+        (run.Game.Sim?.MapNode?.ControllingFaction is { } f ? run.Mode.GetCurrentReputationTitle(f).TechBuyCostFactor : 1f)
+        * Factions.FactionsArea.Markup(run);
 
     static long Price(Run run, TechRules t) => (long)Math.Round(t.Cost * (double)PriceFactor(run));
 
