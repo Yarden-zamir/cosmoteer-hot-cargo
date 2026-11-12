@@ -37,6 +37,8 @@ public static class Mod
             TunablesMenu.TunablesMenuArea.Register();
             MultiChoice.MultiChoiceArea.Register();
             Diplomacy.DiplomacyArea.Register();
+            // After Hunters: its stage hooks read the ships that the Hunters area just spawned.
+            Pursuit.PursuitArea.Register();
             Telemetry.TelemetryArea.Register();
             // Last: its run log hooks run after the hooks of the other areas.
             Onboarding.OnboardingArea.Register();

@@ -7,6 +7,18 @@ namespace HotCargo.Hunters;
 /// <summary>Command helpers for hunter AI modules. Each one enqueues a new command only when the current one differs.</summary>
 public static class HunterOrders
 {
+    /// <summary>
+    /// Runs first in the hunter chase module (HcHunt) of each live hunter. True means another area gave the ship its orders this AI tick
+    /// (the Pursuit: a reporting scout or a blockade ship, spec 911 and 916) and the chase waits. AI tick: sim state only.
+    /// </summary>
+    public static Func<Ship, bool> Override = _ => false;
+
+    /// <summary>
+    /// A hunter in stasis moves to this point instead of the nearest human ship, when another area returns one (the Pursuit, spec 911).
+    /// Arguments: sim, the ship ID of the stasis spawner. Sim state only.
+    /// </summary>
+    public static Func<Cosmoteer.Simulation.SimRoot, Cosmoteer.Game.ObjectID, Vector2?> StasisGoal = (_, _) => null;
+
     /// <summary>Same command shape as AIAggroEnemiesModule.Attack.</summary>
     public static void Attack(Ship ship, Ship target)
     {

@@ -115,6 +115,9 @@ sealed class HeatPanel : LayoutBox
             RunResult.Won => $"<good>{UxKit.Format("StatusWonFmt", s.Score.ToString("N0"))}</good>",
             RunResult.Lost => $"<bad>{UxKit.Text("StatusLost")}</bad>",
             _ when !s.HeatEnabled => $"<gray>{UxKit.Text("StatusHeatOff")}</gray>",
+            // Spec 923: during an outage the panel turns blue, shows the time left and a heat rate of 0.
+            _ when Pursuit.Outage.Active(run) => Pursuit.PursuitText.Blue(Pursuit.PursuitText.Format("PanelOutageFmt", Pursuit.PursuitModel.Clock(Pursuit.Outage.SecondsLeft(run))))
+                + "\n" + StatusLine(s, t.Heat, 0f),
             _ => StatusLine(s, t.Heat, run.TimeHeatPerMinute(s.FleetTech) + Contracts.ContractBook.TrailPerMinute(run, Contracts.ContractBook.OpenWeight(run))),
         };
         long value = run.TechValue();
@@ -122,7 +125,10 @@ sealed class HeatPanel : LayoutBox
         string? contracts = Contracts.ContractsUi.HeatPanelLine(run);
         _contracts.SelfActive = contracts is not null;
         _contracts.Text = contracts ?? "";
-        _alert.SelfActive = now < _alertUntil;
+        // Spec 922: a blocked heat gain shows "+0" for a moment, unless a stage alert shows.
+        bool blockedFlash = now - Pursuit.Outage.LastBlockedShownAt < 2.5 && now >= _alertUntil;
+        if (blockedFlash) _alert.Text = Pursuit.PursuitText.Blue(Pursuit.PursuitText.Text("PanelBlocked"));
+        _alert.SelfActive = now < _alertUntil || blockedFlash;
         // Spec 60: in multiplayer the tunables hash stays visible, so players can compare it.
         _debug.SelfActive = t.Debug.DebugKeys || run.IsMultiplayer;
         if (_debug.SelfActive)
@@ -181,6 +187,7 @@ sealed class HeatPanel : LayoutBox
         gfx.Draw<Quad>(new Quad(r, new Color(0f, 0f, 0f, 0.55f) * colorScale));
 
         Color fill = s.StagesStarted == 0 ? Color.Lerp(Calm, Warm, f) : Color.Lerp(Warm, Hot, f);
+        if (Pursuit.Outage.Active(run)) fill = Pursuit.PursuitText.OutageColor;
         if (!s.HeatEnabled || s.Result != RunResult.Running) fill = new Color(0.5f, 0.5f, 0.5f);
         // Pulse when the next stage is close, and flash when a stage just started.
         bool close = s.StagesStarted < stages.Length && stages[s.StagesStarted].Heat - s.Heat <= run.T.Ux.StageWarnHeat;
