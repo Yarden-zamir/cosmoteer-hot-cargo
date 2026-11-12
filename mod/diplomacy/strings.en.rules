@@ -34,7 +34,7 @@ HotCargoDiplomacy
 	PunishBribeFmt = "A personal bribe for the captain. {0}"
 	PunishCrewFmt = "Hand crew over to cryo jail. {0}"
 	CrewFmt = "{0} crew"
-	PunishCombinedFmt = "<fame>Chance they let it go: {0}</fame>"
+	PunishCombinedFmt = "<fame_color>Chance they let it go: {0}</fame_color>"
 	PunishSubmit = "<i>\"Here's our offer.\"</i>"
 	PunishRefuse = "<i>\"You got the tech. That's all.\"</i>"
 	PunishYes = "<i>\"Fine. You never saw us.\"</i> The hunters leave. Heat drops."
