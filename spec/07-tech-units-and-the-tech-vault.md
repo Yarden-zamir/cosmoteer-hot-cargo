@@ -1,0 +1,9 @@
+## 7. Tech units and the Tech Vault
+
+13. Tech is a new resource: "Stolen Tech". It uses the normal resource systems: storage, crew carrying, transfer between ships, and trade.
+14. Only the Tech Vault part stores tech.
+15. The Tech Vault is a buildable part. Its rules define its size, health, cost and capacity. Defaults: 1×1, 3,000 health (3 × a vanilla storage tile, below 1×1 armor at 4,000), 8 steel (requirement 447), capacity 2 units (1 tile × stack size 2). Rules changes need a game restart. There are no vault tiers (requirement 440).
+16. To move tech between ships, the players build a vault on the other ship. The crew then carry the tech over, like any other resource. On one ship, the vanilla move resources tool moves tech between vaults.
+17. A new run starts with `StartingTechUnits` (default 8) in Tech Vaults on the starting ship: as many vaults as the units need (4 for 8 units). In co-op each player commands only their own ships, so the first ship of each player gets vaults for an equal share of the units (8 = 4 + 4 for two players, 2 vaults each). Requirement 441 gives the placement.
+65. Damage to a Tech Vault destroys tech inside it. Vault health has a step every `VaultDamagePerUnitLost` × its maximum health (default 0.5) below the maximum. Each time damage takes the health past a step, the vault loses one unit. A destroyed vault drops the units still inside it as tech crates in space, or with chance `VaultTechLossChance` destroys them (requirement 445). With the defaults a vault loses 1 of its 2 units at half health and drops the other when it is destroyed (requirement 442). Heat damage counts at `VaultSunHeatFactor` (requirement 448).
+66. Repair of a vault does not bring back lost tech. Damage after a repair crosses the steps again and costs tech again.

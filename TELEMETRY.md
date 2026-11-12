@@ -1,7 +1,7 @@
 # Telemetry
 
 Hot Cargo records each game session to a JSONL file, so test runs and playtests can be analyzed afterwards.
-Spec: SPEC.md section 36 (requirements 530 to 545). Code: `src/HotCargo/Telemetry/`. Analysis: `tools/telemetry/`.
+Spec: `spec/36-telemetry.md` (requirements 530 to 545). Code: `src/HotCargo/Telemetry/`. Analysis: `tools/telemetry/`.
 
 ## Files
 
@@ -131,7 +131,7 @@ Telemetry is not sim state. Each co-op machine writes its own file with its own 
 1. Pull: `scripts/pull-telemetry.sh [SLOT...]`. Without a slot it pulls the main slot and every test slot into `../.telemetry/<slot>/` (outside the repo). Files that are already here with the same size are skipped.
 2. Analyze: `cd tools/telemetry && uv run hc-telemetry`. It reads `../.telemetry` and writes `../.telemetry/report/report.md` and `report.html` (self-contained, charts inline).
    Options: `--dir`, `--out`, `--run <id>`, `--latest N`, `--since <UTC ISO time>`, `--no-autotest`, `--min-game-seconds`.
-3. Tests and the whole test pass: `scripts/autotest-all.sh --telemetry [timeout]` pulls the telemetry after the tests and writes a report of the runs that the pass made.
+3. Tests: `scripts/autotest-all.sh --telemetry [timeout] [test ...]` pulls the telemetry after the tests and writes a report of the runs that they made.
 
 The report has, for each run: facts (versions, tunables hash, difficulty, seed), heat by source, stage starts, a table per sector visit (stay, heat in and out, stages, missions, hunters, sales), money and fame by source, power and money over time, tech changes by cause, tech trades, missions by type with results and time to finish, events and chains, ships by side, hunter outcomes, damage by side, AI module frequencies, performance and errors. Across runs: a run table, pooled heat sources and findings.
 

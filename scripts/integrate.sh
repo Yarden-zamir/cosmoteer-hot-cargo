@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Merge a feature branch into main and ship it, stopping at the first failure:
 # merge -> build -> unit tests -> private-data check -> affected autotests -> push -> install into the player's game.
-# Usage: integrate.sh <branch> [--no-autotest]
+# Usage: integrate.sh <branch | PR number> [--no-autotest]
 #        integrate.sh --continue [--no-autotest]   after you resolved merge conflicts (staged them, no commit needed)
 # Run it in the main worktree. Nothing is pushed unless every step passed. On a failure the merge commit stays local:
 # fix it with a new commit and run "integrate.sh --continue", or undo it with "git reset --hard origin/main".
@@ -22,6 +22,12 @@ else
   [[ -z "$(git status --porcelain --untracked-files=no)" ]] || { echo "integrate: main has uncommitted changes"; exit 1; }
   step "update main"
   git pull -q --ff-only origin main
+  # A PR number merges the PR's branch from origin. Merging it into main marks the PR as merged on GitHub.
+  if [[ "$ARG" != *[!0-9]* ]]; then
+    HEAD_BRANCH="$(gh pr view "$ARG" --json headRefName --jq .headRefName)"
+    git fetch -q origin "$HEAD_BRANCH"
+    ARG="origin/$HEAD_BRANCH"
+  fi
   step "merge $ARG"
   if ! git merge --no-ff "$ARG" -m "Merge branch '$ARG'"; then
     echo "integrate: conflicts. Resolve them, git add the files, then run: scripts/integrate.sh --continue"
@@ -30,8 +36,10 @@ else
   fi
 fi
 # Spec section numbers must stay unique (parallel branches often pick the same next number).
-DUP="$(grep -o '^## [0-9]*\.' SPEC.md | sort | uniq -d || true)"
-[[ -z "$DUP" ]] || { echo "integrate: duplicate SPEC.md sections: $DUP"; exit 1; }
+DUP="$(ls spec | cut -d- -f1 | sort | uniq -d || true)"
+[[ -z "$DUP" ]] || { echo "integrate: two spec files share the section number $DUP"; exit 1; }
+DUPREQ="$(cat spec/*.md | grep -oE '^[0-9]+\. ' | sort | uniq -d | tr -d '. ' | tr '\n' ' ' || true)"
+[[ -z "$DUPREQ" ]] || { echo "integrate: duplicate requirement numbers: $DUPREQ"; exit 1; }
 
 step "build"
 dotnet build src/HotCargo/HotCargo.csproj -c Release -nologo -v quiet > /tmp/hot_cargo_integrate_build.log 2>&1 \

@@ -62,7 +62,7 @@ All numbers live in `Mods\hot_cargo\tunables.rules`. The game reloads the file w
 
 ## Develop
 
-- [SPEC.md](SPEC.md): the design and the numbered requirements.
+- [SPEC.md](SPEC.md) and [spec/](spec/): the design and the numbered requirements, one file per section.
 - [CONTRIBUTING.md](CONTRIBUTING.md): the build, the test setup (headless game instances on a Windows PC) and releases.
 - [PLAYTEST.md](PLAYTEST.md): manual checks.
 - [CHAINS.md](CHAINS.md): the story chains and their graphs.

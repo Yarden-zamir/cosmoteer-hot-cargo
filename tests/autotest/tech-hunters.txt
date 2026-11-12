@@ -1,0 +1,22 @@
+# Hunters and tech crates (spec 446): a hunter leaves the fight for crates, takes them, shows them on its blip, and its wreck drops them.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+tacticlog on
+tech_set LossGraceSeconds 600
+tech_set HunterGrabChance 1
+spawnstage Patrol
+wait 3
+expect hunters >= 1
+tech drophunter 2
+waitfor hunterheld == 2 120
+expect techcrates == 0
+expect tech == 6
+expect holdertag == 2
+# The wreck spills the tech as crates. Another hunter in reach may take them again, which is fine.
+tech wreckholder
+wait 2
+expect wreckspills == 1
+expect tech == 6
+quit

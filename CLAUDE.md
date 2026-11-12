@@ -1,6 +1,6 @@
 # Hot Cargo — agent instructions
 
-Hot Cargo is a Cosmoteer career mod: C# Harmony code plus `.rules` content. Read `SPEC.md` (design and numbered requirements) and `CONTRIBUTING.md` (layout, build, test) before you change anything. Feature docs: `EVENTS.md`, `MISSIONS.md`, `CHAINS.md`, `WORLDS.md`, `UX.md`, `TUNABLES.md`, `BALANCE.md`, `TELEMETRY.md`.
+Hot Cargo is a Cosmoteer career mod: C# Harmony code plus `.rules` content. Read `SPEC.md` and `spec/` (design and numbered requirements, one file per section) and `CONTRIBUTING.md` (layout, build, test) before you change anything. Feature docs: `EVENTS.md`, `MISSIONS.md`, `CHAINS.md`, `WORLDS.md`, `UX.md`, `TUNABLES.md`, `BALANCE.md`, `TELEMETRY.md`.
 
 Procedures are skills in `.claude/skills/`:
 - `hot-cargo-testing`: build, unit tests, headless game tests, co-op tests, infrastructure failures.
@@ -11,7 +11,7 @@ Procedures are skills in `.claude/skills/`:
 
 ## Git
 
-- Push straight to `main`. No pull requests. Conventional commits.
+- Feature work goes through a draft pull request: push the feature branch and open a draft PR with a short summary and screenshots of visible changes (`gh-pr-images` skill). CI checks it (build, unit tests, private data). Start PR descriptions and comments with 🤖; keep them short. Small fixes may go straight to `main`. Conventional commits.
 - Feature work happens in a worktree of the bare repo (`../.bare`), one branch for each feature. The integrator merges into `main` with `scripts/integrate.sh <branch>`: merge, build, unit tests, private-data check, affected autotests, push, install. It pushes only when every step passed.
 - Never credit an AI, model or tool in commits or files.
 - Never commit personal machine data. `scripts/check-private.sh` checks this, and CI runs it.
@@ -52,9 +52,9 @@ Procedures are skills in `.claude/skills/`:
 
 ## Spec
 
-- A change is done when the spec lines it touches are true. Patch stale lines in place. Never renumber requirements. A new feature gets a new requirement number range.
+- A change is done when the spec lines it touches are true. Patch stale lines in place. Never renumber requirements. A new feature gets a new file in `spec/` with the next free section number and a new requirement number range.
 
 ## Agents
 
-- An agent works only in its own worktree and branch, and does not push.
+- An agent works only in its own worktree and branch. At the end it pushes its branch and opens a draft PR. It never pushes to `main` and never merges.
 - Start only the last message with `FINAL REPORT`: what works with test results, what does not, Core changes, spec changes, commits, merge notes.
