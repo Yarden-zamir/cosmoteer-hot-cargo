@@ -113,7 +113,9 @@ public static class Autotest
         catch (InvalidOperationException) { return false; }
     }
 
-    static string StateNames() => string.Join(", ", App.Director.States.Select(s => s.GetType().Name));
+    // A dialog's message usually says why a wait failed (for example why a co-op join was refused), so the names include it.
+    static string StateNames() => string.Join(", ", App.Director.States.Select(s =>
+        s is Halfling.Gui.Dialogs.OneButtonDialog d ? $"OneButtonDialog \"{d.MessageLabel.Text}\"" : s.GetType().Name));
 
     /// <summary>Pauses the script for real seconds.</summary>
     public static void Wait(double seconds) => _waitUntil = App.Clock.Time.Seconds + seconds;
