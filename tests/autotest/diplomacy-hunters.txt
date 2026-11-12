@@ -99,7 +99,8 @@ wait 1
 expect hunters == 6
 dip_expect deal hunter 3 == 0
 # A deal that works: pay, keep the tech, the wave leaves.
-dip_set DealChanceAlone 1
+# A chance above 1 clamps to 1, so the crowd factor of the 5 others does not matter.
+dip_set DealChanceAlone 5
 dip_set DealMaxOtherHunters 10
 dip_set DealPriceFactor 0.05
 dip_mark

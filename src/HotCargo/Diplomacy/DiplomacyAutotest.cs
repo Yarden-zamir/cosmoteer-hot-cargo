@@ -169,6 +169,7 @@ static class DiplomacyAutotest
         Autotest.Fields["dip_hirefleeing"] = () => R().State.Diplomacy.Hires.Count(h => h.Fleeing);
         Autotest.Fields["dip_mercs"] = () => R().State.Diplomacy.Mercs.Count;
         Autotest.Fields["dip_friendmerc"] = () => _friend is { } f && R().State.Diplomacy.Mercs.Contains(f) ? 1 : 0;
+        Autotest.Fields["dip_yieldoffers"] = () => R().State.Diplomacy.Rolled.Count(k => k.EndsWith(":yieldok", StringComparison.Ordinal));
         Autotest.Fields["dip_leaving"] = () => R().State.Diplomacy.Leaving.Count;
         Autotest.Fields["dip_vaulttech"] = () => Situation.VaultTech(Sim());
         Autotest.Fields["dip_results"] = () => R().State.Diplomacy.Serial;

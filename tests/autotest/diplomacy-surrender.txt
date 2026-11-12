@@ -58,8 +58,10 @@ dip_set HunterYieldChance 1
 spawnstage Warning
 wait 2
 dip_near fresh
-damagehunters 0.2
-wait 3
+# The player ship shoots the beaten hunter, so the checks run soon after the hail (sim checks every CheckSeconds).
+damagehunters 0.3
+wait 1.5
+expect dip_yieldoffers >= 1
 expect dip_hailing >= 1
 dip_mark
 dip acceptyield fresh
