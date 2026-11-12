@@ -35,3 +35,4 @@ mp mpmark 2
 expect desyncs == 0
 waitfor mpconnected == 0 240
 quit
+# tier: smoke

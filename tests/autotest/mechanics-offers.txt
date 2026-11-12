@@ -26,3 +26,4 @@ expect mech_offers_guard >= 1
 mech_generate listening nonebula
 expect mech_offers_listening >= 1
 quit
+# tier: smoke

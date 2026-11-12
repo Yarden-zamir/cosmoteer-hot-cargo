@@ -42,3 +42,4 @@ expect seconds >= 60
 expect sellprice > 15000
 expect pricegap == 0
 quit
+# tier: smoke

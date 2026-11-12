@@ -13,3 +13,4 @@ worlds hazard
 hc_generate escort
 expect hc_offers_escort >= 1
 quit
+# tier: smoke

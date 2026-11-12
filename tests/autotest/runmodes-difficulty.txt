@@ -32,3 +32,4 @@ spawnstage Patrol
 wait 2
 rm_expect_stage Patrol
 quit
+# tier: smoke

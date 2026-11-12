@@ -99,3 +99,4 @@ tactics_log ally
 expect tactics_move_row == 1
 expect tactics_cmd == 3
 quit
+# tier: smoke
