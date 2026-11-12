@@ -733,12 +733,21 @@ sealed class Session
         return m.Completion switch { CompletionState.Completed => "success", CompletionState.Failed => "fail", _ => "abandoned" };
     }
 
+    /// <summary>
+    /// New offers logged in one scan. A system holds 50 to 80 offers at the first scan; logging them all in one tick makes a hitch of
+    /// tens of milliseconds while the code paths compile, so the rest wait for the next scans.
+    /// </summary>
+    const int OffersPerScan = 12;
+
     void ScanOffers(SimRoot sim)
     {
         if (!Tele.On(Cat.Missions)) return;
+        int logged = 0;
         foreach (var (m, list) in ContractBook.Offers(sim))
         {
+            if (logged == OffersPerScan) { _nextScan = _simSeconds + 1; break; }
             if (!_offersSeen.Add(m.MissionID)) continue;
+            logged++;
             Tele.Emit(Cat.Missions, "mission.offered", w =>
             {
                 WriteMission(w, m);
