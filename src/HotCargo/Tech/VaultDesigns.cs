@@ -40,11 +40,12 @@ static class VaultDesigns
         // 1 when the top dialog explains the missing vaults (spec 1012). Closes the dialog.
         Autotest.Fields["vaultdialog"] = () =>
         {
-            var dialog = Halfling.App.Director.States.OfType<Halfling.Gui.Dialogs.OneButtonDialog>().LastOrDefault();
+            // Test slots run without Steam, so a Steam notice dialog can sit below ours.
+            var dialog = Halfling.App.Director.States.OfType<Halfling.Gui.Dialogs.OneButtonDialog>()
+                .FirstOrDefault(d => d.MessageLabel.Text?.Contains("Tech Vaults for") == true);
             if (dialog is null) return 0;
-            bool explains = dialog.MessageLabel.Text?.Contains("Tech Vaults for") == true;
             Halfling.App.Director.PopState(dialog);
-            return explains ? 1 : 0;
+            return 1;
         };
         // Spec 1015: StartingResearch techs that the run has unlocked.
         Autotest.Fields["startresearch"] = () =>
