@@ -160,8 +160,9 @@ static class RelaysAutotest
     static void MoveNear(Ship target)
     {
         var ship = TechAutotest.PlayerShip();
-        Autotest.Teleport(ship, Autotest.ClearSpotNear(R().Game.Sim, target.DetWorldCenter, target.WorldBoundingRadius + 600f, ship.WorldBoundingRadius));
-        Log.Info($"AUTOTEST relays: {ship.Name} next to {target.Name}");
+        // Right next to the hull, like "tostation": a start ship has a short comms range.
+        Autotest.Teleport(ship, target.WorldCenter + new Halfling.Geometry.Vector2(target.WorldBoundingRadius + ship.WorldBoundingRadius + 2f, 0f));
+        Log.Info($"AUTOTEST relays: {ship.Name} next to {target.Name}, comms range {ship.Sensors.DetWorldCommsCircle.Radius:0}");
     }
 
     static void Choose(RelayOption option) =>
