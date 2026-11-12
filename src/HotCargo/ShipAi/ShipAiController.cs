@@ -1,6 +1,10 @@
 using System.Collections.Concurrent;
 using Cosmoteer;
 using Cosmoteer.Data;
+using Cosmoteer.Game.Multiplayer;
+using Cosmoteer.Ships.Crew.Jobs;
+using Cosmoteer.Ships.Parts.Resources;
+using HotCargo.Ai;
 using Cosmoteer.Resources;
 using Cosmoteer.Ships;
 using Cosmoteer.Ships.Commands;
@@ -50,7 +54,7 @@ internal static class ShipAiController
             if (t.NextTick > now + (Time)tun.TickSeconds) t.NextTick = now;
             if (now < t.NextTick) continue;
             t.NextTick = now + (Time)tun.TickSeconds;
-            Errors.Guard("ship tactics", () => Think(ship, t, tun));
+            Errors.Guard("ship tactics", () => Think(run, ship, t, tun));
         }
     }
 
@@ -77,7 +81,7 @@ internal static class ShipAiController
         return false;
     }
 
-    static void Think(Ship ship, ShipTactics t, ShipAiTunables tun)
+    static void Think(Run run, Ship ship, ShipTactics t, ShipAiTunables tun)
     {
         if (!ship.Commands.CanExecuteCommands) return;
         if (HasManualOrder(ship))
@@ -92,22 +96,29 @@ internal static class ShipAiController
         }
         t.Waiting = false;
         var rows = t.Rows;
-        var view = new View(ship);
-        var d = ShipAiModel.Evaluate(rows, view.Facts(), view.CanRun);
+        var view = new View(run, ship);
+        var d = ShipAiModel.Evaluate(rows, view.Facts(), view.CanRun, t.Memory, HunterOrders.Sim(ship).LogicalTime.Seconds,
+            new Hysteresis(tun.HysteresisMargin, tun.MinHoldSeconds));
         Ship? target = d.TargetRow >= 0 ? view.TargetFor(rows[d.TargetRow].Act) : null;
         Act? move = d.MoveRow >= 0 ? rows[d.MoveRow].Act : null;
         Ship? guarded = move == Act.Guard ? view.GuardTarget((GuardWho)rows[d.MoveRow].ActParam) : null;
         // A guard with no target row attacks whoever attacks the guarded ship.
         if (target is null && guarded is not null) target = view.AttackerOf(guarded);
         Act? before = t.MoveRow >= 0 && t.MoveRow < rows.Count ? rows[t.MoveRow].Act : null;
-        Move(ship, t, tun, view, move, target, guarded, fresh: before != move);
+        Side? facing = d.FacingRow >= 0 ? (Side)rows[d.FacingRow].ActParam : null;
+        Side? facingBefore = t.FacingRow >= 0 && t.FacingRow < rows.Count ? (Side)rows[t.FacingRow].ActParam : null;
+        var attack = Move(ship, t, tun, view, move, target, guarded, fresh: before != move || facing != facingBefore);
+        if (attack is not null && facing is { } side) Face(attack, side);
         int mask = 0;
         for (int i = 0; i < d.Matched.Length; i++) if (d.Matched[i]) mask |= 1 << i;
-        Weapons(ship, t, rows, t.Matched, mask, target);
-        if (mask != t.Matched || d.TargetRow != t.TargetRow || d.MoveRow != t.MoveRow || target?.UniqueID != t.Target)
-            Trace(ship, tun, $"target row {d.TargetRow} ({target?.Metadata.PlainShipName ?? "-"}) move row {d.MoveRow} ({move?.ToString() ?? "-"}) matched {Convert.ToString(mask, 2)}");
+        Weapons(ship, t, tun, rows, t.Matched, mask, target, view.Caller);
+        if (mask != t.Matched || d.TargetRow != t.TargetRow || d.MoveRow != t.MoveRow || d.FacingRow != t.FacingRow || target?.UniqueID != t.Target)
+            Trace(ship, tun, $"target row {d.TargetRow} ({target?.Metadata.PlainShipName ?? "-"}) move row {d.MoveRow} ({move?.ToString() ?? "-"}) " +
+                             $"facing row {d.FacingRow} matched {Convert.ToString(mask, 2)}");
         t.TargetRow = d.TargetRow;
         t.MoveRow = d.MoveRow;
+        t.FacingRow = d.FacingRow;
+        t.Memory = d.Memory;
         t.Matched = mask;
         t.Target = target?.UniqueID;
         Evaluations++;
@@ -127,11 +138,17 @@ internal static class ShipAiController
             var groups = PartGroups(ship);
             var rows = t.Rows;
             var matched = t.MatchedRows;
+            // Without the tunables here, a weapon counts as aimed when it aims as a disruptor or as another weapon.
             foreach (var weapon in ship.Weapons)
-                if (ShipAiModel.AimsAtParts(ShipAiModel.WeaponAct(rows, matched, GroupsOf(weapon, groups)))) ClearAim(ship, weapon);
+            {
+                var g = GroupsOf(weapon, groups);
+                if (ShipAiModel.AimsAtParts(ShipAiModel.WeaponAct(rows, matched, g, disruptor: false)) ||
+                    ShipAiModel.AimsAtParts(ShipAiModel.WeaponAct(rows, matched, g, disruptor: true))) ClearAim(ship, weapon);
+            }
         }
         t.Matched = 0;
-        t.TargetRow = t.MoveRow = -1;
+        t.TargetRow = t.MoveRow = t.FacingRow = -1;
+        t.Memory = null;
         t.Target = null;
         t.Anchor = null;
         t.Held = null;
@@ -140,7 +157,8 @@ internal static class ShipAiController
 
     // ---- Movement and target: one vanilla command at a time.
 
-    static void Move(Ship ship, ShipTactics t, ShipAiTunables tun, View view, Act? move, Ship? target, Ship? guarded, bool fresh)
+    /// <summary>Gives the move command. Returns the attack command when the ship attacks, so a facing row can turn it.</summary>
+    static AttackCommand? Move(Ship ship, ShipTactics t, ShipAiTunables tun, View view, Act? move, Ship? target, Ship? guarded, bool fresh)
     {
         if (move != Act.HoldPosition) t.Anchor = null;
         switch (move)
@@ -148,25 +166,27 @@ internal static class ShipAiController
             case Act.HoldPosition:
                 t.Anchor ??= ship.DetWorldCenter;
                 MoveTo(ship, t, t.Anchor.Value, tun.HoldTolerance);
-                break;
+                return null;
             case Act.RetreatToAlly:
                 Follow(ship, t, view.NearestAlly ?? throw new InvalidOperationException("RetreatToAlly ran without an ally"));
-                break;
+                return null;
             case Act.FollowLeader:
                 Follow(ship, t, view.Leader ?? throw new InvalidOperationException("FollowLeader ran without a leader"));
-                break;
+                return null;
             case Act.Guard when target is not null:
-                Attack(ship, t, target, fresh);
-                break;
+                return Attack(ship, t, target, fresh);
             case Act.Guard:
                 Follow(ship, t, guarded ?? throw new InvalidOperationException("Guard ran without a ship to guard"));
-                break;
+                return null;
             case Act.RetreatRepair:
                 RunFrom(ship, t, view, tun.RetreatDistance);
-                break;
+                return null;
             case Act.FleeJump:
                 if (!TryJump(ship, t, view)) RunFrom(ship, t, view, tun.RetreatDistance * 2f);
-                break;
+                return null;
+            case Act.CollectTech:
+                Collect(ship, t, tun, view);
+                return null;
             case null or Act.Kite or Act.CloseIn when target is not null:
                 var ac = Attack(ship, t, target, fresh);
                 if (move == Act.Kite && HunterOrders.MaxWeaponRange(ship, onlyActive: true) is var range and > 0f)
@@ -176,12 +196,66 @@ internal static class ShipAiController
                     ac.EdgeToEdgeFollowRadius = Math.Max(0f, Math.Min(range * tun.KiteRangeFraction, sightCap));
                 }
                 else if (move == Act.CloseIn) ac.EdgeToEdgeFollowRadius = tun.CloseInDistance;
-                break;
+                return ac;
             default:
                 Stop(ship, t);
-                break;
+                return null;
         }
     }
+
+    /// <summary>
+    /// Spec 415: the vanilla attack rotation options. With a rotation target, the ship's world rotation is the direction to the target
+    /// plus Rotation (BaseFollowCommand.GetWorldRotation, FollowAngleRelative). The nose is rotation 0; y points down on screen,
+    /// so +90° puts the target on the left side.
+    /// </summary>
+    static void Face(AttackCommand ac, Side side)
+    {
+        float offset = side switch
+        {
+            Side.Nose => 0f,
+            Side.BroadsideLeft => MathF.PI / 2f,
+            Side.BroadsideRight => -MathF.PI / 2f,
+            Side.Stern => MathF.PI,
+            _ => throw new ArgumentOutOfRangeException(nameof(side), side, null),
+        };
+        ac.RotationMode = FollowRotationMode.FollowAngleRelative;
+        ac.RotationTarget = ac.Target;
+        ac.Rotation = new Direction(offset);
+    }
+
+    /// <summary>
+    /// Spec 414: flies to the nearest tech crate on radar and gives the vanilla crew collect order (as SalvageJob.OnPartSalvaged does
+    /// for salvage) for every tech crate within CollectRange of the hull.
+    /// </summary>
+    static void Collect(Ship ship, ShipTactics t, ShipAiTunables tun, View view)
+    {
+        var nearest = view.NearestCrate ?? throw new InvalidOperationException("CollectTech ran without a crate");
+        if (ship.DetWorldBoundingCircle.DistanceTo(nearest.DetWorldLocation) > tun.CollectDistance) MoveTo(ship, t, nearest.DetWorldLocation, tun.CollectDistance * 0.5f);
+        else Stop(ship, t);
+        foreach (var crate in view.Crates)
+            if (ship.DetWorldBoundingCircle.DistanceTo(crate.DetWorldLocation) <= tun.CollectRange) PickUp(ship, crate);
+    }
+
+    /// <summary>Same order as SalvageJob.OnPartSalvaged._CollectNugget: crew jobs for the part of the crate that no crew fetches yet.</summary>
+    static void PickUp(Ship ship, Nugget n)
+    {
+        int left = n.Quantity - ship.Resources.GetAnticipatedPickUp(n, MPValueType.Confirmed);
+        int room = TechRoom(ship);
+        while (left > 0 && room > 0)
+        {
+            var sink = ship.Resources.GetBestReceivingSink(n, left, MPValueType.Confirmed, out int capacity);
+            if (sink is null) break;
+            int amount = Math.Min(left, Math.Min(capacity, room));
+            if (amount <= 0) break;
+            var job = ship.Resources.ManualResourceTransfer(n, sink, amount, sticky: false, TradeType.None, 0, autoCancel: true, confirmed: true, ship.Jobs.AllocGlobalJobID());
+            job.PlayerTimeIssued = App.Clock.Time;
+            left -= amount;
+            room -= amount;
+        }
+    }
+
+    static int TechRoom(Ship ship) => ship.Resources.GetRemainingCapacity(Vaults.TechId, includeUntypedStorages: true, includeStored: true,
+        includeCarried: true, includeOffShipCarried: false, includeAnticipatedDeliveries: true);
 
     /// <summary>The tactics' own command if it is still in the queue. The game removes a command when it ends or turns invalid.</summary>
     static Command? Current(Ship ship, ShipTactics t) => t.Issued is { } id ? ship.Commands.GetConfirmedCommand(id) : null;
@@ -285,43 +359,70 @@ internal static class ShipAiController
     /// <summary>The weapons that may not fire now. FirePermissionPatch builds it again after a load.</summary>
     internal static HashSet<Weapon> BuildHeld(Ship ship, ShipTactics t)
     {
+        var tun = Run.Current?.T.ShipAi ?? throw new InvalidOperationException("ship tactics need a run");
         var groups = PartGroups(ship);
         var rows = t.Rows;
         var matched = t.MatchedRows;
         var held = new HashSet<Weapon>();
         foreach (var weapon in ship.Weapons)
-            if (Holds(ShipAiModel.WeaponAct(rows, matched, GroupsOf(weapon, groups)), weapon)) held.Add(weapon);
+            if (Holds(ShipAiModel.WeaponAct(rows, matched, GroupsOf(weapon, groups), IsDisruptor(weapon, tun)), weapon)) held.Add(weapon);
         return held;
     }
 
-    static void Weapons(Ship ship, ShipTactics t, IReadOnlyList<TacticRow> rows, int beforeMask, int mask, Ship? target)
+    /// <summary>
+    /// Spec 404, 414. Each weapon follows its weapons row. Disruptors aim at the nearest enemy that calls for help, else at the target.
+    /// </summary>
+    static void Weapons(Ship ship, ShipTactics t, ShipAiTunables tun, IReadOnlyList<TacticRow> rows, int beforeMask, int mask, Ship? target, Ship? caller)
     {
         var groups = PartGroups(ship);
         bool[] before = Bits(beforeMask, rows.Count), now = Bits(mask, rows.Count);
         var held = new HashSet<Weapon>();
-        var picks = new Dictionary<Act, Part?>();
+        var picks = new Dictionary<(Act, Ship), Part?>();
         foreach (var weapon in ship.Weapons)
         {
             var g = GroupsOf(weapon, groups);
-            var act = ShipAiModel.WeaponAct(rows, now, g);
+            bool disruptor = IsDisruptor(weapon, tun);
+            var act = ShipAiModel.WeaponAct(rows, now, g, disruptor);
             if (Holds(act, weapon)) held.Add(weapon);
+            Ship? aimAt = act == Act.FireDisruptors ? caller ?? target : target;
             // Point defense keeps its own targets: it shoots missiles and mines, not parts.
-            if (ShipAiModel.AimsAtParts(act) && target is not null && !weapon.Rules.IsDefensiveOnly) Aim(ship, weapon, target, act, picks);
-            else if (ShipAiModel.AimsAtParts(ShipAiModel.WeaponAct(rows, before, g))) ClearAim(ship, weapon);
+            if (ShipAiModel.AimsAtParts(act) && aimAt is not null && !weapon.Rules.IsDefensiveOnly) Aim(ship, weapon, aimAt, act, picks);
+            else if (ShipAiModel.AimsAtParts(ShipAiModel.WeaponAct(rows, before, g, disruptor))) ClearAim(ship, weapon);
         }
         t.Held = held;
+    }
+
+    static string[]? _disruptorSource;
+    static string[]? _disruptorAmmoSource;
+    static HashSet<ID<PartRules>> _disruptorParts = [];
+    static HashSet<ID<ResourceRules>> _disruptorAmmo = [];
+
+    /// <summary>Spec 414: a weapon of a DisruptorParts part, or of a part that stores DisruptorAmmo now (its active missile type).</summary>
+    static bool IsDisruptor(Weapon weapon, ShipAiTunables tun)
+    {
+        if (weapon.Part is not { } part) return false;
+        if (!ReferenceEquals(_disruptorSource, tun.DisruptorParts) || !ReferenceEquals(_disruptorAmmoSource, tun.DisruptorAmmo))
+        {
+            _disruptorParts = tun.DisruptorParts.Select(id => new ID<PartRules>(id)).ToHashSet();
+            _disruptorAmmo = tun.DisruptorAmmo.Select(id => new ID<ResourceRules>(id)).ToHashSet();
+            (_disruptorSource, _disruptorAmmoSource) = (tun.DisruptorParts, tun.DisruptorAmmo);
+        }
+        if (_disruptorParts.Contains(part.Rules.ID)) return true;
+        foreach (var c in part.Components)
+            if (c is BaseResourceStorage rs && _disruptorAmmo.Contains(rs.ResourceType)) return true;
+        return false;
     }
 
     static bool[] Bits(int mask, int count) => Enumerable.Range(0, count).Select(i => (mask & (1 << i)) != 0).ToArray();
 
     /// <summary>Same assignment as AIValueTargeterModule.TargetWeapons. A target that the player gave the weapon stays.</summary>
-    static void Aim(Ship ship, Weapon weapon, Ship target, Act act, Dictionary<Act, Part?> picks)
+    static void Aim(Ship ship, Weapon weapon, Ship target, Act act, Dictionary<(Act, Ship), Part?> picks)
     {
         var current = weapon.ExplicitTargets.CurConfirmedTarget;
         if (current is not null && current.UniqueID.PlayerID is not null) return;
         // The current part stays while it lives, so the guns do not jump between parts as the ships turn.
         if (current?.Target is Part p && p.Ship == target && Fits(p.Rules, act)) return;
-        if (!picks.TryGetValue(act, out var part)) picks[act] = part = PickPart(ship, target, act);
+        if (!picks.TryGetValue((act, target), out var part)) picks[(act, target)] = part = PickPart(ship, target, act);
         if (part is null || weapon.Rules.IsShipWideExplicitTargetingSuppressed(ship, part)) return;
         var wt = new WeaponTarget(weapon, part, ship.Weapons.AllocGlobalTargetID()) { PlayerTimeGiven = App.Clock.Time };
         weapon.ExplicitTargets.EnqueueTarget(wt, append: false, confirmed: true);
@@ -347,7 +448,7 @@ internal static class ShipAiController
         Vector2 from = ship.DetWorldCenter;
         IEnumerable<Part?> candidates = act switch
         {
-            Act.FocusTarget => [target.Parts.MaxBy(p => p.Rules.AIValueFactor * p.Rules.Cost)],
+            Act.FocusTarget or Act.FireDisruptors => [target.Parts.MaxBy(p => p.Rules.AIValueFactor * p.Rules.Cost)],
             Act.TargetWeapons => target.Weapons.Select(w => w.Part),
             Act.TargetEngines => target.Thrusters.Select(th => th.Part),
             _ => throw new ArgumentOutOfRangeException(nameof(act), act, null),
@@ -415,16 +516,26 @@ internal static class ShipAiController
     /// <summary>What one ship sees in one tick: enemies on its team's radar, enemies with an attack order, and friendly human ships.</summary>
     sealed class View
     {
+        readonly Run _run;
         readonly Ship _self;
         readonly List<Ship> _enemies = [];
         readonly List<Ship> _attackers = [];
         public readonly List<Ship> Allies = [];
+        /// <summary>Tech crates that this ship's team sees, in nugget order.</summary>
+        public readonly List<Nugget> Crates = [];
         readonly Dictionary<Act, Ship?> _targets = [];
 
-        public View(Ship self)
+        public View(Run run, Ship self)
         {
+            _run = run;
             _self = self;
-            var ships = HunterOrders.Sim(self).Ships;
+            var sim = HunterOrders.Sim(self);
+            for (int i = 0; i < sim.Nuggets.Count; i++)
+            {
+                var n = sim.Nuggets[i];
+                if (n.ResourceType == Vaults.TechId && n.IsWithinSightOfTeam(self.Metadata.Team)) Crates.Add(n);
+            }
+            var ships = sim.Ships;
             for (int i = 0; i < ships.Count; i++)
             {
                 var other = ships[i];
@@ -443,6 +554,18 @@ internal static class ShipAiController
         public Ship? NearestEnemy => _enemies.MinBy(Distance);
 
         public Ship? NearestAlly => Allies.MinBy(Distance);
+
+        float CrateDistance(Nugget n) => _self.DetWorldBoundingCircle.DistanceTo(n.DetWorldLocation);
+
+        public Nugget? NearestCrate => Crates.MinBy(CrateDistance);
+
+        /// <summary>Spec 413: an enemy on radar that holds tech it took from a crate (Tech.HunterHeld).</summary>
+        bool HoldsTech(Ship enemy) => _run.State.Tech.HunterHeld.Any(h => h.Ship == enemy.UniqueID && h.Units > 0);
+
+        /// <summary>Spec 413: an enemy on radar whose call for help runs (Ai.CallStrategy).</summary>
+        static bool Calls(Ship enemy) => enemy.AI?.GetStrategyModule<CallStrategy>() is { Calling: true };
+
+        public Ship? Caller => _enemies.Where(Calls).MinBy(Distance);
 
         /// <summary>The first ship of this ship's player (lowest ID). Null when that is this ship.</summary>
         public Ship? Leader
@@ -478,18 +601,28 @@ internal static class ShipAiController
                 EnemyClasses: classes,
                 Enemies: _enemies.Count,
                 CarryingTech: _self.Resources.GetResourceTotal(Vaults.TechId) > 0,
-                VaultDamaged: vaultHit);
+                VaultDamaged: vaultHit,
+                HeatStage: _run.State.StagesStarted,
+                HuntersInSystem: HunterSpawner.Hunters(HunterOrders.Sim(_self)).Any(),
+                StrikeIn: _run.SecondsToStrikeWave is { } s ? (float)s : null,
+                LossTimerRunning: LossTimer.IsRunning(_run),
+                NearestCrate: NearestCrate is { } crate ? CrateDistance(crate) : float.PositiveInfinity,
+                EnemyHoldsTech: _enemies.Any(HoldsTech),
+                EnemyCalling: Caller is not null);
         }
 
         public bool CanRun(TacticRow row) => ShipAiModel.KindOf(row.Act) switch
         {
             ActKind.Target => TargetFor(row.Act) is not null,
+            // A facing row turns an attack: it needs an enemy.
+            ActKind.Facing => _enemies.Count > 0,
             ActKind.Move => row.Act switch
             {
                 Act.Kite or Act.CloseIn => _enemies.Count > 0,
                 Act.RetreatToAlly => NearestAlly is not null,
                 Act.FollowLeader => Leader is not null,
                 Act.Guard => GuardTarget((GuardWho)row.ActParam) is not null,
+                Act.CollectTech => Crates.Count > 0 && TechRoom(_self) > 0,
                 _ => true,
             },
             _ => true,
@@ -506,6 +639,8 @@ internal static class ShipAiController
                 Act.TargetStrongest => _enemies.OrderByDescending(e => e.BaseBlueprintCost).ThenBy(Distance).FirstOrDefault(),
                 Act.TargetAllyAttacker => _enemies.Where(e => AttackTarget(e) is { } v && v != _self && Allies.Contains(v)).MinBy(Distance),
                 Act.TargetVaultAttacker => _enemies.Where(e => AttackTarget(e) is { } v && (v == _self || Allies.Contains(v)) && HasVault(v)).MinBy(Distance),
+                Act.TargetTechHolder => _enemies.Where(HoldsTech).MinBy(Distance),
+                Act.TargetCaller => Caller,
                 _ => throw new ArgumentOutOfRangeException(nameof(act), act, "not a target action"),
             };
             _targets[act] = pick;

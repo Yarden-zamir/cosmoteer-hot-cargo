@@ -277,7 +277,8 @@ public static class ShipAiArea
                 .Concat(Enum.GetNames<Preset>().Select(n => "Preset_" + n))
                 .Concat(Enum.GetNames<PartKind>().Select(n => "PartKind_" + n))
                 .Concat(Enum.GetNames<ShipClass>().Select(n => "ShipClass_" + n))
-                .Concat(Enum.GetNames<GuardWho>().Select(n => "GuardWho_" + n));
+                .Concat(Enum.GetNames<GuardWho>().Select(n => "GuardWho_" + n))
+                .Concat(Enum.GetNames<Side>().Select(n => "Side_" + n));
             var missing = keys.Where(k => !Strings.TryGetText("HotCargoShipAi/" + k, out _)).ToList();
             Autotest.Check(missing.Count == 0, $"tactics strings exist (missing: {string.Join(", ", missing)})");
         };

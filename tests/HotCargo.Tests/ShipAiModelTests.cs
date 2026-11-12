@@ -73,18 +73,18 @@ public class ShipAiModelTests
     {
         var f = Facts(health: 0.45f, shields: 0.2f, nearest: 800f, enemies: 3, targeted: true, ammo: 0.5f, battery: 0.5f, tech: true,
             lost: [PartKind.Thruster], classes: [ShipClass.Station, ShipClass.Small]);
-        Assert.Equal(expected, ShipAiModel.Holds(Row(cond, param, Act.TargetNearest), f));
+        Assert.Equal(expected, ShipAiModel.Holds(new Term(cond, param), f));
     }
 
     [Fact]
     public void Missing_shields_ammo_or_battery_never_count_as_low_and_no_enemy_is_infinitely_far()
     {
         var f = Facts();
-        Assert.False(ShipAiModel.Holds(Row(Cond.ShieldsBelow, 100, Act.Kite), f));
-        Assert.False(ShipAiModel.Holds(Row(Cond.AmmoBelow, 100, Act.Kite), f));
-        Assert.False(ShipAiModel.Holds(Row(Cond.BatteryBelow, 100, Act.Kite), f));
-        Assert.True(ShipAiModel.Holds(Row(Cond.EnemyBeyond, 20000, Act.Kite), f));
-        Assert.False(ShipAiModel.Holds(Row(Cond.EnemyWithin, 20000, Act.Kite), f));
+        Assert.False(ShipAiModel.Holds(new Term(Cond.ShieldsBelow, 100), f));
+        Assert.False(ShipAiModel.Holds(new Term(Cond.AmmoBelow, 100), f));
+        Assert.False(ShipAiModel.Holds(new Term(Cond.BatteryBelow, 100), f));
+        Assert.True(ShipAiModel.Holds(new Term(Cond.EnemyBeyond, 20000), f));
+        Assert.False(ShipAiModel.Holds(new Term(Cond.EnemyWithin, 20000), f));
     }
 
     [Fact]
@@ -112,10 +112,10 @@ public class ShipAiModelTests
             var rows = ShipAiModel.PresetRows(p);
             Assert.Equal(rows, ShipAiModel.Decode(ShipAiModel.Encode(rows)));
         }
-        var every = Enum.GetValues<Cond>().Zip(Enum.GetValues<Act>().Take(Enum.GetValues<Cond>().Length))
-            .Select(x => ShipAiModel.WithAct(ShipAiModel.WithCond(new TacticRow(Cond.Always, 0, Act.TargetNearest, 0), x.First), x.Second))
+        var every = Enum.GetValues<Cond>().Select((c, i) =>
+                ShipAiModel.WithAct(new TacticRow([ShipAiModel.WithCond(new Term(Cond.Always, 0), c)], Act.TargetNearest, 0), Enum.GetValues<Act>()[i % Enum.GetValues<Act>().Length]))
             .ToList();
-        Assert.Equal(every, ShipAiModel.Decode(ShipAiModel.Encode(every)));
+        foreach (var chunk in every.Chunk(ShipAiModel.MaxRows)) Assert.Equal(chunk, ShipAiModel.Decode(ShipAiModel.Encode(chunk)));
         var acts = Enum.GetValues<Act>().Select(a => ShipAiModel.WithAct(new TacticRow(Cond.Always, 0, Act.TargetNearest, 0), a)).Take(ShipAiModel.MaxRows).ToList();
         Assert.Equal(acts, ShipAiModel.Decode(ShipAiModel.Encode(acts)));
         Assert.Equal("", ShipAiModel.Encode([]));
@@ -150,6 +150,10 @@ public class ShipAiModelTests
         Assert.Equal(ActKind.Move, ShipAiModel.KindOf(Act.Kite));
         Assert.Equal(ActKind.Move, ShipAiModel.KindOf(Act.Guard));
         Assert.Equal(ActKind.Weapons, ShipAiModel.KindOf(Act.FireAtWill));
+        Assert.Equal(ActKind.Target, ShipAiModel.KindOf(Act.TargetCaller));
+        Assert.Equal(ActKind.Move, ShipAiModel.KindOf(Act.CollectTech));
+        Assert.Equal(ActKind.Weapons, ShipAiModel.KindOf(Act.FireDisruptors));
+        Assert.Equal(ActKind.Facing, ShipAiModel.KindOf(Act.Face));
         foreach (var a in Enum.GetValues<Act>())
             Assert.Equal(ShipAiModel.KindOf(a) == ActKind.Weapons, ShipAiModel.ParamOf(a) == ParamKind.Group);
     }
@@ -157,9 +161,186 @@ public class ShipAiModelTests
     [Fact]
     public void Changing_a_condition_keeps_the_parameter_only_when_its_kind_stays()
     {
-        var row = Row(Cond.HealthBelow, 55, Act.Kite);
-        Assert.Equal(55, ShipAiModel.WithCond(row, Cond.ShieldsBelow).CondParam);
-        Assert.Equal(1000, ShipAiModel.WithCond(row, Cond.EnemyWithin).CondParam);
-        Assert.Equal(0, ShipAiModel.WithCond(row, Cond.Always).CondParam);
+        var term = new Term(Cond.HealthBelow, 55, Not: true, Or: true);
+        Assert.Equal(55, ShipAiModel.WithCond(term, Cond.ShieldsBelow).Param);
+        Assert.Equal(1000, ShipAiModel.WithCond(term, Cond.EnemyWithin).Param);
+        Assert.Equal(new Term(Cond.Always, 0, true, true), ShipAiModel.WithCond(term, Cond.Always));
+    }
+
+    // ---- Condition chains (spec 416, 417)
+
+    static Term T(Cond c, int p = 0, bool not = false, bool or = false) => new(c, p, not, or);
+
+    static bool Chain(ShipFacts f, params Term[] terms) =>
+        ShipAiModel.Evaluate([new TacticRow(terms, Act.Kite, 0)], f, _ => true).Matched[0];
+
+    [Fact]
+    public void And_binds_tighter_than_or()
+    {
+        var f = Facts(targeted: true, tech: true);
+        Term yes = T(Cond.TargetedByEnemy), yes2 = T(Cond.CarryingTech), no = T(Cond.AllyUnderAttack), no2 = T(Cond.VaultDamaged);
+        // yes OR yes2 AND no = yes or (yes2 and no) = true. Left to right, (yes or yes2) and no would be false.
+        Assert.True(Chain(f, yes, yes2 with { Or = true }, no));
+        // yes AND no OR no2 AND yes2 = (yes and no) or (no2 and yes2) = false.
+        Assert.False(Chain(f, yes, no, no2 with { Or = true }, yes2));
+        // no AND no2 OR yes AND yes2 = true.
+        Assert.True(Chain(f, no, no2, yes with { Or = true }, yes2));
+        // The connector of the first term means nothing.
+        Assert.False(Chain(f, no with { Or = true }));
+    }
+
+    [Fact]
+    public void Not_inverts_one_term()
+    {
+        var f = Facts(health: 0.5f);
+        Assert.True(Chain(f, T(Cond.HealthBelow, 60), T(Cond.CarryingTech, not: true)));
+        Assert.False(Chain(f, T(Cond.HealthBelow, 60, not: true)));
+        Assert.True(Chain(f, T(Cond.EnemiesAtLeast, 1, not: true)));
+    }
+
+    [Fact]
+    public void A_long_chain_follows_or_of_and_groups()
+    {
+        var f = Facts(health: 0.2f, enemies: 2, nearest: 500f);
+        // false AND true OR false OR true AND true AND NOT false
+        Term[] chain =
+        [
+            T(Cond.CarryingTech), T(Cond.HealthBelow, 30),
+            T(Cond.VaultDamaged, or: true),
+            T(Cond.EnemiesAtLeast, 2, or: true), T(Cond.EnemyWithin, 800), T(Cond.AllyUnderAttack, not: true),
+        ];
+        Assert.True(Chain(f, chain));
+        chain[5] = T(Cond.TargetedByEnemy);
+        Assert.False(Chain(f, chain));
+    }
+
+    [Fact]
+    public void Chain_text_round_trips_and_old_text_stays_the_same()
+    {
+        const string old = "HC1:HealthBelow=30>RetreatRepair;Always>HoldFire=2;EnemyWithin=1500>TargetNearest";
+        Assert.Equal(old, ShipAiModel.Encode(ShipAiModel.Decode(old)));
+        Assert.Equal(new TacticRow(Cond.HealthBelow, 30, Act.RetreatRepair, 0), ShipAiModel.Decode(old)[0]);
+        const string chain = "HC1:!CarryingTech&HealthBelow=40|HeatStageAtLeast=3&!EnemyHoldsTech>CollectTech;StrikeWithin=30|LossTimerRunning>Face=1";
+        var rows = ShipAiModel.Decode(chain);
+        Assert.Equal(chain, ShipAiModel.Encode(rows));
+        Assert.Equal([T(Cond.CarryingTech, not: true), T(Cond.HealthBelow, 40), T(Cond.HeatStageAtLeast, 3, or: true), T(Cond.EnemyHoldsTech, not: true)],
+            rows[0].Terms);
+        Assert.Equal(Side.BroadsideLeft, (Side)rows[1].ActParam);
+    }
+
+    [Theory]
+    [InlineData("HC1:&Always>Kite")]
+    [InlineData("HC1:Always&>Kite")]
+    [InlineData("HC1:Always||Always>Kite")]
+    [InlineData("HC1:!!Always>Kite")]
+    [InlineData("HC1:Always!>Kite")]
+    [InlineData("HC1:HeatStageAtLeast=0>Kite")]
+    [InlineData("HC1:Always>Face=4")]
+    public void Bad_chain_text_throws(string text) => Assert.Throws<FormatException>(() => ShipAiModel.Decode(text));
+
+    [Fact]
+    public void Too_many_terms_throw_and_add_term_stops_at_the_limit()
+    {
+        var row = new TacticRow(Cond.Always, 0, Act.Kite, 0);
+        for (int i = 0; i < 20; i++) row = ShipAiModel.AddTerm(row);
+        Assert.Equal(ShipAiModel.MaxTerms, row.Terms.Length);
+        string text = ShipAiModel.Encode([row]).Replace(">Kite", "&Always>Kite");
+        Assert.Throws<FormatException>(() => ShipAiModel.Decode(text));
+        Assert.Single(ShipAiModel.RemoveTerm(new TacticRow(Cond.Always, 0, Act.Kite, 0), 0).Terms);
+    }
+
+    [Theory]
+    [InlineData(Cond.HeatStageAtLeast, 3, true)]
+    [InlineData(Cond.HeatStageAtLeast, 4, false)]
+    [InlineData(Cond.HuntersInSystem, 0, true)]
+    [InlineData(Cond.StrikeWithin, 20, true)]
+    [InlineData(Cond.StrikeWithin, 19, false)]
+    [InlineData(Cond.LossTimerRunning, 0, false)]
+    [InlineData(Cond.CratesWithin, 400, true)]
+    [InlineData(Cond.CratesWithin, 399, false)]
+    [InlineData(Cond.EnemyHoldsTech, 0, true)]
+    [InlineData(Cond.EnemyCalling, 0, false)]
+    public void Hot_cargo_conditions_read_their_fact(Cond cond, int param, bool expected)
+    {
+        var f = Facts() with { HeatStage = 3, HuntersInSystem = true, StrikeIn = 20f, NearestCrate = 400f, EnemyHoldsTech = true };
+        Assert.Equal(expected, ShipAiModel.Holds(new Term(cond, param), f));
+        Assert.False(ShipAiModel.Holds(new Term(Cond.StrikeWithin, 3600), Facts()));
+    }
+
+    [Fact]
+    public void Disruptor_fire_rows_apply_only_to_disruptor_weapons()
+    {
+        TacticRow[] rows = [Row(Cond.Always, 0, Act.FireDisruptors, 0), Row(Cond.Always, 0, Act.FocusTarget, 0)];
+        Assert.Equal(Act.FireDisruptors, ShipAiModel.WeaponAct(rows, [true, true], new HashSet<int>(), disruptor: true));
+        Assert.Equal(Act.FocusTarget, ShipAiModel.WeaponAct(rows, [true, true], new HashSet<int>(), disruptor: false));
+    }
+
+    [Fact]
+    public void First_matching_facing_row_wins()
+    {
+        TacticRow[] rows = [Row(Cond.CarryingTech, 0, Act.Face, (int)Side.Stern), Row(Cond.Always, 0, Act.Face, (int)Side.BroadsideRight)];
+        Assert.Equal(1, ShipAiModel.Evaluate(rows, Facts(), _ => true).FacingRow);
+        Assert.Equal(0, ShipAiModel.Evaluate(rows, Facts(tech: true), _ => true).FacingRow);
+    }
+
+    // ---- Hysteresis (spec 418)
+
+    [Fact]
+    public void A_threshold_term_that_holds_keeps_holding_inside_the_margin()
+    {
+        TacticRow[] rows = [Row(Cond.HealthBelow, 30, Act.RetreatRepair), Row(Cond.EnemyWithin, 1000, Act.CloseIn)];
+        var h = new Hysteresis(0.03f, 0);
+        var d = ShipAiModel.Evaluate(rows, Facts(health: 0.29f, nearest: 1000f), _ => true, null, 0, h);
+        Assert.Equal([true, true], d.Matched);
+        // 32 % health is within 3 points; 1020 m is within 3 %.
+        d = ShipAiModel.Evaluate(rows, Facts(health: 0.32f, nearest: 1020f), _ => true, d.Memory, 1, h);
+        Assert.Equal([true, true], d.Matched);
+        d = ShipAiModel.Evaluate(rows, Facts(health: 0.34f, nearest: 1040f), _ => true, d.Memory, 2, h);
+        Assert.Equal([false, false], d.Matched);
+        // Off again, it needs the plain threshold: 31 % does not turn it on.
+        d = ShipAiModel.Evaluate(rows, Facts(health: 0.31f, nearest: 1010f), _ => true, d.Memory, 3, h);
+        Assert.Equal([false, false], d.Matched);
+        // Without memory there is no margin.
+        Assert.Equal([false, false], ShipAiModel.Evaluate(rows, Facts(health: 0.32f, nearest: 1020f), _ => true, null, 0, h).Matched);
+    }
+
+    [Fact]
+    public void A_threshold_term_keeps_a_new_value_for_the_minimum_hold_time()
+    {
+        TacticRow[] rows = [new([T(Cond.HealthBelow, 30, not: true)], Act.Kite, 0)];
+        var h = new Hysteresis(0f, 5);
+        var d = ShipAiModel.Evaluate(rows, Facts(health: 0.2f), _ => true, null, 0, h);
+        Assert.False(d.Matched[0]);
+        d = ShipAiModel.Evaluate(rows, Facts(health: 0.5f), _ => true, d.Memory, 2, h);
+        Assert.False(d.Matched[0]);
+        d = ShipAiModel.Evaluate(rows, Facts(health: 0.5f), _ => true, d.Memory, 5, h);
+        Assert.True(d.Matched[0]);
+        // A count term has no hysteresis: it follows the fact at once.
+        TacticRow[] count = [Row(Cond.EnemiesAtLeast, 2, Act.Kite)];
+        d = ShipAiModel.Evaluate(count, Facts(enemies: 2), _ => true, null, 0, h);
+        Assert.False(ShipAiModel.Evaluate(count, Facts(enemies: 1), _ => true, d.Memory, 1, h).Matched[0]);
+    }
+
+    [Fact]
+    public void Memory_of_other_rows_is_ignored()
+    {
+        TacticRow[] rows = [Row(Cond.HealthBelow, 30, Act.Kite)];
+        var d = ShipAiModel.Evaluate(rows, Facts(health: 0.32f), _ => true, [new TermMemory(true, 0), new TermMemory(true, 0)], 1, new Hysteresis(0.03f, 10));
+        Assert.False(d.Matched[0]);
+        Assert.Single(d.Memory);
+    }
+
+    // ---- Personal presets file (spec 422)
+
+    [Fact]
+    public void Preset_file_round_trips_and_skips_bad_lines()
+    {
+        var presets = new List<(string Name, string Text)> { ("Brawler", "HC1:Always>CloseIn"), ("Tech run", "HC1:CratesWithin=2000>CollectTech") };
+        string file = ShipAiModel.FormatPresets(presets);
+        Assert.Equal(presets, ShipAiModel.ParsePresets(file).Presets);
+        var parsed = ShipAiModel.ParsePresets(file + "\nno tab here\nBad\tHC1:Nope>Kite\n\n");
+        Assert.Equal(presets, parsed.Presets);
+        Assert.Equal(2, parsed.Skipped);
+        Assert.Equal("A B", ShipAiModel.CleanPresetName("  A\tB\n "));
     }
 }
