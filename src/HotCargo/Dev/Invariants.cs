@@ -91,14 +91,15 @@ public static class Invariants
 
     /// <summary>
     /// Spec 994, 995: a Hot Cargo hostile ship attacks the players only after its trigger. A chain ship (tag hc_ch_*) waits until
-    /// a chain stage mission of this system is accepted. A hunter waits until heat is above 0 and a stage started.
+    /// a chain stage mission of this system is accepted. A hunter waits until heat is above 0 and a stage started, or a hunter wave spawned.
     /// Limit: "attacks" means an attack command on a human ship. A weapon that fires at a ship in range without a command
     /// does not count. Revisit if a playtest shows hits from ships that have no attack command.
     /// </summary>
     static void HostilesWaitForTrigger(Run run, SimRoot sim)
     {
         bool chainAccepted = ChainStageAccepted(run, sim);
-        bool hunterTrigger = run.State.Heat > 0f && run.State.StagesStarted > 0;
+        // A wave in this session (a stage, a strike wave, an informant, an event or a test command) is the trigger too.
+        bool hunterTrigger = (run.State.Heat > 0f && run.State.StagesStarted > 0) || Hunters.HunterSpawner.WavesSpawned > 0;
         foreach (Ship ship in sim.Ships)
         {
             if (ship.IsHumanPlayerShip || ship.IsJunk || ship.Tags is not { Count: > 0 } tags) continue;
@@ -106,7 +107,7 @@ public static class Invariants
             bool hunter = !hunterTrigger && ship.HasTag(Hunters.HunterSpawner.HunterTag);
             if (!chain && !hunter) continue;
             if (AttackTarget(ship) is not { } target) continue;
-            string what = chain ? "chain ship attacks before its stage mission is accepted" : "hunter attacks before a stage at heat above 0";
+            string what = chain ? "chain ship attacks before its stage mission is accepted" : "hunter attacks before a stage at heat above 0 and before any hunter wave";
             Fail(chain ? "hostile_chain_trigger" : "hostile_hunter_trigger", ship.UniqueID.ToString(),
                 $"{what}: {ship.Metadata.PlainShipName} [{string.Join(" ", tags)}] targets {target.Metadata.PlainShipName}; " +
                 $"heat {run.State.Heat:0.0}, stages {run.State.StagesStarted}, run seconds {run.State.GameSeconds:0}");
@@ -140,8 +141,7 @@ public static class Invariants
         foreach (Doodad d in sim.Doodads)
         {
             if (d is not POIDoodad poi || poi.Rules.ID != TargetArea || (!poi.IsExplored && poi.IsUndiscovered)) continue;
-            if (run.Mode.Missions.Any(m => m.Completion == CompletionState.InProgress && m.IsPOIAssociated(poi))) continue;
-            if (offers.Any(m => m.IsPOIAssociated(poi))) continue;
+            if (run.Mode.Missions.Any(m => m.Completion == CompletionState.InProgress && Owns(m, poi)) || offers.Any(m => Owns(m, poi))) continue;
             seen.Add(poi.UniqueID);
             int n = _strayMarkerChecks.GetValueOrDefault(poi.UniqueID) + 1;
             _strayMarkerChecks[poi.UniqueID] = n;
@@ -152,6 +152,13 @@ public static class Invariants
         }
         foreach (var id in _strayMarkerChecks.Keys.Where(k => !seen.Contains(k)).ToList()) _strayMarkerChecks.Remove(id);
     }
+
+    /// <summary>
+    /// A mission owns a marker when an objective claims it (IsPOIAssociated) or has its area at the marker. Vanilla bounty
+    /// objectives only point at their target area by location, so the claim alone misses them.
+    /// </summary>
+    static bool Owns(Mission m, POIDoodad poi) =>
+        m.IsPOIAssociated(poi) || m.Objectives.Any(o => o.GetAreaLocation(m.Game) is { } area && area.Center.DistanceTo(poi.WorldLocation) < 1f);
 
     /// <summary>Spec 103, 997: rivals are symmetric. When accepting A dismisses B, accepting B dismisses A.</summary>
     static void RivalsSymmetric(Run run, SimRoot sim)

@@ -4,6 +4,9 @@
 # timeout: 1500
 newgame run
 wait 8
+pt_watch 30
+# The run starts with an event page; a person picks a choice.
+choose 1
 pt_status start
 # Ship AI tactics: a preset and the Auto switch, like the tactics editor.
 tactics Aggressive

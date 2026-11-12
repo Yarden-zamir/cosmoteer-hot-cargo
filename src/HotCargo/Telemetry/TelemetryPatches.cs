@@ -89,6 +89,7 @@ static class TelemetryPatches
         ("MPShipSurrenderedInput", "surrender"), ("MPTransferMoneyInput", "transfer"),
         ("FleeStrategy", "flee_jump"), ("AIExitSectorModule", "exit_sector"), ("AIDeleteSelfModule", "delete_self"),
         ("AITradeShipModule", "trade_route"), ("VaultDamage", "vault_damage"),
+        ("FameCapHeat", "fame_cap"), ("Deals", "diplomacy"),
     ];
 
     /// <summary>

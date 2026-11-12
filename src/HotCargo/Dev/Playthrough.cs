@@ -101,6 +101,18 @@ public static class Playthrough
         };
         Autotest.Fields["pt_ready"] = () => TechAutotest.PlayerShip().Ftl.IsReadyToJump ? 1 : 0;
         Autotest.Commands["pt_status"] = arg => Status(arg);
+        // pt_watch <real seconds>: a status line at that interval, so a failed wait shows what the ship did. It only reads.
+        Autotest.Commands["pt_watch"] = arg =>
+        {
+            double every = double.Parse(arg, CultureInfo.InvariantCulture), next = 0;
+            Halfling.App.Director.FrameEnded += (_, _) =>
+            {
+                double now = Halfling.App.Clock.Time.Seconds;
+                if (now < next || Run.Current is null) return;
+                next = now + every;
+                Errors.Guard("playthrough watch", () => Status("watch"));
+            };
+        };
     }
 
     static Cosmoteer.Game.GameRoot Game() => Autotest.RequireRun().Game;
@@ -205,6 +217,9 @@ public static class Playthrough
         int hurt = ship.Parts.Count(p => p.Health < p.Rules.MaxHealth);
         Log.Info($"AUTOTEST PLAYTHROUGH {label}: sector={run.State.SectorIndex} tech={run.State.FleetTech} heat={run.State.Heat:0.0} " +
                  $"money={run.Game.LocalPlayerState.Money} parts={ship.Parts.Count} hurt={hurt} drives={ship.Ftl.HasFtlDrives} fuel={ship.Ftl.GetTotalFuel()} " +
-                 $"mission={_mission?.MetatypeID} {_mission?.Completion} hostiles={run.Game.Sim.Ships.Count(s => s.IsEnemiesWith(ship) && !s.IsJunk)}");
+                 $"mission={_mission?.MetatypeID} {_mission?.Completion} target={(_mission?.GetClosestObjective(out float d) is null ? "none" : $"{d:0}")} " +
+                 $"hostiles={run.Game.Sim.Ships.Count(s => s.IsEnemiesWith(ship) && !s.IsJunk)} " +
+                 $"nearest hostile={run.Game.Sim.Ships.Where(s => s.IsEnemiesWith(ship) && !s.IsJunk).Select(s => s.DetWorldCenter.DistanceTo(ship.DetWorldCenter)).DefaultIfEmpty(-1).Min():0} " +
+                 $"order={ship.Commands.ConfirmedCommands.FirstOrDefault()?.GetType().Name}");
     }
 }
