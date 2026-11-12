@@ -18,7 +18,7 @@ namespace HotCargo.Events;
 
 /// <summary>
 /// Event simulation logic: triggers, conditions, outcome rolls and effects.
-/// Everything here runs from deterministic sources only: Run.Hooks (sim tick, system switch, new run) and the choice MP input.
+/// Everything here runs from deterministic sources only: Run.Hooks (sim tick, system switch) and the choice MP input.
 /// </summary>
 public static class EventRunner
 {
@@ -28,11 +28,6 @@ public static class EventRunner
     const float ProximityCheckSeconds = 0.5f;
 
     static EventsState State(Run run) => run.State.Events;
-
-    internal static void OnNewRun(Run run)
-    {
-        State(run).StartDueSeconds = run.State.GameSeconds + run.T.Events.StartDelaySeconds;
-    }
 
     internal static void OnSystemEntered(Run run, bool firstVisit)
     {
@@ -50,20 +45,12 @@ public static class EventRunner
         CheckCarrier(run, sim);
         if (!t.Enabled || EventLibrary.LoadError is not null || s.Pending is not null) return;
         double now = run.State.GameSeconds;
-        if (s.StartDueSeconds >= 0 && now >= s.StartDueSeconds)
-        {
-            s.StartDueSeconds = -1;
-            TryTrigger(run, sim, EventTrigger.Start, chance: 1f, limited: false);
-            return;
-        }
         if (s.ArrivalDueSeconds >= 0 && now >= s.ArrivalDueSeconds)
         {
             s.ArrivalDueSeconds = -1;
             TryTrigger(run, sim, EventTrigger.Arrival, t.ArrivalEventChance, limited: true);
             return;
         }
-        // The Start event comes first; signals and stations wait for it.
-        if (s.StartDueSeconds >= 0) return;
         // Proximity checks run twice a game second. The step comes from game time, so every client checks on the same tick.
         if (Math.Floor(now / ProximityCheckSeconds) == Math.Floor((now - dt) / ProximityCheckSeconds)) return;
         CheckSignals(run, sim);

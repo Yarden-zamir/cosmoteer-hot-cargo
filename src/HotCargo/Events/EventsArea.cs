@@ -26,7 +26,6 @@ public static class EventsArea
 {
     public static void Register()
     {
-        Run.Hooks.NewRunStarted += EventRunner.OnNewRun;
         Run.Hooks.SystemEntered += EventRunner.OnSystemEntered;
         Run.Hooks.Tick += EventRunner.OnTick;
         Run.Hooks.NewRunStarted += Abandoned.OnNewRun;

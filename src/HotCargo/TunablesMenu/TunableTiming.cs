@@ -60,7 +60,6 @@ public static class TunableTiming
         ["MissionTunables.EscortHeatChange"] = Applies.NextOffer,
         ["EventsTunables.ArrivalEventChance"] = Applies.NextSystem,
         ["EventsTunables.ArrivalDelaySeconds"] = Applies.NextSystem,
-        ["EventsTunables.StartDelaySeconds"] = Applies.NewRun,
         ["EventsTunables.StationEventChance"] = Applies.NextSystem,
         ["EventsTunables.CourierChance"] = Applies.NextSystem,
         ["EventsTunables.PauseOnEvent"] = Applies.NextUse,

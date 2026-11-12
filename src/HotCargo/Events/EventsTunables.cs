@@ -12,8 +12,6 @@ public sealed class EventsTunables
     [Serialize(Optional = true)] public float ArrivalEventChance = 0.6f;
     /// <summary>Game seconds after arrival before the Arrival event opens, so the players see the system first.</summary>
     [Serialize(Optional = true)] public float ArrivalDelaySeconds = 6f;
-    /// <summary>Game seconds after a new run starts before the Start event opens.</summary>
-    [Serialize(Optional = true)] public float StartDelaySeconds = 3f;
     /// <summary>Chance, once per system visit, that the first trade station a player ship comes near opens a Station event.</summary>
     [Serialize(Optional = true)] public float StationEventChance = 0.5f;
     [Serialize(Optional = true)] public float StationTriggerDistance = 1500f;

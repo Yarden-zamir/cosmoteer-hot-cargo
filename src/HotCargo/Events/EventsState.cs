@@ -31,8 +31,6 @@ public sealed class EventsState
     [Serialize(Optional = true)] public double LastEventSeconds = -1;
     /// <summary>Game seconds at which the Arrival roll runs, or -1 when none is due.</summary>
     [Serialize(Optional = true)] public double ArrivalDueSeconds = -1;
-    /// <summary>Game seconds at which the Start event opens, or -1 when none is due.</summary>
-    [Serialize(Optional = true)] public double StartDueSeconds = -1;
     /// <summary>Arrival and Station events per system.</summary>
     [Serialize(Optional = true)] public Dictionary<ObjectID, int> NodeEvents = new();
     /// <summary>Systems where the Station roll already ran in the current visit. Cleared on each system switch.</summary>
