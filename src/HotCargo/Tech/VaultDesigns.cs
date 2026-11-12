@@ -179,6 +179,8 @@ static class VaultDesigns
         var ship = Ship.Load(bytes, name, b.Game.LocalPlayerIndex, spawnWithCrew: true, builtByPlayer: true, randSeed: 1UL);
         ship.WorldCenter = Autotest.ClearSpotNear(sim, near.DetWorldCenter, near.WorldBoundingRadius + ship.WorldBoundingRadius + 500f, ship.WorldBoundingRadius);
         sim.Ships.Add(ship);
+        // Runtime only, not saved with the design: no shot may break a part during the power-up, or the save draws a blueprint.
+        ship.SelfInvulnerable = true;
         try
         {
             int storageBefore = StorageParts(ship);
