@@ -3,6 +3,7 @@ using Cosmoteer.Ships;
 using Cosmoteer.Ships.Blueprints;
 using Cosmoteer.Ships.Parts;
 using Cosmoteer.Ships.Parts.Resources;
+using Halfling.Geometry;
 using HotCargo.Core;
 using HotCargo.Dev;
 
@@ -32,15 +33,26 @@ static class VaultDesigns
             Log.Info($"AUTOTEST shipcheck {file.FilePath}: legal={_checkPassed} vault capacity={_checkVaults}");
             if (!_checkPassed) _ = Halfling.Gui.Dialogs.OneButtonDialog.Show(Cosmoteer.Localization.Strings.GetText("GameSetupScreen/InvalidShip"));
         };
-        // vaultbuild preset|vanilla N: loads starter ship N into the sim next to the player ship and builds vaults (spec 441).
+        // vaultbuild preset|vanilla N [nobay]: loads starter ship N into the sim next to the player ship and builds vaults (spec 441).
+        // nobay rules out the tiles of every storage part, so no vault goes on a bay and the grabbed bay must go back.
         // Then it runs PowerUpSeconds like vaultdesigns, records whether the ship still matches its blueprint, and removes it. Headless, no save.
         Autotest.Commands["vaultbuild"] = arg =>
         {
             var game = Autotest.Game ?? throw new InvalidOperationException("vaultbuild needs a running game");
-            var file = StarterFile(arg);
-            var (ship, line) = Build(new Batch(game, "", "", NewGameCheck.RequiredUnits(coop: false), new(), []), (string)file.FilePath);
+            bool noBay = arg.EndsWith(" nobay", StringComparison.Ordinal);
+            var file = StarterFile(noBay ? arg[..^" nobay".Length] : arg);
+            HashSet<IntVector2> bayCells;
+            int storageBefore;
+            using (var design = file.LoadShipBlueprints())
+            {
+                bayCells = design.BlueprintParts.Where(p => p.Rules.Components.OfType<FlexResourceGridRules>().Any()).SelectMany(p => p.Rect).ToHashSet();
+                storageBefore = StorageParts(design);
+            }
+            var (ship, line) = Build(new Batch(game, "", "", NewGameCheck.RequiredUnits(coop: false), new(), []), (string)file.FilePath,
+                noBay ? c => !bayCells.Contains(c) : null);
             Log.Info($"AUTOTEST vaultbuild {file.FilePath}: {line}");
             _built = ship is null ? 0 : ship.BlueprintParts.Count(p => p.Rules.ID == Vaults.VaultId);
+            _storageKept = ship is not null && StorageParts(ship) == storageBefore;
             _matches = false;
             if (ship is null) return;
             double until = Halfling.App.Clock.Time.Seconds + PowerUpSeconds;
@@ -53,6 +65,8 @@ static class VaultDesigns
             });
         };
         Autotest.Fields["designmatches"] = () => _matches ? 1 : 0;
+        // 1 when the design kept all its storage parts (a bay with no vault on its tiles goes back).
+        Autotest.Fields["storagekept"] = () => _storageKept ? 1 : 0;
         Autotest.Fields["vaultsbuiltindesign"] = () => _built;
         Autotest.Fields["shiplegal"] = () => _checkPassed ? 1 : 0;
         Autotest.Fields["shipvaulttech"] = () => _checkVaults;
@@ -85,6 +99,7 @@ static class VaultDesigns
 
     static int _built;
     static bool _matches;
+    static bool _storageKept;
     static bool _checkPassed;
     static int _checkVaults;
 
@@ -159,7 +174,7 @@ static class VaultDesigns
     }
 
     /// <summary>Loads the design into the sim near the player ship (out of stasis, so it runs) and builds the vaults. Null ship: skipped, with the reason.</summary>
-    static (Ship? Ship, string Line) Build(Batch b, string file)
+    static (Ship? Ship, string Line) Build(Batch b, string file, Func<IntVector2, bool>? allowCell = null)
     {
         var sim = b.Game.Sim;
         string name = Ship.GetNameFromFilename(file) ?? throw new InvalidOperationException($"no ship name in {file}");
@@ -187,7 +202,7 @@ static class VaultDesigns
         try
         {
             int storageBefore = StorageParts(ship);
-            var cells = StartingVault.BuildVaults(ship, b.Units);
+            var cells = StartingVault.BuildVaults(ship, b.Units, allowCell);
             if (!ship.BlueprintParts.IsValid || !ship.PhysicalMatchesBlueprints) throw new InvalidOperationException("the design is not valid after the vaults");
             if (!GameApp.Rules.CareerMode.IsShipDesignLegal(ship) || NewGameCheck.VaultCapacity(ship) < b.Units) throw new InvalidOperationException("the career new-game check refuses the design");
             // Crew, full power and supplies, like a new career ship (CareerGameModeManager.FinishInitNewGame). Vaults start empty (InitToMaxResources = 0).
