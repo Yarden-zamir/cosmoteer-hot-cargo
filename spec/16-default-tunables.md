@@ -30,6 +30,7 @@
 | `ShadyTrapChancePerHeat` | 0.006 | 39 |
 | `ShadyTrapSurvivalReward` | 0.5 | 40 |
 | `EscortHeatChange` | −8 | 36 |
+| `EscortRouteShare`, `EscortAmbushAt`, `EscortAmbushLead`, `EscortRaiderFocus` | 0.65, 0.3, 1800, 3 | 36 |
 | `Events.ArrivalEventChance`, `ArrivalDelaySeconds` | 0.6, 6 s | 69 |
 | `Events.StationEventChance`, `StationTriggerDistance` | 0.5, 1500 | 69 |
 | `Events.SignalTriggerDistance` | 900 | 69 |
