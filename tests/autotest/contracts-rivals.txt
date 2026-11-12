@@ -19,3 +19,4 @@ contract_terms informant 0
 contract_accept
 expect contract_accepted == 1
 expect contract_rival_offered == 0
+quit
