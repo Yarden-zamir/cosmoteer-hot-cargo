@@ -4,7 +4,7 @@ wait 8
 closepanel
 expect runlog_sector == 1
 # An event choice.
-expectevent getaway
+event the_fence
 choose 3 1
 expect runlog_event == 1
 ev_set Enabled false

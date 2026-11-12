@@ -7,13 +7,15 @@ pause off
 screenshot hud-01-intro
 closepanel
 wait 2
-screenshot hud-02-event-start
-uxpick 2
+ev_set Enabled false
+event the_fence
+wait 1
+screenshot hud-02-event
+uxpick 1
 wait 2
 screenshot hud-03-event-result
 uxpick 1
 wait 1
-ev_set Enabled false
 godmode on
 screenshot hud-04-heat-calm
 # A greyed choice (no sensor array) and a follow-up page.
@@ -101,9 +103,6 @@ newgame run
 wait 8
 closepanel
 wait 1
-uxpick 3
-wait 1
-uxpick 1
 godmode off
 lose
 wait 4

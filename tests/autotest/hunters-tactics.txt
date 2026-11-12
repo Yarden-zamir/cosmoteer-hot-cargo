@@ -1,7 +1,7 @@
 # Hunter AI tactics: modules load, act, and log. Strike stage turns on every tactic (Disable at Hunt, Bait at Strike).
 newgame run
 wait 8
-# No random events during the hunter checks (the start event already opened; nobody chooses it).
+# No random events during the hunter checks.
 ev_set Enabled false
 # Nine strike-stage hunters destroy a sector-1 starter ship before the tactics can be observed, even with godmode
 # (one big hit still destroys a part). Five hunters are enough for groups (pincer, bait) and every stage (disable, bait).

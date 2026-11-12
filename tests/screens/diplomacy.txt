@@ -4,8 +4,6 @@ render on
 newgame run
 wait 10
 ev_set Enabled false
-choose 3
-wait 2
 closepanel
 godmode on
 aiset FleeEnabled false

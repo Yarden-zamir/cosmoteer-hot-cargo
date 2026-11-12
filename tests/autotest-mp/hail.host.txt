@@ -2,10 +2,6 @@
 # the same page (same serial) does nothing, so the choice applies once on both machines.
 mphost {PORT}
 mpstart 2
-waitfor ev_pending == 1 30
-expectevent getaway
-choose 3
-waitfor ev_pending == 0 30
 mp ev_set StationEventChance 0
 mp event broken_down
 waitfor ev_carrier == 1 20

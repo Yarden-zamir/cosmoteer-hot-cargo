@@ -2,10 +2,6 @@
 # the client pays a crate for a clean record, and wanted clears on both machines with the same state.
 mphost {PORT}
 mpstart 2
-waitfor ev_pending == 1 30
-expectevent getaway
-choose 3
-waitfor ev_pending == 0 30
 mp ev_set WantedEventChance 1
 mp wanted
 wait 2

@@ -6,11 +6,6 @@ tutorials on
 newgame run
 wait 10
 closepanel
-# The Start event: pick an option and continue, like a player.
-uxpick 3
-wait 2
-uxpick 1
-wait 1
 ev_set Enabled false
 pause off
 wait 6
