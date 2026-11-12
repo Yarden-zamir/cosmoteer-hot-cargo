@@ -9,7 +9,8 @@ Spec: SPEC.md section 29 (requirements 530 to 545). Code: `src/HotCargo/Telemetr
   `scripts/deploy.sh` keeps this folder.
 - One file for each session: `<run id>__<session id>.jsonl`. A session is one game from its start or load until it closes.
 - A run is one career. The run ID is in the career save (path `HotCargoTelemetry`), so a loaded game continues the run ID.
-  In co-op the host's save goes to the clients, so all machines of a game share the run ID.
+  A co-op client that joins a running game or resyncs gets the run ID with the host's game state. A new co-op game gets its own run ID on each machine;
+  the `seed` and `players` in `session.start` match on all machines of that game.
 - A file that reaches `MaxFileMegabytes` continues in `<run id>__<session id>.part<N>.jsonl`. Each part starts with a `file.part` line.
 - At session start the oldest files go until the folder is below `MaxFolderMegabytes`.
 
@@ -38,11 +39,11 @@ Category switches are in the `Telemetry` tunables section. The table names the s
 
 | Event | Switch | Fields |
 |---|---|---|
-| `session.start` | Run | `schema`, `run`, `session`, `session_no`, `new_run`, `loaded`, `wall_utc`, `game_version`, `mod_version` (`1.0.0+<commit>`), `tunables_hash` (of the file), `tunables_full_hash` (of the values in effect), `seed`, `map`, `map_size_index`, `combat_difficulty`, `econ_difficulty`, `crew_scarcity`, `money_reward_factor`, `fame_reward_factor`, `players`, `local_player`, `mp`, `host`, `autotest`, `label`, `cores`, `os`, `tunables` (every tunable value) |
+| `session.start` | Run | `schema`, `run`, `session`, `session_no`, `new_run`, `loaded`, `wall_utc`, `game_version`, `mod_version` (`1.0.0+<commit>`), `tunables_hash` (of the file), `tunables_full_hash` (of the values in effect), `seed`, `map`, `map_size_index`, `combat_difficulty`, `econ_difficulty`, `crew_scarcity`, `money_reward_factor`, `fame_reward_factor`, `players`, `enemy_scale_setting`, `enemy_scale_factor`, `local_player`, `mp`, `host`, `autotest`, `label`, `cores`, `os`, `tunables` (every tunable value) |
 | `session.end` | Run | `reason` (`game_closed`, `game_closed_after_loss`, `replaced`, `process_exit`), `result`, `real_s`, `sim_s`, `events`, `dropped`, `overhead_ms`, `overhead_pct_wall`, `writer_ms`, `frames`, `frame_ms`, `ticks`, `tick_ms`, `trace_missing` |
 | `run.new`, `run.loaded` | Run | `starting_tech`; `result`, `sessions` |
 | `run.save` | Run | `caller` (who saved: a save, an autosave, a co-op sync) |
-| `run.jump` | Run | `from`, `stay_s`, `open_contracts`. A snapshot follows. |
+| `run.jump` | Run | `from`, `stay_s`, `open_contracts`. The first tick with player ships in the new system takes a snapshot (`why` = entry). |
 | `system.enter` | Run | `from`, `first_visit`, `prev_stay_s`, `prev_stay_real_s`, `prev_missions_done`, `prev_missions_accepted`, `heat_before`, `stages`, `peak_tier`, `visited` |
 | `system.poi` | Run | `poi` |
 | `run.won`, `run.lost` | Run | `reason`, `score`, `delivered`, `notoriety`, `peak_tier`, `money` (per player). A snapshot follows. |
@@ -65,13 +66,13 @@ Category switches are in the `Telemetry` tunables section. The table names the s
 | `event.result` | Story | `serial`, `title`, `lines` (one line per effect) |
 | `chain.start`, `chain.stage` | Story | `chain`, `station`, `from_stage`, `stage`, `part`, `ended`, `result`, `flags`, `story` |
 | `combat.census` | Combat | `live` (ships by side), `factions`, `stasis_ships`. At the first visit of a system. |
-| `combat.spawn` | Combat | ship fields, `from_stasis`. Every non-player ship that appears after the census. |
+| `combat.spawn` | Combat | ship fields, `from_stasis`. Every non-player ship that appears after the census, without derelicts (the pieces of a broken ship). |
 | `combat.destroyed` | Combat | `ship`, `name`, `player`, `side`, `faction`, `hunter`, `value`, `tags`. A ship that became a derelict. |
 | `combat.removed` | Combat | ship fields, `src`, `caller`. A ship that left for good: a hunter that jumps out (`flee_jump`), a trader that exits. |
 | `combat.crew_died` | Combat | `player`, `cause`, `carried_tech` |
 | `combat.damage` | Combat | per side of the damaged ship: `damage`, `repaired`, `parts_lost`. Summed over `AccrualSeconds`. Side `vault` holds the Tech Vault part of the player damage again. |
 | `ai.switch` | Ai | `ship`, `name`, `side`, `ai`, `from`, `to` (module types), `integrity`, `dist` |
-| `snap` | Snapshots | `why` (timer, jump, result, test), `result`, `stages`, `notoriety`, `peak_tier`, `tech_value`, `buyer_mult`, `heat_mult`, `fame`, `money`, `score`, `delivered`, `open_contracts`, `trail_per_min`, `mission_log`, `pending_informants`, `waiting_hunter_groups`, `events_seen`, `chains`, `crew`, `ships` (value, blueprint, integrity, parts, firepower, vaults, crew of each player ship), `fleet_value`, `fleet_blueprint`, `fleet_firepower`, `fleet_parts`, `vaults`, `live` (ships by side), `stasis`, `ai` (sums, see below) |
+| `snap` | Snapshots | `why` (timer, entry, result, test), `result`, `stages`, `notoriety`, `peak_tier`, `tech_value`, `buyer_mult`, `heat_mult`, `enemy_scale_factor`, `fame`, `money`, `score`, `delivered`, `open_contracts`, `trail_per_min`, `mission_log`, `pending_informants`, `waiting_hunter_groups`, `events_seen`, `chains`, `crew`, `ships` (value, blueprint, integrity, parts, firepower, vaults, crew of each player ship), `fleet_value`, `fleet_blueprint`, `fleet_firepower`, `fleet_parts`, `vaults`, `live` (ships by side), `stasis`, `ai` (sums, see below) |
 | `perf` | Perf | `window_ms`, `frames`, `fps`, `frame_mean_ms`, `frame_p50_ms`, `frame_p95_ms`, `frame_p99_ms`, `frame_max_ms`, `frames_over_33ms`, `ticks`, `tick_mean_ms`, `tick_max_ms`, `tick_total_ms`, `tele_ms`, `tele_pct_wall`, `tele_pct_tick`, `tele_writer_ms`, `tele_events`, `tele_bytes`, `tele_pending`, `tele_dropped`, `gc0`, `gc1`, `gc2`, `gc_pause_ms`, `heap_mb`, `working_set_mb` |
 | `mp.players` | Coop | `from`, `to` |
 | `mp.desync` | Coop | `input_tick`, `host`, `expected` (a test resync) |
@@ -87,7 +88,7 @@ Terms: `fee`, `bonus`, `flat_heat`, `trail`, `rival`, `informant`.
 
 - `src` of a heat, money or fame change comes from the code that called it. Run.OnTick and ContractBook.OnTick add heat every tick, so they are marked without a stack walk (`time`, `trail`). Other changes walk the stack and name the first frame that a rule in `TelemetryPatches.Sources` matches: for example `fame`, `contract_accept`, `informant`, `escort_cover`, `event`, `chain`, `mission_reward`, `contract_bonus`, `trade`, `build`, `build_refund`, `crew_hire`, `surrender`, `test`, `debug`. Without a match it is the type of the first frame. `caller` holds up to 3 frames, innermost first, joined with ` < `.
 - Above `CallerLookupsPerSecond` stack walks in one real second, `src` is `rate_limited`.
-- `cause` of a tech count change is the newest hint within 5 game seconds: `sale`, `buyer`, `buyback`, `vault_damage`, `vault_destroyed`, `ship_lost`, `crew_death`, `event`, `starting_vault`, `test`, `debug`. `initial` is the first count of a session. `other` means no hint.
+- `cause` of a tech count change is the newest hint within 5 game seconds: `jump` (the ships are in jump limbo, so the count is 0 until they arrive), `sale`, `buyer`, `buyback`, `vault_damage`, `vault_destroyed`, `ship_lost`, `crew_death`, `event`, `starting_vault`, `test`, `debug`. `initial` is the first count of a session. `other` means no hint.
 
 ### AI sums
 

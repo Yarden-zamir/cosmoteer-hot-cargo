@@ -22,12 +22,33 @@ def conclusions(reports: list[a.RunReport]) -> list[str]:
     if pooled.rows:
         top = ", ".join(f"{r[0]} {r[2]}" for r in pooled.rows[:4] if r[2] != "-")
         out.append(f"Heat gains by source over {len(reports)} runs: {top}.")
-    pct = [e["tele_pct_wall"] for r in reports for e in r.run.events if e["e"] == "perf"]
+    perf = [[e["tele_pct_wall"] for e in s.events if e["e"] == "perf"] for r in reports for s in r.run.sessions]
+    pct = [p for windows in perf for p in windows]
+    # The first window of a session holds the one-time cost: the header with every tunable, and the first run of each code path.
+    steady = [p for windows in perf for p in windows[1:]]
     if pct:
-        out.append(f"Telemetry overhead over {len(pct)} perf windows: median {statistics.median(pct):.3f} %, "
-                   f"95th percentile {sorted(pct)[int(0.95 * (len(pct) - 1))]:.3f} %, max {max(pct):.3f} % of real time.")
+        out.append(f"Telemetry overhead over {len(pct)} perf windows: median {statistics.median(pct):.3f} %, max {max(pct):.3f} % of real time; "
+                   f"without the first window of each session: median {statistics.median(steady or [0]):.3f} %, max {max(steady or [0]):.3f} %.")
     results = [a.result_of(r.run)[0] for r in reports]
     out.append(f"Results: {results.count('won')} won, {results.count('lost')} lost, {results.count('running')} not finished.")
+    events = [e for r in reports for e in r.run.events]
+    hunters = {e["ship"] for e in events if e["e"] == "combat.spawn" and e.get("hunter")}
+    if hunters:
+        killed = {e["ship"] for e in events if e["e"] == "combat.destroyed"} & hunters
+        fled = {e["ship"] for e in events if e["e"] == "combat.removed" and e.get("src") == "flee_jump"} & hunters
+        out.append(f"Hunters: {len(hunters)} spawned, {len(killed)} destroyed, {len(fled)} jumped out; the rest were alive when the players left or the run ended.")
+    lost = [e for e in events if e["e"] == "tech.count" and e.get("from") is not None and e["delta"] < 0]
+    if lost:
+        by_cause: dict[str, int] = {}
+        for e in lost:
+            by_cause[e["cause"]] = by_cause.get(e["cause"], 0) - e["delta"]
+        out.append("Tech units lost by cause: " + ", ".join(f"{k} {v}" for k, v in sorted(by_cause.items(), key=lambda kv: -kv[1])) + ".")
+    first_stage = [e["since_entry_s"] for e in events if e["e"] == "heat.stage" and e.get("stage") == 0 and "since_entry_s" in e]
+    if first_stage:
+        out.append(f"First stage (Warning) after system entry: median {a.mmss(statistics.median(first_stage))} game time (n={len(first_stage)}).")
+    destroyed_players = [e for e in events if e["e"] == "combat.destroyed" and e["side"] == "player"]
+    if destroyed_players:
+        out.append(f"Player ships lost: {len(destroyed_players)}, in sectors {sorted({e['sec'] for e in destroyed_players})}.")
     return out
 
 

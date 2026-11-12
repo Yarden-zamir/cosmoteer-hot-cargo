@@ -77,6 +77,8 @@ sealed class Session
 
     // ---- System visit
     double _enteredSim, _enteredReal;
+    /// <summary>Set at system entry. The first tick with player ships in the new system takes a snapshot.</summary>
+    bool _snapAfterEntry;
     int _missionsDoneInSystem, _missionsAcceptedInSystem;
     float _heatBeforeJump;
 
@@ -278,6 +280,8 @@ sealed class Session
             Tele.Num(w, "money_reward_factor", mode.EconDifficulty.MoneyRewardFactor);
             Tele.Num(w, "fame_reward_factor", mode.EconDifficulty.FameRewardFactor);
             w.WriteNumber("players", Game.HumanPlayersIndexes.Count());
+            Tele.Num(w, "enemy_scale_setting", Scaling.EnemyScale.Setting(Game));
+            Tele.Num(w, "enemy_scale_factor", Scaling.EnemyScale.Factor(Game.Sim));
             w.WriteNumber("local_player", Game.LocalPlayerIndex);
             w.WriteBoolean("mp", Run.IsMultiplayer);
             w.WriteBoolean("host", !Run.IsMultiplayer || Game.NetManager.IsHost);
@@ -353,6 +357,11 @@ sealed class Session
             _nextScan = _simSeconds + T.ScanSeconds;
             ScanOffers(sim);
             ScanStasis(sim);
+        }
+        if (_snapAfterEntry && sim.Ships.HumanPlayerShips.Any())
+        {
+            _snapAfterEntry = false;
+            Snapshot(sim, "entry");
         }
         if (_simSeconds >= _nextSnapshot)
         {
@@ -474,13 +483,14 @@ sealed class Session
     internal void BeforeSwitch()
     {
         _heatBeforeJump = Run.State.Heat;
+        // The ships are in jump limbo now, so the fleet tech count drops to 0 until they arrive.
+        AddTechHint("jump");
         Tele.Emit(Cat.Run, "run.jump", w =>
         {
             w.WriteString("from", _system);
             Tele.Num(w, "stay_s", _simSeconds - _enteredSim);
             w.WriteNumber("open_contracts", ContractBook.Open(Run).Count());
         });
-        Snapshot(Game.Sim, "jump");
     }
 
     internal static void OnSystemEntered(Run run, bool firstVisit)
@@ -503,6 +513,8 @@ sealed class Session
             w.WriteNumber("peak_tier", run.State.PeakTier);
             w.WriteNumber("visited", run.State.VisitedNodes.Count);
         });
+        s.AddTechHint("jump");
+        s._snapAfterEntry = true;
         s._enteredSim = s._simSeconds;
         s._enteredReal = s.RealSeconds;
         s._missionsDoneInSystem = s._missionsAcceptedInSystem = 0;
@@ -790,7 +802,8 @@ sealed class Session
 
     void OnShipAdded(object? sender, Ship ship)
     {
-        if (ship.IsHumanPlayerShip || !_seenHere.Add(ship.UniqueID)) return;
+        // Derelicts are mostly the pieces of a ship that broke apart; combat.destroyed has the ship itself.
+        if (ship.IsHumanPlayerShip || ship.IsJunk || !_seenHere.Add(ship.UniqueID)) return;
         long t0 = Stats.Enter();
         try { Tele.Emit(Cat.Combat, "combat.spawn", ship, static (w, s) => { WriteShip(w, s); w.WriteBoolean("from_stasis", false); }); }
         finally { Stats.Exit(t0); }
@@ -802,7 +815,7 @@ sealed class Session
         if (!Tele.On(Cat.Combat)) return;
         foreach (var s in sim.Stasis)
         {
-            if (s is not (StasisShipSpawner or SimStasisManager.SerializedStasisShip) || !_seenHere.Add(s.ReservedObjectID)) continue;
+            if (s is not (StasisShipSpawner or SimStasisManager.SerializedStasisShip) || s.ObjectAllegiance == -3 || !_seenHere.Add(s.ReservedObjectID)) continue;
             var tags = SimQueries.StasisTags(s);
             Tele.Emit(Cat.Combat, "combat.spawn", w =>
             {
@@ -871,6 +884,7 @@ sealed class Session
             w.WriteNumber("tech_value", TechPrice.Sell(Run));
             Tele.Num(w, "buyer_mult", s.BuyerPriceMultiplier);
             Tele.Num(w, "heat_mult", HeatModel.Multiplier(Run.T.Heat.HeatMultiplierByUnits, s.FleetTech));
+            Tele.Num(w, "enemy_scale_factor", Scaling.EnemyScale.Factor(sim));
             w.WriteNumber("fame", Run.Mode.PlayerFame);
             WriteMoney(w);
             w.WriteNumber("score", s.Score);
