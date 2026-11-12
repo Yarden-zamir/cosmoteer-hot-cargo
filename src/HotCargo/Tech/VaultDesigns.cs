@@ -13,11 +13,15 @@ namespace HotCargo.Tech;
 /// Autotest command: vaultdesigns &lt;source folder&gt;|&lt;output folder&gt;. It needs a running game (the build steps need a sim)
 /// and graphics (the game saves a design as a picture of the ship), so it runs in the main slot.
 /// Each *.ship.png in the source folder (and its subfolders) gets vaults for the starting tech, and the design goes to the same
-/// relative path in the output folder. The output folder may be the source folder. The report goes to vault-report.txt in the output folder.
+/// relative path in the output folder. The output folder may be the source folder. The report goes to vault-report.txt in the mod folder.
 /// </summary>
 static class VaultDesigns
 {
-    internal static void Register() => Autotest.Commands["vaultdesigns"] = Run;
+    internal static void Register()
+    {
+        Autotest.Commands["vaultdesigns"] = Run;
+        Autotest.Commands["newgamecheck"] = arg => NewGameCheck.Off = arg == "off";
+    }
 
     static void Run(string arg)
     {
@@ -34,14 +38,14 @@ static class VaultDesigns
             string rel = Path.GetRelativePath(src, file);
             string line;
             try { line = Design(game, file, Path.Combine(dst, rel), units); }
-            catch (Exception ex) { line = $"FAILED: {ex.Message}"; Log.Error($"vaultdesigns {rel}", ex); }
+            // A design that fails is a report line, not a test failure: the source file stays as it was.
+            catch (Exception ex) { line = $"FAILED: {ex.Message}"; Log.Info($"vaultdesigns {rel}: {ex}"); }
             report.Add($"{rel}: {line}");
             Log.Info($"vaultdesigns {rel}: {line}");
         }
         int added = report.Count(l => l.Contains(": added ")), skipped = report.Count(l => l.Contains(": skipped ")), failed = report.Count(l => l.Contains(": FAILED"));
         report.Add($"Total {files.Count}: {added} changed, {skipped} skipped, {failed} failed.");
-        Directory.CreateDirectory(dst);
-        File.WriteAllLines(Path.Combine(dst, "vault-report.txt"), report);
+        File.WriteAllLines(Path.Combine(Mod.ModRoot, "vault-report.txt"), report);
         Log.Info($"AUTOTEST vaultdesigns done: {report[^1]}");
     }
 
@@ -68,7 +72,7 @@ static class VaultDesigns
             var finder = new BlueprintPathfinder(ship);
             int noPath = ship.BlueprintParts.Count(p => p.Rules.ID == Vaults.VaultId && !StartingVault.HasCrewPath(finder, new PartInfo(p.Rules, p.Location, p.Rotation, p.FlipX)));
             if (!ship.BlueprintParts.IsValid || !ship.PhysicalMatchesBlueprints) throw new InvalidOperationException("the design is not valid after the vaults");
-            if (!GameApp.Rules.CareerMode.IsShipDesignLegal(ship)) throw new InvalidOperationException("the career new-game check refuses the design");
+            if (!GameApp.Rules.CareerMode.IsShipDesignLegal(ship) || NewGameCheck.VaultCapacity(ship) < units) throw new InvalidOperationException("the career new-game check refuses the design");
             // A temporary file first, so a failed save never leaves half a design in place of the old one.
             string tmp = dest + ".tmp";
             ship.SaveDesignAs(tmp, dialogOnError: false, out bool error);

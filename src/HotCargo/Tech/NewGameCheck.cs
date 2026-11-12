@@ -21,6 +21,9 @@ static class NewGameCheck
     /// <summary>The text for the next vanilla "invalid ship" dialog, from the last refused ship. Null when the last check passed.</summary>
     static string? _refusal;
 
+    /// <summary>Test only (autotest "newgamecheck off"): starts a game with a vanilla starter, to build the preset designs (spec 1017).</summary>
+    internal static bool Off;
+
     /// <summary>Tech units that a new run puts on one starter ship at most: all of StartingTechUnits (a single player gets all of it).</summary>
     internal static int RequiredUnits(bool coop) =>
         coop ? new TechTunables().StartingTechUnits : TunablesFile.Read()?.Values.Tech.StartingTechUnits ?? new TechTunables().StartingTechUnits;
@@ -32,7 +35,7 @@ static class NewGameCheck
     [HarmonyPostfix, HarmonyPatch(typeof(CareerModeRules), nameof(CareerModeRules.IsShipDesignLegal))]
     static void Check(Ship ship, ref bool __result)
     {
-        if (!__result || !Activation.IsModEnabled()) return;
+        if (!__result || Off || !Activation.IsModEnabled()) return;
         int need = RequiredUnits(_coop), have = VaultCapacity(ship);
         if (have >= need) { _refusal = null; return; }
         __result = false;
