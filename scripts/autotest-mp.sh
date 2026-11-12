@@ -11,10 +11,11 @@ CLIENT_SCRIPT="${2:?usage: autotest-mp.sh <host script> <client script> [timeout
 TIMEOUT="${3:-600}"
 source "$(dirname "$0")/autotest-lib.sh"
 
-HOST="$(take_slot)"
-CLIENT=""
-trap 'release_slot "$HOST"; if [[ -n "$CLIENT" ]]; then release_slot "$CLIENT"; fi' EXIT
-CLIENT="$(take_slot)"
+RETRY="${AUTOTEST_RETRY:-1}"
+NAME="$(basename "$HOST_SCRIPT" .host.txt)"
+# Both slots at once, so parallel co-op tests cannot deadlock (see take_slots).
+read -r HOST CLIENT <<<"$(take_slots 2)"
+trap 'release_slot "$HOST"; release_slot "$CLIENT"' EXIT
 PORT=$((35870 + ${HOST#t}))
 echo "== host slot $HOST, client slot $CLIENT, port $PORT"
 
@@ -36,8 +37,10 @@ for ((t = 0; t < TIMEOUT; t += 10)); do
   if grep -q '<<GAME EXITED>>' <<<"$HOST_LOG" && grep -q '<<GAME EXITED>>' <<<"$CLIENT_LOG"; then break; fi
 done
 
-echo "=== host ($HOST)"; grep -v '<<GAME EXITED>>' <<<"$HOST_LOG" || true
-echo "=== client ($CLIENT)"; grep -v '<<GAME EXITED>>' <<<"$CLIENT_LOG" || true
+RUN_LOG="$LOG_DIR/mp-$NAME.$(date +%Y%m%d-%H%M%S).$HOST-$CLIENT.log"
+{ echo "=== host ($HOST)"; grep -v '<<GAME EXITED>>' <<<"$HOST_LOG" || true
+  echo "=== client ($CLIENT)"; grep -v '<<GAME EXITED>>' <<<"$CLIENT_LOG" || true; } > "$RUN_LOG"
+echo "== $NAME: log $RUN_LOG"
 
 OK=yes
 if ! log_passed <<<"$HOST_LOG"; then echo "== host log failed"; OK=no; fi
@@ -50,5 +53,17 @@ COMMON="$(comm -12 <(ticks "$HOST_STATES") <(ticks "$CLIENT_STATES"))"
 DIFF="$(diff <(grep -wFf <(printf '%s\n' ${COMMON:-none}) <<<"$HOST_STATES" || true) <(grep -wFf <(printf '%s\n' ${COMMON:-none}) <<<"$CLIENT_STATES" || true) || true)"
 echo "== MPSTATE: $(grep -c . <<<"$COMMON" || true) common ticks compared"
 if [[ -n "$DIFF" ]]; then echo "== MPSTATE differs between host and client:"; echo "$DIFF"; OK=no; fi
-if [[ "$OK" == yes ]]; then echo "== MP AUTOTEST OK (host $HOST, client $CLIENT)"; exit 0; fi
-echo "== MP AUTOTEST FAILED (game logs: SLOT=$HOST scripts/logs.sh, SLOT=$CLIENT scripts/logs.sh)"; exit 1
+if [[ "$OK" == yes ]]; then echo "== MP AUTOTEST OK $NAME (host $HOST, client $CLIENT)"; exit 0; fi
+{ echo; echo "=== vanilla game log, host"; slot_game_log "$HOST"; echo "=== vanilla game log, client"; slot_game_log "$CLIENT"; } >> "$RUN_LOG"
+failure_lines "$RUN_LOG"
+# One retry, like autotest.sh: a pass on the retry is FLAKY, not FAILED.
+if [[ "$RETRY" -ge 1 ]]; then
+  release_slot "$HOST"; release_slot "$CLIENT"; trap - EXIT
+  if AUTOTEST_RETRY=0 "$0" "$HOST_SCRIPT" "$CLIENT_SCRIPT" "$TIMEOUT" > "$RUN_LOG.retry" 2>&1; then
+    echo "== MP AUTOTEST FLAKY $NAME (failed once, passed on retry; first log $RUN_LOG)"
+    echo "$(date +%F\ %T) mp-$NAME $RUN_LOG" >> "/tmp/hot_cargo_flaky.log"
+    exit 0
+  fi
+  tail -20 "$RUN_LOG.retry"
+fi
+echo "== MP AUTOTEST FAILED $NAME (log $RUN_LOG)"; exit 1

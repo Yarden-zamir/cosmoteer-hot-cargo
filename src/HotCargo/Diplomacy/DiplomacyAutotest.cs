@@ -26,7 +26,7 @@ static class DiplomacyAutotest
 {
     static ObjectID? _friend, _enemy;
     static string _pageText = "";
-    static int _pageButtons, _pageActive, _pageSlider;
+    static int _pageButtons, _pageActive, _pageSlider, _pageToggles;
 
     static Run R() => Autotest.RequireRun();
     static SimRoot Sim() => R().Game.Sim;
@@ -52,6 +52,8 @@ static class DiplomacyAutotest
         return (id is { } x ? sim.Ships[x] : null) ?? throw new InvalidOperationException($"no live {name} ship");
     }
 
+    static int PunishSerial() => R().State.Diplomacy.Punish?.Serial ?? throw new InvalidOperationException("no punishment waits");
+
     static Ship Me() => Autotest.ActingShip(Sim()) ?? throw new InvalidOperationException("no player ship");
 
     internal static void Register()
@@ -66,7 +68,8 @@ static class DiplomacyAutotest
             R().Game.NetManager.EnqueueInput(DiplomacyChoiceDomain.Pick(target, offer, p.Length == 3 ? Int(p[2]) : 0));
         };
         Autotest.Commands["dip_set"] = arg => Autotest.SetField(R().T.Diplomacy, arg);
-        // dip_spawn friend|enemy|trader [distance]: a tier-1 combat ship (or a trade ship) near the acting ship, with chances off for hails.
+        // dip_spawn friend|ally|enemy|trader [distance]: a combat ship near the acting ship: of the system faction (friend), of the corporation's
+        // ally faction (ally, military), on a new hostile side (enemy), or a trade ship (trader). friend, ally and trader become "friend".
         Autotest.Commands["dip_spawn"] = arg =>
         {
             var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -88,34 +91,43 @@ static class DiplomacyAutotest
             };
             Autotest.Check(ok, $"chance {p[0]} {p[1]} {p[2]} {p[3]} {p[4]} (actual {chance:0.000})");
         };
-        // dip_page <target> [topic]: builds the dialogue page as the local player sees it and logs it.
+        // dip_page <target>: builds the dialogue page as the local player sees it and logs it: text, option rows (sliders) and buttons.
         Autotest.Commands["dip_page"] = arg =>
         {
-            var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var target = Target(p[0]);
-            if (p.Length > 1) DiplomacyHail.SetTopic(target, p[1]);
+            var target = Target(arg.Trim());
             var page = target.AI?.GetDialogueExchange(Me()) as HailPage
                 ?? throw new InvalidOperationException($"{target.Metadata.PlainShipName} has no hail page");
             _pageText = page.PrimaryDialogue;
-            _pageButtons = page.Buttons.Count;
-            _pageActive = page.Buttons.Count(b => b.SelfInputActive);
-            _pageSlider = page.Slider is null ? 0 : 1;
-            Log.Info($"AUTOTEST PAGE {target.Metadata.PlainShipName}: {_pageText.Replace('\n', ' ')} | slider={page.Slider?.Key} | " +
-                     string.Join(" | ", page.Buttons.Select(b => (b.SelfInputActive ? "" : "(off) ") + b.Text)));
+            _pageButtons = page.Buttons.Count + page.Rows.Count;
+            _pageActive = page.Buttons.Count(b => b.SelfInputActive) + page.Rows.Count(r => r.Active);
+            _pageSlider = page.Rows.Count(r => r.Slider is not null);
+            _pageToggles = page.Rows.Count(r => r.Toggle);
+            Log.Info($"AUTOTEST PAGE {target.Metadata.PlainShipName}: {_pageText.Replace('\n', ' ')} | rows: " +
+                     string.Join(" | ", page.Rows.Select(r => (r.Active ? "" : "(off) ") + (r.Toggle ? (r.Selected ? "[X] " : "[ ] ") : "") + r.Text + (r.Slider is { } sl ? $" <{sl.Key}>" : ""))) +
+                     " | buttons: " + string.Join(" | ", page.Buttons.Select(b => (b.SelfInputActive ? "" : "(off) ") + b.Text)));
         };
-        // dip_slider <target> <key> <value>: sets the slider value of a callee as if the player moved it.
+        // dip_slider <target> <key> <value>: sets the slider value of a callee's option row as if the player moved it.
         Autotest.Commands["dip_slider"] = arg =>
         {
             var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             CommsHail.SetSliderValue(Target(p[0]), p[1], Int(p[2]));
         };
-        // dip_open <target> [topic]: opens the comms window to the target (for screenshots). dip_close closes every comms window.
-        Autotest.Commands["dip_open"] = arg =>
+        // dip_open <target>: opens the comms window to the target (for screenshots). dip_close closes every comms window.
+        Autotest.Commands["dip_open"] = arg => R().Game.Gui.FloatingWindows.AddChild(new CommWindow(R().Game, Me(), Target(arg.Trim())));
+        // dip_pick <option> [value] | dip_unpick <option>: changes the punishment draft through its MP input, like a click on a row.
+        Autotest.Commands["dip_pick"] = arg =>
         {
             var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var target = Target(p[0]);
-            if (p.Length > 1) DiplomacyHail.SetTopic(target, p[1]);
-            R().Game.Gui.FloatingWindows.AddChild(new CommWindow(R().Game, Me(), target));
+            var option = Enum.Parse<PunishOption>(p[0], ignoreCase: true);
+            R().Game.NetManager.EnqueueInput(new MultiChoice.MultiChoiceInput(DiplomacyMultiDomain.Name, PunishSerial(), (int)option, true, p.Length > 1 ? Int(p[1]) : 0));
+        };
+        Autotest.Commands["dip_unpick"] = arg =>
+            R().Game.NetManager.EnqueueInput(new MultiChoice.MultiChoiceInput(DiplomacyMultiDomain.Name, PunishSerial(), (int)Enum.Parse<PunishOption>(arg.Trim(), ignoreCase: true), false, 0));
+        // dip_punish submit|refuse: the punishment page's buttons, through the shared choice input.
+        Autotest.Commands["dip_punish"] = arg =>
+        {
+            var offer = arg.Trim() == "refuse" ? Offer.PunishRefuse : arg.Trim() == "submit" ? Offer.Punish : throw new InvalidOperationException("dip_punish needs: submit | refuse");
+            R().Game.NetManager.EnqueueInput(new SharedChoice.SharedChoiceInput(DiplomacyChoiceDomain.Name, PunishSerial(), SharedChoice.SharedChoiceAction.Choose, DiplomacyChoiceDomain.Option(offer, 0)));
         };
         Autotest.Commands["dip_close"] = _ =>
         {
@@ -161,6 +173,11 @@ static class DiplomacyAutotest
                      $"mercs={s.Mercs.Count} leaving={s.Leaving.Count} asks={s.FeeAsks.Count} tech={Situation.VaultTech(Sim())} fleet={R().State.FleetTech}");
         };
 
+        Autotest.Fields["dip_punishment"] = () => R().State.Diplomacy.Punish is null ? 0 : 1;
+        Autotest.Fields["dip_picks"] = () => R().State.Diplomacy.Punish is { } p ? MultiChoice.MultiChoices.Draft(R(), DiplomacyMultiDomain.Name, p.Serial).Count : 0;
+        Autotest.Fields["dip_punishchance"] = () => R().State.Diplomacy.Punish is { } p ? Quotes.PunishCombined(R(), Sim(), MultiChoice.MultiChoices.Draft(R(), DiplomacyMultiDomain.Name, p.Serial)) : 0;
+        Autotest.Fields["dip_crew"] = () => R().Game.HumanPlayersIndexes.Sum(Sim().Crew.CountCrewForPlayer);
+        Autotest.Fields["dip_pagetoggles"] = () => _pageToggles;
         Autotest.Fields["dip_used"] = () => R().State.Diplomacy.Used.Count;
         Autotest.Fields["dip_held"] = () => R().State.Diplomacy.Held.Sum(h => h.Units);
         Autotest.Fields["dip_asks"] = () => R().State.Diplomacy.FeeAsks.Count;
@@ -213,14 +230,15 @@ static class DiplomacyAutotest
     }
 
     /// <summary>
-    /// Spawns a tier-1 ship near the acting ship: "friend" a combat ship of the system's faction military, "trader" a faction trade
+    /// Spawns a tier-1 ship near the acting ship: "friend" a combat ship of the system's faction military, "ally" one of the corporation's ally faction, "trader" a faction trade
     /// ship (civilian), "enemy" a combat ship on a new hostile side. Deterministic: the seed comes from the sim tick.
     /// </summary>
     static Ship Spawn(string kind, float distance)
     {
         var sim = Sim();
         var me = Me();
-        var faction = sim.MapNode?.ControllingFaction is { } fid ? GameApp.Rules.Factions.First(f => f.ID == fid) : GameApp.Rules.Factions.First();
+        var faction = kind == "ally" ? Factions.FactionsArea.Roles(R()).Ally
+            : sim.MapNode?.ControllingFaction is { } fid ? GameApp.Rules.Factions.First(f => f.ID == fid) : GameApp.Rules.Factions.First();
         var rand = new FastRand((ulong)(uint)sim.Tick, 0x4449_5053UL);
         var tags = new[] { new ID<BuiltinShipTag>(kind == "trader" ? "civilian" : "combat") };
         var built = GameApp.Rules.BuiltinShips.GetRandomMatchingShip(rand, [faction.ID], new Range<int>(1, 3), null, tags)

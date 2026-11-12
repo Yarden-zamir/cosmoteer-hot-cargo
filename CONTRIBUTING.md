@@ -5,7 +5,7 @@ Read SPEC.md first. It holds the design, the numbered requirements and the plan.
 ## Layout
 
 - `src/HotCargo/Core`, `Ui`, `Dev`: shared core. Change it only when an area cannot work through the hooks in `Core/Run.cs` (`Run.Hooks`), `Core/DebugKeys.cs` (`DebugKeys.Extra`) and `Dev/Autotest.cs` (`Autotest.Commands`, `Autotest.Fields`).
-- `src/HotCargo/<Area>`: one folder for each area (Tech, Journey, Hunters, Missions, Tactics, Ux, Events, Chains, Contracts, SharedChoice, Onboarding, RunModes, Factions, Diplomacy). Each area has `<Area>Area.Register()`, its tunables section class and its patches. Ship comms options go through `Ui/CommsHail.cs` (one provider per area); dialog sliders use `Ui/SliderRow.cs`.
+- `src/HotCargo/<Area>`: one folder for each area (Tech, Journey, Hunters, Missions, Tactics, Ux, Events, Chains, Contracts, SharedChoice, Onboarding, RunModes, Factions, Diplomacy). Each area has `<Area>Area.Register()`, its tunables section class and its patches. Ship comms options go through `Ui/CommsHail.cs` (one provider per area); dialog sliders use `Ui/SliderRow.cs`, option rows `Ui/OptionRows.cs`, and multiselect pages `MultiChoice/` (register an `IMultiChoiceDomain`).
 - Shared helpers in Core: `Errors.Guard` / `Errors.Report` for any failure in a patch, sim tick or UI frame (log once, show in the overlay, never crash the game), and `SimQueries` for tagged ships, human ships and sim lookups. Use them before you write a new one.
 - `mod/mod.header.rules`: the mod header. `scripts/assemble-mod.sh` builds `mod.rules` from it and from every `mod/<area>/actions.rules`.
 - `mod/<area>/actions.rules`: only Action objects `{ ... }`, without an outer list.
@@ -66,7 +66,7 @@ The game runs on a Windows PC that a person also uses. `autotest.sh` runs headle
 - Use conventional commits (`feat:`, `fix:`, `docs:`, `chore:`).
 - Feature branches are local only. Merge them into `main`, build, run the tests, then push.
 
-Run one autotest at a time per worktree: parallel runs from one worktree build into the same output folder.
+Parallel autotests work, also from one worktree: `deploy.sh` holds a build lock. `scripts/autotest-affected.sh` runs the tests a change touches; name a test after its area folder (`tech-sell` for `src/HotCargo/Tech`).
 - Never commit personal machine data: user home paths, machine names, Steam IDs. `scripts/check-private.sh` checks this, and CI runs it on every push. Machine settings go in `scripts/pc.local.sh` (git ignores it).
 
 ## Releases

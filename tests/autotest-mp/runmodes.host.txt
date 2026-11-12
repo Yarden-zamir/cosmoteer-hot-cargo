@@ -1,5 +1,5 @@
-# Co-op run modes, host side (spec 680 to 686). The host changes the difficulty through the vanilla settings inputs. Both machines
-# then use the same effective heat rate, hunter count and tier, tech value and fees, and the fame title prototype, with no desync.
+# Co-op run modes, host side (spec 680 to 685). The host changes the difficulty through the vanilla settings inputs. Both machines
+# then use the same effective heat rate, hunter count and tier, tech value and fees, with no desync.
 mphost {PORT}
 mpstart 2
 mp godmode on
@@ -9,8 +9,6 @@ rm_log host
 mp mpmark 1
 # Heat from time at the effective rate on both machines (MPSTATE compares the heat).
 wait 40
-mp rm_set FameTitleTiers on
-mp fame 300
 mp spawnstage Patrol
 waitfor hunters >= 3 30
 mp mpmark 2

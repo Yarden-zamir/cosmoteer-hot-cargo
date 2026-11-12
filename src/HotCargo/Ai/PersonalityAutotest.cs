@@ -172,6 +172,23 @@ static class PersonalityAutotest
             Log.Info($"AUTOTEST spawned {group} {ship.Metadata.PlainShipName} id={ship.UniqueID} tier {pick.Tier} player {allegiance}");
             if (faction is not null) career.Wanted.WarTriggeredByPlayer(ship);
         }
+        if (faction is null) return;
+        // The war holds only while a ship of the faction has a human ship on its radar (WantedManager drops a faction that sees no
+        // human ship at its next update). Ships that just spawned may not see the players yet, so the test waits until one does and
+        // triggers the war again. Before, whether the war held depended on the random spawn direction.
+        // It runs in the sim tick, so a co-op test ("mp aispawn") stays in step on every machine.
+        var spawnedOne = sim.Ships.Where(s => s.Metadata.PlayerIndex == allegiance).OrderBy(s => s.UniqueID).First();
+        var hub = run.Game.EventHub;
+        double until = sim.LogicalTime.Seconds + 30;
+        EventHandler<SimRoot>? retrigger = null;
+        retrigger = (_, tickSim) =>
+        {
+            if (tickSim != sim) return;
+            bool seen = sim.Ships.HumanPlayerShips.Any(h => h.IsWithinRadarOfTeam(allegiance));
+            if (seen && spawnedOne.ExistsInSim(sim)) career.Wanted.WarTriggeredByPlayer(spawnedOne);
+            if (seen || sim.LogicalTime.Seconds > until) hub.Tick -= retrigger;
+        };
+        hub.Tick += retrigger;
     }
 
     static void Census(int perBand)

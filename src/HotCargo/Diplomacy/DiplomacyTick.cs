@@ -24,6 +24,7 @@ static class DiplomacyTick
         if (!run.T.Diplomacy.Enabled) return;
         if (run.State.GameSeconds < S(run).NextCheck) return;
         S(run).NextCheck = run.State.GameSeconds + run.T.Diplomacy.CheckSeconds;
+        if (S(run).Punish is { } punish && run.State.GameSeconds >= punish.Due) Deals.PunishFails(run, sim, punish, "PunishTimeoutFmt");
         TickHeld(run, sim);
         TickHires(run, sim);
         TickHails(run, sim);
@@ -37,6 +38,8 @@ static class DiplomacyTick
         s.Hires.Clear();
         s.Leaving.Clear();
         s.FeeAsks.Clear();
+        // The punishment page closes with the jump; the hunters keep the tech (spec 596).
+        s.Punish = null;
     }
 
     static float Roll(Ship ship, ulong salt) => new FastRand((uint)ship.UniqueID, salt).Single();

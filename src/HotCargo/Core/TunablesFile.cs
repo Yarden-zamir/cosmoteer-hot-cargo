@@ -101,6 +101,7 @@ public static class TunablesFile
         Require(c.Metatypes.All(m => m.Metatype.Length > 0), "Contracts.Metatypes entries need a Metatype");
         Require(t.Journey.RunSectorCount >= 1, "Journey.RunSectorCount must be 1 or more");
         Require(t.Journey.RewardScale > 0 && t.Journey.TechCostScale >= 0, "Journey.RewardScale must be above 0 and Journey.TechCostScale must not be negative");
+        Require(t.Balance.StationFuelPerMillion >= 0 && t.Balance.StationFuelMinimum >= 0, "Balance.StationFuelPerMillion and StationFuelMinimum must not be negative");
         Require(t.Chains.MaxNewChainsPerSystem >= 0, "Chains.MaxNewChainsPerSystem must not be negative");
         Missions.Mechanics.MechanicsTunables.Validate(t.Mechanics);
         // Level IDs are checked once the game rules exist; the boot-time check of the defaults runs before that.

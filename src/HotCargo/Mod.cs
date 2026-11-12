@@ -35,6 +35,7 @@ public static class Mod
             RunModes.RunModesArea.Register();
             Factions.FactionsArea.Register();
             TunablesMenu.TunablesMenuArea.Register();
+            MultiChoice.MultiChoiceArea.Register();
             Diplomacy.DiplomacyArea.Register();
             Telemetry.TelemetryArea.Register();
             // Last: its run log hooks run after the hooks of the other areas.

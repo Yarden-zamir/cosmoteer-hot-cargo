@@ -43,6 +43,7 @@ public sealed class Tunables
     [Serialize(Optional = true)] public Onboarding.OnboardingTunables Onboarding = new();
     [Serialize(Optional = true)] public RunModesTunables RunModes = new();
     [Serialize(Optional = true)] public FactionsTunables Factions = new();
+    [Serialize(Optional = true)] public Balance.BalanceTunables Balance = new();
     [Serialize(Optional = true)] public Telemetry.TelemetryTunables Telemetry = new();
     [Serialize(Optional = true)] public DebugTunables Debug = new();
 }
