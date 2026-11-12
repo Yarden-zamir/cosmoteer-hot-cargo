@@ -25,16 +25,24 @@ static class VaultDesigns
         // A refused ship shows the vanilla "invalid ship" dialog, like the Load Ship menu of the new-game screen.
         Autotest.Commands["shipcheck"] = arg =>
         {
-            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length != 2 || parts[0] is not ("preset" or "vanilla")) throw new InvalidOperationException("shipcheck needs: preset|vanilla <index>");
-            var preset = GameApp.Rules.CareerMode.StarterShips[int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture)].Ship;
-            var file = parts[0] == "preset" ? preset : new ShipFile(Paths.DataFolder / "builtin_ships" / "Starter" / Path.GetFileName((string)preset.FilePath));
+            var file = StarterFile(arg);
             using var ship = file.LoadShipBlueprints();
             _checkPassed = GameApp.Rules.CareerMode.IsShipDesignLegal(ship);
             _checkVaults = NewGameCheck.VaultCapacity(ship);
             Log.Info($"AUTOTEST shipcheck {file.FilePath}: legal={_checkPassed} vault capacity={_checkVaults}");
             if (!_checkPassed) _ = Halfling.Gui.Dialogs.OneButtonDialog.Show(Cosmoteer.Localization.Strings.GetText("GameSetupScreen/InvalidShip"));
         };
+        // vaultbuild preset|vanilla N: loads starter ship N into the sim next to the player ship, builds vaults (spec 441) and removes it. Headless, no save.
+        Autotest.Commands["vaultbuild"] = arg =>
+        {
+            var game = Autotest.Game ?? throw new InvalidOperationException("vaultbuild needs a running game");
+            var file = StarterFile(arg);
+            var (ship, line) = Build(new Batch(game, "", "", NewGameCheck.RequiredUnits(coop: false), new(), []), (string)file.FilePath);
+            _built = ship is null ? 0 : ship.BlueprintParts.Count(p => p.Rules.ID == Vaults.VaultId);
+            if (ship is not null) game.Sim.Ships.Remove(ship, dispose: true, handleLostShip: false);
+            Log.Info($"AUTOTEST vaultbuild {file.FilePath}: {line}");
+        };
+        Autotest.Fields["vaultsbuiltindesign"] = () => _built;
         Autotest.Fields["shiplegal"] = () => _checkPassed ? 1 : 0;
         Autotest.Fields["shipvaulttech"] = () => _checkVaults;
         // 1 when the top dialog explains the missing vaults (spec 1012). Closes the dialog.
@@ -55,6 +63,16 @@ static class VaultDesigns
         };
     }
 
+    /// <summary>"preset N" or "vanilla N": starter ship N from the mod, or the same file from the vanilla Data folder.</summary>
+    static ShipFile StarterFile(string arg)
+    {
+        var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 2 || parts[0] is not ("preset" or "vanilla")) throw new InvalidOperationException("needs: preset|vanilla <index>");
+        var preset = GameApp.Rules.CareerMode.StarterShips[int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture)].Ship;
+        return parts[0] == "preset" ? preset : new ShipFile(Paths.DataFolder / "builtin_ships" / "Starter" / Path.GetFileName((string)preset.FilePath));
+    }
+
+    static int _built;
     static bool _checkPassed;
     static int _checkVaults;
 

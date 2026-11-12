@@ -76,7 +76,7 @@ internal static class StartingVault
         {
             if (placed.Count == count) break;
             if (ship.BlueprintParts.HasPartAt(cell, condition: p => !corridors.Contains(p.Rules.ID))) continue;
-            if (!TryPlace(ship, vault, cell, reachable)) continue;
+            if (TryPlace(ship, vault, cell, reachable) is { } why) { Log.Info($"vaults: no vault at {cell}: {why}"); continue; }
             placed.Add(cell);
             reachable.RemoveAll(p => p.Location == cell);
             reachable.Add(new PartInfo(vault, cell, 0, flipX: false));
@@ -93,16 +93,19 @@ internal static class StartingVault
 
     static PartInfo Info(BlueprintPart p) => new(p.Rules, p.Location, p.Rotation, p.FlipX);
 
-    /// <summary>Puts a vault on the cell when crew can walk to it and every part in reachable keeps its crew path. The game adds doors like the build tool.</summary>
-    static bool TryPlace(Ship ship, PartRules vault, IntVector2 cell, List<PartInfo> reachable)
+    /// <summary>
+    /// Puts a vault on the cell when crew can walk to it and every part in reachable keeps its crew path. The game adds doors like the build tool.
+    /// Returns null on success, else the reason.
+    /// </summary>
+    static string? TryPlace(Ship ship, PartRules vault, IntVector2 cell, List<PartInfo> reachable)
     {
         using var sui = ShipUpdateInfo.Alloc(ship);
-        if (!sui.TryAddBlueprintPart(vault, cell, 0, flipX: false, mirrorPhysical: true, allowOverwrite: true, addDoors: true, hireCrew: false, out _)) return false;
+        if (!sui.TryAddBlueprintPart(vault, cell, 0, flipX: false, mirrorPhysical: true, allowOverwrite: true, addDoors: true, hireCrew: false, out var reasons)) return $"build tool refuses: {reasons}";
         var finder = new BlueprintPathfinder(ship, sui);
-        if (!HasCrewPath(finder, new PartInfo(vault, cell, 0, flipX: false))) return false;
-        if (reachable.Any(p => p.Location != cell && !HasCrewPath(finder, p))) return false;
+        if (!HasCrewPath(finder, new PartInfo(vault, cell, 0, flipX: false))) return "no crew path to the vault";
+        if (reachable.FirstOrDefault(p => p.Location != cell && !HasCrewPath(finder, p)) is { Rules: not null } cut) return $"{cut.Rules.ID} at {cut.Location} loses its crew path";
         sui.Apply(ConstructionMode.InstantFree, builtByPlayer: true);
-        return true;
+        return null;
     }
 
     /// <summary>Corridor tiles, and empty tiles with a part on all four sides.</summary>

@@ -1,0 +1,12 @@
+# Spec 441, 1016: vaults built into each vanilla starter design: 4 inside the hull, crew paths kept. Headless, no save.
+newgame run
+wait 8
+vaultbuild vanilla 0
+expect vaultsbuiltindesign == 4
+vaultbuild vanilla 1
+expect vaultsbuiltindesign == 4
+vaultbuild vanilla 2
+expect vaultsbuiltindesign == 4
+vaultbuild vanilla 3
+expect vaultsbuiltindesign == 4
+quit
