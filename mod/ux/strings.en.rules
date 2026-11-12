@@ -43,7 +43,7 @@ HotCargoUx
 	WaitingForHost = "Waiting for the host to load or quit."
 
 	// Markers
-	BuyerTag = "BUYER"
+	BuyerTag = "<image name='hc_marker_buyer' colored='true'/> BUYER"
 
 	// Galaxy map tooltip
 	MapJumpsFmt = "<fame_color>{0}</fame_color> jumps ({1})"

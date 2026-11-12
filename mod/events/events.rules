@@ -94,11 +94,18 @@ Events
 		Carrier = BrokenFreighter
 		Title = "Dead in Space"
 		Text = "A freighter drifts with its drive dark. Its engineer hails you, hands black with soot. \"Main coupling is fried. We need parts to patch it, or a tow to the nearest station. We can pay either way.\""
+		Options
+		[
+			{ Text = "Steel plating"; Pay = Resource; Resource = steel; Unit = 25; UnitPerTier = 5; MinUnits = 0.5; MaxUnits = 2; StepUnits = 0.5; Points = 0.5 }
+			{ Text = "Coils"; Pay = Resource; Resource = coil; Unit = 5; UnitPerTier = 1; MinUnits = 0.5; MaxUnits = 2; StepUnits = 0.5; Points = 0.5 }
+		]
+		OfferLine = "Parts for the repair: {0}% of what they need."
 		Choices
 		[
 			{
-				Text = "Hand over repair supplies."
-				Cost { Resources = [{ ID = steel; Amount = 25; PerTier = 5 }, { ID = coil; Amount = 5; PerTier = 1 }] }
+				// Spec 811: half the points from steel, half from coil, or any mix. One share of each is the old cost.
+				Text = "Hand over the selected parts."
+				NeedPoints = 1
 				Outcomes [ { Text = "With your parts, their drive coughs back to life. The captain pays and promises to forget your hull number."; Money = 0.5; Fame = 0.3; Reputation = 0.5 } ]
 			}
 			{
@@ -122,19 +129,26 @@ Events
 		Trigger = Arrival
 		Title = "Running on Empty"
 		Text = "A freighter drifts dead in the lane, its captain hailing on every channel. \"We're dry. Give us enough hyperium to reach the next station and we'll pay what we can.\""
+		Options
+		[
+			{ Text = "Hyperium"; Pay = Resource; Resource = hyperium; Unit = 20; UnitPerTier = 5; MinUnits = 0.25; MaxUnits = 2; StepUnits = 0.25 }
+		]
+		OfferLine = "Fuel to reach the station: {0}% of what they need."
 		Choices
 		[
 			{
 				Text = "Give them the fuel."
-				Cost { Resources = [{ ID = hyperium; Amount = 20; PerTier = 5 }] }
+				NeedPoints = 1
 				Outcomes
 				[
 					{ Text = "The captain thanks you, then lowers her voice. \"Corporate cutters asked about a ship like yours. I'll tell them you went the other way.\""; Fame = 0.4; Heat = -10 }
 				]
 			}
 			{
+				// The pay scales with the fuel sold: one share pays the old price.
 				Text = "Sell it to them at three times the price."
-				Cost { Resources = [{ ID = hyperium; Amount = 20; PerTier = 5 }] }
+				NeedPoints = 0.25
+				ScaleByPoints = true
 				Outcomes
 				[
 					{ Weight = 70; Text = "They pay. They do not thank you."; Money = 0.8 }
@@ -164,24 +178,28 @@ Events
 		Need { MinSector = 2; MinHeat = 10 }
 		Title = "Corporate Checkpoint"
 		Text = "A corporate customs cutter sits across the jump lane, its scanner already sweeping. \"Unidentified vessel, hold position for a routine cargo inspection.\"\n\nNothing about this is routine."
+		Options
+		[
+			{ Text = "A private fee for the inspector"; Pay = Money; Unit = 0.6 }
+			{ Text = "One crate as a \"seized sample\""; Pay = Tech; Need { Tech = 1 }; Sure = true }
+			{
+				Text = "Transmit the forged transponder codes"
+				Need { Flags = [fake_codes] }
+				HideIfUnmet = true
+				Sure = true
+				Effect { Text = "The scanner blinks green. \"Apologies for the delay, Inspector.\" The codes burn out after one use."; Heat = -10; ClearFlags = [fake_codes] }
+			}
+		]
 		Choices
 		[
 			{
-				Text = "Transmit the forged transponder codes."
-				Need { Flags = [fake_codes] }
-				HideIfUnmet = true
+				// Spec 811: the bribe alone rolls like the old fee. A crate or the forged codes make it sure; the codes add heat -10 (old -20).
+				Text = "Settle it quietly."
+				NeedPoints = 1
 				Outcomes
 				[
-					{ Text = "The cutter's scanner blinks green. \"Apologies for the delay, Inspector.\" The codes burn out after one use, but the lane is yours."; Heat = -20; ClearFlags = [fake_codes] }
-				]
-			}
-			{
-				Text = "Offer the inspector a private fee."
-				Cost { Money = 0.6 }
-				Outcomes
-				[
-					{ Weight = 80; Text = "The inspector counts it twice and waves you through. Your file goes in a drawer, for now."; Heat = -10 }
-					{ Weight = 20; Text = "The inspector takes your money and calls it in anyway."; Heat = 10 }
+					{ Weight = 80; Text = "The inspector waves you through. Your file goes in a drawer, for now."; Heat = -10 }
+					{ Weight = 20; Text = "The inspector takes your offer and calls it in anyway."; Heat = 10 }
 				]
 			}
 			{
@@ -291,18 +309,19 @@ Events
 		Need { MinSector = 2; Tech = 2 }
 		Title = "The Magpies"
 		Text = "A battered gunship slides out of the sun's glare. \"Captain Rook of the Magpies. Heard you hit the lab. Nice haul.\" A pause. \"One crate and we never met. Otherwise we take the vault.\""
+		Options
+		[
+			{ Text = "One crate"; Pay = Tech; Need { Tech = 1 }; Effect { SetFlags = [magpies_paid] } }
+			{ Text = "Credits"; Pay = Money; Unit = 1.5; MinUnits = 0.1; MaxUnits = 1; StepUnits = 0.1 }
+		]
+		OfferLine = "Your offer: {0}% of Rook's price."
 		Choices
 		[
 			{
-				Text = "Hand over one crate."
-				Need { Tech = 1 }
-				Cost { Tech = 1 }
-				Outcomes [ { Text = "Rook's crew takes the crate and salutes. \"Pleasure doing business.\" One less tag on your trail, at least."; SetFlags = [magpies_paid] } ]
-			}
-			{
-				Text = "Pay them in credits instead."
-				Cost { Money = 1.5 }
-				Outcomes [ { Text = "Rook looks at the figure for a long moment. \"Credits spend too. Fly safe.\"" } ]
+				// Spec 811: one crate, or 1.5 money units in credits, as before. A crate still marks you as a payer.
+				Text = "Pay Rook off."
+				NeedPoints = 1
+				Outcomes [ { Text = "Rook's crew takes the payment and salutes. \"Pleasure doing business.\"" } ]
 			}
 			{
 				Text = "Fake a vault breach on your own transponder."
@@ -436,13 +455,20 @@ Events
 		Need { Tech = 3; FlagAges = [{ Flag = magpies_paid; MinSectors = 2 }] }
 		Title = "The Magpies Return"
 		Text = "A familiar battered gunship, now with friends. \"Captain Rook again. You paid so nicely last time.\" A pause. \"Two crates now. Inflation.\"\n\nPaying once made you a mark."
+		Options
+		[
+			{ Text = "Crates"; Pay = Tech; MinUnits = 1; MaxUnits = 2; Points = 0.5; Once { SetFlags = [magpies_paid] } }
+			{ Text = "Credits"; Pay = Money; Unit = 2; MinUnits = 0.1; MaxUnits = 1; StepUnits = 0.1 }
+		]
+		OfferLine = "Your offer: {0}% of Rook's price."
 		Choices
 		[
 			{
-				Text = "Pay the two crates."
+				// Spec 811: two crates or 2 money units, as before, or one crate and half the credits.
+				Text = "Pay Rook."
+				NeedPoints = 1
 				Need { Tech = 1 }
-				Cost { Tech = 2 }
-				Outcomes [ { Text = "Rook's crew carries the crates off, laughing. \"See you around.\" You will, unless you end it."; SetFlags = [magpies_paid] } ]
+				Outcomes [ { Text = "Rook's crew carries the payment off, laughing. \"See you around.\" You will, unless you end it." } ]
 			}
 			{
 				Text = "Hand over a crate that Varga rigged to blow."
@@ -450,11 +476,6 @@ Events
 				HideIfUnmet = true
 				Cost { Tech = 1 }
 				Outcomes [ { Text = "Rook docks the crate in his own hold. A minute later his ship lights up like a flare. The other Magpies scatter and do not come back."; Fame = 0.5; Heat = 5; ClearFlags = [magpies_paid] } ]
-			}
-			{
-				Text = "Pay in credits."
-				Cost { Money = 2 }
-				Outcomes [ { Text = "\"Credits. Fine.\" Rook sounds disappointed, which is somehow worse." } ]
 			}
 			{
 				Text = "Not this time. Come and take them."
@@ -469,16 +490,22 @@ Events
 		Need { MinSector = 3 }
 		Title = "Refugee Convoy"
 		Text = "Three overloaded transports limp along the lane: miners and their families, running from a corporate company town. Their convoy leader hails you. \"The corporation searches every convoy now. Please.\""
+		Options
+		[
+			{
+				Text = "Take refugees aboard"
+				Unit = 1; MinUnits = 1; MaxUnits = 4; ValueText = "{0} people"; Points = 0.5
+				Effect { Text = "Some of the miners know their way around a reactor and work for their passage. The corporation will search your hull too."; Crew = 1; Fame = 0.15; Reputation = 0.5; Heat = 5 }
+			}
+			{ Text = "Fuel and food for the trip"; Pay = Resource; Resource = hyperium; Unit = 15; UnitPerTier = 3; MinUnits = 0.5; MaxUnits = 2; StepUnits = 0.5; Effect { Fame = 0.3; Reputation = 1 } }
+		]
 		Choices
 		[
 			{
-				Text = "Take some of them aboard."
-				Outcomes [ { Text = "Two of the miners know their way around a reactor and ask to work for their passage. The corporation will search your hull too."; Crew = 2; Fame = 0.3; Reputation = 1; Heat = 10 } ]
-			}
-			{
-				Text = "Give them fuel and food for the trip."
-				Cost { Resources = [{ ID = hyperium; Amount = 15; PerTier = 3 }] }
-				Outcomes [ { Text = "The convoy leader salutes as they turn for the jump point. The locals will hear about this."; Fame = 0.3; Reputation = 1 } ]
+				// Spec 811: each refugee and each share of fuel has its own effects; two refugees or one share is the old choice.
+				Text = "Help them."
+				NeedPoints = 0.5
+				Outcomes [ { Text = "The convoy leader salutes as they turn for the jump point. The locals will hear about this." } ]
 			}
 			{
 				Text = "Sell their position to the corporation."
@@ -497,16 +524,24 @@ Events
 		Need { MinSector = 2 }
 		Title = "Pirate Toll Gate"
 		Text = "Mines across the lane and pirate gunships at the gap. \"Toll gate. We know who you are, and we know the corporation pays for sightings. The hotter you are, the more you pay.\""
+		Options
+		[
+			{ Text = "Credits"; Pay = Money; Unit = 0.3; UnitPerHeat = 0.01; MinUnits = 0.25; MaxUnits = 2; StepUnits = 0.25 }
+			{ Text = "Steel"; Pay = Resource; Resource = steel; Unit = 30; UnitPerTier = 6; MinUnits = 0.5; MaxUnits = 2; StepUnits = 0.5 }
+			{ Text = "Crew who join them"; Pay = Crew; MinUnits = 1; MaxUnits = 4; Points = 0.5 }
+		]
+		OfferLine = "Your payment: {0}% of the toll."
 		Choices
 		[
 			{
+				// Spec 811: one toll is the old money cost (0.3 + 0.01 per heat money units); steel and crew count too.
 				Text = "Pay the toll."
-				Cost { Money = 0.3; MoneyPerHeat = 0.01 }
+				NeedPoints = 1
 				Outcomes [ { Text = "They wave you through. \"You pay better than the corporation. For now.\"" } ]
 			}
 			{
 				Text = "Pay double, and they report you heading the wrong way."
-				Cost { Money = 0.6; MoneyPerHeat = 0.02 }
+				NeedPoints = 2
 				Outcomes [ { Text = "The pirates sell the corporation a sighting three systems off. Everyone gets paid, except the corporation."; Heat = -20 } ]
 			}
 			{
@@ -550,27 +585,26 @@ Events
 		Need { Tech = 2 }
 		Title = "Vault Coolant Leak"
 		Text = "An alarm from the vault: a coolant line has ruptured, and the temperature is climbing. Prototype tech does not like heat. Something has to give."
+		Options
+		[
+			{ Text = "Vent one crate"; Pay = Tech; Need { Tech = 1 }; Effect { Text = "The crate goes out the airlock in a cloud of frozen coolant." } }
+			{
+				Text = "Crew with extinguishers"
+				Pay = CrewWork; MinUnits = 1; MaxUnits = 2; Points = 0.5
+				Effect { Text = "Your crew seal the line by hand. Burns and scorched panels."; HullDamage = 0.075 }
+				RiskChance = 0.2
+				Risk { Text = "The vault flashes over before everyone is out."; Crew = -1 }
+			}
+			{ Text = "Emergency coolant from a station tug"; Pay = Money; Unit = 0.5; MinUnits = 0.25; MaxUnits = 1; StepUnits = 0.25 }
+		]
+		OfferLine = "Your fix covers {0}% of the leak."
 		Choices
 		[
 			{
-				Text = "Vent one crate before the heat spreads."
-				Need { Tech = 1 }
-				Cost { Tech = 1 }
-				Outcomes [ { Text = "The crate goes out the airlock in a cloud of frozen coolant. The rest stays cold." } ]
-			}
-			{
-				Text = "Send a team in with extinguishers."
-				Need { Crew = 2 }
-				Outcomes
-				[
-					{ Weight = 60; Text = "They seal the line by hand. Burns and scorched panels, but every crate survives."; HullDamage = 0.15 }
-					{ Weight = 40; Text = "They seal the line, but the vault flashes over before everyone is out."; Crew = -1; HullDamage = 0.15 }
-				]
-			}
-			{
-				Text = "Call a station tug for emergency coolant."
-				Cost { Money = 0.5 }
-				Outcomes [ { Text = "A tug arrives with coolant, at emergency prices. The pilot does not ask what is in the vault." } ]
+				// Spec 811: one crate, two crew (each 20 % to lose one, hull damage) or 0.5 money units, as before, or a mix.
+				Text = "Stop the leak."
+				NeedPoints = 1
+				Outcomes [ { Text = "The coolant line holds. The vault cools down, slowly." } ]
 			}
 		]
 	}
@@ -583,22 +617,22 @@ Events
 		Need { Wanted = true }
 		Title = "A Clean Record"
 		Text = "A private channel opens. \"The local police want you, and the corporation is right behind them. I can fix the first problem. Records are only numbers.\""
+		Options
+		[
+			{ Text = "Credits"; Pay = Money; Unit = 0.4; UnitPerHeat = 0.01 }
+			{ Text = "One crate"; Pay = Tech; Need { Tech = 1 }; Sure = true; Effect { Text = "A crate buys a lot of silence. The forger forgets the corporation's number."; Heat = -5 } }
+		]
 		Choices
 		[
 			{
-				Text = "Pay for a clean record."
-				Cost { Money = 0.4; MoneyPerHeat = 0.01 }
+				// Spec 811: credits roll like the old fee; a crate makes it sure and cuts heat by 5, as before.
+				Text = "Buy the clean record."
+				NeedPoints = 1
 				Outcomes
 				[
 					{ Weight = 80; Text = "Your file goes quiet. The police stop looking."; ClearWanted = true }
-					{ Weight = 20; WeightPerHeat = 0.2; Text = "The forger takes your money, then sells your new record to the corporation."; Heat = 15 }
+					{ Weight = 20; WeightPerHeat = 0.2; Text = "The forger takes your payment, then sells your new record to the corporation."; Heat = 15 }
 				]
-			}
-			{
-				Text = "Pay with a crate instead."
-				Need { Tech = 1 }
-				Cost { Tech = 1 }
-				Outcomes [ { Text = "A crate buys a lot of silence. The police forget you, and the forger forgets the corporation's number."; ClearWanted = true; Heat = -5 } ]
 			}
 			{
 				Text = "Handle it yourself."
@@ -810,13 +844,18 @@ Events
 		Need { Tech = 2 }
 		Title = "Off the Books"
 		Text = "The dock officer lowers her voice. \"No trade log, no tax, no questions. We pay under market, but the sale never happened.\""
+		Options
+		[
+			{ Text = "Crates to sell"; Pay = Tech; MinUnits = 1; MaxUnits = 3; Effect { MoneyTech = 0.85; Heat = -10 } }
+		]
 		Choices
 		[
 			{
-				Text = "Sell one crate."
+				// Spec 811: each crate pays 0.85 tech value and cuts heat by 10, as one crate did before.
+				Text = "Sell the crates."
+				NeedPoints = 1
 				Need { Tech = 1 }
-				Cost { Tech = 1 }
-				Outcomes [ { Text = "The sale never happened. Neither did your last port call."; MoneyTech = 0.85; Heat = -10 } ]
+				Outcomes [ { Text = "The sale never happened. Neither did your last port call." } ]
 			}
 			{
 				Text = "Changed my mind."
@@ -864,19 +903,18 @@ Events
 		Need { Tech = 2 }
 		Title = "The Fence"
 		Text = "A message arrives on a band the station does not officially have. \"Heard you carry something hot. I pay below market, but I sell it on in pieces, three systems the other way. The corporation chases the pieces, not you.\""
+		Options
+		[
+			{ Text = "Crates to sell"; Pay = Tech; MinUnits = 1; MaxUnits = 3; Effect { MoneyTech = 0.75; Heat = -15 }; Once { Heat = -5 } }
+		]
 		Choices
 		[
 			{
-				Text = "Sell one crate through the fence."
+				// Spec 811: each crate pays 0.75 tech value; heat -20 for the first and -15 for each more, as one or two crates did before.
+				Text = "Sell through the fence."
+				NeedPoints = 1
 				Need { Tech = 1 }
-				Cost { Tech = 1 }
-				Outcomes [ { Text = "The crate leaves on a garbage scow. Credits arrive an hour later, and so does a lot of corporate traffic, somewhere else."; MoneyTech = 0.75; Heat = -20 } ]
-			}
-			{
-				Text = "Sell two crates."
-				Need { Tech = 1 }
-				Cost { Tech = 2 }
-				Outcomes [ { Text = "Two crates gone. Your sensor screen is very quiet."; MoneyTech = 1.5; Heat = -35 } ]
+				Outcomes [ { Text = "The crates leave on a garbage scow. Credits arrive an hour later, and so does a lot of corporate traffic, somewhere else." } ]
 			}
 			{
 				Text = "Not today."

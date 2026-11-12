@@ -86,6 +86,16 @@ wait 1
 partsstate
 expect ux_parts_info > 0
 expect ux_parts_xml == 1
+# Keys on a multiselect page (UX V15, spec 810): a digit toggles an option row, Enter submits.
+event the_fence
+wait 1
+uxpick 1
+wait 1
+expectoption 1 selected
+ev_mark
+uxsubmit
+wait 2
+expect ev_tech_gain == -1
 # The win panel is centered and inside the screen.
 win
 wait 2

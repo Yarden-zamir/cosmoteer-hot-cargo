@@ -12,7 +12,10 @@ expect hunters == 0
 # The Magpies Return needs the magpies_paid flag set at least 2 sectors ago.
 expectneed magpies_return unmet
 event rival_crew
+pick 1
+ev_mark
 choose 1 1
+expect ev_tech_gain == -1
 expectflag magpies_paid 1
 expectneed magpies_return unmet
 ev_sector 3
@@ -20,7 +23,14 @@ expectneed magpies_return met
 event magpies_return
 # The rigged-crate option needs the defector flag and stays hidden without it.
 expectchoice 2 hidden
-choose 4 1
+# One crate and half the credits pay Rook (spec 811).
+pick 1 1
+expectchoice 1 disabled
+pick 2 5
+expectchoice 1 enabled
+unpick 1
+unpick 2
+choose 3 1
 expecttagged hc_ev_magpie >= 1
 expectflag magpies_paid 0
 # Refugee Convoy: selling the convoy pays, cools the trail, and costs fame and reputation with the local faction.
@@ -30,7 +40,7 @@ heat 20
 event refugee_convoy
 ev_mark
 ev_rep_mark
-choose 3 1
+choose 2 1
 expect ev_money_gain > 0
 expect ev_fame_gain < 0
 expect ev_rep_gain < 0
@@ -38,12 +48,15 @@ expect ev_heat_gain <= -10
 # Pirate Toll Gate: the toll grows with heat (0.3 + 0.01 x heat money units; 1 unit is 5,000 at tier 1).
 heat -100
 event toll_gate
+pick 1 4
+expectchoice 2 disabled
 ev_mark
 choose 1 1
 expect ev_money_gain < 0
 expect ev_money_gain > -2000
 heat 50
 event toll_gate
+pick 1 4
 ev_mark
 choose 1 1
 expect ev_money_gain < -3500

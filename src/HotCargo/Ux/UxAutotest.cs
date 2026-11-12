@@ -15,6 +15,8 @@ static class UxAutotest
     {
         RegisterMissionSelect();
         // uxpick N: presses dialogue key N (1-based) in the frontmost dialogue (event window first, then comms).
+        // uxsubmit: presses Enter in the frontmost dialogue: the first active submit button of a page with option rows (UX V15).
+        Autotest.Commands["uxsubmit"] = _ => Autotest.Check(DialogueKeys.Submit(), "Enter picked a submit button");
         Autotest.Commands["uxpick"] = arg =>
         {
             int n = int.Parse(arg, System.Globalization.CultureInfo.InvariantCulture);

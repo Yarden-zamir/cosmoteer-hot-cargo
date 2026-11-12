@@ -206,7 +206,7 @@ public sealed class DiplomacyHail : IHailProvider
         }
         page.AddText(DipText.Format("PunishCombinedFmt", Pct(Quotes.PunishCombined(run, sim, picks))));
         bool ok = Deals.PunishAllowed(run, sim, player, picks, out string why);
-        page.AddChoice(DipText.Text("PunishSubmit"), DiplomacyChoiceDomain.Option(Offer.Punish, 0), ok, ok ? null : DipText.Format("WhyNotFmt", why));
+        page.AddChoice(DipText.Text("PunishSubmit"), DiplomacyChoiceDomain.Option(Offer.Punish, 0), ok, ok ? null : DipText.Format("WhyNotFmt", why), submit: true);
         page.AddChoice(DipText.Text("PunishRefuse"), DiplomacyChoiceDomain.Option(Offer.PunishRefuse, 0));
     }
 

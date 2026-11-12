@@ -116,7 +116,12 @@ static class AiOverlay
             if (Run.Current is not { } run) return;
             try
             {
-                if (Label(__instance.Ship, run.T.Tactics) is { } label) __result = __result is null ? label : label + "\n" + __result;
+                if (Label(__instance.Ship, run.T.Tactics) is { } label)
+                {
+                    // A corporate hunter's behavior label starts with the hunter icon (mod/ux/actions.rules).
+                    if (__instance.Ship.HasTag(Hunters.HunterSpawner.HunterTag)) label = "<image name='hc_marker_hunter' colored='true'/> " + label;
+                    __result = __result is null ? label : label + "\n" + __result;
+                }
             }
             catch (Exception ex) { Errors.Report("ai label", ex.Message, ex); }
         }

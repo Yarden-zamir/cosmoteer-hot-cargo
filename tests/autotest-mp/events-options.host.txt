@@ -1,0 +1,21 @@
+# Co-op page options (spec 810, 592), host side: the client selects two crates on the Fence page, the host sees the same
+# shared draft and submits it, and both machines sell the same two crates.
+mphost {PORT}
+mpstart 2
+waitfor ev_pending == 1 30
+expectevent getaway
+choose 3
+waitfor ev_pending == 0 30
+mp event the_fence
+waitfor ev_pending == 1 10
+mp mpmark 1
+waitfor mpmark >= 2 60
+expectoption 1 selected
+ev_mark
+choose 1
+waitfor ev_pending == 0 30
+expect ev_tech_gain == -2
+mp mpmark 3
+expect desyncs == 0
+waitfor mpconnected == 0 240
+quit

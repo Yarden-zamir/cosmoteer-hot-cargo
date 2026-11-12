@@ -1,0 +1,40 @@
+# Event page options (spec 810 to 812): mixed payments, effects per unit, a sale that pays by the amount, and option rows on a
+# carried page. The existing event tests cover the other converted events.
+newgame run
+wait 8
+expectevent getaway
+choose 3 1
+ev_set StationEventChance 0
+ev_set CourierChance 0
+ev_set CooldownSeconds 0
+# Supplies first: Running on Empty's "take their cargo" (outcome 1) gives steel and coil.
+event stranded_freighter
+choose 3 1
+# Running on Empty: half a share is too little to give, and a sale checks the fuel on board (the starter fleet has none).
+event stranded_freighter
+pick 1 2
+expectchoice 1 disabled
+expectchoice 2 disabled
+choose last 1
+# Dead in Space (a carried page): one share of steel and one of coil, the old cost. Either one alone is not enough.
+event broken_down
+expectchoice 1 disabled
+pick 1 2
+expectchoice 1 disabled
+pick 2 2
+expectchoice 1 enabled
+ev_mark
+choose 1 1
+expect ev_res_steel_gain == -25
+expect ev_res_coil_gain == -5
+expect ev_money_gain > 0
+expect ev_pending == 0
+# Refugee Convoy: each refugee has its own effects (heat +5, crew +1 when a bunk is free).
+event refugee_convoy
+pick 1 1
+ev_mark
+choose 1 1
+expect ev_heat_gain >= 4
+expect ev_crew_gain <= 1
+expect ev_pending == 0
+quit

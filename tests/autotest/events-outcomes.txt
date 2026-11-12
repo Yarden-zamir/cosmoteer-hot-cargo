@@ -17,22 +17,36 @@ expect ev_money_gain >= 11000
 expect ev_pending == 0
 expect ev_result >= 1
 eventview
-# Fence: tech for money and less heat.
+# Fence: tech for money and less heat. The sale is a multiselect page (spec 810): pick the crates, then submit.
 heat 40
 event the_fence
-expectchoice 1 enabled
+expectchoice 1 disabled
 expectchoice 2 enabled
+pick 1
+expectoption 1 selected
+expectchoice 1 enabled
 ev_mark
 choose 1 1
 expect ev_tech_gain == -1
 expect ev_heat_gain <= -19
 expect ev_money_gain > 0
-# Checkpoint: the forged-codes choice stays hidden without the flag.
+# Two crates: heat -20 for the first and -15 for the second, as the old two-crate choice.
+heat 60
+event the_fence
+pick 1 2
+ev_mark
+choose 1 1
+expect ev_tech_gain == -2
+expect ev_heat_gain <= -34
+expect ev_heat_gain >= -36
+# Checkpoint: the forged-codes option stays hidden without the flag; the submit waits for an option.
 event corporate_checkpoint
-expectchoice 1 hidden
+expectoption 3 hidden
+expectoption 1 enabled
+expectchoice 1 disabled
 expectchoice 2 enabled
 # A caught scan leads to a follow-up page (Next).
-choose 3 2
+choose 2 2
 expectevent checkpoint_caught
 eventview
 # Breaking away spawns a corporate patrol with the hunter AI.
@@ -46,9 +60,10 @@ event getaway
 choose 1 1
 expectflag fake_codes 1
 event corporate_checkpoint
-expectchoice 1 enabled
+expectoption 3 enabled
+pick 3
 ev_mark
-choose 1 1
+choose 1
 expectflag fake_codes 0
 expect ev_heat_gain <= -19
 # Resources: a derelict salvage adds steel; hull damage hits parts.
@@ -60,7 +75,7 @@ event derelict_survey
 choose 2 2
 # Magpies: the fight starts a mission with a bounty.
 event rival_crew
-choose 4 1
+choose 3 1
 expecttagged hc_ev_magpie >= 1
 # Crew: the beacon engineer joins when a bunk is free.
 event distress_beacon

@@ -46,10 +46,11 @@ public sealed class HailPage : AIDialogueModule.DialogueExchange
     }
 
     /// <summary>A choice that goes through the shared choice input of <see cref="Shared"/>: co-op players see hovers and can vote.</summary>
-    public HailChoice AddChoice(string xml, int option, bool active = true, string? tooltip = null, bool close = false)
+    /// <param name="submit">The choice submits the page's multiselect draft: Enter picks the first active one (UX V15).</param>
+    public HailChoice AddChoice(string xml, int option, bool active = true, string? tooltip = null, bool close = false, bool submit = false)
     {
         if (Shared is null) throw new InvalidOperationException("set HailPage.Shared before adding a shared choice");
-        var b = new HailChoice(option) { Text = xml, Tooltip = tooltip, SelfInputActive = active, CloseOnClick = close };
+        var b = new HailChoice(option) { Text = xml, Tooltip = tooltip, SelfInputActive = active, CloseOnClick = close, Submit = submit };
         Buttons.Add(b);
         return b;
     }
@@ -68,6 +69,7 @@ public sealed class HailPage : AIDialogueModule.DialogueExchange
 public sealed class HailChoice(int option) : AIDialogueModule.DialogueButton
 {
     public int Option { get; } = option;
+    public bool Submit { get; init; }
 }
 
 /// <summary>
@@ -207,7 +209,7 @@ public static class CommsHail
         {
             if (Rows.TryGetValue(__instance, out var rows)) ShowRows(__instance, rows);
             UpdateShared(__instance, null);
-            FlushDraftValues(false);
+            MultiChoice.DraftSender.Flush();
         });
     }
 
@@ -242,7 +244,7 @@ public static class CommsHail
         {
             if (page.Multi is not { } multi) return;
             int value = row.Slider is { } spec ? SliderValue(tab.Callee, spec) : 0;
-            run.Game.NetManager.EnqueueInput(new MultiChoice.MultiChoiceInput(multi.Domain, multi.Serial, row.Option, !row.Selected, value));
+            MultiChoice.DraftSender.Toggle(run, multi.Domain, multi.Serial, row.Option, !row.Selected, value);
             return;
         }
         if (page.Shared is not { } s || !Panels.TryGetValue(tab, out var shared) || shared.Domain != s.Domain) return;
@@ -252,31 +254,12 @@ public static class CommsHail
         shared.LockedUntil = Halfling.App.Clock.Time.Seconds + LockSeconds;
     }
 
-    /// <summary>Draft values that wait to go out: a dragged slider sends at most every DraftSendSeconds, then its last value.</summary>
-    static readonly Dictionary<(string Domain, int Serial, int Option), (int Value, double Since)> PendingDraft = new();
-    static readonly Dictionary<(string Domain, int Serial, int Option), double> LastDraftSend = new();
-    const double DraftSendSeconds = 0.25;
-
     static void RowValue(CommDialogueTab tab, OptionRowView view, int value)
     {
         if (RowOf(tab, view.Key) is not { } row || row.Slider is null) return;
         Values[(tab.Callee.UniqueID, row.Slider.Key)] = value;
         if (!row.Toggle || !row.Selected || tab._currentDialogue is not HailPage { Multi: { } multi }) return;
-        PendingDraft[(multi.Domain, multi.Serial, row.Option)] = (value, Halfling.App.Clock.Time.Seconds);
-        FlushDraftValues(false);
-    }
-
-    static void FlushDraftValues(bool all)
-    {
-        if (PendingDraft.Count == 0 || Run.Current is not { } run) return;
-        double now = Halfling.App.Clock.Time.Seconds;
-        foreach (var (key, (value, _)) in PendingDraft.ToList())
-        {
-            if (!all && now - LastDraftSend.GetValueOrDefault(key, double.MinValue) < DraftSendSeconds) continue;
-            run.Game.NetManager.EnqueueInput(new MultiChoice.MultiChoiceInput(key.Domain, key.Serial, key.Option, true, value));
-            LastDraftSend[key] = now;
-            PendingDraft.Remove(key);
-        }
+        MultiChoice.DraftSender.Value(multi.Domain, multi.Serial, row.Option, value);
     }
 
     /// <summary>
@@ -327,6 +310,9 @@ public static class CommsHail
         foreach (var (_, shared) in Panels)
             if (shared.Domain == domain && shared.LockedSerial == serial) shared.LockedUntil = 0;
     }
+
+    /// <summary>The option rows of a dialogue tab, or null before the tab has them. For the dialogue keys.</summary>
+    internal static OptionRows? RowsOf(CommDialogueTab tab) => Rows.TryGetValue(tab, out var rows) ? rows : null;
 
     /// <summary>The option rows of an open dialogue tab with this callee, or null. For autotests.</summary>
     internal static OptionRows? OpenRows(Ship callee)

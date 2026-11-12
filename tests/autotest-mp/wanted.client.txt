@@ -8,7 +8,9 @@ waitfor ev_wanted_warned == 1 60
 waitfor ev_seen >= 3 60
 expectevent clean_record
 ev_mark
-choose 2
+# The crate is a page option (spec 810): the client selects it in the shared draft, then submits.
+pick 2
+choose 1
 waitfor ev_wanted == 0 30
 expect ev_tech_gain == -1
 expect desyncs == 0

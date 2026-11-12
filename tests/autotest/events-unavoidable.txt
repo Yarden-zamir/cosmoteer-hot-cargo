@@ -6,20 +6,29 @@ choose 3 1
 expecteligible vault_coolant_leak 1
 event vault_coolant_leak
 # Venting costs one crate from the live vault count.
+pick 1
 ev_mark
-choose 1 1
+choose 1
 expect ev_tech_gain == -1
 # The category cap: after one Unavoidable event, no trigger picks it again.
 expecteligible vault_coolant_leak 0
 ev_set MaxUnavoidablePerRun 2
 expecteligible vault_coolant_leak 1
 ev_set MaxUnavoidablePerRun 1
-# The other choices: crew with hull damage, or money.
+# The other options: crew with hull damage, or money; one crew and half the money also stop the leak.
 event vault_coolant_leak
+pick 3 4
 ev_mark
-choose 3 1
+choose 1
 expect ev_money_gain < 0
 expect ev_tech_gain == 0
 event vault_coolant_leak
-choose 2 2
+pick 2 1
+expectchoice 1 disabled
+pick 3 2
+expectchoice 1 enabled
+ev_mark
+choose 1
+expect ev_money_gain < 0
+expect ev_pending == 0
 quit
