@@ -32,10 +32,11 @@ Close Cosmoteer and double-click `uninstall.bat`.
 ## Keys
 
 - F8: show or hide the Hot Cargo panel.
+- 1 to 9: pick an option in an event or a comms dialogue.
 - Debug keys (single player, off by default): F9 / Shift+F9 add or remove 10 heat, F10 starts the next heat stage, F11 / Shift+F11 add or remove 1 tech.
   To turn them on, add this to `Mods\hot_cargo\tunables.rules`: `Debug { DebugKeys = true }`.
 
 ## Tuning
 
 Edit `Mods\hot_cargo\tunables.rules` while the game runs. `tunables.defaults.rules` next to it lists every value.
-A comms window pauses the game in single player. To turn that off, add `Ux { PauseOnComms = false }`.
+In single player, a comms window pauses the game. To turn that off, add `Ux { PauseOnComms = false }`.

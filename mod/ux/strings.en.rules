@@ -4,62 +4,64 @@ HotCargoUx
 	Title = "HOT CARGO"
 	SectorFmt = "SECTOR {0} / {1}"
 	Calm = "CALM"
-	StatusFmt = "{0}   <gray>next {1}   +{2:0.0}/min</gray>"
+	StatusFmt = "{0}   <gray>{1}   +{2:0.0}/min</gray>"
 	NextFmt = "{0} at {1:0}"
-	NextMax = "max"
-	TechFmt = "<fame>{0}</fame> tech held   <gray>worth</gray> <money>{1}</money> <gray>each</gray>"
-	StatusWonFmt = "TECH DELIVERED   score {0}   heat is off"
+	NextMax = "top stage"
+	TechFmt = "<fame_color>{0}</fame_color> tech   <money>{1}</money> <gray>each</gray>"
+	StatusWonFmt = "DELIVERED   score {0}"
 	StatusLost = "TECH LOST"
 	StatusHeatOff = "Heat is off"
 
 	// Stage alerts: one line for each stage name in Heat.Stages
 	StageWarning = "Corporate scouts found your trail."
-	StagePatrol = "A corporate patrol is closing in."
+	StagePatrol = "A corporate patrol closes in."
 	StageHunt = "Hunters are here for the tech."
-	StageStrike = "Strike force inbound. Leave this system."
-	StageGeneric = "The corporation sends more ships."
+	StageStrike = "Strike force inbound. Jump out!"
+	StageGeneric = "More corporate ships inbound."
 	StageChatFmt = "<bad>{0}</bad>: {1}"
 
 	// Run intro
 	IntroTitle = "HOT CARGO"
 	IntroBodyFmt = "You stole corporate tech. The corporation wants it back.\n\n"\
-	               "<fame>Goal</fame>   Sell the tech to the <good>Buyer</good> in sector {0}. Each jump to a new system is one sector.\n"\
-	               "<fame>Heat</fame>   Rises over time and with each mission. It has {1} stages, and each stage sends hunters.\n"\
-	               "<fame>Cool</fame>   A jump to a new system drops heat to {2:0%}.\n"\
-	               "<fame>Cargo</fame>  The tech sits in your Tech Vault. Damage destroys it. If all of it is gone, the run ends.\n"\
-	               "<fame>Sell?</fame>  You can sell tech at stations on the way: less heat, more money, a lower final score."
+	               "<fame_color>Goal</fame_color>   Sell the tech to the <good>Buyer</good> in sector {0}. Each new system is one sector.\n"\
+	               "<fame_color>Heat</fame_color>   Rises over time and with each mission. Each of its {1} stages sends hunters.\n"\
+	               "<fame_color>Cool</fame_color>   A jump to a new system drops heat to {2:0%}.\n"\
+	               "<fame_color>Cargo</fame_color>  Hits on the Tech Vault destroy tech. Lose it all and the run ends.\n"\
+	               "<fame_color>Sell?</fame_color>  Selling at stations lowers heat and pays now, but lowers the score."
 	IntroButton = "Fly"
 
 	// Run end
 	WinTitle = "TECH DELIVERED"
 	WinButton = "Keep playing"
-	WinScoreFmt = "<gray>SCORE</gray>\n<s48><money>{0}</money></s48>\n<fame>{1}</fame> tech delivered"
+	WinScoreFmt = "<gray>SCORE</gray>\n<s48><money>{0}</money></s48>\n<fame_color>{1}</fame_color> tech delivered"
 	ScoreFmt = "Score {0}, {1} tech delivered"
-	WinContinue = "Heat is off. You can keep playing this career."
+	WinContinue = "Heat is off. You can keep playing."
 	LossTitle = "THE CORPORATION RECOVERED THE TECH"
-	RunStatsFmt = "Sector <fame>{0}</fame> of {1}   ·   Run time <fame>{2}</fame>   ·   Tech held <fame>{3}</fame>   ·   Worth <money>{4}</money> each"
-	CareerStatsFmt = "Fame <fame>{0}</fame>   ·   Missions completed <fame>{1}</fame>   ·   Systems visited <fame>{2}</fame>"
+	RunStatsFmt = "Sector <fame_color>{0}</fame_color>/{1}   ·   Time <fame_color>{2}</fame_color>   ·   Tech <fame_color>{3}</fame_color>   ·   <money>{4}</money> each"
+	CareerStatsFmt = "Fame <fame>{0}</fame>   ·   Missions <fame_color>{1}</fame_color>   ·   Systems <fame_color>{2}</fame_color>"
 	WaitingForHost = "Waiting for the host to load or quit."
 
 	// Markers
 	BuyerTag = "BUYER"
 
 	// Galaxy map tooltip
-	MapJumpsFmt = "<fame>{0}</fame> jumps ({1})"
-	MapNoRoute = "No known route: jump through unvisited systems first"
+	MapJumpsFmt = "<fame_color>{0}</fame_color> jumps ({1})"
+	MapJumpFmt = "<fame_color>1</fame_color> jump ({1})"
+	MapNoRoute = "No known route yet"
 	MapUnvisited = "Not visited"
-	MapMissionsFmt = "<fame>{0}</fame> of your missions here"
+	MapMissionsFmt = "<fame_color>{0}</fame_color> of your missions"
 	MapHeatFmt = "Heat when you left: <bad>{0:0}</bad>"
-	MapSectorFmt = "First visit: sector {0} of {1}"
-	MapBuyerHere = "First visit: the Buyer waits here"
+	MapSectorFmt = "New system: sector {0} of {1}"
+	MapBuyerHere = "New system: the Buyer waits here"
 
 	// Mission HUD
 	DistanceJumpsFmt = "{0}, {1} jumps"
+	DistanceJumpFmt = "{0}, 1 jump"
 
 	// Fame tooltip
 	FameTitleFmt = "Fame <fame>{0}</fame>: {1}"
-	FameNextFmt = "Next title: {0} in <fame>{1}</fame> fame"
-	FameCrewFmt = "Crew {0} of {1} allowed by your fame"
+	FameNextFmt = "Next: {0} in <fame>{1}</fame>"
+	FameCrewFmt = "Crew {0} / {1} (fame limit)"
 
 	// Hull integrity
 	Hull = "hull"
@@ -69,7 +71,7 @@ HotCargoUx
 	// Ship alerts
 	ShipLostFmt = "SHIP LOST: {0}"
 	ShipDerelictFmt = "SHIP DERELICT: {0}"
-	ShipNoControlFmt = "{0} LOST CONTROL ({1}/{2} command)"
+	ShipNoControlFmt = "{0} LOST CONTROL: {2} of {1} command points"
 
 	// Damage pings
 	UnderFire = "UNDER FIRE"
@@ -90,14 +92,14 @@ HotCargoUx
 	BadgeRewardsFmt = "<good>{0} reward ready</good>"
 
 	// Trade tab
-	TechSaleFmt = "<fame>Sell {0} tech:</fame> heat per minute <bad>+{1:0.0}</bad> to <good>+{2:0.0}</good>.   Final score <bad>{3}</bad> <gray>(at today's price)</gray>"
-	TechSaleBuyer = "The Buyer. Sell tech here to win the run."
-	TradePricesFmt = "<gray>{0}, {1}: buy prices x{2:0.00}, sale refund x{3:0.00}</gray>"
-	DeliveryAcceptedFmt = "<fame>Delivery</fame> {0}: {1} / {2}, pays <money>{3}</money>. Sales here count."
+	TechSaleFmt = "<fame_color>Sell {0} tech:</fame_color> heat <bad>+{1:0.0}</bad> → <good>+{2:0.0}</good>/min, score <bad>{3}</bad> <gray>(today's price)</gray>"
+	TechSaleBuyer = "The Buyer: sell tech here to win."
+	TradePricesFmt = "<gray>{0} ({1}): buy x{2:0.00}, sell x{3:0.00}</gray>"
+	DeliveryAcceptedFmt = "<fame_color>Delivery</fame_color> {0}: {1} / {2}, pays <money>{3}</money>. Sales here count."
 	DeliveryOfferedFmt = "<gray>Offered delivery</gray> {0}: {1} / {2}, pays <money>{3}</money>"
 
 	// Wanted
-	WantedSeenFmt = "{0}   <bad>seen: the timer waits</bad>"
+	WantedSeenFmt = "{0}   <bad>seen, timer paused</bad>"
 	WantedByFmt = "{0}"
-	WantedLeftFmt = "{0}   search ends in <fame>{1}</fame>"
+	WantedLeftFmt = "{0}   search ends in <fame_color>{1}</fame_color>"
 }

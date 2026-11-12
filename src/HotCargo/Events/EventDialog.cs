@@ -33,6 +33,8 @@ internal sealed class EventDialog : WindowBox
 
     readonly Run _forRun;
     readonly Label _body;
+    readonly ScrollBox _pageBox;
+    readonly LayoutBox _header;
     readonly LayoutBox<ImageButton, Widget> _buttons;
     EventPage? _page;
     bool _sent;
@@ -55,6 +57,8 @@ internal sealed class EventDialog : WindowBox
             if (page is null) { Close(run); return; }
             if (_open is null || _open.Parent is null)
             {
+                // The run intro shows first. The event waits in the sim until the player closes the intro.
+                if (Ui.CenterPanel.IsOpen(run.Game)) return;
                 _open = new EventDialog(run);
                 run.Game.Gui.FloatingWindows.AddChild(_open);
                 PauseIfWanted(run);
@@ -93,10 +97,10 @@ internal sealed class EventDialog : WindowBox
         TitleLabel.TextRenderer.HAlignment = HAlignment.Left;
         TitleLabel.TextRenderer.Padding = new Borders(10f, 0f, 0f, 0f);
         CloseButton.SelfActive = false;
-        Size = new Vector2(760f, 560f);
-        ResizeController.MinSize = new Vector2(600f, 400f);
+        Size = new Vector2(WindowWidth, 400f);
+        ResizeController.MinSize = new Vector2(600f, MinHeight);
 
-        var page = new ScrollBox();
+        var page = _pageBox = new ScrollBox();
         page.AnchorRect = AnchorPresets.Fill;
         page.NineSlice.Flags = NineSliceFlags.None;
         page.ScrollBarController.ShowHorizontal = ScrollBarShowMode.Never;
@@ -106,7 +110,7 @@ internal sealed class EventDialog : WindowBox
         AddChild(page);
 
         // Text with the comms dialogue icon on its left, as in CommDialogueTab.
-        var header = new LayoutBox();
+        var header = _header = new LayoutBox();
         header.NineSlice.Flags = NineSliceFlags.None;
         header.PercentileWidth = 100f;
         header.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
@@ -141,14 +145,32 @@ internal sealed class EventDialog : WindowBox
 
         Parented += OnParented;
         Unparenting += (_, _) => BoundsProvider = null;
+        BeforeFrameDraw += (_, _) => FitHeight();
         WidgetRules.AddDialogTweens(this);
         WidgetRules.AddBlur(this);
     }
+
+    const float WindowWidth = 760f;
+    const float MinHeight = 240f;
 
     void OnParented(object? sender, ParentEventArgs e)
     {
         ScreenRect = Rect.CenteredOn(Parent.RectProvider.ScreenRect.Size / 2f, Size);
         BoundsProvider = Parent.RectProvider;
+    }
+
+    /// <summary>
+    /// Fits the window height to the page: text, choices and paddings, at most 80 % of the screen (the page scrolls past that).
+    /// It keeps the window center, so a short result page does not leave a tall empty window over the HUD.
+    /// </summary>
+    void FitHeight()
+    {
+        if (Parent is null) return;
+        float chrome = Height - _pageBox.Height;
+        float content = _header.Height + _buttons.Height + _pageBox.Children.BorderPadding.Top + _pageBox.Children.BorderPadding.Bottom + _pageBox.Children.WidgetPadding.Y;
+        float h = Math.Clamp(chrome + content, MinHeight, Parent.RectProvider.ScreenRect.Height * 0.8f);
+        if (Math.Abs(h - Height) < 1f) return;
+        ScreenRect = Rect.CenteredOn(ScreenRect.Center, new Vector2(WindowWidth, h));
     }
 
     /// <summary>Rebuilds on a new page. Refreshes the enabled states once a second, because money and cargo change while the window is open.</summary>

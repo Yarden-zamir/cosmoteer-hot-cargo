@@ -56,6 +56,9 @@ static class CenterPanel
         return box;
     }
 
+    /// <summary>True while a panel is open in the game. The event window waits for it, so the two never stack.</summary>
+    public static bool IsOpen(GameRoot game) => Open.Any(o => o.Game == game);
+
     /// <summary>The newest panel. For autotests that check the layout.</summary>
     internal static LayoutBox? Newest => Open.Count > 0 ? Open[^1].Box : null;
 

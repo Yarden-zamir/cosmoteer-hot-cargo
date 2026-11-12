@@ -1,42 +1,21 @@
 HotCargoMechanics
 {
 	DroneSiege = "Drone Siege"
-	DroneSiegeDesc = "Someone parked a drone carrier near the {faction_name} listening post <b>{target_ship}</b> in the {mission_location} system, and the drones keep coming. "\
-	                 "Hold the post for {hold_minutes} minutes and the {faction_name} pays {money}. "\
-	                 "The clock only runs while one of your ships is near the post. Any crewed ship counts: "\
-	                 "use <b>Build New Ship</b> next to the post, give it a reactor, a few guns and a crew of its own, and let it stand watch while you get on with your day. "\
-	                 "Had enough? Leave early from the mission panel and keep the pay for the waves you held off."
+	DroneSiegeDesc = "A drone carrier sits near the {faction_name} listening post <b>{target_ship}</b> in the {mission_location} system, and the drones keep coming. Hold the post for {hold_minutes} minutes and the {faction_name} pays {money}. The clock runs only while one of your ships is near the post. Any crewed ship counts: use <b>Build New Ship</b> to put a cheap gun platform there and let it stand watch. You can leave early from the mission panel and keep the pay for the waves you held off."
 	Prototype = "Prototype Retrieval"
-	PrototypeDesc = "Pirates aboard the <b>{target_ship}</b> in the {mission_location} system lifted a prototype core from a corporate yard and bolted it to their hull. "\
-	                "A broker wants it back in one piece and pays {money}. Pick your targets: cripple their reactors, bridge or crew until the ship is a dead hulk "\
-	                "and bring a ship alongside the core so your crew can lift it out. Or beat them until they hail you to surrender, and accept: they hand it over. "\
-	                "If the core breaks, there is no deal."
+	PrototypeDesc = "Pirates aboard the <b>{target_ship}</b> in the {mission_location} system bolted a stolen prototype core to their hull. A broker pays {money} to get it back intact. Cripple their reactors, bridge or crew until the ship is a dead hulk, then bring a ship alongside so your crew can lift the core. Or beat them until they hail to surrender, and accept. If the core breaks, there is no deal."
 	SunMining = "Sunside Ore"
-	SunMiningDesc = "Helion ore only forms on rocks that bake in a sun's glare, and there is a seam of it in the {mission_location} system. "\
-	                "{to_ship} wants {target_count} {resource_icon} {resource_type_plural} within {time_limit_minutes} minutes and pays {money}, on top of the ore price. "\
-	                "Mining lasers break the deposits; your crew collect the pieces. The heat out there cooks parts: keep moving, bring storage room, and do not drift toward the sun."
+	SunMiningDesc = "Helion ore forms only on rocks that bake in a sun's glare, and the {mission_location} system has a seam. {to_ship} wants {target_count} {resource_icon} {resource_type_plural} within {time_limit_minutes} minutes and pays {money} on top of the ore price. Mining lasers break the deposits; crew collect the pieces. The heat cooks parts: keep moving, bring storage room, and stay away from the sun."
 	Tow = "Salvage Rights"
-	TowDesc = "The freighter <b>{target_ship}</b> lost its crew and drifts dead near {station} in the {mission_location} system. "\
-	          "The {faction_name} holds the salvage rights and pays {money} to have the hulk brought in close to the station within {time_limit_minutes} minutes. "\
-	          "Tractor beams do the job best. A crew of your own can also claim the wreck and fly it in, if anything aboard still works. Do not shoot it to pieces."
+	TowDesc = "The freighter <b>{target_ship}</b> lost its crew and drifts near {station} in the {mission_location} system. The {faction_name} pays {money} to have the hulk brought in close to the station within {time_limit_minutes} minutes. Tractor beams work best. Your own crew can also claim the wreck and fly it in, if anything still works. Do not shoot it to pieces."
 	Capture = "Repossession"
-	CaptureDesc = "The freighter <b>{target_ship}</b> in the {mission_location} system missed its payments, and its crew ran off with it, escorts and all. "\
-	              "The bank pays {money} for the ship, not for scrap. Beat the crew until they hail you to surrender and accept, "\
-	              "or knock out the crew and send your own people aboard to claim the hull. If the freighter is destroyed, the deal is off."
+	CaptureDesc = "The freighter <b>{target_ship}</b> in the {mission_location} system missed its payments, and its crew ran off with it, escorts and all. The bank pays {money} for the ship, not for scrap. Beat the crew until they hail to surrender and accept, or knock out the crew and send your people aboard. If the freighter is destroyed, the deal is off."
 	Survey = "Storm Survey"
-	SurveyDesc = "The {faction_name} wants fresh readings from inside the ion storms of the {mission_location} system. "\
-	             "Hold a ship with a working sensor array at each of the {marker_count} markers for {scan_seconds} seconds. "\
-	             "Lightning hits hard in there: send a cheap scout or bring shields, and do not linger. Pays {money}."
+	SurveyDesc = "The {faction_name} wants fresh readings from inside the ion storms of the {mission_location} system. Hold a ship with a working sensor array at each of the {marker_count} markers for {scan_seconds} seconds. Lightning hits hard: send a cheap scout or bring shields. Pays {money}."
 	ClaimJumpers = "Claim Jumpers"
-	ClaimJumpersDesc = "The mining barge <b>{target_ship}</b> works a rich claim in the {mission_location} system, and raiders want it. "\
-	                   "Keep the barge alive for {hold_minutes} minutes and the {faction_name} pays {money}. "\
-	                   "The clock only runs while one of your ships is near the barge, so a gun platform of your own can stand watch in your place. "\
-	                   "You can leave early and keep the pay for the waves you held off."
+	ClaimJumpersDesc = "Raiders want the rich claim of the mining barge <b>{target_ship}</b> in the {mission_location} system. Keep the barge alive for {hold_minutes} minutes and the {faction_name} pays {money}. The clock runs only while one of your ships is near the barge, so a gun platform can stand watch for you. You can leave early and keep the pay for the waves you held off."
 	ListeningPost = "Listening Post"
-	ListeningPostDesc = "A {faction_name} listening post hides in the gas cloud of the {mission_location} system, a few kilometres from a hostile base. "\
-	                    "Its handler needs the scout <b>{target_ship}</b> taken within {scan_km} km of the base. Pick your spot and start the scan from the mission panel. "\
-	                    "The scan lights you up, and the base sends {wave_count} waves. Each wave you survive earns its share of {money}. "\
-	                    "Before a wave you can order an intensive scan: a harder wave, {intensive_percent}% more pay. If it gets too hot, leave early and keep what you earned."
+	ListeningPostDesc = "A {faction_name} listening post hides in the gas cloud of the {mission_location} system, near a hostile base. Take the scout <b>{target_ship}</b> within {scan_km} km of the base, then start the scan from the mission panel. The scan lights you up, and the base sends {wave_count} waves. Each wave you survive earns its share of {money}. Before a wave you can order an intensive scan: a harder wave, {intensive_percent}% more pay. Leave early to keep what you earned."
 
 	HoldFmt = "Defend {0}: {1}:{2} left"
 	HoldPaused = "No ship on station: the clock is stopped"
@@ -56,7 +35,7 @@ HotCargoMechanics
 	PrototypeCoreDesc = "A sealed corporate prototype. It does nothing for you, but someone pays well to get it back intact."
 	HelionOre = "Helion Ore"
 	HelionOrePlural = "Helion Ore"
-	HelionOreDesc = "A heavy mineral that only forms on asteroids close to a sun. Stations buy it; Sunside Ore contracts ask for it."
+	HelionOreDesc = "A heavy mineral that forms only on asteroids close to a sun. Stations buy it, and Sunside Ore contracts ask for it."
 	HelionDeposit = "Helion Ore Deposit"
 	HelionDepositIcon = "Helion Ore"
 	HelionAsteroid = "Helion Ore Asteroid"
