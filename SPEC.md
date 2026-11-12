@@ -428,7 +428,7 @@ WORLDS.md holds the design. The archetypes give each system an identity, a hazar
 ### Wanted and hunted
 
 470. When the players are wanted (vanilla: a faction in the system hunts them with police) and heat reached `WantedWarningMinStage` (default 1, the first stage), a warning shows once: a short message at the top of the screen and a chat line that names the factions and the ways out. Ways out: pay the bounty (hail one of their police ships; the vanilla surrender dialogue offers to pay it), leave the system (wanted belongs to the system), outlast the search timer, or a Wanted event (requirement 473). The warning shows again only after the players stop being both. Wanted alone stays vanilla.
-471. The Wanted trigger: when the warning in requirement 470 shows, a Wanted event opens with chance `WantedEventChance` (default 0.7). It ignores the cooldown and the per-system cap, and waits for no other page (it does not open while a page waits).
+471. The Wanted trigger: when the warning in requirement 470 shows, a Wanted event opens with chance `WantedEventChance` (default 0.7). It ignores the cooldown and the per-system cap. It does not open while another page waits.
 472. A need can require wanted status (`Wanted = true`). An outcome can clear wanted (`ClearWanted`): every faction in the system stops wanting the players, as a paid bounty does.
 473. Wanted events: A Clean Record (pay 0.4 + 0.01 × heat money units, with a sell-out risk that grows with heat; or pay one crate for a sure clear and heat −5) and Decoy Run (pay 0.5 money units, with a failure risk that grows with heat; or a Sensor Array ghost). Each opens once per run.
 
