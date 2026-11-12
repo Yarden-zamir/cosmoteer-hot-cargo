@@ -1,0 +1,47 @@
+# Balance: hunter mass, value, fuel, jump cost and salvage value per tier (BALANCE.md).
+newgame
+wait 8
+godmode on
+aiset CallOnVanilla false
+aiset CallEnabled false
+balance_probe 1 3
+wait 2
+balance_salvage mark
+wait 6
+balance_salvage t1
+balance_probe 3 3
+wait 2
+balance_salvage mark
+wait 6
+balance_salvage t3
+balance_probe 5 3
+wait 2
+balance_salvage mark
+wait 6
+balance_salvage t5
+balance_probe 7 3
+wait 2
+balance_salvage mark
+wait 6
+balance_salvage t7
+balance_probe 9 3
+wait 2
+balance_salvage mark
+wait 6
+balance_salvage t9
+balance_probe 11 3
+wait 2
+balance_salvage mark
+wait 6
+balance_salvage t11
+balance_probe 12 3
+wait 2
+balance_salvage mark
+wait 6
+balance_salvage t12
+balance_probe 14 3
+wait 2
+balance_salvage mark
+wait 6
+balance_salvage t14
+quit

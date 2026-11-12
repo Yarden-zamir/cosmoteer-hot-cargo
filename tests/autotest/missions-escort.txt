@@ -5,10 +5,10 @@ hc_generate escort
 hc_accept escort
 expect hc_active_escort == 1
 # Convoy cover: the offer carries MissionTunables.EscortHeatChange, and the reward lowers heat. Heat stays below the first stage, so no hunter disturbs the escort.
-expect hc_escort_cover == -15
+expect hc_escort_cover == -8
 heat 20
 hc_cover_give
-expect heat <= 6
+expect heat <= 13
 hc_escort_goto
 # The game can pause by itself here (enemy spotted or a codex page, with default settings in test slots).
 pause off
@@ -18,7 +18,8 @@ hc_mark
 hc_escort_diag before_flight
 wait 15
 hc_escort_diag after_flight
-expect hc_escort_progress > 100
+# The freighter type is random. The slowest civilian freighters (Barrel's Bottom) make about 75 in 15 s, faster ones about 110.
+expect hc_escort_progress > 50
 expect hc_escort_done == 0
 hc_escort_arrive
 wait 3

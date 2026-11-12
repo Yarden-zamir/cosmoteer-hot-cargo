@@ -6,11 +6,11 @@ expect active == 1
 expect sector == 1
 heat 30
 expect stages == 1
-# One standard tier-1 mission pays 5 fame x 1.5 (default difficulty) x 2.0 (RewardScale) = 15 fame.
-# That is +15 heat (HeatPerStandardMission) x 1.2 (multiplier with 6 tech).
-fame 15
-expect heat >= 47.9
-expect heat <= 49.5
+# One standard tier-1 fame unit is 5 fame x 1.5 (default difficulty) x 1.0 (RewardScale) = 7.5 fame. 30 fame = 4 units.
+# Run.OnFameChanged rounds the unit to 8 fame, so that is 30 / 8 x 1.5 heat (HeatPerStandardMission) x 1.2 (multiplier with 8 tech) = 6.75 heat.
+fame 30
+expect heat >= 36.8
+expect heat <= 38.0
 expect stages == 1
 wait 20
 expect seconds > 5
@@ -18,7 +18,7 @@ save core
 wait 3
 load core
 log loaded
-expect heat >= 47.9
+expect heat >= 36.8
 expect stages == 1
 heat 100
 expect stages == 4

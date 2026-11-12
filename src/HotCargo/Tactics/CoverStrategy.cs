@@ -8,6 +8,7 @@ using Halfling.PortableHashing;
 using Halfling.Serialization;
 using Halfling.Timing;
 using HotCargo.Ai;
+using HotCargo.Core;
 using HotCargo.Hunters;
 using static HotCargo.Ai.PersonalityModel;
 using NVector2 = System.Numerics.Vector2;
@@ -63,7 +64,7 @@ internal sealed class CoverStrategy(CoverStrategyRules rules) : AIStrategyModule
         if (TacticGate.Active(Tactic.Cover, ship) is not { } t) return Reset(now);
         // In the hide phase the ship has a move command, so the target comes from the saved state.
         var target = (ship.Commands.CurConfirmedCommand as AttackCommand)?.Target ?? _target ?? AiGate.NearestHumanEnemy(ship);
-        if (target is null || target.IsDisposed || target.IsJunk || !ship.IsEnemiesWith(target) || !target.IsWithinRadarOfTeam(ship.Metadata.Team)
+        if (target is null || !target.IsLiveWith(ship) || !ship.IsEnemiesWith(target) || !target.IsWithinRadarOfTeam(ship.Metadata.Team)
             || HunterOrders.EdgeDistance(ship, target) > t.CoverEngageRange)
             return Reset(now);
         _target = target;
@@ -76,7 +77,7 @@ internal sealed class CoverStrategy(CoverStrategyRules rules) : AIStrategyModule
         }
         if (Phase == CoverPhase.Peek) return false;
 
-        var rock = _rock is { IsDisposed: false } r && IsRock(r) && Usable(ship, target, r, t) ? r : FindRock(ship, target, t);
+        var rock = _rock is { } r && r.IsLiveWith(ship) && IsRock(r) && Usable(ship, target, r, t) ? r : FindRock(ship, target, t);
         if (rock is null)
         {
             if (!_noRockLogged) TacticsLog.Event(ship, Tactic.Cover, "no rock in reach");

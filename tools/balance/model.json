@@ -1,0 +1,954 @@
+{
+ "vanilla": {
+  "tvm": [
+   60000,
+   75000,
+   90000,
+   110000,
+   140000,
+   180000,
+   230000,
+   300000,
+   400000,
+   500000,
+   650000,
+   800000,
+   1000000,
+   1300000,
+   1600000
+  ],
+  "stdMoney": [
+   2500,
+   3375,
+   4125,
+   5000,
+   6250,
+   8000,
+   10250,
+   13250,
+   17500,
+   22500,
+   28750,
+   36250,
+   45000,
+   57500,
+   72500
+  ],
+  "stdFame": [
+   5.0,
+   6.2,
+   7.5,
+   9.2,
+   11.7,
+   15.0,
+   19.2,
+   25.0,
+   33.3,
+   41.7,
+   54.2,
+   66.7,
+   83.3,
+   108.3,
+   133.3
+  ],
+  "maxFame": [
+   40,
+   90,
+   140,
+   210,
+   310,
+   440,
+   610,
+   840,
+   1170,
+   1510,
+   2010,
+   2510,
+   3170,
+   4170,
+   5170
+  ],
+  "fastMoney": 2.0,
+  "fastFame": 1.5,
+  "startMoneyAfterShip": 10000,
+  "techBase": 546500,
+  "techOverclock": 4195000,
+  "techCount": 95
+ },
+ "measured": {
+  "board": {
+   "s1": {
+    "total": 25,
+    "hotcargo": 4,
+    "chains": 3
+   },
+   "s2": {
+    "total": 22,
+    "hotcargo": 5,
+    "chains": 2
+   },
+   "s3": {
+    "total": 24,
+    "hotcargo": 5,
+    "chains": 2
+   },
+   "s4": {
+    "total": 25,
+    "hotcargo": 6,
+    "chains": 3
+   },
+   "s5": {
+    "total": 26,
+    "hotcargo": 4,
+    "chains": 3
+   },
+   "s6": {
+    "total": 20,
+    "hotcargo": 4,
+    "chains": 2
+   },
+   "s7": {
+    "total": 22,
+    "hotcargo": 5,
+    "chains": 2
+   }
+  },
+  "boardAfter": {
+   "s1": {
+    "total": 24,
+    "hotcargo": 3,
+    "chains": 2
+   },
+   "s2": {
+    "total": 20,
+    "hotcargo": 3,
+    "chains": 0
+   },
+   "s3": {
+    "total": 23,
+    "hotcargo": 4,
+    "chains": 1
+   },
+   "s4": {
+    "total": 23,
+    "hotcargo": 4,
+    "chains": 1
+   },
+   "s5": {
+    "total": 25,
+    "hotcargo": 3,
+    "chains": 2
+   },
+   "s6": {
+    "total": 20,
+    "hotcargo": 4,
+    "chains": 2
+   },
+   "s7": {
+    "total": 20,
+    "hotcargo": 3,
+    "chains": 0
+   }
+  },
+  "stationFuelAfter": {
+   "s1": [
+    0,
+    0,
+    19,
+    0
+   ],
+   "s2": [
+    72,
+    13,
+    0,
+    0,
+    0
+   ],
+   "s3": [
+    0,
+    0,
+    0,
+    49
+   ],
+   "s4": [
+    209,
+    77,
+    1,
+    0
+   ],
+   "s5": [
+    0,
+    129,
+    0,
+    81,
+    0,
+    92
+   ],
+   "s6": [
+    79,
+    0
+   ],
+   "s7": [
+    0,
+    0,
+    94
+   ]
+  },
+  "missionTypes": {
+   "Bounty": {
+    "n": 16,
+    "money": 2.08,
+    "fame": 2.48,
+    "fee": 0.41,
+    "flatHeat": 0.0
+   },
+   "ClearAsteroidFieldPirates": {
+    "n": 14,
+    "money": 3.56,
+    "fame": 6.24,
+    "fee": 0.36,
+    "flatHeat": 0.0
+   },
+   "ClearAsteroidFieldPlatforms": {
+    "n": 2,
+    "money": 4.0,
+    "fame": 7.2,
+    "fee": 0.5,
+    "flatHeat": 0.0
+   },
+   "FactionBaseDestruction": {
+    "n": 17,
+    "money": 4.54,
+    "fame": 5.85,
+    "fee": 0.26,
+    "flatHeat": 5.0
+   },
+   "FactionHunt": {
+    "n": 21,
+    "money": 3.6,
+    "fame": 3.22,
+    "fee": 0.35,
+    "flatHeat": 0.0
+   },
+   "FleetBounty": {
+    "n": 8,
+    "money": 1.46,
+    "fame": 2.79,
+    "fee": 0.05,
+    "flatHeat": 0.0
+   },
+   "HotCargoCapture": {
+    "n": 1,
+    "money": 5.31,
+    "fame": 2.48,
+    "fee": 0.8,
+    "flatHeat": 4.0
+   },
+   "HotCargoChain": {
+    "n": 17,
+    "money": 2.14,
+    "fame": 2.12,
+    "fee": 0.28,
+    "flatHeat": 3.35
+   },
+   "HotCargoDroneSiege": {
+    "n": 2,
+    "money": 2.27,
+    "fame": 2.0,
+    "fee": 0.0,
+    "flatHeat": 0.0
+   },
+   "HotCargoFleetAssault": {
+    "n": 1,
+    "money": 3.64,
+    "fame": 5.38,
+    "fee": 0.0,
+    "flatHeat": 5.0
+   },
+   "HotCargoHoldPass": {
+    "n": 1,
+    "money": 1.92,
+    "fame": 3.5,
+    "fee": 0.0,
+    "flatHeat": 6.0
+   },
+   "HotCargoLairRaid": {
+    "n": 1,
+    "money": 6.55,
+    "fame": 6.63,
+    "fee": 0.0,
+    "flatHeat": 4.0
+   },
+   "HotCargoPrototype": {
+    "n": 1,
+    "money": 3.03,
+    "fame": 1.85,
+    "fee": 0.38,
+    "flatHeat": 5.0
+   },
+   "HotCargoShadyBounty": {
+    "n": 1,
+    "money": 3.0,
+    "fame": 2.0,
+    "fee": 0.5,
+    "flatHeat": 4.0
+   },
+   "HotCargoSunMining": {
+    "n": 1,
+    "money": 2.39,
+    "fame": 1.74,
+    "fee": 0.0,
+    "flatHeat": 0.0
+   },
+   "HotCargoSundive": {
+    "n": 2,
+    "money": 4.42,
+    "fame": 2.06,
+    "fee": 0.0,
+    "flatHeat": 0.0
+   },
+   "PirateBaseDestruction": {
+    "n": 19,
+    "money": 6.49,
+    "fame": 6.28,
+    "fee": 0.93,
+    "flatHeat": 5.0
+   },
+   "PirateHunt": {
+    "n": 7,
+    "money": 3.52,
+    "fame": 3.2,
+    "fee": 0.2,
+    "flatHeat": 0.0
+   },
+   "ResourceDelivery": {
+    "n": 17,
+    "money": 0.4,
+    "fame": 0.0,
+    "fee": 0.25,
+    "flatHeat": 0.0
+   },
+   "StationContact": {
+    "n": 4,
+    "money": 0.93,
+    "fame": 0.0,
+    "fee": 0.41,
+    "flatHeat": 0.0
+   },
+   "StationRescue": {
+    "n": 6,
+    "money": 4.09,
+    "fame": 5.51,
+    "fee": 0.38,
+    "flatHeat": 0.0
+   }
+  },
+  "pickMoney": 3.57,
+  "missionFame": 3.42,
+  "contractHeat": 2.63,
+  "hunters": {
+   "1": {
+    "mass": 72,
+    "value": 57467,
+    "salvageFraction": 0.096
+   },
+   "3": {
+    "mass": 208,
+    "value": 81883,
+    "salvageFraction": 0.091
+   },
+   "5": {
+    "mass": 247,
+    "value": 125600,
+    "salvageFraction": 0.094
+   },
+   "7": {
+    "mass": 458,
+    "value": 186100,
+    "salvageFraction": 0.096
+   },
+   "9": {
+    "mass": 810,
+    "value": 314767,
+    "salvageFraction": 0.099
+   },
+   "11": {
+    "mass": 2053,
+    "value": 566525,
+    "salvageFraction": 0.102
+   },
+   "12": {
+    "mass": 2229,
+    "value": 700433,
+    "salvageFraction": 0.1
+   },
+   "14": {
+    "mass": 3723,
+    "value": 1164950,
+    "salvageFraction": 0.095
+   }
+  },
+  "stationFuel": {
+   "s1": [
+    0,
+    0,
+    170,
+    7
+   ],
+   "s2": [
+    309,
+    197,
+    0,
+    0,
+    0
+   ],
+   "s3": [
+    0,
+    0,
+    0,
+    328
+   ],
+   "s4": [
+    939,
+    472,
+    4,
+    7
+   ],
+   "s5": [
+    0,
+    715,
+    0,
+    724,
+    0,
+    505
+   ],
+   "s6": [
+    499,
+    0
+   ],
+   "s7": [
+    0,
+    0,
+    468
+   ]
+  },
+  "systems": {
+   "s1": {
+    "sector": 1,
+    "tier": 1,
+    "type": "basic"
+   },
+   "s2": {
+    "sector": 2,
+    "tier": 3,
+    "type": "hc_deep_space"
+   },
+   "s3": {
+    "sector": 3,
+    "tier": 5,
+    "type": "hc_mining_belt"
+   },
+   "s4": {
+    "sector": 4,
+    "tier": 7,
+    "type": "hc_solar_zone"
+   },
+   "s5": {
+    "sector": 5,
+    "tier": 9,
+    "type": "hc_trade_hub"
+   },
+   "s6": {
+    "sector": 6,
+    "tier": 11,
+    "type": "hc_trade_hub"
+   },
+   "s7": {
+    "sector": 7,
+    "tier": 12,
+    "type": "hc_solar_zone"
+   }
+  },
+  "jumpLY": 7.4
+ },
+ "model": {
+  "missionsPerSector": 6,
+  "minutesPerSector": 17.5,
+  "route": [
+   1,
+   3,
+   5,
+   7,
+   9,
+   11,
+   12,
+   12
+  ]
+ },
+ "before": {
+  "params": {
+   "name": "before",
+   "RewardScale": 2.0,
+   "HeatPerGameMinute": 2.0,
+   "HeatPerStandardMission": 15.0,
+   "FameCapLeak": true,
+   "EscortHeatChange": -15,
+   "TechCostScale": 1.0,
+   "FuelPrice": 50,
+   "FuelStack": 20,
+   "StationFuelTyped": 0.85,
+   "StationFuelUntyped": 0.05,
+   "JumpCostScale": 1.0,
+   "HunterFuel": 40,
+   "ChainsPerSystem": null
+  },
+  "sectors": [
+   {
+    "sector": 1,
+    "tier": 1,
+    "stdMoney": 10000,
+    "income": 214403,
+    "salvage": 17280,
+    "incomeShipFraction": 3.86,
+    "fleetTarget": 110000,
+    "fleet": 110000,
+    "bank": 191683,
+    "fame": 140,
+    "fameCap": 140,
+    "heatIn": 0.0,
+    "heatMissions": 168.0,
+    "heatTime": 42.0,
+    "heatContracts": 15.8,
+    "heatOut": 100.0,
+    "heatRaw": 225.8,
+    "missionsToStrike": 1.4,
+    "techValue": 19750,
+    "techValueShipFraction": 0.33,
+    "techUnitInMissions": 0.6,
+    "jumpFuel": 0.5,
+    "jumpFuelMoney": 27,
+    "jumpFuelInMissions": 0.001
+   },
+   {
+    "sector": 2,
+    "tier": 3,
+    "stdMoney": 16500,
+    "income": 353765,
+    "salvage": 24570,
+    "incomeShipFraction": 4.2,
+    "fleetTarget": 180000,
+    "fleet": 180000,
+    "bank": 500017,
+    "fame": 310,
+    "fameCap": 310,
+    "heatIn": 25.0,
+    "heatMissions": 136.0,
+    "heatTime": 42.0,
+    "heatContracts": 15.8,
+    "heatOut": 100.0,
+    "heatRaw": 218.8,
+    "missionsToStrike": 1.1,
+    "techValue": 35625,
+    "techValueShipFraction": 0.4,
+    "techUnitInMissions": 0.6,
+    "jumpFuel": 1.5,
+    "jumpFuelMoney": 77,
+    "jumpFuelInMissions": 0.001
+   },
+   {
+    "sector": 3,
+    "tier": 5,
+    "stdMoney": 25000,
+    "income": 536007,
+    "salvage": 39480,
+    "incomeShipFraction": 4.11,
+    "fleetTarget": 300000,
+    "fleet": 300000,
+    "bank": 955505,
+    "fame": 610,
+    "fameCap": 610,
+    "heatIn": 25.0,
+    "heatMissions": 154.3,
+    "heatTime": 42.0,
+    "heatContracts": 15.8,
+    "heatOut": 100.0,
+    "heatRaw": 237.1,
+    "missionsToStrike": 1.1,
+    "techValue": 64750,
+    "techValueShipFraction": 0.46,
+    "techUnitInMissions": 0.7,
+    "jumpFuel": 1.8,
+    "jumpFuelMoney": 92,
+    "jumpFuelInMissions": 0.001
+   },
+   {
+    "sector": 4,
+    "tier": 7,
+    "stdMoney": 41000,
+    "income": 879052,
+    "salvage": 66240,
+    "incomeShipFraction": 4.11,
+    "fleetTarget": 500000,
+    "fleet": 500000,
+    "bank": 1700796,
+    "fame": 1170,
+    "fameCap": 1170,
+    "heatIn": 25.0,
+    "heatMissions": 175.3,
+    "heatTime": 42.0,
+    "heatContracts": 15.8,
+    "heatOut": 100.0,
+    "heatRaw": 258.1,
+    "missionsToStrike": 1.1,
+    "techValue": 121708,
+    "techValueShipFraction": 0.53,
+    "techUnitInMissions": 0.8,
+    "jumpFuel": 3.4,
+    "jumpFuelMoney": 170,
+    "jumpFuelInMissions": 0.001
+   },
+   {
+    "sector": 5,
+    "tier": 9,
+    "stdMoney": 70000,
+    "income": 1500820,
+    "salvage": 118800,
+    "incomeShipFraction": 4.05,
+    "fleetTarget": 800000,
+    "fleet": 800000,
+    "bank": 3020416,
+    "fame": 2010,
+    "fameCap": 2010,
+    "heatIn": 25.0,
+    "heatMissions": 151.2,
+    "heatTime": 42.0,
+    "heatContracts": 15.8,
+    "heatOut": 100.0,
+    "heatRaw": 234.0,
+    "missionsToStrike": 1.1,
+    "techValue": 238333,
+    "techValueShipFraction": 0.6,
+    "techUnitInMissions": 1.0,
+    "jumpFuel": 6.0,
+    "jumpFuelMoney": 301,
+    "jumpFuelInMissions": 0.001
+   },
+   {
+    "sector": 6,
+    "tier": 11,
+    "stdMoney": 115000,
+    "income": 2465632,
+    "salvage": 198900,
+    "incomeShipFraction": 4.1,
+    "fleetTarget": 1000000,
+    "fleet": 1000000,
+    "bank": 5484948,
+    "fame": 3170,
+    "fameCap": 3170,
+    "heatIn": 25.0,
+    "heatMissions": 128.5,
+    "heatTime": 42.0,
+    "heatContracts": 15.8,
+    "heatOut": 100.0,
+    "heatRaw": 211.3,
+    "missionsToStrike": 1.1,
+    "techValue": 430625,
+    "techValueShipFraction": 0.66,
+    "techUnitInMissions": 1.0,
+    "jumpFuel": 15.3,
+    "jumpFuelMoney": 764,
+    "jumpFuelInMissions": 0.002
+   },
+   {
+    "sector": 7,
+    "tier": 12,
+    "stdMoney": 145000,
+    "income": 3108841,
+    "salvage": 240000,
+    "incomeShipFraction": 4.19,
+    "fleetTarget": 1000000,
+    "fleet": 1000000,
+    "bank": 8833789,
+    "fame": 4170,
+    "fameCap": 4170,
+    "heatIn": 25.0,
+    "heatMissions": 90.0,
+    "heatTime": 42.0,
+    "heatContracts": 15.8,
+    "heatOut": 100.0,
+    "heatRaw": 172.8,
+    "missionsToStrike": 1.1,
+    "techValue": 583333,
+    "techValueShipFraction": 0.73,
+    "techUnitInMissions": 1.1,
+    "jumpFuel": 16.6,
+    "jumpFuelMoney": 829,
+    "jumpFuelInMissions": 0.002
+   },
+   {
+    "sector": 8,
+    "tier": 12,
+    "stdMoney": 145000,
+    "income": 3108841,
+    "salvage": 240000,
+    "incomeShipFraction": 4.19,
+    "fleetTarget": 1000000,
+    "fleet": 1000000,
+    "bank": 12182630,
+    "fame": 4170,
+    "fameCap": 4170,
+    "heatIn": 25.0,
+    "heatMissions": 0.0,
+    "heatTime": 42.0,
+    "heatContracts": 15.8,
+    "heatOut": 82.8,
+    "heatRaw": 82.8,
+    "missionsToStrike": 1.1,
+    "techValue": 629773,
+    "techValueShipFraction": 0.79,
+    "techUnitInMissions": 1.2,
+    "jumpFuel": 16.6,
+    "jumpFuelMoney": 829,
+    "jumpFuelInMissions": 0.002
+   }
+  ],
+  "totalIncome": 13112631,
+  "techBase": 546500,
+  "techOverclock": 4195000,
+  "techBaseShareOfIncome": 0.042,
+  "score": 32335366
+ },
+ "after": {
+  "params": {
+   "name": "after",
+   "RewardScale": 1.0,
+   "HeatPerGameMinute": 1.2,
+   "HeatPerStandardMission": 1.5,
+   "FameCapLeak": false,
+   "EscortHeatChange": -8,
+   "TechCostScale": 2.5,
+   "FuelPrice": 150,
+   "FuelStack": 10,
+   "StationFuelTyped": 0.325,
+   "StationFuelUntyped": 0.01,
+   "JumpCostScale": 2.0,
+   "HunterFuel": 60,
+   "ChainsPerSystem": 2
+  },
+  "sectors": [
+   {
+    "sector": 1,
+    "tier": 1,
+    "stdMoney": 5000,
+    "income": 107201,
+    "salvage": 17280,
+    "incomeShipFraction": 2.07,
+    "fleetTarget": 110000,
+    "fleet": 110000,
+    "bank": 84481,
+    "fame": 140,
+    "fameCap": 140,
+    "heatIn": 0.0,
+    "heatMissions": 36.9,
+    "heatTime": 25.2,
+    "heatContracts": 15.8,
+    "heatOut": 77.9,
+    "heatRaw": 77.9,
+    "missionsToStrike": 7.7,
+    "techValue": 19087,
+    "techValueShipFraction": 0.32,
+    "techUnitInMissions": 1.1,
+    "jumpFuel": 1.1,
+    "jumpFuelMoney": 161,
+    "jumpFuelInMissions": 0.009
+   },
+   {
+    "sector": 2,
+    "tier": 3,
+    "stdMoney": 8250,
+    "income": 176882,
+    "salvage": 24570,
+    "incomeShipFraction": 2.24,
+    "fleetTarget": 180000,
+    "fleet": 180000,
+    "bank": 215934,
+    "fame": 310,
+    "fameCap": 310,
+    "heatIn": 19.5,
+    "heatMissions": 36.9,
+    "heatTime": 25.2,
+    "heatContracts": 15.8,
+    "heatOut": 97.4,
+    "heatRaw": 97.4,
+    "missionsToStrike": 6.2,
+    "techValue": 34761,
+    "techValueShipFraction": 0.39,
+    "techUnitInMissions": 1.2,
+    "jumpFuel": 3.1,
+    "jumpFuelMoney": 464,
+    "jumpFuelInMissions": 0.016
+   },
+   {
+    "sector": 3,
+    "tier": 5,
+    "stdMoney": 12500,
+    "income": 268004,
+    "salvage": 39480,
+    "incomeShipFraction": 2.2,
+    "fleetTarget": 300000,
+    "fleet": 300000,
+    "bank": 403417,
+    "fame": 610,
+    "fameCap": 610,
+    "heatIn": 24.3,
+    "heatMissions": 36.9,
+    "heatTime": 25.2,
+    "heatContracts": 15.8,
+    "heatOut": 100.0,
+    "heatRaw": 102.2,
+    "missionsToStrike": 5.8,
+    "techValue": 63452,
+    "techValueShipFraction": 0.45,
+    "techUnitInMissions": 1.4,
+    "jumpFuel": 3.7,
+    "jumpFuelMoney": 551,
+    "jumpFuelInMissions": 0.012
+   },
+   {
+    "sector": 4,
+    "tier": 7,
+    "stdMoney": 20500,
+    "income": 439526,
+    "salvage": 66240,
+    "incomeShipFraction": 2.2,
+    "fleetTarget": 500000,
+    "fleet": 500000,
+    "bank": 709183,
+    "fame": 1170,
+    "fameCap": 1170,
+    "heatIn": 25.0,
+    "heatMissions": 36.9,
+    "heatTime": 25.2,
+    "heatContracts": 15.8,
+    "heatOut": 100.0,
+    "heatRaw": 102.9,
+    "missionsToStrike": 5.8,
+    "techValue": 119576,
+    "techValueShipFraction": 0.52,
+    "techUnitInMissions": 1.6,
+    "jumpFuel": 6.8,
+    "jumpFuelMoney": 1022,
+    "jumpFuelInMissions": 0.014
+   },
+   {
+    "sector": 5,
+    "tier": 9,
+    "stdMoney": 35000,
+    "income": 750410,
+    "salvage": 118800,
+    "incomeShipFraction": 2.17,
+    "fleetTarget": 800000,
+    "fleet": 800000,
+    "bank": 1278393,
+    "fame": 2010,
+    "fameCap": 2010,
+    "heatIn": 25.0,
+    "heatMissions": 36.9,
+    "heatTime": 25.2,
+    "heatContracts": 15.8,
+    "heatOut": 100.0,
+    "heatRaw": 102.9,
+    "missionsToStrike": 5.8,
+    "techValue": 234625,
+    "techValueShipFraction": 0.59,
+    "techUnitInMissions": 1.9,
+    "jumpFuel": 12.1,
+    "jumpFuelMoney": 1808,
+    "jumpFuelInMissions": 0.014
+   },
+   {
+    "sector": 6,
+    "tier": 11,
+    "stdMoney": 57500,
+    "income": 1232816,
+    "salvage": 198900,
+    "incomeShipFraction": 2.2,
+    "fleetTarget": 1000000,
+    "fleet": 1000000,
+    "bank": 2510109,
+    "fame": 3170,
+    "fameCap": 3170,
+    "heatIn": 25.0,
+    "heatMissions": 36.9,
+    "heatTime": 25.2,
+    "heatContracts": 15.8,
+    "heatOut": 100.0,
+    "heatRaw": 102.9,
+    "missionsToStrike": 5.8,
+    "techValue": 424599,
+    "techValueShipFraction": 0.65,
+    "techUnitInMissions": 2.1,
+    "jumpFuel": 30.5,
+    "jumpFuelMoney": 4582,
+    "jumpFuelInMissions": 0.022
+   },
+   {
+    "sector": 7,
+    "tier": 12,
+    "stdMoney": 72500,
+    "income": 1554420,
+    "salvage": 240000,
+    "incomeShipFraction": 2.24,
+    "fleetTarget": 1000000,
+    "fleet": 1000000,
+    "bank": 4304530,
+    "fame": 4170,
+    "fameCap": 4170,
+    "heatIn": 25.0,
+    "heatMissions": 36.9,
+    "heatTime": 25.2,
+    "heatContracts": 15.8,
+    "heatOut": 100.0,
+    "heatRaw": 102.9,
+    "missionsToStrike": 5.8,
+    "techValue": 575917,
+    "techValueShipFraction": 0.72,
+    "techUnitInMissions": 2.2,
+    "jumpFuel": 33.2,
+    "jumpFuelMoney": 4975,
+    "jumpFuelInMissions": 0.019
+   },
+   {
+    "sector": 8,
+    "tier": 12,
+    "stdMoney": 72500,
+    "income": 1554420,
+    "salvage": 240000,
+    "incomeShipFraction": 2.24,
+    "fleetTarget": 1000000,
+    "fleet": 1000000,
+    "bank": 6098950,
+    "fame": 4170,
+    "fameCap": 4170,
+    "heatIn": 25.0,
+    "heatMissions": 36.9,
+    "heatTime": 25.2,
+    "heatContracts": 15.8,
+    "heatOut": 100.0,
+    "heatRaw": 102.9,
+    "missionsToStrike": 5.8,
+    "techValue": 629250,
+    "techValueShipFraction": 0.79,
+    "techUnitInMissions": 2.4,
+    "jumpFuel": 33.2,
+    "jumpFuelMoney": 4975,
+    "jumpFuelInMissions": 0.019
+   }
+  ],
+  "totalIncome": 7028949,
+  "techBase": 1366250,
+  "techOverclock": 10487500,
+  "techBaseShareOfIncome": 0.194,
+  "score": 26234950
+ }
+}

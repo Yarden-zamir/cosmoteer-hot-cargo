@@ -18,6 +18,9 @@ public static class SimQueries
 
     public static bool HasTag(this Ship ship, ID<SimObjectSpawner> tag) => ship.Tags?.Contains(tag) == true;
 
+    /// <summary>True when a stored ship reference is still a live ship in the same system as <paramref name="self"/>. A ship in jump limbo has no sim.</summary>
+    public static bool IsLiveWith(this Ship other, Ship self) => !other.IsDisposed && !other.IsJunk && other.Sim is not null && other.Sim == self.Sim;
+
     /// <summary>Spawn tags of a ship in stasis. Ships spawned into stasis and ships that entered stasis use different spawner types.</summary>
     public static HashSet<ID<SimObjectSpawner>>? StasisTags(StasisSpawner s) => s switch
     {

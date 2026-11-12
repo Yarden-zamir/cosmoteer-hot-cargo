@@ -1,0 +1,37 @@
+HotCargoFactions
+{
+	// Galaxy map tooltip. {0} is the faction icon and name.
+	TipAllyFmt = "<bad>Corporate ally space</bad> ({0}): heat rises ×{1:0.##}. Offers pay ×{2:0.##}. Tech value grows ×{3:0.##}."
+	TipShelterFmt = "<good>Shelter</good>: {0} hides you. Heat rises ×{1:0.##}."
+	TipNoShelterFmt = "<gray>No shelter: {0} hides you from {1:n0} reputation (you have {2:n0}).</gray>"
+	TipRivalFmt = "<good>Fences</good>: the corporation's rival pays ×{0:0.##} for tech here."
+	TipJumpFmt = "Arrive at heat {0:0} by relay, {1:0} by blind jump (fuel ×{2:0.##})."
+	TipTargetFmt = "<img name='objective' colored='true'/> {0}"
+
+	// Galaxy map tags under the system name.
+	TagAlly = "HOT ZONE"
+	TagRival = "FENCES"
+
+	// Chat lines on arrival.
+	ArrivalAllyFmt = "<bad>Corporate ally space.</bad> {0} reports you. Heat rises ×{1:0.##}, but offers pay ×{2:0.##}."
+	ArrivalShelterFmt = "<good>Shelter.</good> {0} hides you. Heat rises ×{1:0.##}."
+	ArrivalRivalFmt = "<good>Rival space.</good> {0} fences pay ×{1:0.##} for tech."
+
+	// Station prices and refusals.
+	MarkupBand = "You are hot. Stations charge more."
+	RefuseBand = "You are too hot. Some stations refuse to talk. Fences still deal."
+	RefusalFmt = "{0} refuses to talk: \"You are too hot. Go away.\""
+	HireHeatFmt = "<bad>Heat: crew cost +{0:0}%</bad>"
+
+	// Comms list badges.
+	BadgeFenceFmt = "FENCE ×{0:0.##} tech"
+	BadgeShelter = "SHELTER"
+	BadgeAlly = "CORPORATE ALLY"
+	BadgeRefuses = "REFUSES"
+	BadgeMarkupFmt = "PRICES ×{0:0.##}"
+
+	// Blind jump switch under ENGAGE.
+	BlindOffFmt = "Relay jump: keep {0:0}% heat"
+	BlindOnFmt = "BLIND jump: keep {0:0}% heat"
+	BlindTipFmt = "<b>Relay or blind jump</b>\nThe corporation watches the relays. A relay jump keeps {0:0}% of your heat.\nA blind jump costs ×{2:0.##} fuel and keeps {1:0}%.\nClick to switch. The switch holds for one jump."
+}

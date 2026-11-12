@@ -37,7 +37,7 @@ FTL-style choice events for the Hot Cargo run. Spec requirements 67 to 87 (SPEC.
 
 ### Units and balance
 
-- **Event money unit**: 1 = the middle of a standard mission's pay at the sector tier, times the economy reward factor and `RewardScale`. On the default economy it is about 10,000 credits at tier 1, a bit less than one Stolen Tech at the start (15,000). It grows with the tier, so late events stay relevant.
+- **Event money unit**: 1 = the middle of a standard mission's pay at the sector tier, times the economy reward factor and `RewardScale`. On the default economy it is about 5,000 credits at tier 1, a third of one Stolen Tech at the start (15,000). It grows with the tier, so late events stay relevant.
 - **Fame unit**: 1 = a standard mission's fame. Fame adds heat through spec 25, like a mission.
 - **Heat**: plain heat points. A stage starts every 25.
 - **Resources**: `Amount + PerTier × (tier − 1)`.

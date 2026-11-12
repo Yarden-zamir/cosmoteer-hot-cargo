@@ -1,0 +1,684 @@
+09:13:30.830 INFO AUTOTEST loaded 125 commands; tutorial auto-pause off on 1 pages
+09:13:30.900 INFO AUTOTEST line 2: newgame 
+09:13:40.949 INFO AUTOTEST line 3: wait 8
+09:13:48.948 INFO AUTOTEST line 4: godmode on
+09:13:48.949 INFO AUTOTEST line 6: aiset CallOnVanilla false
+09:13:48.950 INFO AUTOTEST TacticsTunables.CallOnVanilla = False
+09:13:48.951 INFO AUTOTEST line 7: aiset CallEnabled false
+09:13:48.951 INFO AUTOTEST TacticsTunables.CallEnabled = False
+09:13:48.952 INFO AUTOTEST line 8: maptiers 
+09:13:48.956 INFO AUTOTEST MAP jumps=0 sector=1 nodes=1 lowTiers=[1]
+09:13:48.956 INFO AUTOTEST MAP jumps=1 sector=2 nodes=4 lowTiers=[1,2,2,3]
+09:13:48.956 INFO AUTOTEST MAP jumps=2 sector=3 nodes=6 lowTiers=[3,4,5,5,5,13]
+09:13:48.957 INFO AUTOTEST MAP jumps=3 sector=4 nodes=8 lowTiers=[6,6,7,7,7,7,7,7]
+09:13:48.957 INFO AUTOTEST MAP jumps=4 sector=5 nodes=7 lowTiers=[9,9,9,9,9,9,13]
+09:13:48.957 INFO AUTOTEST MAP jumps=5 sector=6 nodes=8 lowTiers=[10,11,11,11,11,11,11,13]
+09:13:48.957 INFO AUTOTEST MAP jumps=6 sector=7 nodes=11 lowTiers=[10,10,10,11,11,11,12,12,12,12,13]
+09:13:48.957 INFO AUTOTEST MAP jumps=7 sector=8 nodes=5 lowTiers=[9,10,11,11,12]
+09:13:48.958 INFO AUTOTEST line 9: balance_visit 0
+09:13:48.964 INFO AUTOTEST line 10: wait 3
+09:13:51.964 INFO AUTOTEST line 11: balance_visit 1
+09:13:51.965 INFO AUTOTEST line 12: wait 3
+09:13:54.965 INFO AUTOTEST line 13: balance_visit 2
+09:13:54.966 INFO AUTOTEST line 14: wait 3
+09:13:57.966 INFO AUTOTEST line 15: balance_visit 3
+09:13:57.972 INFO AUTOTEST line 16: wait 3
+09:14:00.970 INFO AUTOTEST line 17: balance_visit 4
+09:14:00.971 INFO AUTOTEST line 18: wait 3
+09:14:03.971 INFO AUTOTEST line 19: balance_visit 5
+09:14:03.973 INFO AUTOTEST line 20: wait 3
+09:14:06.972 INFO AUTOTEST line 21: balance_census s1
+09:14:06.974 INFO AUTOTEST BALANCE s1 system sector=1 tier=1 type=basic offers=78 stations=6 stdMoney=10000 stdFame=15.0
+09:14:06.974 INFO AUTOTEST BALANCE s1 offer type=Bounty cat=bounties money=1.40 fame=2.40 fee=0.00 flatHeat=0 trail=1.0 informant=0.14
+09:14:06.975 INFO AUTOTEST BALANCE s1 offer type=Bounty cat=bounties money=1.40 fame=2.40 fee=0.00 flatHeat=0 trail=1.0 informant=0.15
+09:14:06.975 INFO AUTOTEST BALANCE s1 offer type=ClearAsteroidFieldPlatforms cat=bounties money=3.00 fame=7.80 fee=0.00 flatHeat=0 trail=1.0 informant=0.09
+09:14:06.975 INFO AUTOTEST BALANCE s1 offer type=ClearAsteroidFieldPlatforms cat=bounties money=5.00 fame=6.60 fee=1.00 flatHeat=0 trail=1.0 informant=0.11
+09:14:06.975 INFO AUTOTEST BALANCE s1 offer type=FactionHunt cat=faction_wars money=3.20 fame=3.20 fee=0.00 flatHeat=0 trail=1.0 informant=0.13
+09:14:06.975 INFO AUTOTEST BALANCE s1 offer type=FactionHunt cat=faction_wars money=4.70 fame=3.20 fee=0.55 flatHeat=0 trail=1.0 informant=0.14
+09:14:06.975 INFO AUTOTEST BALANCE s1 offer type=ResourceDelivery cat=deliveries money=3.10 fame=0.00 fee=0.65 flatHeat=0 trail=1.0 informant=0.10
+09:14:06.975 INFO AUTOTEST BALANCE s1 offer type=HotCargoChain cat=hc_chains money=4.10 fame=1.60 fee=1.25 flatHeat=2 trail=1.0 informant=0.00
+09:14:06.976 INFO AUTOTEST BALANCE s1 offer type=Bounty cat=bounties money=1.60 fame=2.00 fee=0.30 flatHeat=0 trail=1.0 informant=0.07
+09:14:06.976 INFO AUTOTEST BALANCE s1 offer type=FactionBaseDestruction cat=faction_wars money=6.80 fame=9.00 fee=0.00 flatHeat=5 trail=1.0 informant=0.00
+09:14:06.976 INFO AUTOTEST BALANCE s1 offer type=FactionBaseDestruction cat=faction_wars money=6.40 fame=9.00 fee=0.00 flatHeat=5 trail=1.0 informant=0.00
+09:14:06.976 INFO AUTOTEST BALANCE s1 offer type=FactionBaseDestruction cat=faction_wars money=6.40 fame=9.00 fee=0.00 flatHeat=5 trail=1.0 informant=0.10
+09:14:06.976 INFO AUTOTEST BALANCE s1 offer type=PirateBaseDestruction cat=bounties money=14.20 fame=10.60 fee=2.70 flatHeat=5 trail=1.0 informant=0.09
+09:14:06.976 INFO AUTOTEST BALANCE s1 offer type=Bounty cat=bounties money=1.50 fame=2.00 fee=0.35 flatHeat=0 trail=1.0 informant=0.00
+09:14:06.976 INFO AUTOTEST BALANCE s1 offer type=FactionHunt cat=faction_wars money=4.30 fame=2.40 fee=0.75 flatHeat=0 trail=1.0 informant=0.12
+09:14:06.976 INFO AUTOTEST BALANCE s1 offer type=HotCargoShadyBounty cat=bounties money=3.00 fame=2.00 fee=0.50 flatHeat=4 trail=1.0 informant=0.00
+09:14:06.976 INFO AUTOTEST BALANCE s1 offer type=ResourceDelivery cat=deliveries money=0.12 fame=0.00 fee=0.65 flatHeat=0 trail=1.0 informant=0.10
+09:14:06.976 INFO AUTOTEST BALANCE s1 offer type=HotCargoChain cat=hc_chains money=1.20 fame=1.00 fee=0.00 flatHeat=3 trail=1.0 informant=0.05
+09:14:06.977 INFO AUTOTEST BALANCE s1 offer type=PirateBaseDestruction cat=bounties money=14.10 fame=10.60 fee=3.25 flatHeat=5 trail=1.0 informant=0.00
+09:14:06.977 INFO AUTOTEST BALANCE s1 offer type=FleetBounty cat=bounties money=1.60 fame=3.60 fee=0.00 flatHeat=0 trail=1.0 informant=0.15
+09:14:06.977 INFO AUTOTEST BALANCE s1 offer type=ResourceDelivery cat=deliveries money=0.08 fame=0.00 fee=0.65 flatHeat=0 trail=1.0 informant=0.10
+09:14:06.977 INFO AUTOTEST BALANCE s1 offer type=HotCargoChain cat=hc_chains money=1.60 fame=1.60 fee=0.00 flatHeat=0 trail=0.5 informant=0.00
+09:14:06.977 INFO AUTOTEST BALANCE s1 offer type=StationRescue cat=stations money=2.80 fame=4.40 fee=0.00 flatHeat=0 trail=1.0 informant=0.09
+09:14:06.977 INFO AUTOTEST BALANCE s1 offer type=StationRescue cat=stations money=5.80 fame=5.60 fee=1.20 flatHeat=0 trail=1.0 informant=0.12
+09:14:06.977 INFO AUTOTEST BALANCE s1 offer type=PirateHunt cat=bounties money=3.40 fame=3.20 fee=0.00 flatHeat=0 trail=1.0 informant=0.00
+09:14:06.977 INFO AUTOTEST BALANCE s1 offer type=Explore cat=exploration money=1.60 fame=1.60 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.977 INFO AUTOTEST BALANCE s1 offer type=Explore cat=exploration money=1.60 fame=1.60 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.977 INFO AUTOTEST BALANCE s1 offer type=Explore cat=exploration money=1.60 fame=1.60 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.977 INFO AUTOTEST BALANCE s1 offer type=Explore cat=exploration money=1.80 fame=1.60 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.977 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=3.60 fame=0.00 fee=0.65 flatHeat=0 trail=1.0 informant=0.10
+09:14:06.978 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=3.60 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.978 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=5.00 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.978 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=2.00 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.978 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=1.00 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.978 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=7.00 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.978 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=8.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.978 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=2.00 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.978 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=6.40 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.978 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=2.00 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.978 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=3.00 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.978 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=1.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.978 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=0.60 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.979 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=6.00 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.979 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=0.60 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.979 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=4.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.979 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=6.20 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.979 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=6.40 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.979 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=2.20 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.979 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=0.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.979 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=9.60 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.979 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=1.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.979 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=1.20 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.980 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=5.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.980 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=1.20 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.980 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=1.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.980 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=3.40 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.980 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=6.40 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.980 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=9.60 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.980 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=0.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.980 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=5.20 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.981 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=3.60 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.981 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=4.20 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.981 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=3.60 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.981 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=5.60 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.981 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=7.20 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.981 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=7.20 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.981 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=1.20 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.982 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=5.40 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.982 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=1.60 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.982 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=4.20 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.982 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=7.40 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.982 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=4.00 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.982 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=0.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.982 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=8.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.983 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=4.00 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.983 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=5.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.983 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=4.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.983 INFO AUTOTEST BALANCE s1 offer type=VisitSystem cat=exploration money=6.60 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:06.986 INFO AUTOTEST BALANCE s1 fuel stationStock=[0,0,170,7] buyPrice=50 shipMass=87 shipValue=61550 held=0 jumpCosts=[none] mapDistances=[5.2,9.3,8.4,8.4] money=10000
+09:14:06.987 INFO AUTOTEST line 22: balance_route 
+09:14:06.990 INFO AUTOTEST line 23: wait 12
+09:14:19.251 INFO AUTOTEST line 24: balance_visit 0
+09:14:19.253 INFO AUTOTEST line 25: wait 3
+09:14:22.487 INFO AUTOTEST line 26: balance_visit 1
+09:14:22.490 INFO AUTOTEST line 27: wait 3
+09:14:25.766 INFO AUTOTEST line 28: balance_visit 2
+09:14:25.767 INFO AUTOTEST clear spot: the first try {X=-7775.949, Y=8169.9946} overlaps stasis ship [pirate]
+09:14:25.767 INFO AUTOTEST clear spot: moved from the first try to {X=-8215.289, Y=9230.654} (1500 from {X=-9275.949, Y=8169.9946})
+09:14:25.769 INFO AUTOTEST line 29: wait 3
+09:14:28.874 INFO AUTOTEST line 30: balance_visit 3
+09:14:28.878 INFO AUTOTEST line 31: wait 3
+09:14:31.944 INFO AUTOTEST line 32: balance_visit 4
+09:14:31.946 INFO AUTOTEST line 33: wait 3
+09:14:34.945 INFO AUTOTEST line 34: balance_visit 5
+09:14:34.946 INFO AUTOTEST line 35: wait 3
+09:14:37.946 INFO AUTOTEST line 36: balance_census s2
+09:14:37.947 INFO AUTOTEST BALANCE s2 system sector=2 tier=3 type=hc_deep_space offers=75 stations=5 stdMoney=16500 stdFame=24.0
+09:14:37.947 INFO AUTOTEST BALANCE s2 offer type=FactionBaseDestruction cat=faction_wars money=5.64 fame=5.63 fee=0.64 flatHeat=5 trail=1.0 informant=0.00
+09:14:37.947 INFO AUTOTEST BALANCE s2 offer type=FactionBaseDestruction cat=faction_wars money=3.88 fame=5.63 fee=0.00 flatHeat=5 trail=1.0 informant=0.11
+09:14:37.947 INFO AUTOTEST BALANCE s2 offer type=FactionBaseDestruction cat=faction_wars money=5.76 fame=5.63 fee=0.70 flatHeat=5 trail=1.0 informant=0.00
+09:14:37.947 INFO AUTOTEST BALANCE s2 offer type=PirateBaseDestruction cat=bounties money=4.36 fame=6.63 fee=0.00 flatHeat=5 trail=1.0 informant=0.06
+09:14:37.948 INFO AUTOTEST BALANCE s2 offer type=FleetBounty cat=bounties money=1.94 fame=2.25 fee=0.42 flatHeat=0 trail=1.0 informant=0.07
+09:14:37.948 INFO AUTOTEST BALANCE s2 offer type=ClearAsteroidFieldPirates cat=bounties money=3.52 fame=5.50 fee=0.61 flatHeat=0 trail=1.0 informant=0.13
+09:14:37.948 INFO AUTOTEST BALANCE s2 offer type=FactionHunt cat=faction_wars money=5.09 fame=3.00 fee=0.91 flatHeat=0 trail=1.0 informant=0.12
+09:14:37.948 INFO AUTOTEST BALANCE s2 offer type=FactionHunt cat=faction_wars money=4.00 fame=3.38 fee=0.85 flatHeat=0 trail=1.0 informant=0.00
+09:14:37.948 INFO AUTOTEST BALANCE s2 offer type=HotCargoEscort cat=stations money=-130149.00 fame=1.50 fee=0.00 flatHeat=0 trail=0.5 informant=0.00
+09:14:37.949 INFO AUTOTEST BALANCE s2 offer type=HotCargoLairRaid cat=bounties money=6.55 fame=6.63 fee=0.00 flatHeat=4 trail=1.0 informant=0.20
+09:14:37.949 INFO AUTOTEST BALANCE s2 offer type=ResourceDelivery cat=deliveries money=0.73 fame=0.00 fee=0.39 flatHeat=0 trail=1.0 informant=0.10
+09:14:37.949 INFO AUTOTEST BALANCE s2 offer type=HotCargoChain cat=hc_chains money=1.58 fame=2.25 fee=0.24 flatHeat=5 trail=1.0 informant=0.10
+09:14:37.949 INFO AUTOTEST BALANCE s2 offer type=PirateBaseDestruction cat=bounties money=8.73 fame=6.63 fee=1.70 flatHeat=5 trail=1.0 informant=0.00
+09:14:37.949 INFO AUTOTEST BALANCE s2 offer type=PirateBaseDestruction cat=bounties money=15.27 fame=14.63 fee=2.42 flatHeat=5 trail=1.0 informant=0.14
+09:14:37.949 INFO AUTOTEST BALANCE s2 offer type=Bounty cat=bounties money=2.42 fame=2.25 fee=0.55 flatHeat=0 trail=1.0 informant=0.11
+09:14:37.950 INFO AUTOTEST BALANCE s2 offer type=ClearAsteroidFieldPirates cat=bounties money=3.03 fame=6.00 fee=0.00 flatHeat=0 trail=1.0 informant=0.08
+09:14:37.950 INFO AUTOTEST BALANCE s2 offer type=FactionHunt cat=faction_wars money=3.39 fame=3.38 fee=0.42 flatHeat=0 trail=1.0 informant=0.13
+09:14:37.950 INFO AUTOTEST BALANCE s2 offer type=HotCargoFleetAssault cat=faction_wars money=3.64 fame=5.38 fee=0.00 flatHeat=5 trail=1.0 informant=0.00
+09:14:37.950 INFO AUTOTEST BALANCE s2 offer type=ResourceDelivery cat=deliveries money=1.09 fame=0.00 fee=0.39 flatHeat=0 trail=1.0 informant=0.10
+09:14:37.950 INFO AUTOTEST BALANCE s2 offer type=HotCargoChain cat=hc_chains money=4.06 fame=4.63 fee=0.76 flatHeat=8 trail=1.5 informant=0.10
+09:14:37.950 INFO AUTOTEST BALANCE s2 offer type=StationContact cat=stations money=2.18 fame=0.00 fee=0.97 flatHeat=0 trail=1.0 informant=0.00
+09:14:37.951 INFO AUTOTEST BALANCE s2 offer type=PirateHunt cat=bounties money=2.67 fame=3.00 fee=0.00 flatHeat=0 trail=1.0 informant=0.08
+09:14:37.951 INFO AUTOTEST BALANCE s2 offer type=Explore cat=exploration money=1.45 fame=1.50 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.951 INFO AUTOTEST BALANCE s2 offer type=Explore cat=exploration money=1.70 fame=1.50 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.951 INFO AUTOTEST BALANCE s2 offer type=Explore cat=exploration money=1.70 fame=1.50 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.951 INFO AUTOTEST BALANCE s2 offer type=Explore cat=exploration money=1.70 fame=1.50 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.951 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=2.18 fame=0.00 fee=0.39 flatHeat=0 trail=1.0 informant=0.10
+09:14:37.951 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=2.18 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.951 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=3.03 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.952 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=1.21 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.952 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=0.61 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.952 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=4.24 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.952 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=5.33 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.953 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=1.21 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.953 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=3.88 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.953 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=1.21 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.953 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=1.82 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.953 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=1.09 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.953 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=0.36 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.953 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=3.64 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.953 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=0.36 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.954 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=2.91 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.954 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=3.76 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.954 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=3.88 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.954 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=1.33 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.954 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=0.48 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.954 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=5.82 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.954 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=1.09 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.954 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=0.73 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.954 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=3.52 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.955 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=0.73 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.955 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=1.09 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.955 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=2.06 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.955 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=3.88 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.955 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=5.82 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.955 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=0.48 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.955 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=3.15 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.956 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=2.18 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.956 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=2.55 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.956 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=2.18 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.956 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=3.39 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.956 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=4.36 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.956 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=4.36 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.957 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=0.73 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.957 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=3.27 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.957 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=0.97 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.957 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=2.55 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.957 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=4.48 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.958 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=2.42 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.958 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=0.48 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.958 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=5.33 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.958 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=2.42 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.958 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=3.52 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.958 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=2.91 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.958 INFO AUTOTEST BALANCE s2 offer type=VisitSystem cat=exploration money=4.00 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:14:37.959 INFO AUTOTEST BALANCE s2 fuel stationStock=[309,197,0,0,0] buyPrice=50 shipMass=87 shipValue=61550 held=0 jumpCosts=[none] mapDistances=[7.1,8.6,5.9,8.4,9.2] money=10000
+09:14:37.959 INFO AUTOTEST line 37: balance_route 
+09:14:37.961 INFO AUTOTEST line 38: wait 12
+09:14:51.331 INFO AUTOTEST line 39: balance_visit 0
+09:14:51.343 INFO AUTOTEST line 40: wait 3
+09:14:56.942 INFO AUTOTEST line 41: balance_visit 1
+09:14:56.943 INFO AUTOTEST line 42: wait 3
+09:15:00.666 INFO AUTOTEST line 43: balance_visit 2
+09:15:00.668 INFO AUTOTEST clear spot: the first try {X=-11315.585, Y=-4813.7583} overlaps cosmoteer.asteroid_l
+09:15:00.669 INFO AUTOTEST clear spot: moved from the first try to {X=-11754.925, Y=-3753.0981} (1500 from {X=-12815.585, Y=-4813.7583})
+09:15:00.670 INFO AUTOTEST line 44: wait 3
+09:15:05.147 INFO AUTOTEST line 45: balance_visit 3
+09:15:05.148 INFO AUTOTEST line 46: wait 3
+09:15:08.148 INFO AUTOTEST line 47: balance_visit 4
+09:15:08.148 INFO AUTOTEST line 48: wait 3
+09:15:11.148 INFO AUTOTEST line 49: balance_visit 5
+09:15:11.149 INFO AUTOTEST line 50: wait 3
+09:15:14.149 INFO AUTOTEST line 51: balance_census s3
+09:15:14.149 INFO AUTOTEST BALANCE s3 system sector=3 tier=5 type=hc_mining_belt offers=77 stations=5 stdMoney=25000 stdFame=36.0
+09:15:14.150 INFO AUTOTEST BALANCE s3 offer type=FactionBaseDestruction cat=faction_wars money=5.44 fame=8.25 fee=0.00 flatHeat=5 trail=1.0 informant=0.00
+09:15:14.150 INFO AUTOTEST BALANCE s3 offer type=FactionBaseDestruction cat=faction_wars money=5.44 fame=8.25 fee=0.00 flatHeat=5 trail=1.0 informant=0.11
+09:15:14.150 INFO AUTOTEST BALANCE s3 offer type=PirateBaseDestruction cat=bounties money=9.76 fame=9.75 fee=1.20 flatHeat=5 trail=1.0 informant=0.15
+09:15:14.150 INFO AUTOTEST BALANCE s3 offer type=FleetBounty cat=bounties money=1.36 fame=2.67 fee=0.00 flatHeat=0 trail=1.0 informant=0.00
+09:15:14.150 INFO AUTOTEST BALANCE s3 offer type=ClearAsteroidFieldPirates cat=bounties money=4.60 fame=7.58 fee=0.50 flatHeat=0 trail=1.0 informant=0.07
+09:15:14.151 INFO AUTOTEST BALANCE s3 offer type=HotCargoEscort cat=stations money=-85896.62 fame=2.33 fee=0.00 flatHeat=0 trail=0.5 informant=0.15
+09:15:14.151 INFO AUTOTEST BALANCE s3 offer type=HotCargoDroneSiege cat=stations money=2.40 fame=2.00 fee=0.00 flatHeat=0 trail=1.0 informant=0.00
+09:15:14.151 INFO AUTOTEST BALANCE s3 offer type=ResourceDelivery cat=deliveries money=0.48 fame=0.00 fee=0.26 flatHeat=0 trail=1.0 informant=0.10
+09:15:14.151 INFO AUTOTEST BALANCE s3 offer type=HotCargoChain cat=hc_chains money=1.60 fame=1.58 fee=0.00 flatHeat=2 trail=1.0 informant=0.00
+09:15:14.151 INFO AUTOTEST BALANCE s3 offer type=FactionBaseDestruction cat=faction_wars money=3.48 fame=3.75 fee=0.54 flatHeat=5 trail=1.0 informant=0.13
+09:15:14.151 INFO AUTOTEST BALANCE s3 offer type=PirateBaseDestruction cat=bounties money=3.52 fame=4.42 fee=0.00 flatHeat=5 trail=1.0 informant=0.11
+09:15:14.151 INFO AUTOTEST BALANCE s3 offer type=Bounty cat=bounties money=2.76 fame=2.50 fee=0.78 flatHeat=0 trail=1.0 informant=0.08
+09:15:14.152 INFO AUTOTEST BALANCE s3 offer type=Bounty cat=bounties money=0.96 fame=2.00 fee=0.00 flatHeat=0 trail=1.0 informant=0.12
+09:15:14.152 INFO AUTOTEST BALANCE s3 offer type=FleetBounty cat=bounties money=0.96 fame=2.11 fee=0.00 flatHeat=0 trail=1.0 informant=0.13
+09:15:14.152 INFO AUTOTEST BALANCE s3 offer type=ClearAsteroidFieldPirates cat=bounties money=3.96 fame=5.00 fee=0.70 flatHeat=0 trail=1.0 informant=0.07
+09:15:14.152 INFO AUTOTEST BALANCE s3 offer type=ClearAsteroidFieldPirates cat=bounties money=2.00 fame=5.00 fee=0.00 flatHeat=0 trail=1.0 informant=0.13
+09:15:14.152 INFO AUTOTEST BALANCE s3 offer type=FactionHunt cat=faction_wars money=4.48 fame=4.75 fee=0.68 flatHeat=0 trail=1.0 informant=0.13
+09:15:14.152 INFO AUTOTEST BALANCE s3 offer type=FactionHunt cat=faction_wars money=3.72 fame=3.75 fee=0.70 flatHeat=0 trail=1.0 informant=0.14
+09:15:14.152 INFO AUTOTEST BALANCE s3 offer type=FactionHunt cat=faction_wars money=3.44 fame=3.17 fee=0.00 flatHeat=0 trail=1.0 informant=0.13
+09:15:14.153 INFO AUTOTEST BALANCE s3 offer type=HotCargoHoldPass cat=faction_wars money=1.92 fame=3.50 fee=0.00 flatHeat=6 trail=1.0 informant=0.10
+09:15:14.153 INFO AUTOTEST BALANCE s3 offer type=ResourceDelivery cat=deliveries money=0.24 fame=0.00 fee=0.26 flatHeat=0 trail=1.0 informant=0.10
+09:15:14.153 INFO AUTOTEST BALANCE s3 offer type=HotCargoChain cat=hc_chains money=1.76 fame=1.58 fee=0.00 flatHeat=0 trail=0.5 informant=0.00
+09:15:14.153 INFO AUTOTEST BALANCE s3 offer type=StationRescue cat=stations money=3.28 fame=5.67 fee=0.00 flatHeat=0 trail=1.0 informant=0.10
+09:15:14.153 INFO AUTOTEST BALANCE s3 offer type=PirateHunt cat=bounties money=3.36 fame=3.17 fee=0.00 flatHeat=0 trail=1.0 informant=0.10
+09:15:14.153 INFO AUTOTEST BALANCE s3 offer type=Explore cat=exploration money=1.44 fame=1.58 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.154 INFO AUTOTEST BALANCE s3 offer type=Explore cat=exploration money=1.60 fame=1.58 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.154 INFO AUTOTEST BALANCE s3 offer type=Explore cat=exploration money=1.68 fame=1.58 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.154 INFO AUTOTEST BALANCE s3 offer type=Explore cat=exploration money=1.76 fame=1.58 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.154 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=1.44 fame=0.00 fee=0.26 flatHeat=0 trail=1.0 informant=0.10
+09:15:14.154 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=1.44 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.154 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=2.00 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.154 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.155 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.40 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.155 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=2.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.155 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=3.52 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.155 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.155 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=2.56 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.155 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.155 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=1.20 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.156 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.72 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.156 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.24 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.156 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=2.40 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.156 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.24 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.156 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=1.92 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.157 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=2.48 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.157 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=2.56 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.157 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.88 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.157 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.32 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.157 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=3.84 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.157 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.72 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.157 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.48 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.158 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=2.32 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.158 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.48 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.158 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.72 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.158 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=1.36 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.158 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=2.56 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.158 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=3.84 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.159 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.32 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.159 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=2.08 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.159 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=1.44 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.159 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=1.68 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.159 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=1.44 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.159 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=2.24 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.159 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=2.88 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.160 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=2.88 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.160 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.48 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.160 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=2.16 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.160 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.64 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.160 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=1.68 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.160 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=2.96 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.160 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=1.60 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.161 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=0.32 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.161 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=3.52 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.161 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=1.60 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.161 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=2.32 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.161 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=1.92 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.161 INFO AUTOTEST BALANCE s3 offer type=VisitSystem cat=exploration money=2.64 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:14.162 INFO AUTOTEST BALANCE s3 fuel stationStock=[0,0,0,328] buyPrice=50 shipMass=87 shipValue=61550 held=0 jumpCosts=[none] mapDistances=[9.2,5.9,6.2,8.7] money=10000
+09:15:14.163 INFO AUTOTEST line 52: balance_route 
+09:15:14.164 INFO AUTOTEST line 53: wait 12
+09:15:26.602 INFO AUTOTEST line 54: balance_visit 0
+09:15:26.603 INFO AUTOTEST line 55: wait 3
+09:15:29.855 INFO AUTOTEST line 56: balance_visit 1
+09:15:29.857 INFO AUTOTEST line 57: wait 3
+09:15:32.942 INFO AUTOTEST line 58: balance_visit 2
+09:15:32.943 INFO AUTOTEST clear spot: the first try {X=-9206.431, Y=-5491.606} overlaps stasis ship []
+09:15:32.943 INFO AUTOTEST clear spot: moved from the first try to {X=-10706.431, Y=-3991.606} (1500 from {X=-10706.431, Y=-5491.606})
+09:15:32.944 INFO AUTOTEST line 59: wait 3
+09:15:36.230 INFO AUTOTEST line 60: balance_visit 3
+09:15:36.231 INFO AUTOTEST line 61: wait 3
+09:15:39.468 INFO AUTOTEST line 62: balance_visit 4
+09:15:39.469 INFO AUTOTEST line 63: wait 3
+09:15:42.469 INFO AUTOTEST line 64: balance_visit 5
+09:15:42.470 INFO AUTOTEST line 65: wait 3
+09:15:45.471 INFO AUTOTEST line 66: balance_census s4
+09:15:45.472 INFO AUTOTEST BALANCE s4 system sector=4 tier=7 type=hc_solar_zone offers=78 stations=5 stdMoney=41000 stdFame=57.0
+09:15:45.472 INFO AUTOTEST BALANCE s4 offer type=FactionBaseDestruction cat=faction_wars money=3.12 fame=5.21 fee=0.00 flatHeat=5 trail=1.0 informant=0.00
+09:15:45.472 INFO AUTOTEST BALANCE s4 offer type=PirateBaseDestruction cat=bounties money=6.78 fame=6.16 fee=1.29 flatHeat=5 trail=1.0 informant=0.00
+09:15:45.472 INFO AUTOTEST BALANCE s4 offer type=Bounty cat=bounties money=3.29 fame=2.63 fee=0.99 flatHeat=0 trail=1.0 informant=0.00
+09:15:45.472 INFO AUTOTEST BALANCE s4 offer type=Bounty cat=bounties money=2.51 fame=2.63 fee=0.67 flatHeat=0 trail=1.0 informant=0.13
+09:15:45.473 INFO AUTOTEST BALANCE s4 offer type=FactionHunt cat=faction_wars money=2.98 fame=3.47 fee=0.00 flatHeat=0 trail=1.0 informant=0.10
+09:15:45.473 INFO AUTOTEST BALANCE s4 offer type=ResourceDelivery cat=deliveries money=0.07 fame=0.00 fee=0.16 flatHeat=0 trail=1.0 informant=0.10
+09:15:45.473 INFO AUTOTEST BALANCE s4 offer type=HotCargoChain cat=hc_chains money=2.34 fame=3.47 fee=0.34 flatHeat=5 trail=1.0 informant=0.10
+09:15:45.473 INFO AUTOTEST BALANCE s4 offer type=PirateBaseDestruction cat=bounties money=7.85 fame=6.16 fee=1.63 flatHeat=5 trail=1.0 informant=0.10
+09:15:45.473 INFO AUTOTEST BALANCE s4 offer type=Bounty cat=bounties money=1.76 fame=3.47 fee=0.00 flatHeat=0 trail=1.0 informant=0.07
+09:15:45.474 INFO AUTOTEST BALANCE s4 offer type=ClearAsteroidFieldPirates cat=bounties money=5.37 fame=8.68 fee=1.12 flatHeat=0 trail=1.0 informant=0.14
+09:15:45.474 INFO AUTOTEST BALANCE s4 offer type=ClearAsteroidFieldPirates cat=bounties money=3.37 fame=8.68 fee=0.00 flatHeat=0 trail=1.0 informant=0.10
+09:15:45.474 INFO AUTOTEST BALANCE s4 offer type=HotCargoSunMining cat=deliveries money=2.39 fame=1.74 fee=0.00 flatHeat=0 trail=1.0 informant=0.05
+09:15:45.475 INFO AUTOTEST BALANCE s4 offer type=HotCargoSundive cat=exploration money=5.85 fame=2.63 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.475 INFO AUTOTEST BALANCE s4 offer type=ResourceDelivery cat=deliveries money=0.15 fame=0.00 fee=0.16 flatHeat=0 trail=1.0 informant=0.10
+09:15:45.475 INFO AUTOTEST BALANCE s4 offer type=HotCargoChain cat=hc_chains money=1.90 fame=1.74 fee=0.00 flatHeat=3 trail=1.0 informant=0.05
+09:15:45.475 INFO AUTOTEST BALANCE s4 offer type=FactionBaseDestruction cat=faction_wars money=3.80 fame=5.21 fee=0.00 flatHeat=5 trail=1.0 informant=0.08
+09:15:45.475 INFO AUTOTEST BALANCE s4 offer type=PirateBaseDestruction cat=bounties money=5.54 fame=6.16 fee=0.72 flatHeat=5 trail=1.0 informant=0.05
+09:15:45.476 INFO AUTOTEST BALANCE s4 offer type=FactionHunt cat=faction_wars money=3.56 fame=3.47 fee=0.00 flatHeat=0 trail=1.0 informant=0.00
+09:15:45.476 INFO AUTOTEST BALANCE s4 offer type=FactionHunt cat=faction_wars money=3.83 fame=2.63 fee=0.62 flatHeat=0 trail=1.0 informant=0.14
+09:15:45.476 INFO AUTOTEST BALANCE s4 offer type=HotCargoEscort cat=stations money=-52374.87 fame=1.47 fee=0.56 flatHeat=0 trail=0.5 informant=0.05
+09:15:45.476 INFO AUTOTEST BALANCE s4 offer type=ResourceDelivery cat=deliveries money=0.15 fame=0.00 fee=0.16 flatHeat=0 trail=1.0 informant=0.10
+09:15:45.477 INFO AUTOTEST BALANCE s4 offer type=HotCargoChain cat=hc_chains money=2.78 fame=3.32 fee=0.51 flatHeat=8 trail=1.5 informant=0.10
+09:15:45.477 INFO AUTOTEST BALANCE s4 offer type=StationContact cat=stations money=1.41 fame=0.00 fee=0.66 flatHeat=0 trail=1.0 informant=0.08
+09:15:45.478 INFO AUTOTEST BALANCE s4 offer type=StationRescue cat=stations money=3.80 fame=6.11 fee=0.00 flatHeat=0 trail=1.0 informant=0.08
+09:15:45.478 INFO AUTOTEST BALANCE s4 offer type=PirateHunt cat=bounties money=4.73 fame=3.47 fee=0.61 flatHeat=0 trail=1.0 informant=0.07
+09:15:45.478 INFO AUTOTEST BALANCE s4 offer type=Explore cat=exploration money=1.66 fame=1.74 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.478 INFO AUTOTEST BALANCE s4 offer type=Explore cat=exploration money=1.51 fame=1.74 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.478 INFO AUTOTEST BALANCE s4 offer type=Explore cat=exploration money=1.71 fame=1.74 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.478 INFO AUTOTEST BALANCE s4 offer type=Explore cat=exploration money=1.90 fame=1.74 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.478 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.88 fame=0.00 fee=0.16 flatHeat=0 trail=1.0 informant=0.10
+09:15:45.478 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.88 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.479 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.22 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.479 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.49 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.479 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.24 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.479 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.71 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.479 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=2.15 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.479 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.49 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.479 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.56 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.479 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.49 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.479 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.73 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.480 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.44 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.480 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.15 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.480 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.46 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.480 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.15 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.480 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.17 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.480 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.51 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.480 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.56 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.480 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.54 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.480 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.20 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.480 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=2.34 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.480 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.44 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.480 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.29 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.480 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.41 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.481 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.29 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.481 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.44 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.481 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.83 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.481 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.56 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.481 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=2.34 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.481 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.20 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.481 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.27 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.481 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.88 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.481 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.02 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.481 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.88 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.481 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.37 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.482 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.76 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.482 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.76 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.482 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.29 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.482 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.32 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.482 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.39 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.482 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.02 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.482 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.482 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.98 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.483 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.20 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.483 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=2.15 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.483 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=0.98 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.483 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.41 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.483 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.17 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.483 INFO AUTOTEST BALANCE s4 offer type=VisitSystem cat=exploration money=1.61 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:15:45.483 INFO AUTOTEST BALANCE s4 fuel stationStock=[939,472,4,7] buyPrice=50 shipMass=87 shipValue=61550 held=0 jumpCosts=[none] mapDistances=[9.4,9.8,6.9,6.2,5.2,8.0] money=10000
+09:15:45.484 INFO AUTOTEST line 67: balance_route 
+09:15:45.487 INFO AUTOTEST line 68: wait 12
+09:15:57.820 INFO AUTOTEST line 69: balance_visit 0
+09:15:57.820 INFO AUTOTEST clear spot: the first try {X=-10770.544, Y=-1655.2228} overlaps stasis ship []
+09:15:57.820 INFO AUTOTEST clear spot: moved from the first try to {X=-10884.725, Y=-1081.1975} (1500 from {X=-12270.544, Y=-1655.2228})
+09:15:57.821 INFO AUTOTEST line 70: wait 3
+09:16:01.316 INFO AUTOTEST line 71: balance_visit 1
+09:16:01.318 INFO AUTOTEST line 72: wait 3
+09:16:05.084 INFO AUTOTEST line 73: balance_visit 2
+09:16:05.085 INFO AUTOTEST line 74: wait 3
+09:16:08.577 INFO AUTOTEST line 75: balance_visit 3
+09:16:08.579 INFO AUTOTEST line 76: wait 3
+09:16:11.864 INFO AUTOTEST line 77: balance_visit 4
+09:16:11.866 INFO AUTOTEST line 78: wait 3
+09:16:15.143 INFO AUTOTEST line 79: balance_visit 5
+09:16:15.144 INFO AUTOTEST line 80: wait 3
+09:16:19.215 INFO AUTOTEST line 81: balance_census s5
+09:16:19.215 INFO AUTOTEST BALANCE s5 system sector=5 tier=9 type=hc_trade_hub offers=79 stations=6 stdMoney=70000 stdFame=99.0
+09:16:19.215 INFO AUTOTEST BALANCE s5 offer type=FactionBaseDestruction cat=faction_wars money=6.34 fame=6.09 fee=1.23 flatHeat=5 trail=1.0 informant=0.14
+09:16:19.216 INFO AUTOTEST BALANCE s5 offer type=PirateBaseDestruction cat=bounties money=2.51 fame=3.55 fee=0.00 flatHeat=5 trail=1.0 informant=0.11
+09:16:19.216 INFO AUTOTEST BALANCE s5 offer type=Bounty cat=bounties money=3.07 fame=2.55 fee=0.92 flatHeat=0 trail=1.0 informant=0.12
+09:16:19.216 INFO AUTOTEST BALANCE s5 offer type=FleetBounty cat=bounties money=1.23 fame=2.73 fee=0.00 flatHeat=0 trail=1.0 informant=0.00
+09:16:19.216 INFO AUTOTEST BALANCE s5 offer type=ClearAsteroidFieldPirates cat=bounties money=3.61 fame=6.36 fee=0.44 flatHeat=0 trail=1.0 informant=0.06
+09:16:19.216 INFO AUTOTEST BALANCE s5 offer type=FactionHunt cat=faction_wars money=4.03 fame=2.55 fee=0.70 flatHeat=0 trail=1.0 informant=0.08
+09:16:19.216 INFO AUTOTEST BALANCE s5 offer type=FactionHunt cat=faction_wars money=2.91 fame=3.27 fee=0.00 flatHeat=0 trail=1.0 informant=0.14
+09:16:19.216 INFO AUTOTEST BALANCE s5 offer type=ResourceDelivery cat=deliveries money=0.02 fame=0.00 fee=0.09 flatHeat=0 trail=1.0 informant=0.10
+09:16:19.216 INFO AUTOTEST BALANCE s5 offer type=HotCargoChain cat=hc_chains money=3.41 fame=4.03 fee=0.62 flatHeat=8 trail=1.5 informant=0.10
+09:16:19.216 INFO AUTOTEST BALANCE s5 offer type=FactionBaseDestruction cat=faction_wars money=3.89 fame=6.09 fee=0.00 flatHeat=5 trail=1.0 informant=0.00
+09:16:19.217 INFO AUTOTEST BALANCE s5 offer type=PirateBaseDestruction cat=bounties money=8.77 fame=7.06 fee=1.61 flatHeat=5 trail=1.0 informant=0.00
+09:16:19.217 INFO AUTOTEST BALANCE s5 offer type=Bounty cat=bounties money=2.54 fame=3.27 fee=0.51 flatHeat=0 trail=1.0 informant=0.08
+09:16:19.217 INFO AUTOTEST BALANCE s5 offer type=FleetBounty cat=bounties money=1.57 fame=3.05 fee=0.00 flatHeat=0 trail=1.0 informant=0.07
+09:16:19.217 INFO AUTOTEST BALANCE s5 offer type=ClearAsteroidFieldPirates cat=bounties money=4.49 fame=6.55 fee=0.73 flatHeat=0 trail=1.0 informant=0.13
+09:16:19.217 INFO AUTOTEST BALANCE s5 offer type=FactionHunt cat=faction_wars money=2.80 fame=3.82 fee=0.00 flatHeat=0 trail=1.0 informant=0.00
+09:16:19.217 INFO AUTOTEST BALANCE s5 offer type=ResourceDelivery cat=deliveries money=0.17 fame=0.00 fee=0.09 flatHeat=0 trail=1.0 informant=0.10
+09:16:19.217 INFO AUTOTEST BALANCE s5 offer type=HotCargoChain cat=hc_chains money=1.63 fame=1.64 fee=0.00 flatHeat=0 trail=0.5 informant=0.00
+09:16:19.218 INFO AUTOTEST BALANCE s5 offer type=FactionBaseDestruction cat=faction_wars money=3.30 fame=3.00 fee=0.62 flatHeat=5 trail=1.0 informant=0.14
+09:16:19.218 INFO AUTOTEST BALANCE s5 offer type=PirateBaseDestruction cat=bounties money=2.57 fame=3.55 fee=0.00 flatHeat=5 trail=1.0 informant=0.06
+09:16:19.218 INFO AUTOTEST BALANCE s5 offer type=ClearAsteroidFieldPirates cat=bounties money=4.41 fame=5.82 fee=0.92 flatHeat=0 trail=1.0 informant=0.00
+09:16:19.218 INFO AUTOTEST BALANCE s5 offer type=HotCargoEscort cat=stations money=-30676.77 fame=1.52 fee=0.00 flatHeat=0 trail=0.5 informant=0.00
+09:16:19.218 INFO AUTOTEST BALANCE s5 offer type=ResourceDelivery cat=deliveries money=0.22 fame=0.00 fee=0.09 flatHeat=0 trail=1.0 informant=0.10
+09:16:19.218 INFO AUTOTEST BALANCE s5 offer type=HotCargoChain cat=hc_chains money=0.91 fame=1.00 fee=0.00 flatHeat=3 trail=1.0 informant=0.05
+09:16:19.218 INFO AUTOTEST BALANCE s5 offer type=StationContact cat=stations money=0.06 fame=0.00 fee=0.00 flatHeat=0 trail=1.0 informant=0.11
+09:16:19.218 INFO AUTOTEST BALANCE s5 offer type=StationContact cat=stations money=0.06 fame=0.00 fee=0.00 flatHeat=0 trail=1.0 informant=0.00
+09:16:19.219 INFO AUTOTEST BALANCE s5 offer type=PirateHunt cat=bounties money=3.00 fame=3.27 fee=0.00 flatHeat=0 trail=1.0 informant=0.08
+09:16:19.219 INFO AUTOTEST BALANCE s5 offer type=Explore cat=exploration money=1.69 fame=1.64 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.219 INFO AUTOTEST BALANCE s5 offer type=Explore cat=exploration money=1.69 fame=1.64 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.219 INFO AUTOTEST BALANCE s5 offer type=Explore cat=exploration money=1.69 fame=1.64 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.219 INFO AUTOTEST BALANCE s5 offer type=Explore cat=exploration money=1.43 fame=1.64 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.219 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.51 fame=0.00 fee=0.09 flatHeat=0 trail=1.0 informant=0.10
+09:16:19.219 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.51 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.219 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.71 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.220 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.29 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.220 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.14 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.220 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=1.00 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.220 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=1.26 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.220 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.29 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.220 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.91 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.220 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.29 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.220 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.43 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.220 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.26 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.221 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.09 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.221 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.86 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.221 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.09 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.221 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.69 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.221 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.89 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.221 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.91 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.221 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.31 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.222 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.11 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.222 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=1.37 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.222 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.26 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.222 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.17 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.222 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.83 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.223 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.17 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.223 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.26 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.223 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.49 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.223 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.91 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.223 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=1.37 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.223 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.11 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.223 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.74 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.223 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.51 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.224 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.60 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.224 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.51 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.224 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.80 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.224 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=1.03 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.224 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=1.03 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.224 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.17 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.224 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.77 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.224 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.23 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.224 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.60 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.225 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=1.06 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.225 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.57 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.225 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.11 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.225 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=1.26 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.225 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.57 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.225 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.83 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.225 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.69 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.225 INFO AUTOTEST BALANCE s5 offer type=VisitSystem cat=exploration money=0.94 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:19.226 INFO AUTOTEST BALANCE s5 fuel stationStock=[0,715,0,724,0,505] buyPrice=50 shipMass=87 shipValue=61550 held=0 jumpCosts=[none] mapDistances=[7.2,9.4,5.2,9.7,5.7] money=10000
+09:16:19.227 INFO AUTOTEST line 82: balance_route 
+09:16:19.228 INFO AUTOTEST line 83: wait 12
+09:16:32.013 INFO AUTOTEST line 84: balance_visit 0
+09:16:32.015 INFO AUTOTEST line 85: wait 3
+09:16:35.460 INFO AUTOTEST line 86: balance_visit 1
+09:16:35.462 INFO AUTOTEST line 87: wait 3
+09:16:38.972 INFO AUTOTEST line 88: balance_visit 2
+09:16:38.973 INFO AUTOTEST line 89: wait 3
+09:16:41.973 INFO AUTOTEST line 90: balance_visit 3
+09:16:41.974 INFO AUTOTEST line 91: wait 3
+09:16:44.975 INFO AUTOTEST line 92: balance_visit 4
+09:16:44.976 INFO AUTOTEST line 93: wait 3
+09:16:47.976 INFO AUTOTEST line 94: balance_visit 5
+09:16:47.978 INFO AUTOTEST line 95: wait 3
+09:16:50.977 INFO AUTOTEST line 96: balance_census s6
+09:16:50.978 INFO AUTOTEST BALANCE s6 system sector=6 tier=11 type=hc_trade_hub offers=73 stations=3 stdMoney=115000 stdFame=162.0
+09:16:50.978 INFO AUTOTEST BALANCE s6 offer type=FactionBaseDestruction cat=faction_wars money=2.40 fame=3.72 fee=0.00 flatHeat=5 trail=1.0 informant=0.00
+09:16:50.978 INFO AUTOTEST BALANCE s6 offer type=PirateBaseDestruction cat=bounties money=3.03 fame=4.31 fee=0.00 flatHeat=5 trail=1.0 informant=0.10
+09:16:50.978 INFO AUTOTEST BALANCE s6 offer type=PirateBaseDestruction cat=bounties money=3.84 fame=4.31 fee=0.48 flatHeat=5 trail=1.0 informant=0.00
+09:16:50.979 INFO AUTOTEST BALANCE s6 offer type=FactionHunt cat=faction_wars money=3.51 fame=2.48 fee=0.38 flatHeat=0 trail=1.0 informant=0.12
+09:16:50.979 INFO AUTOTEST BALANCE s6 offer type=FactionHunt cat=faction_wars money=2.63 fame=2.48 fee=0.00 flatHeat=0 trail=1.0 informant=0.06
+09:16:50.979 INFO AUTOTEST BALANCE s6 offer type=HotCargoEscort cat=stations money=-18671.05 fame=1.50 fee=0.52 flatHeat=0 trail=0.5 informant=0.07
+09:16:50.979 INFO AUTOTEST BALANCE s6 offer type=ResourceDelivery cat=deliveries money=0.05 fame=0.00 fee=0.06 flatHeat=0 trail=1.0 informant=0.10
+09:16:50.979 INFO AUTOTEST BALANCE s6 offer type=HotCargoChain cat=hc_chains money=1.83 fame=2.48 fee=0.25 flatHeat=5 trail=1.0 informant=0.10
+09:16:50.979 INFO AUTOTEST BALANCE s6 offer type=PirateBaseDestruction cat=bounties money=3.48 fame=4.31 fee=0.00 flatHeat=5 trail=1.0 informant=0.06
+09:16:50.980 INFO AUTOTEST BALANCE s6 offer type=FleetBounty cat=bounties money=1.22 fame=2.41 fee=0.00 flatHeat=0 trail=1.0 informant=0.05
+09:16:50.980 INFO AUTOTEST BALANCE s6 offer type=Bounty cat=bounties money=3.24 fame=3.07 fee=0.76 flatHeat=0 trail=1.0 informant=0.10
+09:16:50.980 INFO AUTOTEST BALANCE s6 offer type=ClearAsteroidFieldPirates cat=bounties money=3.22 fame=6.15 fee=0.00 flatHeat=0 trail=1.0 informant=0.15
+09:16:50.980 INFO AUTOTEST BALANCE s6 offer type=ClearAsteroidFieldPirates cat=bounties money=3.30 fame=6.15 fee=0.00 flatHeat=0 trail=1.0 informant=0.00
+09:16:50.980 INFO AUTOTEST BALANCE s6 offer type=FactionHunt cat=faction_wars money=1.88 fame=2.00 fee=0.00 flatHeat=0 trail=1.0 informant=0.00
+09:16:50.980 INFO AUTOTEST BALANCE s6 offer type=FactionHunt cat=faction_wars money=4.72 fame=3.07 fee=0.87 flatHeat=0 trail=1.0 informant=0.00
+09:16:50.981 INFO AUTOTEST BALANCE s6 offer type=HotCargoPrototype cat=bounties money=3.03 fame=1.85 fee=0.38 flatHeat=5 trail=1.0 informant=0.10
+09:16:50.981 INFO AUTOTEST BALANCE s6 offer type=ResourceDelivery cat=deliveries money=0.10 fame=0.00 fee=0.06 flatHeat=0 trail=1.0 informant=0.10
+09:16:50.981 INFO AUTOTEST BALANCE s6 offer type=HotCargoChain cat=hc_chains money=3.23 fame=1.54 fee=0.84 flatHeat=2 trail=1.0 informant=0.00
+09:16:50.981 INFO AUTOTEST BALANCE s6 offer type=StationRescue cat=stations money=3.20 fame=5.56 fee=0.00 flatHeat=0 trail=1.0 informant=0.08
+09:16:50.981 INFO AUTOTEST BALANCE s6 offer type=PirateHunt cat=bounties money=4.61 fame=3.07 fee=0.80 flatHeat=0 trail=1.0 informant=0.00
+09:16:50.981 INFO AUTOTEST BALANCE s6 offer type=Explore cat=exploration money=1.58 fame=1.54 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.981 INFO AUTOTEST BALANCE s6 offer type=Explore cat=exploration money=1.74 fame=1.54 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.982 INFO AUTOTEST BALANCE s6 offer type=Explore cat=exploration money=1.65 fame=1.54 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.982 INFO AUTOTEST BALANCE s6 offer type=Explore cat=exploration money=1.60 fame=1.54 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.982 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.31 fame=0.00 fee=0.06 flatHeat=0 trail=1.0 informant=0.10
+09:16:50.982 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.31 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.982 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.43 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.982 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.17 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.982 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.09 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.983 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.61 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.983 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.77 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.983 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.17 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.983 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.56 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.983 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.17 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.983 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.26 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.983 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.16 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.984 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.05 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.984 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.52 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.984 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.05 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.984 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.42 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.984 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.54 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.984 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.56 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.985 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.19 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.985 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.07 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.985 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.83 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.985 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.16 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.985 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.10 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.985 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.50 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.985 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.10 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.986 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.16 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.986 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.30 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.986 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.56 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.986 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.83 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.986 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.07 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.986 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.45 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.986 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.31 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.986 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.37 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.986 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.31 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.986 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.49 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.986 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.63 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.987 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.63 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.987 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.10 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.987 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.47 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.987 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.14 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.987 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.37 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.987 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.64 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.987 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.35 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.987 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.07 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.987 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.77 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.987 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.35 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.987 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.50 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.987 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.42 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.988 INFO AUTOTEST BALANCE s6 offer type=VisitSystem cat=exploration money=0.57 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:16:50.988 INFO AUTOTEST BALANCE s6 fuel stationStock=[499,0] buyPrice=50 shipMass=87 shipValue=61550 held=0 jumpCosts=[none] mapDistances=[9.5,6.6,9.5,9.4,6.0,5.1,5.1,9.4] money=10000
+09:16:50.989 INFO AUTOTEST line 97: balance_route 
+09:16:50.991 INFO AUTOTEST line 98: wait 12
+09:17:04.266 INFO AUTOTEST line 99: balance_visit 0
+09:17:04.267 INFO AUTOTEST line 100: wait 3
+09:17:07.637 INFO AUTOTEST line 101: balance_visit 1
+09:17:07.638 INFO AUTOTEST line 102: wait 3
+09:17:11.121 INFO AUTOTEST line 103: balance_visit 2
+09:17:11.122 INFO AUTOTEST line 104: wait 3
+09:17:15.319 INFO AUTOTEST line 105: balance_visit 3
+09:17:15.320 INFO AUTOTEST line 106: wait 3
+09:17:18.320 INFO AUTOTEST line 107: balance_visit 4
+09:17:18.320 INFO AUTOTEST line 108: wait 3
+09:17:21.321 INFO AUTOTEST line 109: balance_visit 5
+09:17:21.321 INFO AUTOTEST line 110: wait 3
+09:17:24.321 INFO AUTOTEST line 111: balance_census s7
+09:17:24.322 INFO AUTOTEST BALANCE s7 system sector=7 tier=12 type=hc_solar_zone offers=75 stations=4 stdMoney=145000 stdFame=201.0
+09:17:24.322 INFO AUTOTEST BALANCE s7 offer type=PirateBaseDestruction cat=bounties money=2.73 fame=3.48 fee=0.00 flatHeat=5 trail=1.0 informant=0.09
+09:17:24.322 INFO AUTOTEST BALANCE s7 offer type=PirateBaseDestruction cat=bounties money=2.65 fame=3.48 fee=0.00 flatHeat=5 trail=1.0 informant=0.10
+09:17:24.322 INFO AUTOTEST BALANCE s7 offer type=Bounty cat=bounties money=2.94 fame=2.48 fee=0.79 flatHeat=0 trail=1.0 informant=0.00
+09:17:24.322 INFO AUTOTEST BALANCE s7 offer type=FleetBounty cat=bounties money=1.78 fame=3.46 fee=0.00 flatHeat=0 trail=1.0 informant=0.00
+09:17:24.322 INFO AUTOTEST BALANCE s7 offer type=ClearAsteroidFieldPirates cat=bounties money=2.34 fame=4.96 fee=0.00 flatHeat=0 trail=1.0 informant=0.00
+09:17:24.322 INFO AUTOTEST BALANCE s7 offer type=FactionHunt cat=faction_wars money=3.28 fame=4.84 fee=0.00 flatHeat=0 trail=1.0 informant=0.00
+09:17:24.323 INFO AUTOTEST BALANCE s7 offer type=HotCargoDroneSiege cat=stations money=2.14 fame=2.01 fee=0.00 flatHeat=0 trail=1.0 informant=0.00
+09:17:24.323 INFO AUTOTEST BALANCE s7 offer type=HotCargoCapture cat=bounties money=5.31 fame=2.48 fee=0.80 flatHeat=4 trail=1.0 informant=0.10
+09:17:24.323 INFO AUTOTEST BALANCE s7 offer type=HotCargoSundive cat=exploration money=2.99 fame=1.49 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.323 INFO AUTOTEST BALANCE s7 offer type=ResourceDelivery cat=deliveries money=0.02 fame=0.00 fee=0.04 flatHeat=0 trail=1.0 informant=0.10
+09:17:24.323 INFO AUTOTEST BALANCE s7 offer type=HotCargoChain cat=hc_chains money=1.43 fame=1.61 fee=0.00 flatHeat=0 trail=0.5 informant=0.00
+09:17:24.323 INFO AUTOTEST BALANCE s7 offer type=FactionBaseDestruction cat=faction_wars money=3.33 fame=3.00 fee=0.77 flatHeat=5 trail=1.0 informant=0.09
+09:17:24.323 INFO AUTOTEST BALANCE s7 offer type=FactionBaseDestruction cat=faction_wars money=1.82 fame=3.00 fee=0.00 flatHeat=5 trail=1.0 informant=0.00
+09:17:24.323 INFO AUTOTEST BALANCE s7 offer type=PirateBaseDestruction cat=bounties money=3.70 fame=3.48 fee=0.58 flatHeat=5 trail=1.0 informant=0.06
+09:17:24.324 INFO AUTOTEST BALANCE s7 offer type=Bounty cat=bounties money=0.99 fame=2.00 fee=0.00 flatHeat=0 trail=1.0 informant=0.09
+09:17:24.324 INFO AUTOTEST BALANCE s7 offer type=Bounty cat=bounties money=0.90 fame=2.00 fee=0.00 flatHeat=0 trail=1.0 informant=0.07
+09:17:24.324 INFO AUTOTEST BALANCE s7 offer type=ClearAsteroidFieldPirates cat=bounties money=2.55 fame=4.96 fee=0.00 flatHeat=0 trail=1.0 informant=0.09
+09:17:24.324 INFO AUTOTEST BALANCE s7 offer type=FactionHunt cat=faction_wars money=3.12 fame=3.22 fee=0.00 flatHeat=0 trail=1.0 informant=0.07
+09:17:24.324 INFO AUTOTEST BALANCE s7 offer type=ResourceDelivery cat=deliveries money=0.02 fame=0.00 fee=0.04 flatHeat=0 trail=1.0 informant=0.10
+09:17:24.324 INFO AUTOTEST BALANCE s7 offer type=HotCargoChain cat=hc_chains money=1.05 fame=1.00 fee=0.00 flatHeat=3 trail=1.0 informant=0.05
+09:17:24.324 INFO AUTOTEST BALANCE s7 offer type=StationRescue cat=stations money=5.64 fame=5.70 fee=1.07 flatHeat=0 trail=1.0 informant=0.08
+09:17:24.324 INFO AUTOTEST BALANCE s7 offer type=PirateHunt cat=bounties money=2.88 fame=3.22 fee=0.00 flatHeat=0 trail=1.0 informant=0.11
+09:17:24.325 INFO AUTOTEST BALANCE s7 offer type=Explore cat=exploration money=1.38 fame=1.61 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.325 INFO AUTOTEST BALANCE s7 offer type=Explore cat=exploration money=1.48 fame=1.61 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.325 INFO AUTOTEST BALANCE s7 offer type=Explore cat=exploration money=1.52 fame=1.61 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.325 INFO AUTOTEST BALANCE s7 offer type=Explore cat=exploration money=1.49 fame=1.61 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.325 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.25 fame=0.00 fee=0.04 flatHeat=0 trail=1.0 informant=0.10
+09:17:24.325 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.25 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.325 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.34 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.325 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.14 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.326 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.07 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.326 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.48 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.326 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.61 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.326 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.14 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.326 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.44 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.326 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.14 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.326 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.21 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.326 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.12 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.327 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.04 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.327 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.41 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.327 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.04 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.327 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.33 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.327 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.43 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.327 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.44 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.327 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.15 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.327 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.06 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.328 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.66 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.328 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.12 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.328 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.08 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.328 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.40 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.328 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.08 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.328 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.12 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.328 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.23 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.329 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.44 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.329 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.66 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.329 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.06 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.329 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.36 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.329 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.25 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.329 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.29 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.329 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.25 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.329 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.39 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.330 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.50 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.330 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.50 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.330 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.08 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.330 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.37 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.330 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.11 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.330 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.29 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.330 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.51 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.330 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.28 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.330 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.06 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.331 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.61 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.331 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.28 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.331 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.40 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.331 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.33 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.331 INFO AUTOTEST BALANCE s7 offer type=VisitSystem cat=exploration money=0.46 fame=0.00 fee=0.00 flatHeat=0 trail=0.0 informant=0.00
+09:17:24.331 INFO AUTOTEST BALANCE s7 fuel stationStock=[0,0,468] buyPrice=50 shipMass=87 shipValue=61550 held=0 jumpCosts=[none] mapDistances=[5.1,6.0,5.5] money=10000
+09:17:24.332 INFO AUTOTEST line 112: balance_route 
+09:17:24.335 INFO AUTOTEST line 113: wait 12
+09:17:37.506 INFO AUTOTEST line 114: balance_visit 0
+09:17:37.508 INFO AUTOTEST line 115: wait 3
+09:17:40.605 INFO AUTOTEST line 116: balance_visit 1
+09:17:40.606 INFO AUTOTEST line 117: wait 3
+== AUTOTEST FAILED (slot t3; game log: SLOT=t3 scripts/logs.sh)

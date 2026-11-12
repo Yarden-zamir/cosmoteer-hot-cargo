@@ -32,6 +32,8 @@ public static class TunableTiming
     static readonly Dictionary<string, Applies> Exceptions = new()
     {
         ["HeatTunables.HeatCarryOverFraction"] = Applies.NextSystem,
+        ["FactionsTunables.RelayCarryOverFactor"] = Applies.NextSystem,
+        ["FactionsTunables.BlindCarryOverFactor"] = Applies.NextSystem,
         ["TechTunables.StartingTechUnits"] = Applies.NewRun,
         ["JourneyTunables.RunSectorCount"] = Applies.NextSystem,
         ["HunterTunables.Stages"] = Applies.NextSpawn,
