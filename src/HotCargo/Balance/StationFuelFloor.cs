@@ -57,7 +57,8 @@ static class StationFuelFloor
         {
             if (station.PhysicalShip is { } ship)
             {
-                int have = ship.Resources.GetResourceTotal(Fuel);
+                // The trade stock of MetaShip.GetTotalTradeResources: stored fuel minus planned pickups, without fuel that crew carry.
+                int have = ship.Resources.GetResourceTotal(Fuel, includeStored: true, includeCarried: false, includeAnticipatedPickups: true);
                 if (have < floor) ship.Resources.AddResources(Fuel, floor - have, excludeConstructionSinks: true);
             }
             else if (includeRemembered && station.MetaShip.Spawner is Cosmoteer.Simulation.Stasis.StasisShipSpawner { ResourcesMemory: { } memory })
