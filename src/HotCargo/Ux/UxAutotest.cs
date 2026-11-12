@@ -72,10 +72,24 @@ static class UxAutotest
         Autotest.Commands["commsmission"] = _ =>
         {
             var window = UxArea.OpenComms;
-            window._tabs.TabsListBox.SelectedWidget = window._missionsTab ?? throw new InvalidOperationException("the station has no missions tab");
+            window._tabs.TabsListBox.SelectedWidget = window._missionsTab ?? throw new InvalidOperationException(
+                $"the station has no missions tab: answers={window.SimMode.WillShipAnswerCall(window.Caller, window.Callee)} missions={window.Callee.AI?.WillProvideMissions(window.Caller)} window active={window.SelfActive}");
         };
         // commsselect [text]: selects the offer whose name contains text, else the offer that contract_pick chose, else the first.
         Autotest.Commands["commsselect"] = arg => SelectMission(UxArea.OpenComms, arg, Contracts.ContractsArea.PickedForTests);
+        // infoscroll comms|log: scrolls the mission info panel of the comms window or the mission log to the bottom (the contract terms).
+        Autotest.Commands["infoscroll"] = arg =>
+        {
+            Halfling.Gui.Widget window = arg switch
+            {
+                "comms" => UxArea.OpenComms,
+                "log" => Autotest.RequireRun().Mode._missionLog ?? throw new InvalidOperationException("no mission log"),
+                _ => throw new InvalidOperationException("infoscroll needs: comms | log"),
+            };
+            var info = Walk(window).OfType<Cosmoteer.Modes.Career.Missions.MissionsPanel.MissionInfoPanel>().FirstOrDefault(p => p.IsActive)
+                ?? throw new InvalidOperationException("no mission info panel is shown");
+            info.VerticalScrollBar.Value = info.VerticalScrollBar.MaxValue;
+        };
         // missionlog open|close: opens or closes the career log window, as the HUD button does.
         Autotest.Commands["missionlog"] = arg =>
         {
@@ -109,6 +123,8 @@ static class UxAutotest
             Log.Info($"ux: tooltip {parts[0]}: {text}");
         };
         Autotest.Commands["tipclear"] = _ => TipClear(Autotest.RequireRun().Game.Gui);
+        // eventrect: logs the event window rect, to check that it fits its page.
+        Autotest.Commands["eventrect"] = _ => Log.Info($"ux: event {Events.EventDialog.Rects}");
         Autotest.Commands["tradehint"] = _ => Log.Info($"ux: trade hint\n{TradeText()}");
         Autotest.Commands["wantedline"] = _ => Log.Info($"ux: wanted line: {WantedTimer.Text(Autotest.RequireRun().Mode)}");
 

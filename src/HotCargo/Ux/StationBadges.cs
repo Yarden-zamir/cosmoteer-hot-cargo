@@ -38,7 +38,7 @@ static class StationBadges
             int rewards = ai.GetPendingMissionRewards(caller).Count;
             if (rewards > 0) parts.Add(UxKit.Format("BadgeRewardsFmt", rewards));
         }
-        c.Text = string.Join("  ", parts);
+        c.Text = string.Join(" · ", parts);
         return c.Text;
     }
 

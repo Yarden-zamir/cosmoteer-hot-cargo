@@ -52,7 +52,8 @@ public static class RunEndUi
         if (!run.T.Ux.RunIntro) return;
         var t = run.T;
         string body = UxKit.Format("IntroBodyFmt", t.Journey.RunSectorCount, t.Heat.Stages.Length, t.Heat.HeatCarryOverFraction);
-        CenterPanel.Show(run.Game, UxKit.Text("IntroTitle"), WidgetRules.Instance.FameTextColor, body, UxKit.Text("IntroButton"));
+        // Wider than the win panel, so each rule fits on one line at 1280 x 720.
+        CenterPanel.Show(run.Game, UxKit.Text("IntroTitle"), WidgetRules.Instance.FameTextColor, body, UxKit.Text("IntroButton"), width: 760f);
     }
 
     /// <summary>One line of run numbers for the end screens.</summary>

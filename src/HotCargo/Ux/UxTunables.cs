@@ -62,6 +62,8 @@ public sealed class UxTunables
     [Serialize(Optional = true)] public bool MissionDistance = true;
     /// <summary>Galaxy map node tooltip: route jumps, visited state, missions there, Hot Cargo heat and sector.</summary>
     [Serialize(Optional = true)] public bool MapNodeDetails = true;
+    /// <summary>Labels of off-screen blips at the left or right screen edge align toward the screen, so they do not run off it.</summary>
+    [Serialize(Optional = true)] public bool EdgeLabels = true;
     /// <summary>Fame tooltip: title, next title, crew limit.</summary>
     [Serialize(Optional = true)] public bool FameTooltip = true;
     /// <summary>Game-over screen: a backdrop panel, run statistics and a "waiting for the host" line for clients.</summary>

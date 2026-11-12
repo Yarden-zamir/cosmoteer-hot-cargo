@@ -241,7 +241,7 @@ public static class ContractBook
         Log.Info($"contracts: informant sold out {m.MetatypeID} {m.MissionID} ({ClientName(m)})");
         InformantWarnings++;
         // UI only, after the wave alert so that this text replaces the generic one.
-        run.Game.Gui.ShowAreaName(Strings.FormatText("HotCargoContracts/InformantBannerFmt", client, contract));
+        Ux.UxKit.CenterText(run.Game, Strings.FormatText("HotCargoContracts/InformantBannerFmt", client, contract));
         Ux.UxKit.ChatLine(run.Game, Strings.FormatText("HotCargoContracts/InformantChatFmt", client, contract, t.InformantHeat));
     }
 

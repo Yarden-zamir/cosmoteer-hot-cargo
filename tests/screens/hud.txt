@@ -39,11 +39,13 @@ wait 6
 heat 25
 wait 1.5
 screenshot hud-09-heat-strike
-# Ship alerts: damage ping, low supply, hull.
+# Ship alerts: damage ping, low supply, hull. Godmode would heal the damage at once.
+godmode off
 select
 damage 0.3
 wait 1
 screenshot hud-12-damage
+godmode on
 ux LowSupplyFraction 1.2
 ux CriticalSupplyFraction 1.1
 supplycheck
@@ -84,12 +86,6 @@ screenshot hud-19-map-tip-here
 tipclear
 map off
 wait 2
-missionlog open
-wait 1
-logselect
-wait 1
-screenshot hud-20-mission-log
-missionlog close
 wanted
 wait 2
 screenshot hud-21-wanted
@@ -106,6 +102,7 @@ wait 1
 uxpick 3
 wait 1
 uxpick 1
+godmode off
 lose
 wait 4
 screenshot hud-24-loss

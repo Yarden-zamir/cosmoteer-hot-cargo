@@ -17,7 +17,9 @@ wait 1
 commsmission
 wait 1
 commsselect
-wait 2
+wait 1
+infoscroll comms
+wait 1
 screenshot con-01-paid
 comms close
 contract_pick rival
@@ -26,7 +28,9 @@ wait 1
 commsmission
 wait 1
 commsselect
-wait 2
+wait 1
+infoscroll comms
+wait 1
 screenshot con-02-rival
 comms close
 contract_pick informant
@@ -35,7 +39,9 @@ wait 1
 commsmission
 wait 1
 commsselect
-wait 2
+wait 1
+infoscroll comms
+wait 1
 screenshot con-03-informant
 comms close
 contract_pick discreet
@@ -44,7 +50,9 @@ wait 1
 commsmission
 wait 1
 commsselect
-wait 2
+wait 1
+infoscroll comms
+wait 1
 screenshot con-04-discreet
 comms close
 # Open contracts: heat panel line and the accepted terms in the mission log.
@@ -60,6 +68,8 @@ missionlog open
 wait 1
 logselect
 wait 1
+infoscroll log
+wait 1
 screenshot con-06-log-contract
 missionlog close
 # Hot Cargo missions in comms and in the log.
@@ -72,26 +82,37 @@ missionlog open
 wait 1
 logselect Convoy
 wait 1
+infoscroll log
+wait 1
 screenshot con-07-log-escort
 logselect Siege
+wait 1
+infoscroll log
 wait 1
 screenshot con-08-log-siege
 missionlog close
 # A story chain: the "[Chain]" offer in comms, a choice page, and a later stage with its "So far:" line.
 chain_force fence_ledger
 chain_tostation
+# chain_tostation keeps a distance; tostation then moves next to the nearest station (the chain station), within comms range.
+tostation
+wait 1
 comms chain
 wait 1
 commsmission
 wait 1
 commsselect Chain
-wait 2
+wait 1
+infoscroll comms
+wait 1
 screenshot con-09-chain-offer
 comms close
 chain_accept
 missionlog open
 wait 1
 logselect Chain
+wait 1
+infoscroll log
 wait 1
 screenshot con-10-log-chain
 missionlog close

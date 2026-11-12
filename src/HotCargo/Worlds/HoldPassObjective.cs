@@ -164,7 +164,7 @@ internal sealed class HoldPassObjective : Objective
                 return;
             case PassOutcome.Lost:
                 Log.Info($"pass lost after {HeldSeconds:0.0} s held");
-                sim.RequireGame().Gui.ShowAreaName(Strings.GetText("HotCargoWorlds/PassLost"));
+                Ux.UxKit.CenterText(sim.RequireGame(), Strings.GetText("HotCargoWorlds/PassLost"));
                 Fail();
                 return;
         }

@@ -29,6 +29,9 @@ internal sealed class EventDialog : WindowBox
     /// <summary>True while the window shows. For autotests.</summary>
     internal static bool IsShown => _open is { Parent: not null };
 
+    /// <summary>The window rect and the screen rect, for autotests.</summary>
+    internal static string Rects => _open is { Parent: not null } w ? $"window {w.ScreenRect} screen {w.Parent.RectProvider.ScreenRect}" : "no event window";
+
     static CommsGuiRules Comms => GameApp.Rules.CareerMode.Gui.Comms;
 
     readonly Run _forRun;
@@ -166,10 +169,14 @@ internal sealed class EventDialog : WindowBox
     void FitHeight()
     {
         if (Parent is null) return;
-        float chrome = Height - _pageBox.Height;
-        float content = _header.Height + _buttons.Height + _pageBox.Children.BorderPadding.Top + _pageBox.Children.BorderPadding.Bottom + _pageBox.Children.WidgetPadding.Y;
+        // Screen rects: the page fills the window through its anchors, so its Height property stays 0.
+        float chrome = ScreenRect.Height - _pageBox.ScreenRect.Height;
+        // Measured from the header top to the last button bottom: both move together when the page scrolls. The layout
+        // stretches the button box to fill the page, so its own height would grow the window each frame.
+        var last = _buttons.Children.Count > 0 ? _buttons.Children[_buttons.Children.Count - 1].ScreenRect : _header.ScreenRect;
+        float content = last.Bottom - _header.ScreenRect.Top + _pageBox.Children.BorderPadding.Top + _pageBox.Children.BorderPadding.Bottom;
         float h = Math.Clamp(chrome + content, MinHeight, Parent.RectProvider.ScreenRect.Height * 0.8f);
-        if (Math.Abs(h - Height) < 1f) return;
+        if (Math.Abs(h - ScreenRect.Height) < 1f) return;
         ScreenRect = Rect.CenteredOn(ScreenRect.Center, new Vector2(WindowWidth, h));
     }
 

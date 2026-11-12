@@ -35,8 +35,20 @@ public static class ContractsArea
     internal static Cosmoteer.Ships.Ship PickedStationForTests() => StationOf(Picked());
 
     static Cosmoteer.Ships.Ship StationOf(Mission m) =>
-        SpaceStation.GetStations(Sim(), onlyOperating: false).FirstOrDefault(s => s.GetProvidedMissions()?.ContainsMission(m) == true).PhysicalShip
-        ?? throw new InvalidOperationException("the picked offer's station is not live; is the offer still there?");
+        LiveStation(m) ?? throw new InvalidOperationException("the picked offer's station is not live; is the offer still there?");
+
+    static Cosmoteer.Ships.Ship? LiveStation(Mission m) =>
+        SpaceStation.GetStations(Sim(), onlyOperating: false).FirstOrDefault(s => s.GetProvidedMissions()?.ContainsMission(m) == true).PhysicalShip;
+
+    /// <summary>Moves the human ships in a row at <paramref name="gap"/> plus their own radius from a point. Test only.</summary>
+    static void PlaceNear(SimRoot sim, Halfling.Geometry.Vector2 center, float gap)
+    {
+        foreach (var ship in sim.Ships.HumanPlayerSignificantShips.ToList())
+        {
+            Autotest.Teleport(ship, center + new Halfling.Geometry.Vector2(gap + ship.WorldBoundingRadius, 0));
+            gap += 2 * ship.WorldBoundingRadius + 100f;
+        }
+    }
 
     static void RegisterAutotest()
     {
@@ -49,7 +61,8 @@ public static class ContractsArea
             string? metatype = args.Length > 1 ? args[1] : null;
             var run = R();
             var sim = Sim();
-            foreach (MetaSpaceStation station in SpaceStation.GetStations(sim, onlyOperating: false).OrderBy(s => s.StationID))
+            // Operating stations only: a station that does not operate keeps its offer list but does not answer calls.
+            foreach (MetaSpaceStation station in SpaceStation.GetStations(sim, onlyOperating: true).OrderBy(s => s.StationID))
             {
                 if (station.GetProvidedMissions() is not { } list) continue;
                 foreach (Mission m in list)
@@ -70,15 +83,18 @@ public static class ContractsArea
                     };
                     if (!match) continue;
                     _picked = m;
-                    // Outside the station hull: a station in stasis has no size yet, so 300 stands in for its radius (as chain_tostation does).
-                    float offset = 600f + (station.PhysicalShip?.WorldBoundingRadius ?? 300f);
-                    foreach (var ship in sim.Ships.HumanPlayerSignificantShips.ToList())
-                    {
-                        Autotest.Teleport(ship, station.DetWorldCenter + new Halfling.Geometry.Vector2(offset + ship.WorldBoundingRadius, 0));
-                        offset += 2 * ship.WorldBoundingRadius + 100f;
-                    }
+                    var center = station.DetWorldCenter;
+                    // A station in stasis has no size yet: first a safe distance (300 stands in for its radius, as in chain_tostation),
+                    // then, once it is live, close enough for comms.
+                    PlaceNear(sim, center, 600f + (LiveStation(m)?.WorldBoundingRadius ?? 300f));
                     Log.Info($"AUTOTEST picked {m.MetatypeID} {m.MissionID}: fee={t.Fee} bonus={t.Bonus} flatHeat={t.FlatHeat} trail={t.TrailWeight} rival='{t.RivalGroup}' informant={t.InformantChance:0.00}");
-                    Autotest.Wait(3);
+                    // Co-op runs this inside the sim on every machine, and a second move from a frame would desync. One move is enough there.
+                    if (run.IsMultiplayer) return;
+                    Autotest.WaitFor(() => LiveStation(m) is not null, 15, "the picked station is live", () =>
+                    {
+                        PlaceNear(sim, center, LiveStation(m)!.WorldBoundingRadius + 50f);
+                        Autotest.Wait(2);
+                    });
                     return;
                 }
             }

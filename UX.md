@@ -18,9 +18,9 @@ A failing UI patch logs one error, shows it in the overlay, and leaves the vanil
 | ID | Problem | Change | How | Switch | Impact | Cost | Status |
 |---|---|---|---|---|---|---|---|
 | H1 | The overlay is a plain block of debug text in the top right. It shows numbers but not how close the next stage is. | Heat panel at the top of the left HUD column: sector, a heat bar with a mark for each stage, the current stage, the next stage, the heat rate, the tech count and the price. After a win, the score. The bar color goes from cool to hot. It pulses when the next stage is `StageWarnHeat` away. A gray debug line shows with debug keys on (default off), and the tunables hash shows in multiplayer (spec 60). F8 toggles it. | `Ui/HeatPanel.cs`, added to `GameGui.TopLeftHudBox` from `Overlay.Attach` (the existing `CreateModeSpecificGui` postfix). Blurred panel style from `WidgetRules.AddBlur`. | `HeatPanel` | high | M | done |
-| H2 | A stage start is easy to miss in combat. | A red strip in the heat panel names the stage and its threat for `StageAlertSeconds`. The bar flashes. A chat log line keeps a record. | `HeatPanel.DetectStageStart`. It compares `RunState.StagesStarted` each frame. A jump or a load sets the baseline again, so a jump does not alert. | `StageAlerts` | high | S | done |
+| H2 | A stage start is easy to miss in combat. | A red strip in the heat panel shows the threat of the new stage for `StageAlertSeconds` (the status line above names the stage). The bar flashes. A chat log line keeps a record. | `HeatPanel.DetectStageStart`. It compares `RunState.StagesStarted` each frame. A jump or a load sets the baseline again, so a jump does not alert. | `StageAlerts` | high | S | done |
 | H3 | The win and loss use plain dialogs. The score and the run numbers are in a text block. | Win: a centered panel "TECH DELIVERED" with the reason, the score as a big number and the delivered units, then sector, run time, tech held and tech value. Loss: the game-over screen gets the title "THE CORPORATION RECOVERED THE TECH", the reason and the same run numbers, in a blurred panel like the win panel (V6). | `Ui/RunEndUi.cs`, `Ui/CenterPanel.cs`, and the `GameOverGui` constructor postfix in `Ux/CareerInfoPatches.cs`. | `RunEndPanel` | high | S | done |
-| H4 | A new player does not know the premise or the rules. | Run intro panel at the start of a new run: the premise and five rules (goal, heat, cooling, cargo, selling). It does not pause the game. Enter or "Fly" closes it. | `RunEndUi.ShowIntro`, set by `Run.Hooks.NewRunStarted`. | `RunIntro` | high | S | done |
+| H4 | A new player does not know the premise or the rules. | Run intro panel at the start of a new run: the premise and five rules (goal, heat, cooling, cargo, selling). It does not pause the game. Enter or "Fly" closes it. The start event waits until it closes, so the two never stack. | `RunEndUi.ShowIntro`, set by `Run.Hooks.NewRunStarted`. | `RunIntro` | high | S | done |
 | H5 | The Buyer station looks like any other station. | A green "BUYER" tag on its blip, near (physical ship) and far (stasis landmark). The galaxy map tooltip of an unvisited system says "First visit: the Buyer waits here" when the next new system is the last sector. | Postfixes on `ShipIndicatorSource.GetNonMouseoverText` and `StasisLandmark.GetNonMouseoverText` (`Journey.Buyer.Tag`), `CareerGameModeManager.GetMapNodeToolTip`. | `BuyerMarker` | high | S | done; not seen in game yet (screenshot pending) |
 | H6 | Tech Vaults look like other parts. A player cannot see at a glance where the cargo is. | A pulsing gold outline on Tech Vault parts of your ships, in the vanilla selection box style. | `Ux/Markers.cs`: a `BatchedPartNineSliceRenderer` with `SimGuiRules.SelectedPartNineSlice`, drawn from `SimOverlayRenderer.DrawingCustomOverlays`. Part ID from `Tech.Vaults.VaultId`. | `VaultMarker` | medium | S | done; not seen in game yet (screenshot pending) |
 | H7 | Hunter waves show a big center text (Hunters area, `ShowAreaName`), and the heat panel names the stage too. The two texts had different wording. | Keep both: the center text is the alarm, the panel keeps the state. Both use one string for each stage, `HotCargoUx/Stage{Name}`. | `UxKit.StageText`, called by `HunterSpawner.ShowAlert` and `HeatPanel`. | — | low | S | done |
@@ -44,10 +44,11 @@ A failing UI patch logs one error, shows it in the overlay, and leaves the vanil
 | V11 | Stations hide their services and missions until you hail them. | Badges in the comms list and in the ship hover text: Trade, Crew, Techs, "N missions" (missions you can take), "N reward ready". | `Ux/StationBadges.cs`: postfixes on `CommsToolbox.CallShipItem.Update` and `CareerSimModeManager.GetShipMouseOverText`; data from the `ShipAI` getters that the comms window uses. Cached for 1 s per ship. | `StationBadges` | high | S | done |
 | V12 | Opening the map from comms (for example a mission location) closes the comms window (`CommWindow` subscribes `MapShown` to close). | The comms window stays open over the map. The comms pause (`PauseOnComms`) still sees it as open, so the game stays paused on the map; a later close unpauses. With the switch off, the map closes comms and the comms pause unpauses on that close (autotest checks both). | `Ux/CommsOverMap.cs`: postfix on `CommWindow.OnParented` removes the vanilla subscription. The switch is read when a window opens. | `CommsStayOnMap` | medium | S | done |
 | V13 | The trade tab hides that a sale counts toward the station's delivery mission, and hides the reputation price factor. | Lines at the top of the trade tab: "Faction, standing: buy prices x0.80, sale refund x0.50", and each delivery mission of this station (accepted or offered) with progress and money reward. | `Ux/TradeHints.cs` (same block as H8), docked at the top of the trade page so it takes its own space. It refreshes twice a second. The comms Missions tab is not changed. | `TradeHints` | medium | S | done |
-| V14 | The wanted label shows no faction, no timer, and no "seen" state. | A line under WANTED: the factions, then "seen: the timer waits" or "search ends in 1:23". | `Ux/WantedTimer.cs`: postfixes on the `WantedLabel` constructor and `OnBeforeDraw`; the same data as `WantedManager.GetLocalPlayerWantedTimeFractionRemaining`. | `WantedTimer` | medium | S | done |
+| V14 | The wanted label shows no faction, no timer, and no "seen" state. | A line under WANTED: the factions, then "seen, timer paused" or "search ends in 1:23". The line hides while a "HAILED BY" widget shows, because that widget sits right under WANTED. | `Ux/WantedTimer.cs`: postfixes on the `WantedLabel` constructor and `OnBeforeDraw`; the same data as `WantedManager.GetLocalPlayerWantedTimeFractionRemaining`. | `WantedTimer` | medium | S | done |
 | V15 | Dialogue options have no number hotkeys. | Keys 1 to 9 pick options in the comms dialogue tab and in the Hot Cargo event window. A gold number left of each option shows its key. The event view writes no number into the choice text, so each option shows one number. The key calls the same handler as a click, only for an option that takes input. Limits: the digits also select part groups (vanilla binding) while a dialogue is open; a digit typed into the chat does not pick. | `Ux/DialogueKeys.cs`: key poll on the frame; postfixes on `CommDialogueTab.OnUpdatingUIState` and `EventDialog.Show` add a text renderer to each button. The event window is not edited; Harmony reads its private buttons and calls its private click handler. | `DialogueKeys` | low | S | done |
 | V16 | Ship blips of your own fleet in another system: no "under attack" sign. | — | Off-screen blips in the same system are V8. Ships in another system are in stasis and take no damage. | — | low | — | not needed |
 | V17 | Trade, missions and crew hire happen in the comms window while the fight goes on. | A comms window with a station or ship pauses the game. Closing the last comms window unpauses, but only if this feature paused it, so a pause by hand stays. Off by default in multiplayer, because one player's comms window pauses every player. | `Ux/CommsPause.cs`: postfixes on `CommWindow.OnParented` and `OnUnparenting`; the pause uses `MPSetPausedInput`, like the pause key. | `PauseOnComms`, `PauseOnCommsMultiplayer` | high | S | done |
+| V18 | An off-screen blip at the left or right screen edge centers its label on the blip, so half of a long label (a ship name, "CALLING HELP 30%") runs off the screen. | Near those edges the label aligns toward the screen. | `Ux/EdgeLabels.cs`: postfix on `ObjectIndicator.Update`. | `EdgeLabels` | low | S | done |
 
 Already in vanilla, so not changed: camera north (Backspace), idle crew filter (crew roster), crew distance warning, auto slow when an enemy shows (`AutoSlowWhenEnemySpotted`), on-ship part indicators, pinned resources (right-click in the resources box), Sell Surplus and Buy Needed in the trade menu.
 
@@ -61,51 +62,27 @@ Fractions use typed capacity only, because cargo holds count as capacity for any
 
 ## Screenshots
 
-Status: **not taken yet.** The capture code is in this branch, but it is not verified on the PC. The player's slot (main) is the only slot with graphics, and it was in use for a playtest. Run the steps below when the main slot is free.
+`scripts/screens.sh tests/screens/<name>.txt <out-dir>` takes the screenshots of one script in the player's game (slot main) and copies the PNGs to `<out-dir>`.
+It waits for the lock `/tmp/hot_cargo_main_slot.lock`, stops a running main-slot game, deploys this worktree, runs the script minimized and quits the game.
+Look at each image before you commit it. Crop anything that shows a user name, a file path or a Steam name.
+
+| Script | Shows |
+|---|---|
+| `hud.txt` | run intro, start event, a result page, a greyed choice, a follow-up page, the heat panel at calm, warning, hunt and strike, a damaged ship, a low supply alert, several selected parts, station badges, trade hints, the fame and map tooltips, the wanted line, the win panel, the heat panel after a win, the loss screen |
+| `contracts.txt` | contract terms (paid, rival, informant, discreet) in the comms Missions tab with the Accept button, open contracts in the heat panel, the mission log with a contract, a convoy and a drone siege, a story chain offer, its log entry, a chain page and the standing offer |
+| `world.txt` | a calling hunter, a fleeing hunter, sector arrival texts, the current HUD, the heat zone line, a deep space map tooltip, the Buyer tag far and near |
+| `title.txt` | the main menu title |
 
 ### How the capture works (no focus, no visible window)
 
 1. The scripts start the main-slot game minimized. Headless test slots have no graphics device (`NullGraphicsManager` throws on a screenshot), so screenshots need the main slot.
 2. The D3D11 graphics manager skips all drawing while the window is minimized: `CanRender => !Window.IsMinimized` (HalflingPlatformWDX), read by `Director.DoDraw`.
-3. The autotest command `render on` patches that getter to return true (`Ux/Screenshot.cs`). The game then draws each frame into the swap chain back buffer, which keeps its last size. `Present` still skips, because DXGI reports the minimized window as occluded (the window loop checks `Present` with the test flag first). Nothing shows on the screen, and the window never gets focus.
-4. `screenshot NAME` waits for the end of a frame, copies the back buffer (`GraphicsManager.GetEndOfFrameScreenShot`) and saves `Mods/hot_cargo/screenshots/NAME.png`. It hides the hover tooltips for that frame, because the real cursor rests somewhere over the hidden window. It never moves the real cursor. The log line `ux: force render on; window minimized=... size=...` gives the back buffer size.
-
-Risks to check on the first run:
-
-- The back buffer size of a window that starts minimized is not known. If the PNG is tiny or black, the swap chain never got a real size. Then the fallback is to show the window without activation at an off-screen position (`ShowWindow(SW_SHOWNOACTIVATE)` after `SetWindowPlacement` with an off-screen rectangle), and to minimize it again after the capture.
-- `AutoPauseOnLostFocus` can pause the game. The script sends `pause off`.
-
-### Steps
-
-Run these on the Mac from the UX worktree, only when the main slot is free.
-
-1. Check that no main-slot game runs. The output must be empty:
-   `source scripts/pc.sh; SLOT=main; pc "$PS_PATHS"'Get-SlotProcess'`
-2. Deploy to the main slot: `SLOT=main scripts/deploy.sh`
-3. Install the script:
-   `SLOT=main; pc "$PS_PATHS"'$in = [Console]::In.ReadToEnd(); [IO.File]::WriteAllText((Join-Path $modDir "autotest.txt"), $in)' < tests/screens/ux-screens.txt`
-4. Start the game minimized: `SLOT=main scripts/run.sh`. The script quits the game when it is done (about 2 minutes).
-5. Check the log for `ux: screenshot` lines: `SLOT=main scripts/logs.sh 60`
-6. Pull the images: `mkdir -p docs/screenshots; pc "$PS_PATHS"'tar.exe -cf - -C (Join-Path $modDir "screenshots") .' | tar -xf - -C docs/screenshots`
-7. Before you commit the images, look at each one. Crop anything that shows a user name, a file path or a Steam name.
-
-The script `tests/screens/ux-screens.txt` takes these pairs (before = switch off, after = switch on):
-
-| Image | Shows |
-|---|---|
-| `ux-intro` | H4 run intro |
-| `ux-heat-before`, `ux-heat-alert`, `ux-heat-close` | H1 old text overlay; heat panel with a stage alert; heat panel close to the next stage (pulse) |
-| `ux-hull-before`, `ux-hull` | V1 ships card without and with the hull box (ship at about 70 % integrity) |
-| `ux-event-keys` | V15 start event window with key numbers |
-| `ux-parts-before`, `ux-parts` | V10 parts card with every part selected, without and with the info |
-| `ux-trade` | H8 and V13 trade tab hints at a station |
-| `ux-map` | galaxy map with the heat panel hidden |
-| `ux-wanted` | V14 wanted line |
-| `ux-win` | H3 win panel |
-| `ux-loss` | H3 loss on the game-over screen, with V6 career numbers |
+3. The autotest command `render on` patches that getter to return true (`Ux/Screenshot.cs`). The game then draws each frame into the swap chain back buffer, which keeps the last window size. `Present` still skips, because DXGI reports the minimized window as occluded. Nothing shows on the screen, and the window never gets focus.
+4. `screenshot NAME` waits for the end of a frame, copies the back buffer (`GraphicsManager.GetEndOfFrameScreenShot`) and saves `Mods/hot_cargo/screenshots/NAME.png`. It hides the hover tooltips for that frame, because the real cursor rests somewhere over the hidden window. It never moves the real cursor.
+5. Hover tooltips do not show in a capture, so `tipshow map|mapcur|station|fame|text <xml>` shows one at a fixed spot, and `tipclear` removes it.
 
 ## Tests
 
 - `tests/autotest/ux-basic.txt` (headless slot): heat panel on and off, two stage alerts, hull integrity after damage, map open and close, comms pause (pause on open, unpause on close, a pause by hand stays), one ship alert when the own ship is destroyed, the loss path through the patched game-over screen. Any failed UI patch logs an ERROR line and fails the test.
 - `tests/autotest/ux-more.txt` (headless slot): dialogue key 1 picks the start event option, the watched supplies (battery in, carbon out), the several-parts info, a damage ping, one low supply alert (thresholds raised above 100 %, no second alert), the trade hints at a station, comms over the map with the comms pause (on and off), and the wanted line.
-- `tests/screens/ux-screens.txt` (main slot only): the screenshots above.
+- `tests/screens/*.txt` (main slot only): the screenshots above.

@@ -162,7 +162,8 @@ sealed class HeatPanel : LayoutBox
         var stage = run.T.Heat.Stages[s.StagesStarted - 1];
         string what = UxKit.StageText(stage.Name);
         AlertsShown++;
-        _alert.Text = $"<bad>{stage.Name.ToUpperInvariant()}</bad>  {what}";
+        // The status line above already names the stage, so the strip shows only the threat.
+        _alert.Text = $"<bad>{what}</bad>";
         _alertUntil = now + run.T.Ux.StageAlertSeconds;
         _flashUntil = now + 2.0;
         UxKit.ChatLine(_mode.Game, UxKit.Format("StageChatFmt", stage.Name.ToUpperInvariant(), what));
