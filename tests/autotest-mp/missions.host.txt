@@ -26,7 +26,8 @@ mp hc_accept shady
 waitfor hc_trap_state == 0 20
 mp hc_shady_spring
 waitfor hc_trap_state == 2 20
-expect hc_ambushers == 2
+# Co-op enemy scaling (spec 331) raises the base 2 ambushers: 3 with 2 players at the default setting 1.5.
+expect hc_ambushers >= 2
 hc_mark
 mp mpmark 2
 waitfor hc_trap_done == 1 120
