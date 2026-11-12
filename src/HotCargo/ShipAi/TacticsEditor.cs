@@ -130,8 +130,8 @@ internal sealed class TacticsEditor : WindowBox
         TitleText = Format("TitleFmt", ship.Metadata.PlainShipName);
         TitleLabel.TextRenderer.HAlignment = HAlignment.Left;
         TitleLabel.TextRenderer.Padding = new Borders(10f, 0f, 0f, 0f);
-        Size = new Vector2(980f, 620f);
-        ResizeController.MinSize = new Vector2(860f, 420f);
+        Size = new Vector2(1180f, 640f);
+        ResizeController.MinSize = new Vector2(1000f, 420f);
 
         var page = new ScrollBox();
         page.AnchorRect = AnchorPresets.Fill;
@@ -196,6 +196,7 @@ internal sealed class TacticsEditor : WindowBox
         };
         Unparenting += (_, _) => BoundsProvider = null;
         WidgetRules.AddDialogTweens(this);
+        WidgetRules.AddBlur(this);
         LoadFromSim();
     }
 
@@ -295,27 +296,27 @@ internal sealed class TacticsEditor : WindowBox
         marker.TextRenderer.FontSize = 18;
         marker.TextRenderer.HAlignment = HAlignment.Center;
         _markers.Add(marker);
-        Place(box, marker, 0f, 5f);
+        Place(box, marker, 0f, 4f);
         Place(box, Choices(Enum.GetValues<Cond>().Select(c => (int)c), (int)row.Cond, v => Text("Cond_" + (Cond)v),
-            v => Edit(i, ShipAiModel.WithCond(_rows[i], (Cond)v))), 5f, 27f);
+            v => Edit(i, ShipAiModel.WithCond(_rows[i], (Cond)v))), 4f, 26f);
         var condKind = ShipAiModel.ParamOf(row.Cond);
         if (condKind != ParamKind.None)
-            Place(box, Choices(ShipAiModel.ChoicesOf(condKind), row.CondParam, v => ParamName(condKind, v), v => Edit(i, _rows[i] with { CondParam = v })), 32f, 12f);
+            Place(box, Choices(ShipAiModel.ChoicesOf(condKind), row.CondParam, v => ParamName(condKind, v), v => Edit(i, _rows[i] with { CondParam = v })), 30f, 11f);
         var arrow = new Label { Text = "->" };
         arrow.TextRenderer.HAlignment = HAlignment.Center;
-        Place(box, arrow, 44f, 3f);
+        Place(box, arrow, 41f, 3f);
         Place(box, Choices(Enum.GetValues<Act>().Select(a => (int)a), (int)row.Act, v => Text("Act_" + (Act)v),
-            v => Edit(i, ShipAiModel.WithAct(_rows[i], (Act)v))), 47f, 25f);
+            v => Edit(i, ShipAiModel.WithAct(_rows[i], (Act)v))), 44f, 28f);
         var actKind = ShipAiModel.ParamOf(row.Act);
         if (actKind != ParamKind.None)
-            Place(box, Choices(ShipAiModel.ChoicesOf(actKind), row.ActParam, v => ParamName(actKind, v), v => Edit(i, _rows[i] with { ActParam = v })), 72f, 14f);
+            Place(box, Choices(ShipAiModel.ChoicesOf(actKind), row.ActParam, v => ParamName(actKind, v), v => Edit(i, _rows[i] with { ActParam = v })), 72f, 13f);
         var up = NewButton("Up", () => Swap(i, i - 1));
         up.SelfInputActive = i > 0;
-        Place(box, up, 86f, 5f);
+        Place(box, up, 85f, 5f);
         var down = NewButton("Down", () => Swap(i, i + 1));
         down.SelfInputActive = i < _rows.Count - 1;
-        Place(box, down, 91f, 5f);
-        Place(box, NewButton("Remove", () => { _rows.RemoveAt(i); SendRows(); }), 96f, 4f);
+        Place(box, down, 90f, 5f);
+        Place(box, NewButton("Remove", () => { _rows.RemoveAt(i); SendRows(); }), 95f, 5f);
         return box;
     }
 

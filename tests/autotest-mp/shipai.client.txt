@@ -16,6 +16,11 @@ expecttactics HC1:HealthBelow=25>RetreatRepair;Always>Guard=0;AllyUnderAttack>Ta
 expect tactics_auto == 1
 tactics_editor close
 mp mpmark 1
+waitfor mpgames >= 2 180
+waitfor active == 1 60
+expecttacticsany Defensive
+expecttactics HC1:HealthBelow=25>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
+expect tactics_auto == 1
 waitfor mpmark >= 2 120
 expect tactics_evals > 20
 expect desyncs == 0

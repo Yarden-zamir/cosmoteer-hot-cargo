@@ -195,3 +195,19 @@ The autotests cover the archetype mix on the map, the hazard tooltip, the curren
 10. Deep Space: is the lair search circle a fair size? Do the storms around the lair make the approach tense without killing the ship?
 11. Mix: in one run of 8 sectors, did you meet each archetype at least once? Did any feel like extra travel? The weights are in `mod/worlds/archetypes.rules` (restart needed).
 12. Co-op: both players see the current push and the same pass hold clock.
+
+## Ship tactics (spec 400-412)
+
+The autotests `shipai-basic`, `shipai-save` and the co-op test `shipai` cover row order, most conditions and actions, saves, designs and sync. These checks need a person.
+
+1. Select your ship and press Ctrl+K, or click the "AI" button in the ships card. Does the window fit the game's look? Are the drop lists easy to read?
+2. Apply each preset with Auto on and fight a Patrol stage (F10 with debug keys). Does each preset behave the way its name says? Which one feels useless?
+3. Sniper: does the ship keep its distance, and does it still hit? Note any target that it never reaches.
+4. Give a move order while Auto is on. Does the ship obey at once, and do the tactics take over again when it arrives?
+5. Put two weapons in part group 1 (build menu, part groups) and add a row "Always → Fire: hold, group 1". Do only those two stop firing?
+6. Save the ship design, then start a new career with it (or use "Load ship (replace)" in the build menu). Do the rows and the Auto switch come back?
+7. Copy the tactics of one ship and paste them into another. Paste text from a chat message. Does a bad text show a clear message?
+8. Buy a second ship and give it the Escort preset. Does it stay with your first ship and fight the enemies that attack it?
+9. Flee and jump: give a ship with an FTL drive "My health below 40% → Move: flee (FTL jump)". Does it jump to an ally when hurt?
+10. Co-op: each player edits their own ship's tactics with the window open on both machines. Does the other player see the change? Is a "resyncing" message shown?
+11. Is something missing from the condition or action lists that you wanted in a fight?
