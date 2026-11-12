@@ -1,0 +1,14 @@
+# Co-op enemy scaling, client side. The client's own slider value is 1.0; the host's 2.0 counts.
+enemysetting 1.0
+mpjoin 127.0.0.1:{PORT}
+mpready
+expect enemysetting == 2
+expect enemyfactor == 2
+waitfor hunters >= 4 60
+expect hunters == 4
+waitfor tagcount >= 6 60
+expect tagcount == 6
+wait 30
+expect desyncs == 0
+log client-end
+quit

@@ -1,0 +1,34 @@
+# Settings menu screenshots. Main slot only (needs graphics), under the main-slot lock: see UX.md "Screenshots" for the steps.
+# The script resets every value that it changes, so the slot's tunables.rules holds no values at the end.
+render on
+newgame run
+wait 10
+pause off
+wait 2
+closepanel
+wait 1
+uxpick 1
+wait 2
+menu escape
+wait 1.5
+screenshot menu-escape
+menu open
+wait 1.5
+screenshot menu-window
+menu search stage
+wait 1.5
+screenshot menu-search-stage
+menu search
+menu set Heat.HeatPerGameMinute 4
+menu reject Heat.HeatCarryOverFraction 2
+menu search heat
+wait 1.5
+screenshot menu-heat-error
+menu search shipcount
+wait 1.5
+screenshot menu-hunters-list
+menu search
+menu resetsection Heat
+menu file lacks HeatPerGameMinute
+menu close
+quit

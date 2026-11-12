@@ -265,6 +265,26 @@ From Cosmoteer's Career 2.0 dev blog: a distress signal can be "a broken-down sh
 
 Reads as: a use for the tractor beam, and a slow, visible job for a ship that wants to stay hidden.
 
+### Wanted and hunted (spec 470-473)
+
+Vanilla wanted (police of one faction hunt you) stacks with corporate heat. When both are true (heat stage 1 or more), a warning names the ways out: pay the bounty (hail one of their police ships, the vanilla surrender dialogue offers it), leave the system, outlast the search timer, or a smuggler. The warning also opens a Wanted event with chance 70 %.
+
+#### 25. A Clean Record (Wanted)
+| Choice | Cost | Outcomes |
+|---|---|---|
+| Pay for a clean record | 0.4 + 0.01 × heat money | Weights 80 vs 20 + 0.2 × heat (at heat 50: 67 % vs 33 %). Good: wanted clears. Bad: sold out, heat +15, still wanted. |
+| Pay with a crate | 1 tech | Wanted clears, heat −5. |
+| Handle it yourself | — | Nothing. |
+
+#### 26. Decoy Run (Wanted)
+| Choice | Cost / Need | Outcomes |
+|---|---|---|
+| Hire the decoy | 0.5 money | Weights 70 vs 30 + 0.3 × heat. Good: wanted clears, heat −10. Bad: money gone, still wanted. |
+| Fly a sensor ghost yourself | Sensor Array | Weights 60 vs 40 + 0.2 × heat. Good: wanted clears. Bad: heat +5. |
+| No thanks | — | Nothing. |
+
+Reads as: the hotter you are, the less a fixer can do for you. A crate is the sure way out, and it costs score.
+
 All catalog items are implemented.
 
 ## 4. Content rules for authors

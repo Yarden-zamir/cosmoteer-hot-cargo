@@ -363,7 +363,10 @@ internal sealed class HoldOutObjective : Objective
         int live = SimQueries.TaggedShips(sim, WaveTag).Count(s => s.PlayerIndex == WaveAllegiance);
         int boost = PendingIntensive;
         PendingIntensive = 0;
-        int count = MechanicsModel.WaveShipCount(t.ShipsBase + boost * mt.IntensiveExtraShips, t.ShipsPerTier, Tier, live, t.MaxLiveShips + (int)MathF.Ceiling(boost * mt.IntensiveExtraShips));
+        // Spec 334: co-op scales the wave and the live cap.
+        int wanted = Scaling.EnemyScale.Count(MechanicsModel.WaveShipCount(t.ShipsBase + boost * mt.IntensiveExtraShips, t.ShipsPerTier, Tier, 0, int.MaxValue), sim);
+        int maxLive = Scaling.EnemyScale.Cap(t.MaxLiveShips + (int)MathF.Ceiling(boost * mt.IntensiveExtraShips), sim);
+        int count = Math.Clamp(wanted, 0, Math.Max(0, maxLive - live));
         int shipTier = MechanicsModel.WaveShipTier(t.ShipTierBase + boost * mt.IntensiveExtraTier, t.ShipTierPerTier, Tier, t.ShipTierMax);
         Vector2 center = target.DetWorldCenter;
         // Scan waves come from the base side; other waves from a random side.
