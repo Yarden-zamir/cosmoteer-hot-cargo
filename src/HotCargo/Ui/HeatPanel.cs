@@ -117,7 +117,7 @@ sealed class HeatPanel : LayoutBox
             _ => StatusLine(s, t.Heat, mult * t.Heat.HeatPerGameMinute + Contracts.ContractBook.TrailPerMinute(run, Contracts.ContractBook.OpenWeight(run))),
         };
         long value = run.TechValue();
-        _tech.Text = UxKit.Format("TechFmt", s.FleetTech, value.ToString("N0"));
+        _tech.Text = LossTimer.PanelLine(run) ?? UxKit.Format("TechFmt", s.FleetTech, value.ToString("N0"));
         string? contracts = Contracts.ContractsUi.HeatPanelLine(run);
         _contracts.SelfActive = contracts is not null;
         _contracts.Text = contracts ?? "";
