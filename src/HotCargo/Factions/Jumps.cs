@@ -143,7 +143,7 @@ static class Jumps
         }
         if (hurt.Count == 0) return;
         string line = FactionsArea.Format("BlindDamageFmt", string.Join(", ", hurt));
-        Run.OnNextFrame(() => UxKit.Guard("blind damage line", () => { run.Game.Gui.ShowAreaName(line); UxKit.ChatLine(run.Game, line); }));
+        Run.OnNextFrame(() => UxKit.Guard("blind damage line", () => { UxKit.CenterText(run.Game, line); UxKit.ChatLine(run.Game, line); }));
     }
 
     /// <summary>

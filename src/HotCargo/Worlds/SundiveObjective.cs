@@ -128,7 +128,7 @@ internal sealed class SundiveObjective : Objective
     {
         if (Completion != CompletionState.InProgress) return;
         Log.Info("sundive carrier destroyed");
-        Mission?.Game.Gui.ShowAreaName(Strings.GetText("HotCargoWorlds/SundiveLost"));
+        if (Mission?.Game is { } game) Ux.UxKit.CenterText(game, Strings.GetText("HotCargoWorlds/SundiveLost"));
         Fail();
     }
 

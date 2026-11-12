@@ -1,40 +1,42 @@
 HotCargoContracts
 {
-	Header = "Contract terms"
+	Header = "CONTRACT"
 	UnknownClient = "an unnamed client"
 
 	NoFee = "No fee"
-	FeeFmt = "<img name='money' colored='true'/> Fee {0:N0}, paid when you accept"
+	FeeFmt = "<img name='money' colored='true'/> Fee {0:N0}, paid on accept"
 	FeeShortFmt = "(you have {0:N0})"
-	FeeTipFmt = "The client sells this job. You pay the fee up front and do not get it back. On completion you get {0:N0} extra (already in Rewards). In co-op, the player who pays the fee gets this extra pay."
+	FeeTipFmt = "You pay the fee up front, and it is not refunded. Completion pays {0:N0} extra (included in Rewards). In co-op, the player who pays the fee gets the extra."
 	FeePaidFmt = "Fee paid: {0:N0}"
 	BonusRewardFmt = "<img name='money' colored='true'/> +{0:N0} (paid contract)"
-	BonusRewardTip = "Extra pay of a paid contract, for the player who paid the fee. It makes up for the fee and then some."
+	BonusRewardTip = "Extra pay for the player who paid the fee. It covers the fee and more."
 
-	FlatHeatFmt = "Heat +{0} when you accept"
+	FlatHeatFmt = "Heat +{0} on accept"
 	FlatHeatTip = "A loud job. Corporate scanners notice the moment you take it."
 
-	TrailFmt = "Trail: counts as {0} open contract. Open {1} → {2}, trail +{3}/min → +{4}/min"
-	OpenTrailFmt = "Open contract (counts as {0}). Open now: {1}, trail +{2}/min"
-	TrailTipFmt = "Every open contract leaves a trail. Up to {0} open contracts are quiet. Each one above that adds {1} heat per minute until you finish or drop it."
+	TrailQuietFmt = "Trail: open contracts {1} → {2}, still quiet"
+	TrailFmt = "Trail: open contracts {1} → {2}, heat +{3} → +{4}/min"
+	OpenQuietFmt = "Open contracts: {1}, still quiet"
+	OpenTrailFmt = "Open contracts: {1}, trail heat +{2}/min"
+	TrailTipFmt = "Open contracts leave a trail. Up to {0} stay quiet. Each one above that adds {1} heat/min until you finish or drop it."
 
-	RivalFmt = "Rival offer: accepting dismisses \"{0}\""
-	RivalTip = "These clients work against each other. Take one job and the other offer is gone."
+	RivalFmt = "Rival: taking this cancels \"{0}\""
+	RivalTip = "Rival clients. Take one job and the other offer is gone."
 
-	InformantFmt = "Informant risk: {0}%. The client may sell you out"
+	InformantFmt = "Informant risk {0}%: the client may sell you out"
 	InformantTip = "Some clients sell your position to the corporation. If this one does, heat jumps and hunters come for you."
 	Discreet = "Discreet client"
 	SoldOutFmt = "{0} sold you out on this contract."
 	SoldOutTip = "The client sold your position to the corporation."
-	InformantBannerFmt = "INFORMANT: {0} sold you out over \"{1}\". Hunters inbound!"
-	InformantChatFmt = "<bad>INFORMANT</bad>  {0} sold your position over the contract \"{1}\". Heat +{2}, hunters inbound."
+	InformantBannerFmt = "SOLD OUT by {0}. Hunters inbound!"
+	InformantChatFmt = "<bad>INFORMANT</bad>  {0} sold your position over \"{1}\". Heat +{2}."
 
-	RivalDismissedChatFmt = "<gray>Offer \"{0}\" withdrawn: its client is a rival of \"{1}\".</gray>"
+	RivalDismissedChatFmt = "<gray>Rival offer \"{0}\" withdrawn.</gray>"
 
 	AcceptPayFmt = "Accept (pay {0:N0})"
 	AcceptCannotPayFmt = "Fee {0:N0}: not enough money"
 	CannotPayFmt = "Not enough money for the contract fee ({0:N0})"
 
-	PanelTrailFmt = "{0} contracts open   trail +{1}/min"
-	PanelOpenFmt = "{0} contracts open   <gray>quiet up to {1}</gray>"
+	PanelTrailFmt = "{0} open contracts   trail +{1}/min"
+	PanelOpenFmt = "{0} open contracts   <gray>quiet up to {1}</gray>"
 }
