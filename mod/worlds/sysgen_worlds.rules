@@ -2,7 +2,8 @@
 // of the basic sector generator, so suns, planets, nebulas, stations and gates exist when these spawners run.
 // Each archetype group runs only with its spawn flag (worlds/sectors.rules). Groups with an hc_group_* tag hold a mission;
 // the autotest command "worlds generate" finds them by that tag.
-// Distances fit the smaller Hot Cargo systems: stations at 4000 to 9000 from the center, FTL gates at 13500 to 16000.
+// Distances fit the smaller Hot Cargo systems (mod/contracts/actions.rules, spec 105): trade stations keep the vanilla ring
+// (7500 to 11000 from the sun at the center), FTL gates sit at 13500 to 16000. The mining belt lies in the gap between them.
 
 // ---- Trade hub (spec 221): a big hub world next to a trade station, and a current that pushes ships one way.
 TradeHub
@@ -18,7 +19,7 @@ TradeHub
 			RootLocation = Tag
 			RootLocationTag = trade_station
 			Distance = [2600, 3200]
-			MinDistanceFromTags = [[sun, 4500], [station, 1800]]
+			MinDistanceFromTags = [[sun, 4500], [station, 1800], [ftl_gate, 2500]]
 			ScaleFactor = 1.5
 			SuppressLocationAssertions = true
 			DoodadTypes
@@ -58,7 +59,8 @@ MiningBelt
 		{
 			Type = None
 			Tags = [hc_belt]
-			Distance = [10000, 11500]
+			// Rocks reach 450 to each side (11450 to 12950): outside the station ring and inside the gate ring.
+			Distance = [11900, 12500]
 			SubSpawners
 			[
 				// The passes first, so the rocks keep clear of them. A pass is a ring on the map. A ring POI's scale is its radius.
@@ -72,11 +74,14 @@ MiningBelt
 					AddDistance = ParentToGrandparent
 					Distance = 0
 					SpawnsPerSlice = 1
-					SpawnSlicePadding = 30%
+					// Wide slices, so a station or a gate near the belt cannot block a whole slice. A slice without a free spot ends the passes.
+					SpawnSlicePadding = 15%
+					// The ring (radius 800) keeps clear of station and gate edges, so a pass fight does not start at a station.
+					MinDistanceFromTags = [[station, 1000], [ftl_gate, 1000]]
 					SuppressLocationAssertions = true
 				}
 
-				// The dense belt: about one large rock every 180 units along a band 900 wide. Small ships can thread it.
+				// The dense belt: about one large rock every 195 units along a band 900 wide. Small ships can thread it.
 				// Big ships hit rocks. The number of rocks is the main performance cost of this archetype.
 				{
 					Type = Doodads

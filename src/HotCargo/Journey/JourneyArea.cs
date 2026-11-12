@@ -80,8 +80,11 @@ public static class JourneyArea
                     var buyers = SimQueries.TaggedShips(sim, Buyer.Tag);
                     if (buyers.Count == 0) throw new InvalidOperationException("no Buyer in this system");
                     var buyer = buyers[0];
-                    float gap = buyer.Live is { } loaded ? loaded.DetWorldBoundingCircle.Radius + ship.DetWorldBoundingCircle.Radius + 100f : 1200f;
-                    Autotest.Teleport(ship, buyer.Location + new Vector2(gap, Autotest.ActingPlayerIndex * (2f * ship.DetWorldBoundingCircle.Radius + 50f)));
+                    float shipRadius = ship.DetWorldBoundingCircle.Radius;
+                    float gap = buyer.Live is { } loaded ? loaded.DetWorldBoundingCircle.Radius + shipRadius + 100f : 1200f;
+                    // Each player gets its own distance, so two ships do not land on each other.
+                    gap += Autotest.ActingPlayerIndex * (2f * shipRadius + 50f);
+                    Autotest.Teleport(ship, Autotest.ClearSpotNear(sim, buyer.Location, gap, shipRadius));
                     Log.Info($"AUTOTEST goto: ship {ship.Name} to {ship.WorldCenter}, Buyer at {buyer.Location}, loaded={buyer.Live is not null}");
                     break;
                 }

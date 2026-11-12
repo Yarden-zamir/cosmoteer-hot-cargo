@@ -32,6 +32,8 @@ DroneSiege
 			Tags = [hc_siege_outpost]
 			Distance = [3000, 4500]
 			MinDistanceFromTags = [[sun, 6000], [station, 2500], [bounty, 2000]]
+			// Inside the gate ring of the smaller systems (spec 105).
+			MaxDistanceFromTags = [[sun, 13500]]
 			MinDistanceFromNebulas = [[ion_storm, 1000]]
 			SuppressLocationAssertions = true
 			Allegiance = FactionMilitary
@@ -124,7 +126,8 @@ Prototype
 	Type = None
 	Tags = [hc_mech_prototype]
 	SpawnChance = 20%
-	Distance = [0, 19000]
+	// Inside the gate ring of the smaller systems (spec 105; vanilla gates at 18750 and more, Hot Cargo gates at 13500 to 16000).
+	Distance = [0, 13000]
 	MinDistanceFromTags = [[sun, 6000], [station, 4000], [bounty, 3000], [hc_shady, 4000]]
 	MinDistanceFromNebulas = [[ion_storm, 1000]]
 	SuppressLocationAssertions = true
@@ -352,6 +355,8 @@ Tow
 			Tags = [hc_tow_hulk]
 			Distance = [3000, 4500]
 			MinDistanceFromTags = [[sun, 5000], [station, 2500], [bounty, 2000]]
+			// Inside the gate ring of the smaller systems (spec 105).
+			MaxDistanceFromTags = [[sun, 13500]]
 			MinDistanceFromNebulas = [[ion_storm, 1000]]
 			SuppressLocationAssertions = true
 			Allegiance = Junk
@@ -443,7 +448,8 @@ Capture
 	Type = None
 	Tags = [hc_mech_capture]
 	SpawnChance = 15%
-	Distance = [0, 19000]
+	// Inside the gate ring of the smaller systems (spec 105).
+	Distance = [0, 13000]
 	MinDistanceFromTags = [[sun, 6000], [station, 4000], [bounty, 3000], [hc_shady, 4000]]
 	MinDistanceFromNebulas = [[ion_storm, 1000]]
 	SuppressLocationAssertions = true
@@ -581,10 +587,12 @@ Survey
 			ScaleFactor = 400
 			Tags = [hc_survey_marker]
 			Count = 3
-			Distance = [2500, 22000]
+			Distance = [2500, 16000]
 			MinDistanceFromSiblings = 1500
 			MaxDistanceFromNebulas = [[ion_storm, 0]]
 			MinDistanceFromTags = [[sun, 5000], [station, 2000]]
+			// Within reach in the smaller systems (spec 105): no marker far past the gates. Limit: a system without a sun gets no survey.
+			MaxDistanceFromTags = [[sun, 15000]]
 			Undiscovered = true
 			HideIfUnexplored = true
 			ShowOnlyInFog = true
@@ -653,7 +661,9 @@ ClaimJumpers
 	Tags = [hc_mech_guard]
 	SpawnChance = 15%
 	RootLocation = Tag
-	RootLocationTag = asteroid_field
+	// The field POI sits at the field center. The vanilla asteroid_field tag belongs to a None spawner, which leaves no object,
+	// so only the POI is found by a spawn after system generation (mech_generate).
+	RootLocationTag = asteroid_field_poi
 
 	SubSpawners
 	[
@@ -757,8 +767,10 @@ ListeningPost
 	Type = None
 	Tags = [hc_mech_listening]
 	SpawnChance = 15%
-	Distance = [0, 20000]
-	MinDistanceFromTags = [[sun, 7500], [station, 6000], [ftl_gate, 3000], [bounty, 3000]]
+	// Inside the gate ring of the smaller systems (spec 105). The trade stations keep the vanilla ring (7500 to 11000), so the
+	// station gap is smaller than in vanilla (was 6000 in [0, 20000]), or the base finds no place.
+	Distance = [0, 14500]
+	MinDistanceFromTags = [[sun, 7500], [station, 4500], [ftl_gate, 2500], [bounty, 3000]]
 	MinDistanceFromNebulas = [[electron, 1000], [ion_storm, 1000]]
 	SuppressLocationAssertions = true
 
@@ -780,6 +792,7 @@ ListeningPost
 			Distance = [5500, 7000]
 			MaxDistanceFromNebulas = [[cloudy, 0]]
 			MinDistanceFromTags = [[sun, 5000], [station, 2500]]
+			MaxDistanceFromTags = [[sun, 15000]]
 			SuppressLocationAssertions = true
 			SynchronizeFactions = true
 

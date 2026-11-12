@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Reflection;
 using Cosmoteer;
 using Cosmoteer.Bullets;
 using Cosmoteer.Bullets.Hits;
@@ -37,7 +36,7 @@ public static class AiArea
         Autotest.Fields["ai_fleeing"] = () => Sim().Ships.Count(s => s.AI?.GetStrategyModule<FleeStrategy>() is { Fleeing: true });
 
         // aiset <TacticsTunables field> <value>: sets one tactics tunable for this run. Test only.
-        Autotest.Commands["aiset"] = arg => SetField(Autotest.RequireRun().T.Tactics, arg);
+        Autotest.Commands["aiset"] = arg => Autotest.SetField(Autotest.RequireRun().T.Tactics, arg);
         // stageset <stage> <StageResponse field> <value>: sets one field of a hunter stage response for this run. Test only.
         Autotest.Commands["stageset"] = arg =>
         {
@@ -46,7 +45,7 @@ public static class AiArea
             string stage = arg[..space];
             var response = Autotest.RequireRun().T.Hunters.Stages.FirstOrDefault(s => s.Name == stage)
                 ?? throw new InvalidOperationException($"no hunter stage '{stage}'");
-            SetField(response, arg[(space + 1)..]);
+            Autotest.SetField(response, arg[(space + 1)..]);
         };
         // sectorindex <n>: sets the run's sector index, for the strike scaling checks. Test only.
         Autotest.Commands["sectorindex"] = arg => Autotest.RequireRun().State.SectorIndex = int.Parse(arg, CultureInfo.InvariantCulture);
@@ -113,7 +112,10 @@ public static class AiArea
 
     static SimRoot Sim() => Autotest.RequireRun().Game.Sim;
 
-    /// <summary>Live hunter by index in ID order. A negative index counts from the newest: -1 is the newest hunter.</summary>
+    /// <summary>
+    /// Live hunter by index in ID order. A negative index counts from the end: -1 is the last hunter in ID order.
+    /// Object IDs are random (ObjectID.NewRandom), so the order is stable but it is not the spawn order.
+    /// </summary>
     static Ship HunterAt(string arg)
     {
         int index = int.Parse(arg, CultureInfo.InvariantCulture);
@@ -149,23 +151,6 @@ public static class AiArea
         p.EffectScale = 1f;
         effects.DoEffect(p);
         Log.Info($"AUTOTEST {shot.Bullet} hit {target.Metadata.PlainShipName} at {part.Rules.ID}");
-    }
-
-    static void SetField(object target, string arg)
-    {
-        var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length != 2) throw new InvalidOperationException("needs: field value");
-        var field = target.GetType().GetField(parts[0], BindingFlags.Public | BindingFlags.Instance)
-            ?? throw new InvalidOperationException($"{target.GetType().Name} has no field '{parts[0]}'");
-        object value = field.FieldType switch
-        {
-            var t when t == typeof(bool) => parts[1] is "on" or "true",
-            var t when t == typeof(int) => int.Parse(parts[1], CultureInfo.InvariantCulture),
-            var t when t == typeof(float) => float.Parse(parts[1], CultureInfo.InvariantCulture),
-            _ => throw new InvalidOperationException($"{parts[0]} is a {field.FieldType.Name}; only bool, int and float are supported"),
-        };
-        field.SetValue(target, value);
-        Log.Info($"AUTOTEST {target.GetType().Name}.{parts[0]} = {value}");
     }
 
     /// <summary>App.Director does not exist yet when Register runs, so the overlay hook starts at the first title screen.</summary>

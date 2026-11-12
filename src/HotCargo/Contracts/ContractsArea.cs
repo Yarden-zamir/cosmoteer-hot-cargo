@@ -105,6 +105,8 @@ public static class ContractsArea
             R().T.Contracts.InformantDelayMax = s;
         };
         // Adds money to the acting player (the sender of an "mp" command in co-op).
+        // contract_set <ContractsTunables field> <value>: changes a live tunable for this run. Test only.
+        Autotest.Commands["contract_set"] = arg => Autotest.SetField(R().T.Contracts, arg);
         Autotest.Commands["contract_money"] = arg => R().Game.GetPlayerState(Autotest.ActingPlayerIndex, deterministic: true).AddMoney(int.Parse(arg, CultureInfo.InvariantCulture));
         Autotest.Commands["money_mark"] = _ => _markedMoney = R().Game.LocalPlayerMoney;
         Autotest.Commands["heat_mark"] = _ => _markedHeat = R().State.Heat;

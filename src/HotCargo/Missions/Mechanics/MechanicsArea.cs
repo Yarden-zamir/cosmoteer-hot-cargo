@@ -58,6 +58,13 @@ public static class MechanicsArea
             Autotest.Fields[$"mech_goal_{kind.Name}"] = () => (int)Goal(Accepted(kind)).Completion;
         }
         Autotest.Commands["mech_generate"] = TestGenerate;
+        // mech_set <MechanicsTunables field> <value>: changes a live tunable for this run (spawn chances apply from the next system). Test only.
+        Autotest.Commands["mech_set"] = arg => Autotest.SetField(RequireRun().T.Mechanics, arg);
+        // Placement census (spec 105 smaller systems): asteroid fields that Claim Jumpers can use, mission objects outside the
+        // gate ring, and a log line per kind with its offers and object distances.
+        Autotest.Fields["mech_asteroid_fields"] = () => Tagged(MissionArea.ExistingSpawnTags(RequireSim()), "asteroid_field_poi").Count;
+        Autotest.Fields["mech_beyond_gates"] = () => Census(log: false);
+        Autotest.Commands["mech_census"] = _ => Census(log: true);
         Autotest.Commands["mech_accept"] = arg => _accepted.Add((Find(arg), MissionArea.AcceptOffer(Find(arg).Metatype)));
         Autotest.Commands["mech_expire"] = TestExpire;
         Autotest.Fields["mech_chance_siege"] = () => MissionArea.FindGroup(RequireSim(), Find("siege").GroupTag).SpawnChance;
@@ -169,6 +176,44 @@ public static class MechanicsArea
                 group.SpawnChance = kind.Chance(t);
             }
         });
+    }
+
+    static List<Vector2> Tagged(SpawnedObjectCollection objects, string tag) =>
+        objects.TryGetValue(new ID<SimObjectSpawner>(tag), out var list) ? [.. list.Select(so => so.Location.Center)] : [];
+
+    /// <summary>
+    /// Counts the mechanics mission objects (objects with an hc_ tag of a mechanics group) that lie farther from the system center
+    /// than the farthest FTL gate. With log, it also writes one line per kind: offers, and each object's distance from the center and the nearest gate.
+    /// </summary>
+    static int Census(bool log)
+    {
+        var sim = RequireSim();
+        var objects = MissionArea.ExistingSpawnTags(sim);
+        var gates = Tagged(objects, "ftl_gate");
+        if (gates.Count == 0) throw new InvalidOperationException("no FTL gate in this system");
+        float gateRing = gates.Max(g => g.Length);
+        int beyond = 0;
+        foreach (var kind in Kinds)
+        {
+            var group = MissionArea.FindGroup(sim, kind.GroupTag);
+            var tags = MissionArea.AllSpawners([group]).OfType<SimObjectSpawner>().SelectMany(sp => sp.Tags ?? [])
+                .Select(t => t.ToString()).Where(t => t.StartsWith("hc_", StringComparison.Ordinal) && t != kind.GroupTag).Distinct().Order(StringComparer.Ordinal);
+            var parts = new List<string>();
+            foreach (string tag in tags)
+            {
+                var at = Tagged(objects, tag);
+                beyond += at.Count(p => p.Length > gateRing);
+                if (at.Count > 0) parts.Add($"{tag}=[{string.Join(" ", at.Select(p => $"{p.Length:0}/{gates.Min(g => g.DistanceTo(p)):0}"))}]");
+            }
+            if (log)
+            {
+                var id = new ID<MissionMetatype>(kind.Metatype);
+                Log.Info($"AUTOTEST CENSUS {RequireRun().Mode.CurrentSectorType.ID} {kind.Name}: offers={MissionArea.Offers(sim).Count(m => m.MetatypeID.Equals(id))} "
+                    + $"objects (center/gate): {string.Join(" ", parts)}");
+            }
+        }
+        if (log) Log.Info($"AUTOTEST CENSUS gates at {string.Join(" ", gates.Select(g => $"{g.Length:0}"))}; asteroid fields={Tagged(objects, "asteroid_field_poi").Count}; mission objects past the farthest gate={beyond}");
+        return beyond;
     }
 
     static Kind Find(string name) => Kinds.FirstOrDefault(k => k.Name == name) ?? throw new InvalidOperationException($"unknown mechanics mission '{name}'");

@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Reflection;
 using Cosmoteer;
 using Cosmoteer.Data;
 using Cosmoteer.Game.Multiplayer;
@@ -88,15 +87,8 @@ static class WorldsAutotest
         {
             // set <Field> <number|on|off>: one WorldsTunables field for this run.
             case ["set", var name, var value]:
-            {
-                var field = typeof(WorldsTunables).GetField(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase)
-                    ?? throw new InvalidOperationException($"unknown Worlds field '{name}'");
-                object v = field.FieldType == typeof(bool) ? value == "on"
-                    : field.FieldType == typeof(float) ? float.Parse(value, CultureInfo.InvariantCulture)
-                    : throw new InvalidOperationException($"Worlds field '{name}' has type {field.FieldType.Name}");
-                field.SetValue(Autotest.RequireRun().T.Worlds, v);
+                Autotest.SetField(Autotest.RequireRun().T.Worlds, $"{name} {value}");
                 break;
-            }
             // jumpto <sector type ID>: gives an unvisited neighbor that sector type, then jumps there (no FTL animation, no fuel).
             case ["jumpto", var type]:
             {
@@ -145,6 +137,21 @@ static class WorldsAutotest
                 Autotest.Check(hazard is not null && tip?.Contains(hazard, StringComparison.Ordinal) == true, $"tooltip shows the hazard (tooltip: {tip})");
                 break;
             }
+            // always: every archetype mission group spawns (SpawnChance 1) in systems that generate from now on. Rules objects, test only.
+            case ["always"]:
+            {
+                var tags = Metatypes.Keys.Select(k => new ID<SimObjectSpawner>($"hc_group_{k}")).ToHashSet();
+                var groups = GameApp.Rules.CareerMode.SectorTypes.Where(t => t.ID.ToString().StartsWith("hc_", StringComparison.Ordinal))
+                    .SelectMany(t => MissionArea.AllSpawners(t.SystemGenerator.Spawners)).OfType<SimObjectSpawner>()
+                    .Where(g => g.Tags?.Overlaps(tags) == true).Distinct().ToList();
+                foreach (var g in groups) g.SpawnChance = 1f;
+                Log.Info($"AUTOTEST {groups.Count} archetype mission groups always spawn");
+                break;
+            }
+            // clearance: archetype objects keep clear of station and gate centers (spec 229). Checks only the objects in this system.
+            case ["clearance"]:
+                Clearance();
+                break;
             case ["generate", var kind]:
                 MissionArea.GenerateGroups(Sim(), [$"hc_group_{Kind(kind)}"]);
                 break;
@@ -244,9 +251,32 @@ static class WorldsAutotest
                 break;
             }
             default:
-                throw new InvalidOperationException("worlds needs: set F V | jumpto TYPE | paint | type TYPE | map | hazard | generate K | accept K | reselect K | mark | cool | keep | "
+                throw new InvalidOperationException("worlds needs: set F V | jumpto TYPE | paint | type TYPE | map | hazard | always | clearance | generate K | accept K | reselect K | mark | cool | keep | "
                     + "goto current|sun D|pass|away|sundive|outside|lair D | kill TAG");
         }
+    }
+
+    static readonly ID<SimObjectSpawner> HubPlanet = new("hc_hub_planet"), Station = new("station"), Gate = new("ftl_gate");
+
+    static void Clearance()
+    {
+        var sim = Sim();
+        var objects = MissionArea.ExistingSpawnTags(sim);
+        List<Vector2> At(ID<SimObjectSpawner> tag) => objects.TryGetValue(tag, out var list) ? [.. list.Select(so => so.Location.Center)] : [];
+        var lairs = At(Lair);
+        var fixedPoints = At(Gate).Concat(At(Station).Where(p => !lairs.Contains(p))).ToList();
+        if (fixedPoints.Count == 0) throw new InvalidOperationException("no station or gate in this system");
+        float Nearest(Vector2 p, IEnumerable<Vector2> to) => to.Min(q => q.DistanceTo(p));
+        void CheckMin(string what, IReadOnlyList<float> values, float min)
+        {
+            if (values.Count == 0) { Log.Info($"AUTOTEST clearance: no {what}"); return; }
+            Autotest.Check(values.Min() >= min, $"{what}: closest {values.Min():0} >= {min} ({values.Count} objects)");
+        }
+        CheckMin("pass ring edge to station or gate center", [.. Doodads(sim, Pass).Select(c => Nearest(c.Center, fixedPoints) - c.Radius)], 300f);
+        CheckMin("belt rock to station or gate center", [.. Tagged(sim, BeltRock).Select(p => Nearest(p, fixedPoints))], 300f);
+        var gates = At(Gate);
+        CheckMin("hub planet to gate center", [.. At(HubPlanet).Select(p => Nearest(p, gates))], 2000f);
+        CheckMin("lair to station or gate center", [.. lairs.Select(p => Nearest(p, fixedPoints))], 3000f);
     }
 
     static int State(CompletionState c) => c switch { CompletionState.Completed => 1, CompletionState.Failed => -1, _ => 0 };

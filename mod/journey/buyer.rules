@@ -15,7 +15,8 @@ Buyer
 			Allegiance = Neutral
 			RememberResourcesAndCrew = true
 			Distance = [5000, 10000]
-			MinDistanceFromTags = [[sun, 5000], [station, 3000], [ftl_gate, 2000]]
+			// Off the rocks: the smaller systems (spec 105) put the asteroid belt at 9000 to 12500, inside this range.
+			MinDistanceFromTags = [[sun, 5000], [station, 3000], [ftl_gate, 2000], [asteroid, 100]]
 			NameGenerator
 			{
 				Type = NameList

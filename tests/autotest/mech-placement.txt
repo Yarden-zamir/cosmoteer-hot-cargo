@@ -1,0 +1,47 @@
+# Mechanics missions in the smaller systems (spec 105, 131): with every spawn chance at 1, real system generation places
+# each mission that has no nebula requirement, and no mission object lies outside the gate ring. Storm survey and listening
+# post need nebulas (ion storm, gas cloud), so the census only logs them.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+contract_set RivalsEnabled off
+mech_set DroneSiegeChance 1
+mech_set PrototypeChance 1
+mech_set SunMiningChance 1
+mech_set TowChance 1
+mech_set CaptureChance 1
+mech_set SurveyChance 1
+mech_set MiningGuardChance 1
+mech_set ListeningPostChance 1
+worlds jumpto basic
+mech_census
+expect mech_offers_siege >= 1
+expect mech_offers_prototype >= 1
+expect mech_offers_sunmining >= 1
+expect mech_offers_tow >= 1
+expect mech_offers_capture >= 1
+expect mech_offers_guard >= 1
+expect mech_asteroid_fields >= 1
+expect mech_beyond_gates == 0
+worlds jumpto basic
+mech_census
+expect mech_offers_siege >= 1
+expect mech_offers_prototype >= 1
+expect mech_offers_sunmining >= 1
+expect mech_offers_tow >= 1
+expect mech_offers_capture >= 1
+expect mech_offers_guard >= 1
+expect mech_asteroid_fields >= 1
+expect mech_beyond_gates == 0
+worlds jumpto basic
+mech_census
+expect mech_offers_siege >= 1
+expect mech_offers_prototype >= 1
+expect mech_offers_sunmining >= 1
+expect mech_offers_tow >= 1
+expect mech_offers_capture >= 1
+expect mech_offers_guard >= 1
+expect mech_asteroid_fields >= 1
+expect mech_beyond_gates == 0
+quit

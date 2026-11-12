@@ -163,6 +163,24 @@ public static class Autotest
 
     public static Run RequireRun() => Run.Current ?? throw new InvalidOperationException("no Hot Cargo run is active");
 
+    /// <summary>Sets one public bool, int or float field of a live tunables section. Arg: "field value" (bool: on|true, else off).</summary>
+    public static void SetField(object target, string arg)
+    {
+        var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 2) throw new InvalidOperationException("needs: field value");
+        var field = target.GetType().GetField(parts[0], System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+            ?? throw new InvalidOperationException($"{target.GetType().Name} has no field '{parts[0]}'");
+        object value = field.FieldType switch
+        {
+            var t when t == typeof(bool) => parts[1] is "on" or "true",
+            var t when t == typeof(int) => int.Parse(parts[1], CultureInfo.InvariantCulture),
+            var t when t == typeof(float) => float.Parse(parts[1], CultureInfo.InvariantCulture),
+            _ => throw new InvalidOperationException($"{parts[0]} is a {field.FieldType.Name}; only bool, int and float are supported"),
+        };
+        field.SetValue(target, value);
+        Log.Info($"AUTOTEST {target.GetType().Name}.{parts[0]} = {value}");
+    }
+
     /// <summary>Moves a ship and stops it. Test only: it changes sim state from a GUI frame, so single player only.</summary>
     public static void Teleport(Ship ship, Halfling.Geometry.Vector2 location)
     {
@@ -170,6 +188,51 @@ public static class Autotest
         ship.Physics.PhysicsWrapper.LinearVelocity = Halfling.Geometry.Vector2.Zero;
         // A forced move must update the ship lookup tree, or area queries (sun heat, nebula tracking) miss the ship until it moves.
         ship.Sim?.Ships.RefreshShipPosition(ship);
+    }
+
+    /// <summary>Radius that a stasis ship blocks. Stasis ships keep no size; this covers a trade station.</summary>
+    const float StasisShipRadius = 800f;
+
+    /// <summary>
+    /// Test only. A point at least <paramref name="minDistance"/> from <paramref name="target"/> where a ship of radius
+    /// <paramref name="shipRadius"/> overlaps no solid object: live AI ships and asteroids, and ships, asteroids and gates in stasis.
+    /// A teleport into an unloaded area must not land on objects that load out of stasis around the ship, or they crush it.
+    /// It tries 16 directions on rings that grow by 150 from minDistance, and throws when 20 rings have no free point.
+    /// It reads only sim state, so the result is the same on every machine (co-op inputs can use it).
+    /// </summary>
+    public static Halfling.Geometry.Vector2 ClearSpotNear(Cosmoteer.Simulation.SimRoot sim, Halfling.Geometry.Vector2 target, float minDistance, float shipRadius)
+    {
+        var solids = new List<(Halfling.Geometry.Circle Area, string What)>();
+        foreach (Ship s in sim.Ships)
+            if (!s.IsHumanPlayerShip) solids.Add((s.DetWorldBoundingCircle, s.Metadata.PlainShipName));
+        foreach (var stasis in sim.Stasis)
+        {
+            switch (stasis)
+            {
+                case Cosmoteer.Simulation.Stasis.StasisShipSpawner:
+                    solids.Add((new(stasis.Location, StasisShipRadius), $"stasis ship [{string.Join(" ", SimQueries.StasisTags(stasis) ?? [])}]"));
+                    break;
+                case Cosmoteer.Simulation.Stasis.StasisDoodadSpawner { DoodadRules: Cosmoteer.Simulation.Doodads.ShipDoodadRules or Cosmoteer.Simulation.Doodads.GeneratedShipDoodadRules or Cosmoteer.Simulation.Doodads.FtlGateDoodadRules } d:
+                    solids.Add((new(d.Location, d.DoodadRules.SpawnRadius * d.ScaleFactor), d.DoodadID.ToString()));
+                    break;
+            }
+        }
+        for (int ring = 0; ring < 20; ring++)
+        {
+            float r = minDistance + ring * 150f;
+            for (int k = 0; k < 16; k++)
+            {
+                var p = target + Halfling.Geometry.Vector2.FromAngle(k * MathF.Tau / 16f) * r;
+                var blockers = solids.Where(c => c.Area.Center.DistanceTo(p) < c.Area.Radius + shipRadius + 50f).Select(c => c.What).ToList();
+                if (blockers.Count == 0)
+                {
+                    if (ring > 0 || k > 0) Log.Info($"AUTOTEST clear spot: moved from the first try to {p} ({r:0} from {target})");
+                    return p;
+                }
+                if (ring == 0 && k == 0) Log.Info($"AUTOTEST clear spot: the first try {p} overlaps {string.Join(", ", blockers)}");
+            }
+        }
+        throw new InvalidOperationException($"no clear spot within {minDistance + 19 * 150f:0} of {target}");
     }
 
     static void AddBaseCommands()

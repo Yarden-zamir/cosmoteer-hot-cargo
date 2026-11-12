@@ -68,7 +68,7 @@ public static class ContractBook
             Bonus = ContractsModel.Bonus(fee, t.PaidBonusFactor, t.MoneyRoundTo),
             FlatHeat = rules?.FlatHeat ?? meta?.FlatHeat ?? 0f,
             TrailWeight = rules?.TrailWeight ?? meta?.TrailWeight ?? 1f,
-            RivalGroup = rules?.RivalGroup ?? "",
+            RivalGroup = t.RivalsEnabled ? rules?.RivalGroup ?? "" : "",
             InformantChance = Math.Clamp(rules?.InformantChance ?? (informantRoll < t.InformantShare ? informantChance : 0f), 0f, 1f),
         };
     }
@@ -136,7 +136,7 @@ public static class ContractBook
         {
             bool isNew = Find(run, m) is null;
             if (Ensure(run, m) is not { } terms) continue;
-            if (isNew && terms.RivalGroup.Length == 0) PairRival(run, m, terms, seen);
+            if (isNew && terms.RivalGroup.Length == 0 && run.T.Contracts.RivalsEnabled) PairRival(run, m, terms, seen);
             if (terms.RivalGroup.Length > 0 && openGroups.Contains(terms.RivalGroup))
             {
                 list.RemoveMission(m);

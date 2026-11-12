@@ -22,6 +22,8 @@ public sealed class ContractsTunables
 
     /// <summary>Spec 103: chance that a new offer pairs with an earlier offer of another client (faction or station) as rivals. Offers that target each other's faction always pair.</summary>
     [Serialize(Optional = true)] public float RivalPairChance = 0.2f;
+    /// <summary>Spec 103: off = no rivals at all, neither paired offers nor the rival groups of rules terms.</summary>
+    [Serialize(Optional = true)] public bool RivalsEnabled = true;
 
     /// <summary>Spec 104: share of offers without rules terms that carry an informant risk.</summary>
     [Serialize(Optional = true)] public float InformantShare = 0.75f;

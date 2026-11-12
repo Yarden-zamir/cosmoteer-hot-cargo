@@ -2,6 +2,9 @@
 newgame run
 wait 8
 ev_set Enabled false
+# The test takes several offers of one rival group (spec 103: tow and capture share salvage_rights, sun mining and
+# claim jumpers share ore_claims). With rivals on, an open contract dismisses every new offer of its group.
+contract_set RivalsEnabled off
 godmode on
 # The start system has no ion storm, so the test lifts the in-storm rule of the markers.
 mech_generate survey nonebula

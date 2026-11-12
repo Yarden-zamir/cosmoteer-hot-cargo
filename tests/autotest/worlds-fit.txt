@@ -1,0 +1,29 @@
+# Archetypes in the smaller systems (spec 105, 229): real system generation places each archetype mission and keeps the
+# archetype objects clear of stations and gates. "worlds always" makes every archetype mission group spawn.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+worlds always
+worlds jumpto hc_mining_belt
+pause off
+worlds type hc_mining_belt
+expect worlds_belt_rocks >= 1500
+expect worlds_passes >= 3
+expect worlds_pass_rocks == 0
+expect worlds_offers_pass >= 1
+worlds clearance
+worlds jumpto hc_deep_space
+pause off
+expect worlds_lairs >= 1
+expect worlds_offers_lair >= 1
+worlds clearance
+worlds jumpto hc_solar_zone
+pause off
+expect worlds_offers_sundive >= 1
+worlds clearance
+worlds jumpto hc_trade_hub
+pause off
+expect worlds_current_tris >= 4
+worlds clearance
+quit

@@ -7,6 +7,9 @@ tacticlog on
 aiset FleeEnabled false
 aiset RegroupEnabled false
 aiset CallSeconds 5
+# A short cooldown from the start: a completed call sets the cooldown with the value at that time, and the storm step
+# below picks a hunter by ID order (random IDs), which can be the first caller.
+aiset CallCooldownSeconds 1
 stageset Strike WaveGapSeconds 120
 # A strike hunter spots the players and calls; the call brings the second group long before the 120 s gap.
 spawnstage Strike
@@ -22,7 +25,6 @@ expect hunterwaves == 2
 expect hunterspending == 0
 # A long call, cut off by one disruptor hit.
 aiset CallSeconds 60
-aiset CallCooldownSeconds 1
 spawnstage Strike
 wait 6
 expect ai_calling >= 1
@@ -38,7 +40,7 @@ disrupt emp
 wait 2
 expect ai_call_interrupt >= 2
 expect ai_calling == 0
-# Inside an ion storm a hunter cannot call. The newest hunter is not cooling down; only it takes damage.
+# Inside an ion storm a hunter cannot call. No hunter is cooling down (1 s cooldown); only the stormed hunter takes damage.
 storm -1
 wait 1
 damagehunter -1 0.7
