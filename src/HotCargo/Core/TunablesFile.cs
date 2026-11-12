@@ -93,5 +93,6 @@ public static class TunablesFile
         Require(c.Metatypes.All(m => m.Metatype.Length > 0), "Contracts.Metatypes entries need a Metatype");
         Require(t.Journey.RunSectorCount >= 1, "Journey.RunSectorCount must be 1 or more");
         Missions.Mechanics.MechanicsTunables.Validate(t.Mechanics);
+        t.Telemetry.Validate(Require);
     }
 }

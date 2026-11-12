@@ -140,7 +140,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 13. Tunables, debug and live tuning
 
-50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78, 100 to 104, 130 to 141, 160 to 175, 190 to 202 and 221 to 225 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
+50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78, 100 to 104, 130 to 141, 160 to 175, 190 to 202, 221 to 225 and 537 to 541 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
 51. The file uses the game's `.rules` format.
 52. The mod watches the file. When the file changes, the mod reloads it on the next frame, without a game restart.
 53. If the file has an error, the mod keeps the last valid values and shows the error in game. Errors include values that break sim logic later, for example a stage name that `Hunters.Stages` or a tactic does not match (`TunablesFile.Validate`).
@@ -228,6 +228,10 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `Worlds.SundiveSalvageSeconds`, `HeatWarnDepth` | 5 s, 0.5 | 223 |
 | `Worlds.LairDiscoverDistance` | 2000 | 224 |
 | `Worlds.ArrivalLine`, `ArrivalLineDelaySeconds` | on, 4 s | 225 |
+| `Telemetry.Enabled` and category switches | on | 540 |
+| `Telemetry.SnapshotSeconds`, `PerfSeconds`, `AccrualSeconds`, `ScanSeconds` | 30 s, 10 s, 5 s, 5 s | 537 to 539 |
+| `Telemetry.AiSwitchMinSeconds`, `AiEventsPerMinute`, `CallerLookupsPerSecond` | 3 s, 600, 50 | 534, 537 |
+| `Telemetry.MaxFileMegabytes`, `MaxFolderMegabytes` | 32, 1024 | 541 |
 
 The defaults are first guesses. Live tuning sets the real values.
 
@@ -257,9 +261,11 @@ src/HotCargo/
   Ai/                      enemy AI behaviors (flee, call, regroup, focus); TacticsArea registers it, Tactics tunables
   Ui/                      overlay, heat panel, run intro and end panels
   Dev/Autotest.cs          headless test commands
+  Telemetry/               session telemetry files (TELEMETRY.md); read-only hooks and patches
+tools/telemetry/           telemetry analysis (uv project): markdown and HTML reports
 tests/HotCargo.Tests/      fast unit tests for the pure model files
 tests/autotest/            game tests that scripts/autotest.sh runs on the PC
-scripts/                   pull-game, deploy, run, stop, logs, autotest, release
+scripts/                   pull-game, deploy, run, stop, logs, autotest, pull-telemetry, release
 ```
 
 Rules:
@@ -424,3 +430,24 @@ WORLDS.md holds the design. The archetypes give each system an identity, a hazar
 228. Contract terms (`HotCargoContract`, requirement 100 and later): Hold the Pass is free, flat heat 6, trail weight 1, informant chance 10 %. Sundive costs 0.3 standard mission pay, flat heat 2, trail weight 0.5, informant chance 5 %. Raid the Lair is free, flat heat 4, trail weight 1, informant chance 20 %. Pay: Hold the Pass 2 × a standard mission's money and fame, Sundive 3 × money and 1.5 × fame, Raid the Lair 2.5 × money and 2 × fame.
 229. Archetype objects fit the smaller Hot Cargo systems (requirement 105): the belt lies between the trade station ring (up to 11,000 from the center) and the FTL gates (13,500 to 16,000). The hub world keeps 2,500 from the gates. The autotest `worlds-fit` checks that real system generation places each archetype mission and keeps the archetype objects clear of stations and gates.
 
+
+## 28. Telemetry
+
+Logs and telemetry of game sessions, for analysis of test runs and playtests. TELEMETRY.md holds the schema and the tools. Code: `src/HotCargo/Telemetry/`. Numbers: the `Telemetry` tunables section.
+
+530. Each game session writes one JSONL file `<run id>__<session id>.jsonl` in the `telemetry` folder of the mod. A session is one game from its start or load until it closes. `scripts/deploy.sh` keeps the folder.
+531. A run has an ID that the career save keeps (path `HotCargoTelemetry`), so a loaded game continues it. A new career gets a new ID. The first line (`session.start`) holds the run and session IDs, the game version, the mod version with its git commit, the tunables hash, a hash and a full copy of the tunables in effect, the galaxy seed, the map size, the difficulty settings, the player count and the autotest label.
+532. Every event has the event name, real time, game time of the run, sim time of the session, sector index, system, tier, sector type, heat and fleet tech count.
+533. **Run**: new run, load, save, jump (with the stay), system entry (with the previous stay and its missions), win, loss with the reason, and the session end with its reason.
+534. **Heat**: every heat change with its source and caller, time and trail heat summed over `AccrualSeconds`, stage starts and strike waves. **Tech**: count changes with a cause, tech value steps and vault hits. Notoriety is in the tech value events and the snapshots.
+535. **Economy**: money and fame changes with their source and caller, reputation changes, and station trades with the unit price. A money change outside `PlayerState.AddMoney` shows as source `untracked`.
+536. **Missions**: offers with their contract terms, accepts, and the end with the result (spec 166 names), the time to finish and the sell-out flag. **Story**: event pages, choices with the rolled outcome, results with their effect lines, and chain starts and stages.
+537. **Combat**: a census at the first visit of a system, every later non-player ship spawn, derelict ships by side, ships that leave the system, human crew deaths, and damage summed by the side of the damaged ship. **AI**: the strategy module that drives each AI ship, with a switch event at most every `AiSwitchMinSeconds` per ship and `AiEventsPerMinute` in total, and sums of every module, tactic and focus fire decision in the snapshots.
+538. **Snapshots**: every `SnapshotSeconds` game seconds, at each jump and at the run result: the run state, money, fame, contracts, and the value, firepower, parts, vaults and crew of each player ship.
+539. **Performance**: every `PerfSeconds` real seconds: frame time (mean, percentiles, maximum, slow frames), sim tick time, GC counts and pause time, memory, and the time and share that telemetry used. **Co-op**: player count changes, desyncs and co-op game loads (joins and resyncs).
+540. Each category has a switch in the `Telemetry` tunables section, and `Enabled` turns all telemetry off. The section is validated with the other tunables (spec 53).
+541. Telemetry never blocks a frame or a sim tick: game threads add a line to a list, and a background thread writes it once per second. A file that reaches `MaxFileMegabytes` continues in a part file. At session start the oldest files go until the folder is below `MaxFolderMegabytes`. More than 200,000 lines that wait are dropped and counted.
+542. Telemetry measures its own time on game threads and reports it. Target: well below 1 % of the real time of a session, which is the share of frame time at a steady frame rate. The autotests check it.
+543. Telemetry reads game state only. It never changes the simulation and uses no sim random source, so each co-op machine writes its own file, with its own switches, without a desync.
+544. `scripts/pull-telemetry.sh [SLOT...]` copies the files of the main slot and the test slots to `../.telemetry/`. `tools/telemetry` (`uv run hc-telemetry`) writes a markdown and a self-contained HTML report: per sector time and missions, heat curve and sources, money and power over time by tier, tech sales, losses, hunter outcomes, AI module frequencies and performance. `scripts/autotest-all.sh --telemetry` pulls and reports after a test pass.
+545. Every autotest makes telemetry with the script name as its label. `telemetry-basic` checks the categories, a save and load and the overhead; `telemetry-run` is a scripted run over five systems that ends with a win.

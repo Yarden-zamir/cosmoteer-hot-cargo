@@ -12,7 +12,8 @@ SLOT="$(take_slot)"
 trap 'release_slot "$SLOT"' EXIT
 echo "== slot $SLOT"
 
-start_slot "$SLOT" < "$SCRIPT"
+# telename labels the telemetry of this test with the script name (TELEMETRY.md).
+{ echo "telename $(basename "$SCRIPT" .txt)"; cat "$SCRIPT"; } | start_slot "$SLOT"
 LOG=""
 for ((t = 0; t < TIMEOUT; t += 10)); do
   sleep 10

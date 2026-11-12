@@ -1,0 +1,104 @@
+# Telemetry: a longer scripted run that makes data for a first report (tools/telemetry). It visits five systems,
+# takes missions and contracts, raises heat through the stages, fights hunters, sells tech, reloads and ends with a win.
+# The test commands stand in for the player: heat and fame steps for missions, damagehunters for won fights.
+# The checks are on the telemetry; the game areas have their own tests.
+newgame run
+wait 8
+godmode
+tacticlog on
+# System 1 (tier 1): the Start event, a contract, an escort, a sale, then time heat and a Warning scout.
+choose 1
+wait 2
+hc_generate all
+wait 3
+contract_money 200000
+contract_pick any
+contract_accept
+hc_accept escort
+hc_escort_goto
+pause off
+wait 5
+hc_escort_arrive
+wait 3
+tostation
+wait 3
+tech sell 1
+wait 30
+fame 15
+heat 10
+wait 60
+log system1_warning
+wait 20
+damagehunters 0.05
+wait 25
+log system1
+# System 2: a mission's worth of fame, Patrol, a vault hit and an event.
+jump
+pause off
+wait 15
+fame 15
+heat 25
+wait 45
+damagehunters 0.05
+wait 25
+vault damage 0.12
+wait 3
+event distress_beacon
+choose 1
+wait 5
+log system2
+# System 3: Hunt, a save and a load in the middle of the visit.
+jump
+pause off
+wait 15
+heat 45
+wait 40
+damagehunters 0.05
+wait 20
+save telerun
+wait 3
+load telerun
+pause off
+wait 20
+damagehunters 0.05
+wait 20
+log system3
+# System 4: up to Strike, a second sale, and leave while the strike waves run.
+jump
+pause off
+wait 15
+heat 70
+wait 40
+damagehunters 0.05
+wait 20
+tostation
+wait 3
+tech sell 1
+wait 30
+log system4
+# System 5: the Buyer and the win.
+jump
+pause off
+wait 20
+buyer spawn
+wait 3
+buyer goto
+wait 15
+buyer goto
+wait 3
+buyer sell 2
+wait 45
+expect won == 1
+log won
+wait 15
+teleflush
+telecount system.enter >= 4
+telecount heat.stage >= 3
+telecount combat.spawn >= 3
+telecount econ.trade >= 2
+telecount mission.accepted >= 2
+telecount run.won == 1
+telestats
+expect tele_dropped == 0
+expect tele_overhead_pct < 1
+quit
