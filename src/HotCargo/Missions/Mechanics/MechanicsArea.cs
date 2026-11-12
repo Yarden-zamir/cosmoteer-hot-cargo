@@ -285,7 +285,8 @@ public static class MechanicsArea
                 lifted.Add((s, s.MaxDistanceFromNebulas));
                 s.MaxDistanceFromNebulas = null;
             }
-        try { MissionArea.GenerateGroups(sim, [kind.GroupTag]); }
+        // Real placement: the groups with a Distance of their own are placed from the system center, as in system generation.
+        try { MissionArea.GenerateGroups(sim, [kind.GroupTag], Vector2.Zero); }
         finally { foreach (var (s, old) in lifted) s.MaxDistanceFromNebulas = old; }
     }
 

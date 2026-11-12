@@ -10,14 +10,15 @@ aiset CallSeconds 5
 # A short cooldown from the start: a completed call sets the cooldown with the value at that time, and the storm step
 # below picks a hunter by ID order (random IDs), which can be the first caller.
 aiset CallCooldownSeconds 1
-stageset Strike WaveGapSeconds 120
-# A strike hunter spots the players and calls; the call brings the second group long before the 120 s gap.
+stageset Strike WaveGapSeconds 300
+# A strike hunter spots the players and calls; the call brings the second group long before the 300 s gap.
 spawnstage Strike
 wait 1
 expect hunterwaves == 1
 expect hunterspending == 1
 # The hunter ship is random and the system layout changes with the sector rules, so wait for the call, not a fixed time.
-waitfor ai_call_complete >= 1 40
+# A slow hunter spawned about 2,500 away can take 40 s to come into radar range and spot the players.
+waitfor ai_call_complete >= 1 150
 hunters called
 expect ai_call_start >= 1
 expect ai_call_complete >= 1

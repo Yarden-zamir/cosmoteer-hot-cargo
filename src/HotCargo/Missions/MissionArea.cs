@@ -133,15 +133,16 @@ public static class MissionArea
     }
 
     /// <summary>
-    /// Runs spawner groups now, centered on the first player ship, with SpawnChance forced to 1.
+    /// Runs spawner groups now, with SpawnChance forced to 1. The groups' parent location is <paramref name="root"/>, by default the
+    /// first player ship. Pass Vector2.Zero to place them like real system generation does (relative to the system center).
     /// Single player test helper; it uses sim.Rand from a GUI frame.
     /// </summary>
-    internal static void GenerateGroups(SimRoot sim, IReadOnlyList<string> groupTags)
+    internal static void GenerateGroups(SimRoot sim, IReadOnlyList<string> groupTags, Vector2? root = null)
     {
         var mode = (CareerSimModeManager)sim.Mode;
         var groups = groupTags.Select(t => FindGroup(sim, t)).ToList();
         var objects = ExistingSpawnTags(sim);
-        var parentTree = new List<SimSpawner.SpawnedObject> { new(sim.Ships.HumanPlayerSignificantShips.First().DetWorldCenter) };
+        var parentTree = new List<SimSpawner.SpawnedObject> { new(root ?? sim.Ships.HumanPlayerSignificantShips.First().DetWorldCenter) };
         uint batch = 0, fleet = 0;
         var saved = groups.Select(g => g.SpawnChance).ToList();
         try
