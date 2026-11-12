@@ -15,7 +15,7 @@ HotCargoEventMissions
 
 HotCargoEvents
 {
-	WantedWarning = "Wanted and hunted: police and the corporation"
-	WantedHintFmt = "Wanted by {0} while the corporation hunts you. Ways out: pay the bounty (hail one of their police ships), leave the system, outlast the search timer, or find a smuggler who fixes records."
+	WantedWarning = "Wanted and hunted"
+	WantedHintFmt = "Wanted by {0}, and the corporation hunts you. Ways out: pay the bounty (hail their police), leave the system, outlast the search, or find a smuggler who fixes records."
 	WantedCleared = "Wanted cleared"
 }

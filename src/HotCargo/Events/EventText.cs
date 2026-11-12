@@ -54,7 +54,7 @@ public static class EventText
     /// </summary>
     public static void ShowWantedWarning(GameRoot game, string factions)
     {
-        game.Gui.ShowAreaName(Strings.GetText("HotCargoEvents/WantedWarning"));
+        Ux.UxKit.CenterText(game, Strings.GetText("HotCargoEvents/WantedWarning"));
         Ux.UxKit.ChatLine(game, W.BadTextColor.FormatWithXml(Strings.FormatText("HotCargoEvents/WantedHintFmt", factions)));
     }
 
