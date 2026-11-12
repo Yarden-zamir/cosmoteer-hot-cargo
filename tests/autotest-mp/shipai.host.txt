@@ -2,6 +2,7 @@
 # and both machines run the same decisions in a fight.
 mphost {PORT}
 mpstart 2
+mp pu_set Enabled false
 mp ev_set Enabled false
 mp godmode on
 mp aiset FleeEnabled false

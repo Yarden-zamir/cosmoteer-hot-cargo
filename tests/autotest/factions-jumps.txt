@@ -7,6 +7,7 @@
 # Clear relay, and the blind fuel. The hunters spawn near the fleet at the start, far from the relays.
 newgame
 wait 8
+pu_set Enabled false
 ev_set Enabled false
 godmode on
 fa_drive
@@ -35,6 +36,7 @@ expect heat <= 13.5
 # Watched relay: the fleet waits at the relay, so the hunters spawn near it. 80 x 0.25 = 20.
 newgame
 wait 8
+pu_set Enabled false
 ev_set Enabled false
 godmode on
 fa_torelay
@@ -53,6 +55,7 @@ expect heat <= 21.5
 # No godmode here: it heals the parts.
 newgame
 wait 8
+pu_set Enabled false
 ev_set Enabled false
 fa_set BlindDamageChance 1
 fa_blind on

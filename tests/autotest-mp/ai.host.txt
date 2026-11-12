@@ -2,6 +2,7 @@
 # fight both players' ships with no desync. The MPSTATE comparison and the integrity hash cover the module state.
 mphost {PORT}
 mpstart 2
+mp pu_set Enabled false
 mp ev_set Enabled false
 mp godmode on
 mp tacticlog on

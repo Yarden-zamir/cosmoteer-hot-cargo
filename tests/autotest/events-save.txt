@@ -1,6 +1,7 @@
 # Save and load with a pending event: the page, its serial and the flags come back.
 newgame run
 wait 8
+pu_set Enabled false
 expectevent getaway
 choose 1 1
 expectflag fake_codes 1

@@ -2,6 +2,7 @@
 # The run state, a pending event, a sprung trap and the stage come back on both machines.
 mphost {PORT}
 mpstart 2
+mp pu_set Enabled false
 mp ev_set Enabled false
 mp godmode on
 mp heat 30
@@ -27,6 +28,7 @@ waitfor mpmark >= 1 60
 mplobby
 mpload mpsave
 mpstart 2
+mp pu_set Enabled false
 expectevent smuggler_den
 expect hc_trap_state == 2
 expect stages >= 1

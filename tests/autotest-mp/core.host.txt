@@ -3,6 +3,7 @@
 tunablesfile Heat { HeatPerGameMinute = 30 }  Events { Enabled = false }
 mphost {PORT}
 mpstart 2
+mp pu_set Enabled false
 waitfor heatperminute == 30 30
 # Test commands that change the sim run through "mp", inside the sim on both machines.
 mp godmode on

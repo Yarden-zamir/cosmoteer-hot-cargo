@@ -3,6 +3,7 @@ codex_reset
 tutorials on
 mphost {PORT}
 mpstart 2
+mp pu_set Enabled false
 mp ev_set Enabled false
 wait 8
 expect hint_hc_coop == 1

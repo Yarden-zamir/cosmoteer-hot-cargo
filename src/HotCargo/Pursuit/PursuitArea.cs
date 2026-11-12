@@ -122,6 +122,18 @@ public static class PursuitArea
         };
         // pu_started <kind>: records a big event start, as another area would.
         Autotest.Commands["pu_started"] = arg => Pacer.Started(R(), arg.Trim());
+        // pu_killscout: destroys every part of the scouts (use "mp pu_killscout" in co-op).
+        Autotest.Commands["pu_killscout"] = _ =>
+        {
+            foreach (var s in R().State.Pursuit.Scouts.ToList())
+                if (Sim().Ships[s.Ship] is { } ship)
+                    foreach (var part in ship.Parts.ToList()) part.Health = 0;
+        };
+        // pu_addmoney <credits>: gives every human player money (use "mp pu_addmoney" in co-op).
+        Autotest.Commands["pu_addmoney"] = arg =>
+        {
+            foreach (int p in R().Game.HumanPlayersIndexes) R().Game.GetPlayerState(p, deterministic: true).AddMoney(int.Parse(arg, CultureInfo.InvariantCulture));
+        };
         Autotest.Commands["pu_money"] = _ => _moneyMark = R().Game.GetPlayerState(R().Game.LocalPlayerIndex, deterministic: true).Money;
 
         Autotest.Fields["pu_scouts"] = () => R().State.Pursuit.Scouts.Count;
@@ -129,6 +141,7 @@ public static class PursuitArea
         Autotest.Fields["pu_blockaders"] = () => R().State.Pursuit.Blockaders.Count;
         Autotest.Fields["pu_blockade"] = () => R().State.Pursuit.BlockadeRelay is null ? 0 : 1;
         Autotest.Fields["pu_outage"] = () => Outage.SecondsLeft(R());
+        Autotest.Fields["pu_outage_due"] = () => R().State.Pursuit.OutageDueAt;
         Autotest.Fields["pu_hacker"] = () => R().State.Pursuit.Hacker is null ? 0 : 1;
         Autotest.Fields["pu_hacker_done"] = () => R().State.Pursuit.HackerDone ? 1 : 0;
         Autotest.Fields["pu_hacker_buttons"] = () => _hackerButtons;

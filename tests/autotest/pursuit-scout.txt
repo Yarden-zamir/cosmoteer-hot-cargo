@@ -1,0 +1,37 @@
+# Reporting scout (spec 910 to 913): at Warning the scout flies to the relay; if it gets there, heat +15. Destroyed first: nothing.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+aiset FleeEnabled false
+aiset CallEnabled false
+aiset RegroupEnabled false
+dip_set DemandHailChance 0
+pu_set ScoutChance 1
+pu_set BlockadeChance 0
+heat 25
+wait 2
+expect hunters == 1
+expect pu_scouts == 1
+# It flies to the relay: the distance falls.
+pu_scoutnear 1500
+wait 1
+expect pu_scoutdist <= 1550
+waitfor pu_scouts == 0 120
+# Escaped: heat +15 (from about 25) and the scout jumped out.
+expect heat >= 39.5
+waitfor hunters == 0 20
+log escaped
+# A second scout destroyed before the relay reports nothing.
+heat -30
+wait 1
+heat 25
+wait 2
+expect pu_scouts == 1
+log before-kill
+pu_killscout
+wait 2
+expect pu_scouts == 0
+expect heat <= 37
+log end
+quit

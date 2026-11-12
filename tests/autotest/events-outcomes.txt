@@ -1,6 +1,7 @@
 # Events (EVENTS.md): forced events, choices and their effects on money, heat, tech, flags and spawns.
 newgame run
 wait 8
+pu_set Enabled false
 # The Start event opens StartDelaySeconds (3 game s) after a new run.
 expectevent getaway
 # Every event loads, validates and renders with the starting fleet.

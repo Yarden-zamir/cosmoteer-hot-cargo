@@ -4,6 +4,7 @@
 enemysetting 2.0
 mphost {PORT}
 mpstart 2
+mp pu_set Enabled false
 expect enemysetting == 2
 expect enemyfactor == 2
 mp godmode on

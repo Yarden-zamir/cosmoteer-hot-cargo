@@ -1,6 +1,7 @@
 # Hunter demands (spec 561 to 566): hand over N, the once-per-ship rule, bluff, deal with 0, 2 and 5 other hunters, the demand hail.
 newgame run
 wait 8
+pu_set Enabled false
 ev_set Enabled false
 godmode on
 aiset FleeEnabled false

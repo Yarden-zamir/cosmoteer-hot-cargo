@@ -2,6 +2,7 @@
 # and one hard combination goes through the real paths: the vanilla settings inputs, the heat tick, the hunter spawn, the fee roll.
 newgame run
 wait 8
+pu_set Enabled false
 ev_set Enabled false
 godmode on
 expect rm_levels_without_row == 0

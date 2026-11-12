@@ -5,6 +5,7 @@ codex_reset
 tutorials on
 newgame run
 wait 10
+pu_set Enabled false
 closepanel
 # The Start event: pick an option and continue, like a player.
 uxpick 3

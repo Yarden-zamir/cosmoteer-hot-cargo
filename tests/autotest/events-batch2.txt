@@ -1,6 +1,7 @@
 # Events batch 2 (spec 79-86): Wanted Broadcast, The Magpies Return, Refugee Convoy, Pirate Toll Gate, The Buyer's Agent.
 newgame run
 wait 8
+pu_set Enabled false
 expectevent getaway
 choose 3 1
 eventviewall

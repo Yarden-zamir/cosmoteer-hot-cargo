@@ -3,6 +3,7 @@
 tunablesfile Heat { HeatCarryOverFraction = 0.5 }
 mphost {PORT}
 mpstart 2
+mp pu_set Enabled false
 mp godmode on
 waitfor menu_ready == 1 30
 menu open

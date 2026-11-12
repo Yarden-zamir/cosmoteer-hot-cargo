@@ -4,6 +4,7 @@
 # The checks are on the telemetry; the game areas have their own tests.
 newgame run
 wait 8
+pu_set Enabled false
 godmode
 tacticlog on
 # The starter ship cannot outlast every stage of five systems (crew die in fires, which godmode does not stop).

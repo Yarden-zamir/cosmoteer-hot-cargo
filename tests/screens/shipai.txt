@@ -2,6 +2,7 @@
 render on
 newgame run
 wait 10
+pu_set Enabled false
 ev_set Enabled false
 closepanel
 # The start event pauses the game: answer it and close its result page.

@@ -2,6 +2,7 @@
 # pass the sim's exact price check (MPMoveResourcesInput) on both machines, with no desync.
 mphost {PORT}
 mpstart 2
+mp pu_set Enabled false
 mp ev_set Enabled false
 mp godmode on
 mp tostation

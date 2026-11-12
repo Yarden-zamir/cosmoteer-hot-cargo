@@ -2,6 +2,7 @@
 # then use the same effective heat rate, hunter count and tier, tech value and fees, with no desync.
 mphost {PORT}
 mpstart 2
+mp pu_set Enabled false
 mp godmode on
 mp ev_set Enabled false
 rm_difficulty very_hard slow scarce

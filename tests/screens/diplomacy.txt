@@ -3,6 +3,7 @@
 render on
 newgame run
 wait 10
+pu_set Enabled false
 ev_set Enabled false
 choose 3
 wait 2
