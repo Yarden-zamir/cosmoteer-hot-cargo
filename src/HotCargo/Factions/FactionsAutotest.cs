@@ -68,7 +68,7 @@ static class FactionsAutotest
             var ship = TechAutotest.PlayerShip();
             // Careers start with the hyperdrive blueprint locked, and a locked part is not a valid blueprint part.
             R().Mode.Techs.UnlockTech(new ID<Cosmoteer.Modes.Career.TechTree.TechRules>("cosmoteer.hyperdrive_small"));
-            StartingVault.PlaceOutside(ship, ship.Rules.PartsByID[new ID<Cosmoteer.Ships.Parts.PartRules>("cosmoteer.hyperdrive_small")], requireDoor: false);
+            StartingVault.PlaceOutside(ship, ship.Rules.PartsByID[new ID<Cosmoteer.Ships.Parts.PartRules>("cosmoteer.hyperdrive_small")], requireCrewPath: false);
             Log.Info($"AUTOTEST factions drive: {ship.Name} has drives={ship.Ftl.HasFtlDrives}");
         };
         // fa_base: records the prices that the ratio fields compare to.
