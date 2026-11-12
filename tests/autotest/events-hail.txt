@@ -1,0 +1,49 @@
+# Events in ship comms (spec 767-771): a ship hails and carries the page, players hail first (Hot Cargo lines), attacking the ship.
+newgame run
+wait 8
+expectevent getaway
+choose 3 1
+ev_set StationEventChance 0
+ev_set CourierChance 0
+ev_set CooldownSeconds 0
+# 1. A ship hails: the Dead in Space freighter spawns, hails the player, and its comms show the page and choices.
+event broken_down
+expect ev_carrier == 1
+# The hail waits for comms range, like a vanilla AI hail.
+ev_carrier_goto
+pause off
+wait 2
+expect ev_hailing == 1
+expectcomms carrier Dead in Space 1
+expectcomms carrier Strip their cargo 1
+ev_mark
+ev_comms carrier Strip their cargo
+expect ev_pending == 0
+expect ev_res_steel_gain >= 30
+# 2. The players hail first: a trade station offers a Hot Cargo line; clicking it opens the page in the same comms.
+expectcomms station Sell a crate off the books 1
+ev_comms station Sell a crate off the books
+expectevent off_books
+expect ev_carrier == 1
+expectcomms station Off the Books 1
+ev_mark
+ev_comms station Sell one crate
+expect ev_tech_gain == -1
+expect ev_money_gain > 0
+# Each ship offers each line once per run.
+expectcomms station Sell a crate off the books 0
+# A faction ship line (needs heat 10).
+heat 15
+expectcomms faction Ask about hunters nearby 1
+ev_comms faction Ask about hunters nearby
+expectevent hunter_intel
+ev_comms faction Never mind
+expect ev_pending == 0
+# 3. Attacking the event ship mid-dialogue: when it is gone, the page closes with a short result.
+event broken_down
+expect ev_carrier == 1
+ev_kill_carrier
+wait 1
+expect ev_pending == 0
+expect ev_result >= 5
+quit

@@ -170,3 +170,56 @@ public class EventModelWantedTests
         Assert.Equal((false, false), EventModel.WantedWarning(true, 0, 0, false));
     }
 }
+
+public class EventModelResearchTests
+{
+    [Fact]
+    public void Research_trade_always_beats_buying_and_bundles_cheap_techs()
+    {
+        // Tech value 10,000, rate 1.5: one unit buys up to 15,000 of research; the trade needs at least 12,000 (min rate 1.2).
+        (string, long)[] candidates = [("a", 9000), ("b", 4000), ("c", 1000), ("d", 50000)];
+        var t = EventModel.BuildResearchTrade(candidates, 10_000, 1.5f, 1.2f, maxUnits: 2, maxTechs: 3);
+        Assert.NotNull(t);
+        Assert.Equal(1, t!.Units);
+        Assert.Equal(["a", "b", "c"], t.Techs);
+        Assert.Equal(14_000, t.Value);
+        Assert.True(t.Value >= t.Units * 10_000 * 1.2);
+    }
+
+    [Fact]
+    public void Research_trade_asks_for_more_units_for_an_expensive_tech_and_skips_what_does_not_fit()
+    {
+        (string, long)[] candidates = [("big", 25000), ("huge", 90000), ("small", 4000)];
+        var t = EventModel.BuildResearchTrade(candidates, 10_000, 1.5f, 1.2f, maxUnits: 2, maxTechs: 3);
+        Assert.Equal(2, t!.Units);
+        Assert.Equal(["big", "small"], t.Techs);
+        // Nothing fits within 2 units: no trade.
+        Assert.Null(EventModel.BuildResearchTrade([("huge", 90000)], 10_000, 1.5f, 1.2f, 2, 3));
+        // Cheap leftovers that cannot reach the minimum rate: no trade.
+        Assert.Null(EventModel.BuildResearchTrade([("c", 1000), ("e", 2000)], 10_000, 1.5f, 1.2f, 2, 3));
+    }
+
+    [Fact]
+    public void Research_sale_pays_above_worth_within_the_cap()
+    {
+        (string, long)[] researched = [("x", 10000), ("y", 50000), ("z", 3000)];
+        var s = EventModel.BuildResearchSale(researched, 1.3f, priceCap: 20_000, maxTechs: 3);
+        Assert.Equal(["x", "z"], s!.Techs);
+        Assert.Equal(13_000, s.Worth);
+        Assert.Equal(16_900, s.Price);
+        Assert.True(s.Price > s.Worth);
+        Assert.Null(EventModel.BuildResearchSale([("y", 50000)], 1.3f, 20_000, 3));
+    }
+
+    [Fact]
+    public void Shuffle_is_a_permutation_and_repeats_with_the_same_rolls()
+    {
+        var a = new List<int> { 1, 2, 3, 4, 5 };
+        var b = new List<int> { 1, 2, 3, 4, 5 };
+        int seedA = 7, seedB = 7;
+        EventModel.Shuffle(a, n => (seedA = seedA * 31 + 11) % n);
+        EventModel.Shuffle(b, n => (seedB = seedB * 31 + 11) % n);
+        Assert.Equal(a, b);
+        Assert.Equal([1, 2, 3, 4, 5], a.Order());
+    }
+}

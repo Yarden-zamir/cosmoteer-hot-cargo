@@ -45,6 +45,12 @@ public sealed record Snapshot
     public bool Wanted { get; init; }
 }
 
+/// <summary>A research trade (spec 760): techs for tech units. Value = the sum of the techs' research costs.</summary>
+public sealed record ResearchTrade(IReadOnlyList<string> Techs, int Units, long Value);
+
+/// <summary>A research sale (spec 762): copies of researched techs for money above their worth.</summary>
+public sealed record ResearchSale(IReadOnlyList<string> Techs, long Worth, int Price);
+
 /// <summary>The first need that the fleet does not meet.</summary>
 public enum UnmetKind { Money, Tech, VaultSpace, Crew, MinHeat, MaxHeat, MinSector, MaxSector, Resource, Part, Flag, NotFlag, FlagAge, MinSectorsLeft, MaxSectorsLeft, NotWanted }
 
@@ -145,6 +151,64 @@ public static class EventModel
     {
         if (factor is <= 0f or > 1f) throw new ArgumentOutOfRangeException(nameof(factor), factor, "must be above 0 and at most 1");
         return Math.Clamp(current * factor, 0f, 1f);
+    }
+
+    /// <summary>
+    /// Builds a research trade from candidate techs (id, research cost) in the given order (spec 760).
+    /// The first candidate that fits maxUnits sets the units: ceil(cost / (techValue × rate)). More candidates join, in order,
+    /// while the total stays within units × techValue × rate and there are at most maxTechs. The trade is valid only when the
+    /// total is at least units × techValue × minRate, so it always beats buying the research. Returns null when no candidate works.
+    /// </summary>
+    public static ResearchTrade? BuildResearchTrade(IReadOnlyList<(string Id, long Cost)> candidates, long techValue, float rate, float minRate, int maxUnits, int maxTechs)
+    {
+        if (techValue <= 0 || rate <= 0f || maxUnits < 1 || maxTechs < 1) return null;
+        double perUnit = techValue * (double)rate;
+        for (int first = 0; first < candidates.Count; first++)
+        {
+            var (id, cost) = candidates[first];
+            if (cost <= 0 || cost > maxUnits * perUnit) continue;
+            int units = Math.Max(1, (int)Math.Ceiling(cost / perUnit));
+            double budget = units * perUnit;
+            var techs = new List<string> { id };
+            long total = cost;
+            for (int i = 0; i < candidates.Count && techs.Count < maxTechs; i++)
+            {
+                if (i == first || candidates[i].Cost <= 0 || total + candidates[i].Cost > budget) continue;
+                techs.Add(candidates[i].Id);
+                total += candidates[i].Cost;
+            }
+            if (total >= units * (double)techValue * minRate) return new ResearchTrade(techs, units, total);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Builds a research sale from researched techs in the given order (spec 762): techs join while the price
+    /// (total worth × premium) stays within the cap and there are at most maxTechs. Returns null when not even one fits.
+    /// </summary>
+    public static ResearchSale? BuildResearchSale(IReadOnlyList<(string Id, long Cost)> researched, float premium, long priceCap, int maxTechs)
+    {
+        if (premium <= 0f || priceCap <= 0 || maxTechs < 1) return null;
+        var techs = new List<string>();
+        long total = 0;
+        foreach (var (id, cost) in researched)
+        {
+            if (techs.Count >= maxTechs) break;
+            if (cost <= 0 || (total + cost) * (double)premium > priceCap) continue;
+            techs.Add(id);
+            total += cost;
+        }
+        return techs.Count == 0 ? null : new ResearchSale(techs, total, (int)Math.Round(total * (double)premium));
+    }
+
+    /// <summary>Shuffles a list in place with a roll source (Fisher-Yates). The caller gives a seeded, deterministic source.</summary>
+    public static void Shuffle<T>(IList<T> list, Func<int, int> nextBelow)
+    {
+        for (int i = list.Count - 1; i > 0; i--)
+        {
+            int j = nextBelow(i + 1);
+            (list[i], list[j]) = (list[j], list[i]);
+        }
     }
 
     /// <summary>

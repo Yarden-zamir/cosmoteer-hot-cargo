@@ -1,0 +1,19 @@
+# Co-op diplomacy, client side: the client's own choices, sent as real shared choice inputs.
+mpjoin 127.0.0.1:{PORT}
+mpready
+waitfor mpmark >= 1 60
+mp spawnstage Warning
+waitfor hunters >= 1 30
+mp dip_near hunters
+wait 2
+dip handover hunter 2
+waitfor dip_vaulttech == 6 30
+waitfor hunters == 0 60
+mp dip_spawn friend 250
+wait 3
+dip hire friend 0
+waitfor dip_friendhired == 1 30
+wait 10
+expect desyncs == 0
+log client-end
+quit
