@@ -167,7 +167,7 @@ internal sealed class PrototypeObjective : Objective
     {
         if (holder.IsJunk || holder.IsHumanPlayerShip) { Lose("the carrier was wrecked before the core was aboard"); return; }
         PartRules rules = holder.Rules.PartsByID[CoreId];
-        Tech.StartingVault.PlaceOutside(holder, rules, requireDoor: false);
+        Tech.StartingVault.PlaceOutside(holder, rules, requireCrewPath: false);
         Part core = holder.Parts.Where(p => p.Rules.ID == CoreId).OrderBy(p => p.Location.Y).ThenBy(p => p.Location.X).LastOrDefault()
             ?? throw new InvalidOperationException($"prototype core did not build on {holder.Metadata.PlainShipName}");
         CoreCell = core.Location;

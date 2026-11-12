@@ -5,7 +5,7 @@ HotCargoTech
 	StolenTechDesc = "Corporate technology that you stole. Only a Tech Vault can store it. Its value rises with each sector and each hour. If the fleet holds none, the run is lost."
 	TechVault = "Tech Vault"
 	TechVaultIcon = "Tech Vault"
-	TechVaultDesc = "Armored storage for Stolen Tech. Holds 8 units. Damage destroys the tech inside, and repairs do not bring it back."
+	TechVaultDesc = "Armored storage for Stolen Tech. Holds 2 units. Crew carry tech between vaults. Damage destroys the tech inside, and repairs do not bring it back."
 	VaultOutside = "A Tech Vault with your stolen tech is on board. Add a door to it, so that crew can reach it."
 	LossNoTech = "The fleet holds no Stolen Tech."
 }

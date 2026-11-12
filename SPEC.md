@@ -65,10 +65,10 @@ Out of scope for this batch:
 
 13. Tech is a new resource: "Stolen Tech". It uses the normal resource systems: storage, crew carrying, transfer between ships, and trade.
 14. Only the Tech Vault part stores tech.
-15. The Tech Vault is a buildable part. Its rules define its size, health, cost and capacity. Defaults: 2×2, 12,000 health (3 × the vanilla storage bay), 96 steel, capacity 8 units (4 tiles × stack size 2). Rules changes need a game restart.
-16. To move tech between ships, the players build a vault on the other ship. The crew then carry the tech over, like any other resource.
-17. A new run starts with `StartingTechUnits` (default 8) in a Tech Vault on the starting ship. In co-op each player commands only their own ships, so the first ship of each player gets a vault and an equal share of the units (8 = 4 + 4 for two players). The vault replaces a vanilla 2×2 storage bay of the ship. A ship without one gets the vault on a free spot next to the hull, with a door to a neighbor part where the rules allow one.
-65. Damage to a Tech Vault destroys tech inside it. Vault health has a step every `VaultDamagePerUnitLost` × its maximum health (default 0.11) below the maximum. Each time damage takes the health past a step, the vault loses one unit. A destroyed vault loses all units inside it.
+15. The Tech Vault is a buildable part. Its rules define its size, health, cost and capacity. Defaults: 1×1, 3,000 health (3 × a vanilla storage tile, below 1×1 armor at 4,000), 24 steel, capacity 2 units (1 tile × stack size 2). Rules changes need a game restart. There are no vault tiers (requirement 440).
+16. To move tech between ships, the players build a vault on the other ship. The crew then carry the tech over, like any other resource. On one ship, the vanilla move resources tool moves tech between vaults.
+17. A new run starts with `StartingTechUnits` (default 8) in Tech Vaults on the starting ship: as many vaults as the units need (4 for 8 units). In co-op each player commands only their own ships, so the first ship of each player gets vaults for an equal share of the units (8 = 4 + 4 for two players, 2 vaults each). Requirement 441 gives the placement.
+65. Damage to a Tech Vault destroys tech inside it. Vault health has a step every `VaultDamagePerUnitLost` × its maximum health (default 0.5) below the maximum. Each time damage takes the health past a step, the vault loses one unit. A destroyed vault loses all units inside it. With the defaults a vault loses 1 of its 2 units at half health and the other when it is destroyed (requirement 442).
 66. Repair of a vault does not bring back lost tech. Damage after a repair crosses the steps again and costs tech again.
 
 ## 8. Tech value and selling
@@ -171,7 +171,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `RewardScale` | 2.0 | 4 |
 | `BuyerPriceFactor` | 4 | 7 |
 | `StartingTechUnits` | 8 | 17 |
-| `VaultDamagePerUnitLost` | 0.11 | 65 |
+| `VaultDamagePerUnitLost` | 0.5 | 65, 442 |
 | `LossGraceSeconds` | 3 s | 12 |
 | `TechShipFraction` | 0.25 | 19 |
 | `TechShipFractionPerGameHour` | 0.10 | 19 |
@@ -424,3 +424,10 @@ WORLDS.md holds the design. The archetypes give each system an identity, a hazar
 228. Contract terms (`HotCargoContract`, requirement 100 and later): Hold the Pass is free, flat heat 6, trail weight 1, informant chance 10 %. Sundive costs 0.3 standard mission pay, flat heat 2, trail weight 0.5, informant chance 5 %. Raid the Lair is free, flat heat 4, trail weight 1, informant chance 20 %. Pay: Hold the Pass 2 × a standard mission's money and fame, Sundive 3 × money and 1.5 × fame, Raid the Lair 2.5 × money and 2 × fame.
 229. Archetype objects fit the smaller Hot Cargo systems (requirement 105): the belt lies between the trade station ring (up to 11,000 from the center) and the FTL gates (13,500 to 16,000). The hub world keeps 2,500 from the gates. The autotest `worlds-fit` checks that real system generation places each archetype mission and keeps the archetype objects clear of stations and gates.
 
+## 28. One-tile Tech Vault
+
+Code: `src/HotCargo/Tech` (`StartingVault`, `VaultDamagePatch`). Part rules: `mod/tech/tech_vault.rules`. Numbers: the `Tech` tunables section and the part rules.
+
+440. The Tech Vault has one size and no tiers or upgrades. Players decide how many vaults to build, where to put them and how to defend them with hull, armor and shields. Hunters find vaults by the part ID (requirement 34), the vault outline (UX.md H6) marks every vault, and the loss rule counts the tech in all vaults (requirement 9).
+441. Starting placement: the vaults go inside the hull in place of the smallest vanilla storage part (one with a flexible storage grid), nearest to the ship center first. The storage part goes like a part that the player grabs: corridor tiles take its place. Then a vault replaces one corridor tile at a time, and the game adds the doors like the build tool. Tiles with a door of the storage part stay corridor while other tiles are free, so a walkway through the room stays. With no storage part left, a vault goes on a free tile next to the hull: the most sheltered tile first (most hull tiles next to it), then the tile nearest to the center, and only where crew can walk to it from crew quarters. Each placement must leave a valid design. If crew still cannot walk to a vault, a notice asks the player to add a door. On the vanilla starters, the 4 vaults fill a 2×2 storage bay (Model-L, Model-C, Model-S), or 4 tiles of a 3×2 bay with a corridor walkway in the middle (Model-M). The autotests `tech-start` and `tech-outside` check the vault count, design validity and crew paths to every vault and part.
+442. Vault damage (requirement 65) fits a 2-unit vault: the default step `VaultDamagePerUnitLost` = 0.5 of max health. A destroyed vault loses its 2 units; other vaults keep theirs. The vault health (3,000) and cost (24 steel) are part rules; the damage step is a tunable.

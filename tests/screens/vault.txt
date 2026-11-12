@@ -1,0 +1,17 @@
+# Starting ship with its 4 one-tile Tech Vaults (spec 441). Main slot only (needs graphics): see UX.md "Screenshots" for the steps.
+# Pass the starter ship index on the newgame line: 0 = Model-L, 3 = Model-M.
+render on
+newgame run 0
+wait 10
+# Option 3 of the start event keeps every crate. Then continue, and close the run intro.
+uxpick 3
+wait 1
+uxpick 1
+wait 1
+closepanel
+wait 1
+pause on
+vault focus
+wait 3
+screenshot vault-start-model-l
+quit
