@@ -100,8 +100,18 @@ public static class EventRunner
         bool refuses = alive && sim.Ships[carrier] is { } ship && Factions.FactionsArea.Refuses(run, null, ship);
         if (alive && !refuses) return;
         s.Pending = null;
-        s.LastResult = new EventResult { Serial = p.Serial, Title = EventLibrary.Get(p.EventId).Title, Text = Cosmoteer.Localization.Strings.GetText(refuses ? "HotCargoEvents/CarrierRefuses" : "HotCargoEvents/CarrierGone") };
-        Log.Info($"event {p.EventId}: its carrier is gone, the page closes");
+        // Left behind in another system (no ship here): the players chose to leave, so the page closes with no result page.
+        // A result page on arrival named an offer the players no longer had in mind (playtest 2026-11-13).
+        if (p.CarrierNode is { } node && !node.Equals(sim.NodeId()))
+        {
+            Log.Info($"event {p.EventId}: its carrier stayed in another system, the page closes");
+            return;
+        }
+        string text = refuses ? Cosmoteer.Localization.Strings.GetText("HotCargoEvents/CarrierRefuses")
+            : sim.Ships[carrier] is { } wreck ? Cosmoteer.Localization.Strings.FormatText("HotCargoEvents/CarrierDestroyedFmt", wreck.Metadata.PlainShipName)
+            : Cosmoteer.Localization.Strings.GetText("HotCargoEvents/CarrierGone");
+        s.LastResult = new EventResult { Serial = p.Serial, Title = EventLibrary.Get(p.EventId).Title, Text = text };
+        Log.Info($"event {p.EventId}: its carrier is {(refuses ? "refusing calls" : "destroyed")}, the page closes");
     }
 
     /// <summary>A human ship that reaches a signal POI removes it and opens a Signal event.</summary>
@@ -237,6 +247,7 @@ public static class EventRunner
             carrierHails = e.CarrierHails;
         }
         s.Pending.Carrier = carrier;
+        s.Pending.CarrierNode = carrier is null ? null : sim.NodeId();
         s.Pending.HailDue = carrier is not null && carrierHails;
         if (carrier is { } c && carrierHails) EventText.ShowCalling(run.Game, sim.Ships[c]?.Metadata.PlainShipName ?? e.Title);
         Log.Info($"event opened: {e.ID} serial {s.Pending.Serial} tier {s.Pending.Tier} heat {run.State.Heat:0.0} tech {run.State.FleetTech}");
