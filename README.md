@@ -10,9 +10,9 @@ You stole corporate tech. The corporation wants it back. Get it across about 8 s
 
 ## How it plays
 
-- **Hold or sell.** You start with 8 units of Stolen Tech in a Tech Vault. Each unit you hold makes the corporation hunt you harder. Each unit you sell at a station gives you money now, and the price only rises as the run goes on: one or two units pay for a new ship of your stage. The Buyer pays 4× the price, and unsold units count the same in the score.
+- **Hold or sell.** You start with 8 units of Stolen Tech in four Tech Vaults. Each unit you hold makes the corporation hunt you harder. Each unit you sell at a station gives you money now, and the price only rises as the run goes on: one or two units pay for a new ship of your stage. The Buyer pays 4× the price, and unsold units count the same in the score.
 - **Move on or burn.** Heat grows over time and with every mission you finish. Heat stages send corporate hunter waves that kite, flank, bait and go for your guns. A jump to a new system cools you down.
-- **Protect the cargo.** Hits on the vault destroy tech. If your tech reaches 0, the run is over.
+- **Protect the cargo.** Hits on a vault destroy tech. Each vault is one tile that holds 2 units: build more, spread them out, and armor and shield them. If your tech reaches 0, the run is over.
 - **Deliver.** The Buyer waits in the last sector. Sell it your tech to win.
 - **New missions.** Convoy escorts, joint strikes with allied fleets, and shady bounties that may be corporate traps.
 - **FTL-style events.** Distress beacons, corporate checkpoints, fences, rival thieves and more: choices with risks, costs and rewards.

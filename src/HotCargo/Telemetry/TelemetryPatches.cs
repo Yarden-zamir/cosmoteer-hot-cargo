@@ -143,8 +143,7 @@ static class TelemetryPatches
             {
                 string? context = Tele.Top switch
                 {
-                    "Run.OnTick" when amount == HeatModel.TimeHeat(__instance.T.Heat.HeatPerGameMinute,
-                        __instance.HeatMultiplier(__instance.State.FleetTech), sim.FixedUpdater.Interval.Seconds) => "time",
+                    "Run.OnTick" when amount == __instance.TimeHeatPerMinute(__instance.State.FleetTech) * (float)(sim.FixedUpdater.Interval.Seconds / 60.0) => "time",
                     "ContractBook.OnTick" when amount == Contracts.ContractBook.TrailPerMinute(__instance, Contracts.ContractBook.OpenWeight(__instance))
                         * (float)(sim.FixedUpdater.Interval.Seconds / 60.0) => "trail",
                     _ => null,

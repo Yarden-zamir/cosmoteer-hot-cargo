@@ -1,0 +1,58 @@
+# Abandoned ships (spec 764) and the run's relic ship (spec 765).
+newgame run
+wait 8
+expectevent getaway
+choose 3 1
+ev_set CooldownSeconds 0
+ev_set StationEventChance 0
+ev_set CourierChance 0
+# One relic sector per run, from RelicMinSector (2) to the sector before the Buyer.
+expect ev_relic_sector >= 2
+# A vanilla abandoned ship: coming near opens an Abandoned event (chance forced to 1), once per ship.
+ev_set AbandonedEventChance 1
+ev_abandoned
+ev_abandoned_goto
+pause off
+wait 2
+expect ev_pending == 1
+eventview
+choose last
+ev_abandoned_goto
+pause off
+wait 2
+expect ev_pending == 0
+# The relic: the vault senses it far away, the event opens close up, and it gives 1 tech unit.
+tech remove 1
+ev_relic_spawn
+expect ev_relic_messaged == 0
+ev_relic_goto 2500
+pause off
+ev_relic_goto 2500
+pause off
+wait 2
+expect ev_relic_dist >= 0
+expect ev_relic_messaged == 1
+expect ev_pending == 0
+ev_relic_goto 300
+pause off
+wait 2
+expectevent relic_ship
+# Leaving it reopens the event on the next approach.
+choose 2 1
+ev_relic_goto 2500
+wait 2
+ev_relic_goto 300
+pause off
+wait 2
+expectevent relic_ship
+ev_mark
+choose 1 1
+expect ev_tech_gain == 1
+expectflag relic_taken 1
+# Taken: the relic does not open again.
+ev_relic_goto 2500
+wait 2
+ev_relic_goto 300
+wait 2
+expect ev_pending == 0
+quit

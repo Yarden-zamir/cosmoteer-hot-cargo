@@ -570,7 +570,7 @@ Capture
 	]
 }
 
-// Spec 136. Three markers inside ion storms. Systems without ion storms place no markers, and the objective then drops the offer.
+// Spec 136. Three markers inside clouds or storms (any vanilla nebula type). Systems without nebulas place no markers, and the objective then drops the offer.
 Survey
 {
 	Type = None
@@ -589,7 +589,8 @@ Survey
 			Count = 3
 			Distance = [2500, 16000]
 			MinDistanceFromSiblings = 1500
-			MaxDistanceFromNebulas = [[ion_storm, 0]]
+			// A location inside any of these nebula types counts (the vanilla check is an OR).
+			MaxDistanceFromNebulas = [[ion_storm, 0], [electron, 0], [cloudy, 0]]
 			MinDistanceFromTags = [[sun, 5000], [station, 2000]]
 			// Within reach in the smaller systems (spec 105): no marker past the gate ring. Limit: a system without a sun gets no survey.
 			MaxDistanceFromTags = [[sun, 16000]]

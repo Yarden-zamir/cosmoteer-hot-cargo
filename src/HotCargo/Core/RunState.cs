@@ -31,7 +31,7 @@ public sealed class RunState
     [Serialize(Optional = true)] public string TunablesHash = "";
     /// <summary>Last fleet tech count seen in a tick. Shown in the overlay and used by the heat multiplier.</summary>
     [Serialize(Optional = true)] public int FleetTech;
-    /// <summary>Game seconds that the fleet tech count stayed at 0 while the count was certain (spec 12).</summary>
+    /// <summary>Elapsed game seconds of the loss timer (spec 12, 443). It counts only while the count is certain.</summary>
     [Serialize(Optional = true)] public double SecondsWithoutTech;
     /// <summary>Tech units that crew delivered to the Buyer, summed over all deliveries (spec 7).</summary>
     [Serialize(Optional = true)] public int DeliveredUnits;
@@ -55,8 +55,14 @@ public sealed class RunState
     [Serialize(Optional = true)] public bool BuyerSpawned;
     /// <summary>Multiplies the Buyer price (spec 7). Events lower it (an advance from the Buyer's agent); 1 means no change.</summary>
     [Serialize(Optional = true)] public float BuyerPriceMultiplier = 1f;
+    /// <summary>Tech area state: the loss timer (spec 443).</summary>
+    [Serialize(Optional = true)] public Tech.TechState Tech = new();
     /// <summary>Spec 330: the new-game enemy scaling setting, the enemy multiplier with 2 players. Set once at run start.</summary>
     [Serialize(Optional = true)] public float EnemyScale = Scaling.ScalingModel.DefaultSetting;
+    /// <summary>Diplomacy area state: once-per-ship offers, held tech, hires, mercenaries (spec 586).</summary>
+    [Serialize(Optional = true)] public Diplomacy.DiplomacyState Diplomacy = new();
     /// <summary>Spec 730: the run log that the career log window shows, oldest first.</summary>
     [Serialize(Optional = true)] public List<Onboarding.RunLogEntry> Log = new();
+    /// <summary>Factions area state: the blind jump switch (spec 650).</summary>
+    [Serialize(Optional = true)] public Factions.FactionsState Factions = new();
 }

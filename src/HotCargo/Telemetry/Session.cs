@@ -465,6 +465,7 @@ sealed class Session
                 Tele.Num(w, "window_s", T.AccrualSeconds);
                 foreach (var (src, sum) in sums) Tele.Num(w, src, sum);
                 Tele.Num(w, "mult", Run.HeatMultiplier(Run.State.FleetTech));
+                Tele.Num(w, "time_per_min", Run.TimeHeatPerMinute(Run.State.FleetTech));
                 Tele.Num(w, "trail_per_min", ContractBook.TrailPerMinute(Run, ContractBook.OpenWeight(Run)));
             });
         }

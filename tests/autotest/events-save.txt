@@ -5,6 +5,8 @@ expectevent getaway
 choose 1 1
 expectflag fake_codes 1
 heat 30
+# The repaint costs 1 money unit (5,000 at tier 1). Leave 1,500 credits, so the repaint is greyed out after the load.
+contract_money -6000
 event smuggler_den
 save events
 wait 3
@@ -12,7 +14,7 @@ load events
 wait 3
 expectevent smuggler_den
 expectflag fake_codes 1
-# 10,000 starting credits minus the forger leave too little for the repaint, so it is greyed out.
+# Too little money for the repaint: it stays greyed out after the load.
 expectchoice 1 disabled
 expectchoice 2 enabled
 ev_mark

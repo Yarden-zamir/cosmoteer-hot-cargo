@@ -1,12 +1,31 @@
-# Tech: a starter ship without a 2x2 storage bay (Model-M) gets a vault outside the hull with a door. Destroyed vault, loss rule.
+# Tech: Model-M has no 2x2 storage bay, so its 4 vaults replace a 3x2 bay and keep a corridor walkway through it (spec 441).
+# A vault built outside the hull gets doors and a crew path (spec 441). Tech moves between vaults. Destroyed vaults, loss rule.
 newgame run 3
 wait 8
 tech dump
-expect vaults == 1
+expect vaults == 4
 expect tech == 8
+expect vaultpaths == 4
+expect noaccess == 0
+expect shipvalid == 1
 expect flexsinks == 0
-# Spec 65: a destroyed vault loses all units. Spec 12: the loss waits LossGraceSeconds (3 s).
+# Spec 65: a destroyed vault loses its 2 units, and the run goes on.
 vault destroy
+wait 1
+expect tech == 6
+expect vaults == 3
+vault outside
+expect vaults == 4
+expect vaultpaths == 4
+expect outsidetech == 0
+# Spec 16: the vanilla move resources tool moves tech between vaults on one ship. Crew carry it.
+vault move
+wait 30
+expect outsidetech == 2
+expect tech == 6
+# Spec 9, 12, 443: when every vault is destroyed, the loss timer runs (3 s here).
+tech_set LossGraceSeconds 3
+vault destroy all
 wait 1
 expect tech == 0
 expect lost == 0

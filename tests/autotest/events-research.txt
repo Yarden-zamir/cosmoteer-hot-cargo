@@ -1,0 +1,34 @@
+# Research offers (spec 760-763): built from the vanilla tech tree, always worth more than buying, extortion, and a research sale.
+newgame run
+wait 8
+expectevent getaway
+choose 3 1
+# The Archive: tech units for research worth at least ResearchMinRate (1.2) x their tech value.
+event research_trade
+eventview
+expect ev_offer_units >= 1
+expect ev_offer_techs >= 1
+expect ev_offer_rate >= 1.2
+ev_mark
+ev_researched_mark
+choose 1 1
+expect ev_tech_gain <= -1
+expect ev_researched_gain >= 1
+# Extortion: refusing raises heat; trading works the same way.
+event research_shakedown
+expect ev_offer_rate >= 1.2
+ev_mark
+choose 3 1
+expect ev_heat_gain >= 19
+expect ev_tech_gain == 0
+# Data Broker: copies of researched techs for more than they are worth; the player keeps the research.
+event research_buyer
+eventview
+expect ev_offer_price > 0
+expect ev_offer_premium >= 1.29
+ev_mark
+ev_researched_mark
+choose 1 1
+expect ev_money_gain > 0
+expect ev_researched_gain == 0
+quit

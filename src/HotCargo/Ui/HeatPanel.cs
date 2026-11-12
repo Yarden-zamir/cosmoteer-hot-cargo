@@ -80,6 +80,7 @@ sealed class HeatPanel : LayoutBox
         AddChild(_debug);
 
         BeforeFrameDraw += (_, _) => Refresh();
+        RunModes.RunModesArea.AttachHeatPanelTip(this, mode);
     }
 
     static Label NewLabel(int size, string text)
@@ -114,10 +115,10 @@ sealed class HeatPanel : LayoutBox
             RunResult.Won => $"<good>{UxKit.Format("StatusWonFmt", s.Score.ToString("N0"))}</good>",
             RunResult.Lost => $"<bad>{UxKit.Text("StatusLost")}</bad>",
             _ when !s.HeatEnabled => $"<gray>{UxKit.Text("StatusHeatOff")}</gray>",
-            _ => StatusLine(s, t.Heat, mult * t.Heat.HeatPerGameMinute + Contracts.ContractBook.TrailPerMinute(run, Contracts.ContractBook.OpenWeight(run))),
+            _ => StatusLine(s, t.Heat, run.TimeHeatPerMinute(s.FleetTech) + Contracts.ContractBook.TrailPerMinute(run, Contracts.ContractBook.OpenWeight(run))),
         };
         long value = run.TechValue();
-        _tech.Text = UxKit.Format("TechFmt", s.FleetTech, value.ToString("N0"));
+        _tech.Text = LossTimer.PanelLine(run) ?? UxKit.Format("TechFmt", s.FleetTech, value.ToString("N0"));
         string? contracts = Contracts.ContractsUi.HeatPanelLine(run);
         _contracts.SelfActive = contracts is not null;
         _contracts.Text = contracts ?? "";

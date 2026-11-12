@@ -29,10 +29,13 @@ public static class Mod
             Contracts.ContractsArea.Register();
             Ux.UxArea.Register();
             Worlds.WorldsArea.Register();
+            Balance.BalanceArea.Register();
             ShipAi.ShipAiArea.Register();
             Scaling.ScalingArea.Register();
             RunModes.RunModesArea.Register();
+            Factions.FactionsArea.Register();
             TunablesMenu.TunablesMenuArea.Register();
+            Diplomacy.DiplomacyArea.Register();
             Telemetry.TelemetryArea.Register();
             // Last: its run log hooks run after the hooks of the other areas.
             Onboarding.OnboardingArea.Register();

@@ -45,14 +45,16 @@ public static class Screenshot
         Log.Info($"ux: force render {(on ? "on" : "off")}; window minimized={App.Window.IsMinimized} size={App.Window.Size}");
     }
 
-    public static async void Capture(string name)
+    /// <summary>keepToolTips: leave open tooltips in the image, for a screenshot of a tooltip.</summary>
+    public static async void Capture(string name, bool keepToolTips = false)
     {
         if (name.Length == 0 || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
             throw new ArgumentException($"bad screenshot name '{name}'");
         string dir = Path.Combine(Mod.ModRoot, "screenshots");
         Directory.CreateDirectory(dir);
         string path = Path.Combine(dir, name + ".png");
-        var gui = App.Director.States.OfType<GameRoot>().FirstOrDefault()?.Gui;
+        // The GUI whose tooltips this capture hides; none when the tooltips stay.
+        var gui = keepToolTips ? null : App.Director.States.OfType<GameRoot>().FirstOrDefault()?.Gui;
         if (gui is not null) gui.BeforeFrameDraw += HideToolTips;
         try
         {

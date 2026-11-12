@@ -48,7 +48,7 @@ Category switches are in the `Telemetry` tunables section. The table names the s
 | `system.poi` | Run | `poi` |
 | `run.won`, `run.lost` | Run | `reason`, `score`, `delivered`, `notoriety`, `peak_tier`, `money` (per player). A snapshot follows. |
 | `heat.change` | Heat | `src`, `caller`, `amount` (asked), `delta` (applied), `before`, `after`, `stages` |
-| `heat.accrual` | Heat | `window_s`, `time`, `trail` (heat summed over the window), `mult`, `trail_per_min` |
+| `heat.accrual` | Heat | `window_s`, `time`, `trail` (heat summed over the window), `mult` (heat multiplier with the run mode pressure), `time_per_min` (time heat rate with every factor), `trail_per_min` |
 | `heat.stage` | Heat | `stage`, `name`, `live_hunters`, `since_entry_s` |
 | `heat.strike_wave` | Heat | `live_hunters` |
 | `tech.count` | Tech | `from` (null for the first count of a session), `to`, `delta`, `cause`, `hints` |

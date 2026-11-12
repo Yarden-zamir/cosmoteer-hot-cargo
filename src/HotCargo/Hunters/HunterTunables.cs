@@ -31,7 +31,7 @@ public sealed class HunterTunables
     /// <summary>Spec 34: a player ship with a Tech Vault part counts this many times more as a target.</summary>
     [Serialize(Optional = true)] public float VaultTargetFactor = 3f;
     /// <summary>Spec 192: every hunter carries at least this much FTL fuel (hyperium). It drops or can be salvaged when the hunter dies.</summary>
-    [Serialize(Optional = true)] public int MinFuel = 40;
+    [Serialize(Optional = true)] public int MinFuel = 60;
 
     /// <summary>Called from TunablesFile.Validate (spec 53).</summary>
     public void Validate(Action<bool, string> require)

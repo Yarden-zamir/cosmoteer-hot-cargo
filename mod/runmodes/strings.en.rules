@@ -1,6 +1,8 @@
 HotCargoRunModes
 {
 	DifficultyFmt = "<gray>DIFFICULTY</gray>  {0}\nThe corporation adjusts: {1}."
+	TipFmt = "<gray>DIFFICULTY</gray>  {0}\n{1}"
+	TipNeutral = "The corporation hunts at its normal pace."
 	HeatFmt = "heat ×{0:0.##}"
 	ShipsFmt = "hunter ships ×{0:0.##}"
 	TiersFmt = "hunter tier {0}"

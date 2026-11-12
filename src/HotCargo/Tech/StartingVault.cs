@@ -1,23 +1,23 @@
 using Cosmoteer.Data;
 using Cosmoteer.Localization;
+using Cosmoteer.Modes;
 using Cosmoteer.Ships;
 using Cosmoteer.Ships.Blueprints;
-using Cosmoteer.Ships.Doors;
 using Cosmoteer.Ships.Parts;
+using Cosmoteer.Ships.Parts.Resources;
+using Cosmoteer.Simulation;
 using Halfling.Geometry;
 using HotCargo.Core;
 
 namespace HotCargo.Tech;
 
 /// <summary>
-/// Spec 17: a new run starts with StartingTechUnits in Tech Vaults on the starting ship.
-/// In co-op each player commands only their own ships, so the first ship of each player gets a vault and a share of the units.
-/// The starter ships have no vault, so this adds vaults to the ship's blueprints and builds them at once.
+/// Spec 17, 441: a new run starts with StartingTechUnits in 1-tile Tech Vaults on the starting ship.
+/// In co-op each player commands only their own ships, so the first ship of each player gets vaults for a share of the units.
+/// The starter ships have no vault, so this adds vaults to the ship's blueprints and builds them at once, with the build tool's own steps.
 /// </summary>
 internal static class StartingVault
 {
-    static readonly ID<PartRules> StorageBayId = new("cosmoteer.storage_2x2");
-
     internal static void OnNewRun(Run run)
     {
         var sim = run.Game.Sim;
@@ -25,85 +25,121 @@ internal static class StartingVault
         var ships = sim.Ships.HumanPlayerShips.GroupBy(s => s.Metadata.PlayerIndex).OrderBy(g => g.Key)
             .Select(g => g.OrderBy(s => s.UniqueID).First()).ToList();
         if (ships.Count == 0) throw new InvalidOperationException("new run has no human player ship");
-        bool needsDoor = false;
+        bool unreachable = false;
         for (int i = 0; i < ships.Count; i++)
-            needsDoor |= Stock(ships[i], units / ships.Count + (i < units % ships.Count ? 1 : 0));
+            unreachable |= Stock(ships[i], units / ships.Count + (i < units % ships.Count ? 1 : 0));
         // A co-op launch runs this on a worker thread, so the notice waits for the next frame.
-        if (needsDoor) Run.OnNextFrame(() => run.Game.Gui.ShowAreaName(Strings.GetText("HotCargoTech/VaultOutside")));
+        if (unreachable) Run.OnNextFrame(() => run.Game.Gui.ShowAreaName(Strings.GetText("HotCargoTech/VaultOutside")));
     }
 
-    /// <summary>Places vaults on the ship until they hold the units, and fills them. Returns true when a vault has no door.</summary>
+    /// <summary>Tech units that one vault holds, from its rules.</summary>
+    internal static int Capacity(PartRules vault) =>
+        vault.Components.OfType<TypedResourceGridRules>().Where(g => g.ResourceType == Vaults.TechId).Sum(g => g.MaxResources) is > 0 and var n
+            ? n : throw new InvalidOperationException($"{vault.ID} has no grid for {Vaults.TechId}");
+
+    /// <summary>Places enough vaults on the ship for the units, and fills them. Returns true when crew cannot walk to a new vault.</summary>
     static bool Stock(Ship ship, int units)
     {
         PartRules vault = ship.Rules.PartsByID[Vaults.VaultId];
-        bool needsDoor = false;
-        // Each placement adds one vault. The loop handles a share above one vault's capacity.
-        while (Vaults.OnShip(ship).Sum(g => g.MaxResources) < units)
-            needsDoor |= !(ReplaceStorageBay(ship, vault) || PlaceOutside(ship, vault, requireDoor: true) || PlaceOutside(ship, vault, requireDoor: false));
+        int perVault = Capacity(vault);
+        int count = (units + perVault - 1) / perVault;
+        var placed = new List<IntVector2>();
+        while (placed.Count < count)
+        {
+            if (ReplaceStorage(ship, vault, count - placed.Count) is { } inside) placed.AddRange(inside);
+            else placed.Add(PlaceOutside(ship, vault, requireCrewPath: true) ?? PlaceOutside(ship, vault, requireCrewPath: false)!.Value);
+        }
         int added = Vaults.Add(Vaults.OnShip(ship), units);
         if (added != units) throw new InvalidOperationException($"starting tech: added {added} of {units} on {ship.Name}");
-        Log.Info($"starting tech: {added} units in {Vaults.OnShip(ship).Count()} vault(s) on {ship.Name} (player {ship.Metadata.PlayerIndex})");
-        return needsDoor;
+        var finder = new BlueprintPathfinder(ship);
+        var unreachable = placed.Where(c => !HasCrewPath(finder, new PartInfo(vault, c, 0, flipX: false))).ToList();
+        Log.Info($"starting tech: {added} units in {placed.Count} vault(s) on {ship.Name} (player {ship.Metadata.PlayerIndex}) at {string.Join(" ", placed)}; no crew path: {unreachable.Count}");
+        return unreachable.Count > 0;
     }
 
+    /// <summary>True when crew can walk from crew quarters to the part, through doors, like the build tool's path check.</summary>
+    internal static bool HasCrewPath(BlueprintPathfinder finder, PartInfo part) => float.IsFinite(finder.GetPathToNearestCrewSource(part, new List<IntVector2>()));
+
     /// <summary>
-    /// Swaps a vanilla 2x2 storage bay for a vault in the same place. The vault keeps the bay's doors and its spot inside the hull.
-    /// The bay's resources go where the instant rebuild puts them.
+    /// Swaps the smallest vanilla storage part (nearest to the ship center first) for vaults on its tiles.
+    /// The storage part goes like a part that the player grabs: corridor tiles take its place and keep its crew paths.
+    /// Then a vault replaces one corridor tile at a time, and the game adds its doors like the build tool.
+    /// Tiles with a door of the storage part come last: they lead into the room, so as corridors they keep a walkway through it.
+    /// Among the others, tiles nearest to the ship center come first.
+    /// Returns the vault cells, or null when the ship has no storage part.
     /// </summary>
-    static bool ReplaceStorageBay(Ship ship, PartRules vault)
+    static List<IntVector2>? ReplaceStorage(Ship ship, PartRules vault, int count)
     {
+        var center = Center2(ship);
         var bay = ship.BlueprintParts
-            .Where(p => p.Rules.ID == StorageBayId)
-            .OrderBy(p => p.Location.Y).ThenBy(p => p.Location.X)
+            .Where(p => p.Rules.ID != Vaults.VaultId && p.Rules.Components.OfType<FlexResourceGridRules>().Any())
+            .OrderBy(p => p.Rect.Area).ThenBy(p => Distance2(p.Rect, center)).ThenBy(p => p.Location.Y).ThenBy(p => p.Location.X)
             .FirstOrDefault();
-        if (bay is null) return false;
-        ship.BlueprintParts.RemoveBlueprintPart(bay, removeDoors: false);
-        ship.BlueprintParts.CreateBlueprintPart(vault, bay.Location, 0, false);
-        ship.MatchPhysicalToBlueprints(adjustCrew: false, builtByPlayer: true);
-        Log.Info($"starting vault replaces the storage bay at {bay.Location}");
-        return true;
+        if (bay is null) return null;
+        IntRect rect = bay.Rect;
+        var doorTiles = bay.GetBlueprintDoors().Select(d => rect.Contains(d.Location.Cell) ? d.Location.Cell : d.Location.OppositeCell).ToHashSet();
+        using (var sui = ShipUpdateInfo.Alloc(ship))
+        {
+            if (!sui.TryRemoveBlueprintPart(bay, mirrorPhysical: true, out var reasons, grabbed: true))
+                throw new InvalidOperationException($"cannot remove {bay.Rules.ID} at {bay.Location} for the starting vaults: {reasons}");
+            sui.Apply(ConstructionMode.InstantFree, builtByPlayer: true);
+        }
+        var cells = rect.OrderBy(doorTiles.Contains).ThenBy(c => Distance2(new IntRect(c.X, c.Y, 1, 1), center)).ThenBy(c => c.Y).ThenBy(c => c.X).Take(count).ToList();
+        foreach (var cell in cells)
+        {
+            using var sui = ShipUpdateInfo.Alloc(ship);
+            if (!sui.TryAddBlueprintPart(vault, cell, 0, flipX: false, mirrorPhysical: true, allowOverwrite: true, addDoors: true, hireCrew: false, out var reasons))
+                throw new InvalidOperationException($"cannot place a starting vault at {cell} in place of {bay.Rules.ID}: {reasons}");
+            sui.Apply(ConstructionMode.InstantFree, builtByPlayer: true);
+        }
+        Log.Info($"starting vaults replace {bay.Rules.ID} at {rect.Location}: {cells.Count} vault(s), {rect.Area - cells.Count} corridor tile(s)");
+        return cells;
     }
 
     /// <summary>
-    /// Puts a vault on a free 2x2 spot next to the hull, nearest to the ship center first.
-    /// With requireDoor, the spot must allow a door to a neighbor part, and the door is added.
-    /// Limit: a door to a neighbor does not prove that crew can walk there from the rest of the ship. Revisit if players report an unreachable vault.
+    /// Puts a part on a free spot next to the hull: the most sheltered spot first (most hull tiles next to it), then the one nearest to the ship center.
+    /// The game adds its doors like the build tool. With requireCrewPath, a spot counts only when crew can walk to the part.
+    /// Returns the part location, or null when requireCrewPath finds no spot. Throws when no spot is free at all.
     /// </summary>
-    internal static bool PlaceOutside(Ship ship, PartRules vault, bool requireDoor)
+    internal static IntVector2? PlaceOutside(Ship ship, PartRules rules, bool requireCrewPath)
     {
         var parts = ship.BlueprintParts;
         var cells = parts.SelectMany(p => p.Rect).ToHashSet();
+        var center = Center2(ship);
+        IntVector2 size = rules.Size;
         int minX = cells.Min(c => c.X), maxX = cells.Max(c => c.X), minY = cells.Min(c => c.Y), maxY = cells.Max(c => c.Y);
-        // Doubled coordinates keep the distance math in integers.
-        int Distance2(IntRect r) { int dx = 2 * r.Left + 2 - (minX + maxX + 1), dy = 2 * r.Top + 2 - (minY + maxY + 1); return dx * dx + dy * dy; }
         var spots = new List<IntRect>();
-        for (int y = minY - 2; y <= maxY + 1; y++)
-            for (int x = minX - 2; x <= maxX + 1; x++)
+        for (int y = minY - size.Y; y <= maxY + 1; y++)
+            for (int x = minX - size.X; x <= maxX + 1; x++)
             {
-                var rect = new IntRect(x, y, 2, 2);
+                var rect = new IntRect(x, y, size.X, size.Y);
                 if (!parts.HasPartAt(rect) && rect.GetAdjacentCells(includeCorners: false).Any(cells.Contains)) spots.Add(rect);
             }
-        foreach (var rect in spots.OrderBy(Distance2).ThenBy(r => r.Y).ThenBy(r => r.X))
+        var ordered = spots.OrderByDescending(r => r.GetAdjacentCells(includeCorners: false).Count(cells.Contains))
+            .ThenBy(r => Distance2(r, center)).ThenBy(r => r.Y).ThenBy(r => r.X);
+        foreach (var rect in ordered)
         {
-            int invalidBefore = parts.InvalidParts.Count;
-            var bp = parts.CreateBlueprintPart(vault, rect.Location, 0, false);
-            parts.UpdateValidity();
-            DoorLocation? door = rect.GetAdjacentCells(includeCorners: false).Where(cells.Contains)
-                .Select(c => DoorLocation.BetweenRectAndCell(rect, c))
-                .Cast<DoorLocation?>()
-                .FirstOrDefault(d => ship.BlueprintDoors.CanAddDoorAt(d!.Value));
-            if (!bp.IsValid || parts.InvalidParts.Count != invalidBefore || (requireDoor && door is null))
-            {
-                parts.RemoveBlueprintPart(bp, removeDoors: true);
-                parts.UpdateValidity();
-                continue;
-            }
-            if (door is { } d) ship.BlueprintDoors.CreateBlueprintDoor(ship.Rules.DefaultDoor ?? throw new InvalidOperationException("ship rules have no default door"), d);
-            ship.MatchPhysicalToBlueprints(adjustCrew: false, builtByPlayer: true);
-            Log.Info($"starting vault placed outside at {rect.Location}, door={door?.ToString() ?? "none"}");
-            return true;
+            using var sui = ShipUpdateInfo.Alloc(ship);
+            if (!sui.TryAddBlueprintPart(rules, rect.Location, 0, flipX: false, mirrorPhysical: true, allowOverwrite: false, addDoors: true, hireCrew: false, out _)) continue;
+            if (requireCrewPath && !HasCrewPath(new BlueprintPathfinder(ship, sui), new PartInfo(rules, rect.Location, 0, flipX: false))) continue;
+            sui.Apply(ConstructionMode.InstantFree, builtByPlayer: true);
+            Log.Info($"{rules.ID} placed outside the hull of {ship.Name} at {rect.Location}, crew path required={requireCrewPath}");
+            return rect.Location;
         }
-        if (requireDoor) return false;
-        throw new InvalidOperationException("no free spot for the starting Tech Vault");
+        if (requireCrewPath) return null;
+        throw new InvalidOperationException($"no free spot for {rules.ID} on {ship.Name}");
+    }
+
+    /// <summary>Center of the blueprint bounding box, in doubled coordinates so that the distance math stays in integers.</summary>
+    static (int X, int Y) Center2(Ship ship)
+    {
+        var cells = ship.BlueprintParts.SelectMany(p => p.Rect).ToList();
+        return (cells.Min(c => c.X) + cells.Max(c => c.X) + 1, cells.Min(c => c.Y) + cells.Max(c => c.Y) + 1);
+    }
+
+    static int Distance2(IntRect r, (int X, int Y) center2)
+    {
+        int dx = 2 * r.Left + r.Width - center2.X, dy = 2 * r.Top + r.Height - center2.Y;
+        return dx * dx + dy * dy;
     }
 }

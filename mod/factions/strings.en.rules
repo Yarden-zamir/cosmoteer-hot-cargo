@@ -1,0 +1,40 @@
+HotCargoFactions
+{
+	// Galaxy map tooltip. {0} is the faction icon and name.
+	TipAllyFmt = "<bad>Corporate ally space</bad> ({0}): heat rises ×{1:0.##}. Offers pay ×{2:0.##}. Tech value grows ×{3:0.##}."
+	TipShelterFmt = "<good>Shelter</good>: {0} hides you. Heat rises ×{1:0.##}."
+	TipNoShelterFmt = "<gray>No shelter: {0} hides you from {1:n0} reputation (you have {2:n0}).</gray>"
+	TipRivalFmt = "<good>Fences</good>: the corporation's rival pays ×{0:0.##} for tech here."
+	TipJumpFmt = "Arrive at heat {0:0} by a clear relay, {1:0} if hunters watch the relay, {2:0} by blind jump (fuel ×{3:0.##}, hull risk)."
+	TipRelayWatched = "<bad>Hunters are near the relay now.</bad>"
+	TipTargetFmt = "<img name='objective' colored='true'/> {0}"
+
+	// Galaxy map tags under the system name.
+	TagAlly = "HOT ZONE"
+	TagRival = "FENCES"
+
+	// Chat lines on arrival.
+	ArrivalAllyFmt = "<bad>Corporate ally space.</bad> {0} reports you. Heat rises ×{1:0.##}, but offers pay ×{2:0.##}."
+	ArrivalShelterFmt = "<good>Shelter.</good> {0} hides you. Heat rises ×{1:0.##}."
+	ArrivalRivalFmt = "<good>Rival space.</good> {0} fences pay ×{1:0.##} for tech."
+
+	// Station prices and refusals.
+	MarkupBand = "You are hot. Stations charge more."
+	RefuseBand = "You are too hot. Some stations refuse to talk. Fences still deal."
+	RefusalFmt = "{0} refuses to talk: \"You are too hot. Go away.\""
+	HireHeatFmt = "<bad>Heat: crew cost +{0:0}%</bad>"
+
+	// Comms list badges.
+	BadgeFenceFmt = "FENCE ×{0:0.##} tech"
+	BadgeShelter = "SHELTER"
+	BadgeAlly = "CORPORATE ALLY"
+	BadgeRefuses = "REFUSES"
+	BadgeMarkupFmt = "PRICES ×{0:0.##}"
+
+	// Jump switch under ENGAGE, and blind jump damage.
+	RelayClearFmt = "Relay jump: heat -{0:0}%"
+	RelayWatchedFmt = "<bad>Watched relay: heat -{0:0}%</bad>"
+	BlindOnFmt = "BLIND jump: heat -{0:0}%"
+	BlindTipFmt = "<b>Relay or blind jump</b>\nEvery jump cuts your heat. The corporation watches the relays:\n  relay with hunters near it: -{0:0}%\n  relay with no hunter near it: -{1:0}%\n  blind jump: -{2:0}%\nA blind jump costs ×{3:0.##} fuel and spins up ×{4:0.##} longer. Damage to a drive restarts the spin-up.\nEach ship has a {5:0}% chance to arrive hurt: {6} parts lose {7:0}% health.\nClick to switch. The switch holds for one jump."
+	BlindDamageFmt = "<bad>Rough blind exit.</bad> Hull damage on {0}."
+}

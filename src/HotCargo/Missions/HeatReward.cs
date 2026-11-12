@@ -55,7 +55,8 @@ internal sealed class HeatReward : Reward
 
     public override string? GetRewardText(float lerpT, GameRoot game, Dictionary<int, int>? implicitFame = null) => Text();
 
-    public override int GetRewardSortValue(SortValueType valueType, GameRoot game, int implicitFame = 0) => int.MinValue;
+    // A heat change is neither money nor fame. The mission sums the sort values of its rewards, so int.MinValue made the sum wrap.
+    public override int GetRewardSortValue(SortValueType valueType, GameRoot game, int implicitFame = 0) => 0;
 
     public override void GetDisplayLines(List<(ITextProvider Text, ITextProvider? Tooltip)> lines, GameRoot game, Dictionary<int, int>? implicitFame = null) =>
         lines.Add((new SimpleTextProvider(Text(), null), Strings.KeyString("HotCargoMissions/EscortCoverTip")));

@@ -1,0 +1,40 @@
+# Tech: the loss timer (spec 443) and the tech markers (spec 444).
+newgame run
+wait 8
+ev_set Enabled false
+expect losstimer == 0
+expect shiptag == 8
+tech_set LossGraceSeconds 60
+# All tech goes out as crates in space: the count is 0, the timer starts, and each crate has a marker.
+tech drop 8
+wait 2
+expect tech == 0
+expect losstimer == 1
+expect losstimerleft <= 59
+expect techcrates == 8
+expect cratemarkers == 1
+expect crateunits == 8
+expect shiptag == 0
+expect lost == 0
+# Tech back in time stops the timer: crew go out for the crates with the vanilla collect order. Carried tech counts.
+tech collect
+waitfor losstimer == 0 55
+expect losstimerleft == -1
+expect lost == 0
+waitfor vaulttech == 8 240
+expect techcrates == 0
+expect shiptag == 8
+# A save keeps a running timer, and a load goes on from there. The crates keep their markers.
+tech drop 8
+wait 5
+expect losstimer == 1
+save timer
+load timer
+wait 1
+expect losstimer == 1
+expect losstimerleft <= 55
+expect techcrates == 8
+expect lost == 0
+wait 60
+expect lost == 1
+quit

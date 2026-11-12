@@ -7,7 +7,7 @@ DescriptionKey = "HotCargoTech/StolenTechDesc"
 // Static fallback only. TechPatches replaces buy and sell prices with the tech value (spec 19).
 BuyPrice = 10000
 MaxPerNugget = 1
-// A Tech Vault has 4 tiles, so it holds 4 x 2 = 8 units.
+// A Tech Vault has 1 tile, so it holds 2 units.
 MaxStackSize = 2
 // Normal storage on human ships never holds tech. Sharing the processor key keeps a useless
 // "Supply Stolen Tech" job out of every storage part's job list.
