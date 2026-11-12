@@ -100,7 +100,7 @@ public static class MpAutotest
         {
             var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length != 2) throw new InvalidOperationException("mpchoose needs: serial choice");
-            RequireMpGame().NetManager.EnqueueInput(new Events.EventChoiceInput(
+            RequireMpGame().NetManager.EnqueueInput(Events.EventsChoiceDomain.Pick(
                 int.Parse(parts[0], CultureInfo.InvariantCulture), int.Parse(parts[1], CultureInfo.InvariantCulture) - 1));
         };
 

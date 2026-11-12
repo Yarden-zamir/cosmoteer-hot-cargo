@@ -150,8 +150,8 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 14. Persistence and multiplayer
 
-57. Heat, the stages that already started, the sector index, the run result, notoriety and the peak tier (requirement 19), the event state (requirement 76), the chain state (requirement 172), the contract state (requirement 107) and the enemy scaling setting (requirement 330) are saved with the career save and loaded with it. Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
-58. All logic that changes simulation state runs in the deterministic simulation tick. It uses the simulation random source, not `System.Random`. The integrity hash includes heat, sector, stages, result, fleet tech, delivered units, run time, the loss timer, the event serials, notoriety, the peak tier, the contract counts and the tunables hash, so a divergence starts a resync at once. Each desync that the game detects writes an `MP DESYNC` line to the Hot Cargo log.
+57. Heat, the stages that already started, the sector index, the run result, notoriety and the peak tier (requirement 19), the event state (requirement 76), the chain state (requirement 172), the contract state (requirement 107), the shared choice votes and mode (requirement 607) and the enemy scaling setting (requirement 330) are saved with the career save and loaded with it. Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
+58. All logic that changes simulation state runs in the deterministic simulation tick. It uses the simulation random source, not `System.Random`. The integrity hash includes heat, sector, stages, result, fleet tech, delivered units, run time, the loss timer, the event serials, notoriety, the peak tier, the contract counts, the shared choice votes and mode and the tunables hash, so a divergence starts a resync at once. Each desync that the game detects writes an `MP DESYNC` line to the Hot Cargo log.
 59. The fleet tech count and the loss rule count all human players together. A loss ends the run for everyone.
 60. In multiplayer, the mod does not reload tunables. A new co-op run starts with the default tunables on every machine. On its first frame the host sends its `tunables.rules` as a multiplayer input (`HotCargoTunables`), and every machine applies it at the same tick. The starting vault and the first system's offers exist before that and use the defaults. A loaded game uses the tunables in the save. The client's file has no effect. Changes in the host's settings menu use the same input (requirement 504). The heat panel shows a short hash of the tunables in effect, so players can compare.
 61. Debug keys do not work in multiplayer.
@@ -250,12 +250,13 @@ mod/                       rules content; scripts/assemble-mod.sh builds mod.rul
   chains/                  story chains (chains.rules), stage missions (missions.rules), chain pages (pages.rules)
   worlds/                  system archetypes: sector types, run map weights, archetype spawners, current nebula, wave spawns
   scaling/                 co-op enemy scaling: the fleet opt-in tag on the vanilla ambush, slider strings
+  sharedchoice/            strings of the co-op bar of shared choice dialogs
 src/HotCargo.Loader/       startup hook entry point, assembly resolve
 src/HotCargo/
   Mod.cs                   Harmony setup, area registration
   Core/                    Run, RunState (save), Tunables, TunablesFile (live reload, validation), HeatModel,
                            CareerPatches (lifecycle), Activation (requirement 63), Errors, SimQueries, DebugKeys
-  Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/ Chains/ Worlds/ Scaling/   one folder for each area: <Area>Area.Register, tunables, patches
+  Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/ Chains/ Worlds/ Scaling/ SharedChoice/   one folder for each area: <Area>Area.Register, tunables, patches
   Ai/                      enemy AI behaviors (flee, call, regroup, focus); TacticsArea registers it, Tactics tunables
   Ui/                      overlay, heat panel, run intro and end panels
   Dev/Autotest.cs          headless test commands
@@ -266,7 +267,7 @@ scripts/                   pull-game, deploy, run, stop, logs, autotest, release
 
 Rules:
 
-- The model files (`HeatModel`, `TechModel`, `MissionModel`, `TacticsModel`, `EventModel`, `MechanicsModel`, `WaveModel`, `AiModel`, `ScalingModel`) have no game types, so that they are testable on the Mac without the game.
+- The model files (`HeatModel`, `TechModel`, `MissionModel`, `TacticsModel`, `EventModel`, `MechanicsModel`, `WaveModel`, `AiModel`, `ScalingModel`, `VoteModel`) have no game types, so that they are testable on the Mac without the game.
 - Patches stay thin. They call into the mod classes.
 - One tunables record type. The overlay and the code read the same values.
 
@@ -319,7 +320,7 @@ FTL-style choice events. EVENTS.md holds the design and the catalog.
 71. A trigger picks one eligible event by weight: `Weight + WeightPerHeat × heat + WeightPerTech × fleet tech count`, never below 0. Outcomes use the same weight rule. The outcome roll uses a seed from the simulation random source, taken when the page opens.
 72. Outcome effects: money, money in tech value, fame (gain or loss), heat, reputation (requirement 81), the Buyer price (requirement 84), clearing wanted (requirement 472), tech units (through the Tech Vaults), crew, vanilla resources, hull damage, spawned ships, story flags and a follow-up page. Money gains are split between the human players like a mission reward. The chooser pays money costs.
 73. Event money unit: 1 = the middle of a standard mission's pay at the sector tier × the economy money reward factor × `RewardScale` × `MoneyScale`. A fame unit is a standard mission's fame × the economy fame reward factor × `RewardScale` × `FameScale`. Heat effects × `HeatScale`. Money amounts use the tier and the tech value from when the page opened.
-74. A choice goes through a multiplayer input (`HotCargoEventChoice`). The input carries the page serial, so a second click on the same page (by another player) does nothing. The input checks the chooser's need again before it applies the choice. If the sim rejects a choice, the buttons work again after 3 seconds. A trigger checks money needs against the human player with the most money, because any player can choose.
+74. A choice goes through a multiplayer input (`HotCargoSharedChoice`, requirement 603). The input carries the page serial, so a second click on the same page (by another player) does nothing. The input checks the chooser's need again before it applies the choice. If the sim rejects a choice, the buttons work again after 3 seconds. A trigger checks money needs against the human player with the most money, because any player can choose.
 75. After a choice, the window shows the outcome text and one result line per effect. A follow-up page shows the outcome text above its own text.
 76. The event state is saved in the run state: seen counts, flags and the sector at which each flag was set, the waiting page, the last result, the cooldown, the per-system counts and the systems that already rolled a Courier Job.
 77. In single player, an open event window pauses the game when `PauseOnEvent` is on. Headless test games do not pause.
@@ -459,3 +460,17 @@ TUNABLES.md lists when each tunable takes effect. Code: `src/HotCargo/TunablesMe
 504. Multiplayer: only the host can change values. The host's change goes to every machine as the `HotCargoTunables` input (requirement 60), so every machine applies it at the same sim tick. Clients see the window read-only. Live reload of the file stays single player only.
 505. Each row with a delayed effect has a tag: next time it shows, next spawned ships, next mission offers, next new system, or new runs only. TUNABLES.md has the full list. The list lives in `TunablesMenu/TunableTiming.cs`, and the mod checks at startup that each entry names a field.
 506. The autotests `menu-live` (single player) and `menu` (co-op) change tunables through the window rows and check the effect in the sim, the file, the rejections, the read-only client and that no desync happens.
+
+## 30. Shared choices in co-op
+
+A shared choice is a dialog page that decides for all players: event pages and chain pages so far. Code: `src/HotCargo/SharedChoice`. A new dialog (for example diplomacy hails) registers its pages as an `ISharedChoiceDomain` and uses `SharedChoicePanel`.
+
+600. Single player has no change: the first pick decides, and the dialog shows no co-op bar.
+601. **Presence.** In co-op, when a player hovers an option, every other player sees that option framed in the player's color and the player's name on its right. The color comes from the player's place in the voter order (requirement 603), so every machine shows the same color. A digit key (UX, requirement V15) picks at once, so it shows as a vote or a pick, not as a hover.
+602. Hovers never change sim state. They go as an unreliable message on a sub-channel of the game's multiplayer connection, like the cursor of creative mode, and not through the input queue. A machine sends its hover when it changes, at most every `PresenceSendSeconds` (0.15 s), and repeats it every third of `PresenceExpirySeconds`. A marker goes away `PresenceExpirySeconds` (3 s) after the last message of that player.
+603. **Mode.** The co-op bar of the dialog has a mode button: "first pick" (requirement 74) or "vote". Any player can switch it. The switch goes through the `HotCargoSharedChoice` input, drops the open votes and writes a chat line. The run state saves the mode. The voters are the connected human players. Each player votes alone, also when players share ships.
+604. **Vote.** In vote mode, a click casts the player's vote and a second click on the same option takes it back. A click on another option moves the vote. Each option shows its votes with the names of the voters. The bar shows the vote count and the time left. The choice is decided in the sim tick: when every voter voted for the same option (unanimous), or when every voter voted and one option has more than half of the voters (majority).
+605. A vote also ends `VoteTimeoutSeconds` (30) game seconds after the first vote on the page, and when the host clicks "Decide now". Both pick the option with the most votes; a tie goes to the lowest option. 0 turns the timeout off. A page without votes waits. A chat line names the decided choice and the reason. A player who leaves no longer counts as a voter, and that player's vote no longer counts.
+606. Votes, the force and the decision go through the `HotCargoSharedChoice` input and the sim tick, so every machine decides the same way. The decided option applies for the voters of that option, the lowest player index first. The next voter tries when the sim rejects the choice for the first (requirement 74). When no voter can take it, the votes clear and the page stays. In vote mode a pick (a first-pick click that was late) does nothing.
+607. The run state saves the votes of the open pages, and the integrity hash includes the vote count and the mode. Votes of a page that closed are dropped.
+608. The co-op autotest `sharedchoice` checks that the client's hover shows in the host's UI state, the unanimous, timeout and host force decisions, that a pick in vote mode does nothing, and that no desync happens. With two players a majority is always unanimous, so the unit tests (`VoteModelTests`) cover the majority and tie rules.
