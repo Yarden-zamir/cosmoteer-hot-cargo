@@ -99,7 +99,7 @@ public static class ContractBook
     /// <summary>The other offer in this system that accepting m dismisses, or null.</summary>
     public static Mission? RivalOf(Run run, SimRoot sim, Mission m)
     {
-        string group = Preview(run, m)?.RivalGroup ?? "";
+        string group = run.T.Contracts.RivalsEnabled ? Preview(run, m)?.RivalGroup ?? "" : "";
         if (group.Length == 0) return null;
         return Offers(sim).Select(o => o.Mission).FirstOrDefault(o => o != m && Find(run, o)?.RivalGroup == group);
     }
@@ -137,7 +137,7 @@ public static class ContractBook
             bool isNew = Find(run, m) is null;
             if (Ensure(run, m) is not { } terms) continue;
             if (isNew && terms.RivalGroup.Length == 0 && run.T.Contracts.RivalsEnabled) PairRival(run, m, terms, seen);
-            if (terms.RivalGroup.Length > 0 && openGroups.Contains(terms.RivalGroup))
+            if (run.T.Contracts.RivalsEnabled && terms.RivalGroup.Length > 0 && openGroups.Contains(terms.RivalGroup))
             {
                 list.RemoveMission(m);
                 Log.Info($"contracts: dismissed offer {m.MetatypeID} {m.MissionID}, it rivals an open contract");
@@ -194,7 +194,8 @@ public static class ContractBook
         }
         if (terms.FlatHeat != 0) run.AddHeat(terms.FlatHeat, sim);
         var dismissed = new List<string>();
-        if (terms.RivalGroup.Length > 0)
+        // RivalsEnabled off also stops the rival groups that offers saved before the switch.
+        if (run.T.Contracts.RivalsEnabled && terms.RivalGroup.Length > 0)
             foreach (var (o, list) in Offers(sim))
                 if (o != m && Find(run, o)?.RivalGroup == terms.RivalGroup)
                 {

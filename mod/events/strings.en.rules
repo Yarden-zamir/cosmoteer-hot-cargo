@@ -12,3 +12,10 @@ HotCargoEventMissions
 	CourierDesc = "A sealed case, no questions. Fly it to the contact on the far side of the {mission_location} system within {time_limit_minutes} minutes, then come back for {money}. Good pay, quiet job: little fame, little attention."
 	SiegeDesc = "Raiders have a freighter pinned in the {mission_location} system, and its shields are failing. Drive them off before time runs out, and the crew pays {money}."
 }
+
+HotCargoEvents
+{
+	WantedWarning = "Wanted and hunted: police and the corporation"
+	WantedHintFmt = "Wanted by {0} while the corporation hunts you. Ways out: pay the bounty (hail one of their police ships), leave the system, outlast the search timer, or find a smuggler who fixes records."
+	WantedCleared = "Wanted cleared"
+}

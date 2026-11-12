@@ -55,6 +55,9 @@ public sealed class Run
     /// <summary>A new multiplayer run waits for the host to send its tunables (TunablesInput). Local, not saved.</summary>
     internal bool HostTunablesPending;
 
+    /// <summary>The host sent its file and the input has not executed yet. The settings menu waits, so its edit does not start from the defaults.</summary>
+    internal bool HostTunablesInFlight;
+
     Run(GameRoot game, CareerGameModeManager mode, RunState state)
     {
         Game = game;
@@ -237,6 +240,11 @@ public sealed class Run
     {
         State.Tunables = file.Values;
         State.TunablesHash = file.Hash;
+        // New stage thresholds re-baseline like a system entry: stages at or below the current heat count as started and
+        // spawn nothing, higher stages wait for heat. This keeps StagesStarted inside a shorter Heat.Stages table too.
+        int reached = HeatModel.StagesReached(State.Heat, T.Heat.Thresholds());
+        if (reached != State.StagesStarted) Log.Info($"tunables: stages started {State.StagesStarted} -> {reached} for the new thresholds");
+        State.StagesStarted = reached;
         Log.Info($"tunables in effect: {file.Hash}");
     }
 

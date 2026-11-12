@@ -21,6 +21,8 @@ public enum EventTrigger
     Signal,
     /// <summary>When a human ship first comes near a trade station in a system visit.</summary>
     Station,
+    /// <summary>When the players become wanted while heat is at stage 1 or more (spec 471).</summary>
+    Wanted,
 }
 
 /// <summary>Event categories with their own per-run limits.</summary>
@@ -63,6 +65,8 @@ public sealed class NeedRules
     /// <summary>Sectors left before the Buyer's sector. MaxSectorsLeft -1 means no limit.</summary>
     [Serialize(Optional = true)] public int MinSectorsLeft;
     [Serialize(Optional = true)] public int MaxSectorsLeft = -1;
+    /// <summary>True: only while a faction in this system wants the players.</summary>
+    [Serialize(Optional = true)] public bool Wanted;
 }
 
 [ReflectiveSerialization(Explicit = true)]
@@ -103,6 +107,8 @@ public sealed class OutcomeRules
     [Serialize(Optional = true)] public float Reputation;
     /// <summary>Multiplies the Buyer price for the rest of the run (above 0, at most 1). 0 means no change.</summary>
     [Serialize(Optional = true)] public float BuyerPrice;
+    /// <summary>True: every faction in this system stops wanting the players, like a paid bounty (spec 472).</summary>
+    [Serialize(Optional = true)] public bool ClearWanted;
     [Serialize(Optional = true)] public int Tech;
     [Serialize(Optional = true)] public int Crew;
     [Serialize(Optional = true)] public ResourceAmount[] Resources = [];

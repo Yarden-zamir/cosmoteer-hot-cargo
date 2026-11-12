@@ -1,0 +1,59 @@
+# Settings menu (spec 500 to 506): the escape menu opens the window, changes through its rows apply mid-game,
+# tunables.rules gets only the changed values, and invalid values are rejected with a message.
+newgame run
+wait 8
+expect hunters == 0
+menu open
+expect menu_sections >= 13
+expect menu_rows >= 150
+# A bool switch. Events stay quiet for the hunter checks.
+menu set Events.Enabled off
+menu value Events.Enabled == 0
+# A UX switch applies at once.
+menu set Ux.HeatPanel off
+expect ux_panel == 0
+# A stage table field: the next stage start uses it.
+menu set Hunters.Stages[0].ShipCount 3
+# A stage name drop list and a list of numbers.
+menu set Tactics.KiteMinStage Hunt
+menu set Heat.HeatMultiplierByUnits 1, 1, 1, 1, 1, 1, 1, 1, 1
+menu set Heat.HeatPerGameMinute 0
+menu file has HeatPanel = false
+menu file has ShipCount = 3
+menu file has KiteMinStage = "Hunt"
+menu file has HeatMultiplierByUnits = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+menu file lacks HeatCarryOverFraction
+menu file lacks PincerMinStage
+# Rejections: the value stays, the window shows the reason, and the file keeps the last valid values.
+menu reject Heat.HeatCarryOverFraction 2
+expect menu_error == 1
+menu reject Hunters.Stages[0].ShipCount 0
+menu reject Heat.HeatPerGameMinute abc
+menu file lacks HeatCarryOverFraction
+menu file lacks ShipCount = 0
+menu set Ux.HeatPanel on
+expect menu_error == 0
+menu close
+# The changed Warning response: 3 ships instead of 1.
+stage
+wait 1
+expect hunters == 3
+# Heat rate 0: heat stays at the Warning threshold.
+wait 5
+expect heat <= 25.01
+# Heat rate 300 per minute, times 1 from the new multiplier table: about 5 per second.
+menu open
+menu set Heat.HeatPerGameMinute 300
+menu close
+wait 4
+expect heat >= 35
+# Reset buttons write the defaults back and drop the values from the file.
+menu open
+menu reset Heat.HeatPerGameMinute
+menu value Heat.HeatPerGameMinute == 2
+menu file lacks HeatPerGameMinute
+menu resetsection Hunters
+menu file lacks ShipCount
+menu value Hunters.Stages[0].ShipCount == 1
+menu close
+quit

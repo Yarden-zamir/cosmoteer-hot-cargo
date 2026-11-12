@@ -8,6 +8,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <AssemblyName>HotCargo</AssemblyName>
+    <!-- HotCargo.xml ships next to the DLL: the settings menu shows the doc comments of the tunables. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573;CS1572;CS1574;CS1584;CS1658;CS1570;CS1587</NoWarn>
     <RootNamespace>HotCargo</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <!-- Game files are copied from the PC into .game by scripts/pull-game.sh. They are not committed. -->

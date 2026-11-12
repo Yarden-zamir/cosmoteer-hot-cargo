@@ -114,8 +114,11 @@ public static class HunterSpawner
         int allegiance = HunterAllegiance(sim, career);
         float waveDirection = sim.Rand.Direction();
         float halfArc = MathF.PI / 180f * t.WaveArcDegrees / 2f;
-        int count = Math.Min(wanted, Math.Max(0, t.MaxLiveHunters - Hunters(sim).Count()));
-        if (count < wanted) Log.Info($"hunters: {reason} capped at {count} ships by MaxLiveHunters {t.MaxLiveHunters}");
+        // Spec 334: co-op scales the group and the live cap.
+        int scaled = Scaling.EnemyScale.Count(wanted, sim);
+        int maxLive = Scaling.EnemyScale.Cap(t.MaxLiveHunters, sim);
+        int count = Math.Min(scaled, Math.Max(0, maxLive - Hunters(sim).Count()));
+        if (count < scaled) Log.Info($"hunters: {reason} capped at {count} of {scaled} ships by MaxLiveHunters {maxLive}");
         for (int i = 0; i < count; i++)
         {
             var ship = PickShip(sim, t, tier);
