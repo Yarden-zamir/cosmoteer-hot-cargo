@@ -51,4 +51,6 @@ public sealed class RunState
     [Serialize(Optional = true)] public Hunters.HunterState Hunters = new();
     /// <summary>Multiplies the Buyer price (spec 7). Events lower it (an advance from the Buyer's agent); 1 means no change.</summary>
     [Serialize(Optional = true)] public float BuyerPriceMultiplier = 1f;
+    /// <summary>Spec 330: the new-game enemy scaling setting, the enemy multiplier with 2 players. Set once at run start.</summary>
+    [Serialize(Optional = true)] public float EnemyScale = Scaling.ScalingModel.DefaultSetting;
 }

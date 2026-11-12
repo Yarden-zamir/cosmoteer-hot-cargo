@@ -1,0 +1,52 @@
+# Co-op enemy scaling (spec 330 to 336) with a faked player count, at the default setting 1.5.
+# Factor = 1 + 0.5 x (players - 1): 1 player 1x, 2 players 1.5x, 3 players 2x. These counts are whole, so no roll decides them.
+# Checks a vanilla fleet bounty (and its mission targets), a single bounty (stays one ship), a hunter wave and an event group.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+expect enemysetting == 1.5
+# Solo: vanilla counts.
+enemyplayers 1
+expect enemyfactor == 1
+scalebounty fleet
+expect fleetships == 2
+expect fleettargets == 2
+scalebounty single
+expect fleetships == 1
+spawnstage Patrol
+wait 1
+expect hunters == 2
+ev_spawn TollGuards
+counttag hc_ev_toll
+expect tagcount == 3
+# 2 players: 1.5x.
+enemyplayers 2
+expect enemyfactor == 1.5
+scalebounty fleet
+expect fleetships == 3
+expect fleettargets == 3
+scalebounty single
+expect fleetships == 1
+expect fleettargets == 1
+spawnstage Patrol
+wait 1
+expect hunters == 5
+# 3 players: 2x.
+enemyplayers 3
+expect enemyfactor == 2
+scalebounty fleet
+expect fleetships == 4
+expect fleettargets == 4
+scalebounty single
+expect fleetships == 1
+spawnstage Patrol
+wait 1
+expect hunters == 9
+ev_spawn TollGuards
+counttag hc_ev_toll
+expect tagcount == 9
+# Setting 1.0 turns scaling off for any player count.
+enemyscale 1.0
+expect enemyfactor == 1
+quit

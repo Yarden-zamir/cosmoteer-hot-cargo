@@ -147,3 +147,26 @@ public class EventModelBatch2Tests
         Assert.Throws<ArgumentOutOfRangeException>(() => EventModel.BuyerPriceAfter(1f, 0f));
     }
 }
+
+public class EventModelWantedTests
+{
+    [Fact]
+    public void Wanted_need()
+    {
+        Assert.Null(EventModel.FirstUnmet(new Need { Wanted = true }, new Snapshot { Wanted = true }));
+        Assert.Equal(UnmetKind.NotWanted, EventModel.FirstUnmet(new Need { Wanted = true }, new Snapshot())?.Kind);
+        Assert.Null(EventModel.FirstUnmet(new Need(), new Snapshot { Wanted = true }));
+    }
+
+    [Fact]
+    public void Wanted_warning_fires_on_the_rising_edge_of_wanted_and_heat()
+    {
+        Assert.Equal((true, true), EventModel.WantedWarning(wanted: true, stagesStarted: 1, minStage: 1, warnedBefore: false));
+        Assert.Equal((false, true), EventModel.WantedWarning(true, 2, 1, warnedBefore: true));
+        Assert.Equal((false, false), EventModel.WantedWarning(true, 0, 1, false));
+        Assert.Equal((false, false), EventModel.WantedWarning(false, 3, 1, true));
+        Assert.Equal((false, false), EventModel.WantedWarning(true, 1, 2, false));
+        // A min stage below 1 still needs the first stage: wanted alone stays vanilla.
+        Assert.Equal((false, false), EventModel.WantedWarning(true, 0, 0, false));
+    }
+}

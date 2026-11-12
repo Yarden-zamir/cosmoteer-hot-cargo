@@ -1,7 +1,7 @@
 # Telemetry
 
 Hot Cargo records each game session to a JSONL file, so test runs and playtests can be analyzed afterwards.
-Spec: SPEC.md section 28 (requirements 530 to 545). Code: `src/HotCargo/Telemetry/`. Analysis: `tools/telemetry/`.
+Spec: SPEC.md section 29 (requirements 530 to 545). Code: `src/HotCargo/Telemetry/`. Analysis: `tools/telemetry/`.
 
 ## Files
 
