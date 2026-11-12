@@ -116,6 +116,7 @@ Heat sources and sinks in one sector (8 units held, multiplier 1.2, after the ch
 
 ## Dependencies on other areas
 
+- **Run modes (spec 680 to 683):** the difficulty table multiplies these defaults at each read (heat rate, hunter ships and tiers, fees, tech value). The vanilla defaults (Easy, Fast, Standard) are 1, so the numbers here hold for them. On the Normal economy, missions pay half of Fast, fees cost 1.2 × and the tech value is 0.9 ×: income is then about 1.1 × TVM(T) per sector, close to the need.
 - **Vault (Tech Vault to 1 tile, 2 units per vault, 4 vaults at start):** the start stays at 8 units, so the heat multiplier (1.2) and the budget above hold. If the start changes, check `Heat.HeatMultiplierByUnits[start units]`: the budget scales with it.
 - **Scaling (enemy count multiplier for co-op):** more hunters per wave means more salvage and fuel, and more danger. The heat budget is per sector, not per player, so co-op income per player drops (rewards split). Revisit `RewardScale` for co-op with telemetry.
 - **AI2:** the salvage numbers assume destroyed hunters. Hunters that flee (requirement 195) take their fuel and drop nothing.
