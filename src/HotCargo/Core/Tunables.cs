@@ -35,6 +35,7 @@ public sealed class Tunables
     [Serialize(Optional = true)] public UxTunables Ux = new();
     [Serialize(Optional = true)] public WorldsTunables Worlds = new();
     [Serialize(Optional = true)] public ShipAiTunables ShipAi = new();
+    [Serialize(Optional = true)] public Onboarding.OnboardingTunables Onboarding = new();
     [Serialize(Optional = true)] public DebugTunables Debug = new();
 }
 

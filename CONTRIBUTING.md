@@ -5,13 +5,26 @@ Read SPEC.md first. It holds the design, the numbered requirements and the plan.
 ## Layout
 
 - `src/HotCargo/Core`, `Ui`, `Dev`: shared core. Change it only when an area cannot work through the hooks in `Core/Run.cs` (`Run.Hooks`), `Core/DebugKeys.cs` (`DebugKeys.Extra`) and `Dev/Autotest.cs` (`Autotest.Commands`, `Autotest.Fields`).
-- `src/HotCargo/<Area>`: one folder for each area (Tech, Journey, Hunters, Missions, Tactics, Ux, Events, Chains, Contracts). Each area has `<Area>Area.Register()`, its tunables section class and its patches.
+- `src/HotCargo/<Area>`: one folder for each area (Tech, Journey, Hunters, Missions, Tactics, Ux, Events, Chains, Contracts, Onboarding). Each area has `<Area>Area.Register()`, its tunables section class and its patches.
 - Shared helpers in Core: `Errors.Guard` / `Errors.Report` for any failure in a patch, sim tick or UI frame (log once, show in the overlay, never crash the game), and `SimQueries` for tagged ships, human ships and sim lookups. Use them before you write a new one.
 - `mod/mod.header.rules`: the mod header. `scripts/assemble-mod.sh` builds `mod.rules` from it and from every `mod/<area>/actions.rules`.
 - `mod/<area>/actions.rules`: only Action objects `{ ... }`, without an outer list.
 - `mod/<area>/strings.en.rules`: string sections for the area. Two areas must not define the same top-level section.
 - `mod/tunables.rules`: changed values only. The mod writes `tunables.defaults.rules` with every value at game start.
 - New tunables show in the in-game settings menu by themselves (`src/HotCargo/TunablesMenu`). Give each one a `/// <summary>` comment: the menu shows it as the description. If a change does not take effect within a second, add the field to `TunableTiming.cs` and to TUNABLES.md.
+
+## How to Play pages and the run log
+
+Each player-facing mechanic gets a How to Play page (SPEC.md 720 to 726) and writes its events to the run log (730 to 734). Add both in the same change as the mechanic.
+
+1. Write the page in `mod/<area>/codex.rules` as a `CodexPages` list. Copy a page from `mod/onboarding/codex.rules`. The ID starts with `hc_`. Use `TabNameKey = "HotCargoCodex/Tab"`. Start the title with "Hot Cargo:".
+2. Add the list before the vanilla pages in `mod/<area>/actions.rules`, for example for an area `diplomacy`: `{ Action = AddBase; AddBaseTo = "<codex/codex.rules>/CodexPages"; BaseToAdd = &<diplomacy/codex.rules>/CodexPages; Index = 0 }`.
+3. Put the page strings in the area's own strings section. Keep each entry to one or two short sentences. Name no numbers that a tunable sets.
+4. In `<Area>Area.Register`, add the trigger: `Onboarding.Hints.Add("hc_<name>", run => <condition>)`. The condition runs in UI frames and only reads state. Pick the moment the player first meets the mechanic.
+5. Write run log lines from sim logic with `Onboarding.RunLog.Add(run, kind, xml)`. Escape names with `StringTools.EscapeForXml`. Add a `RunLogKind` value only when no kind fits.
+6. Test: add the trigger to `tests/autotest/onboarding-hints.txt` (`expect hint_hc_<name> == 1`) and the line to `tests/autotest/onboarding-log.txt`. Add the row to the page table in SPEC.md requirement 721.
+
+The mod checks at the first frame of a run that each trigger has a page and each `hc_` page has a trigger, and shows a mismatch in the overlay.
 
 ## Build and test
 

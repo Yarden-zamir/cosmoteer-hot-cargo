@@ -217,3 +217,14 @@ The autotests `shipai-basic`, `shipai-save` and the co-op test `shipai` cover ro
 2. Try the vanilla payoff: hail one of the police ships. Does the "pay the bounty" option show, as the hint says?
 3. A Clean Record and Decoy Run: is the price fair against the vanilla bounty? Does the heat risk feel fair?
 4. Does the warning come back too often (it shows again each time you become both wanted and hunted)?
+
+## How to Play and the run log (spec 720-734)
+
+The autotests `onboarding-hints` and `onboarding-log` cover each trigger, the order and the log lines. These checks need a person.
+
+1. In the game settings, click "Reset Tutorials", then start a new career. Do the Hot Cargo pages show in the "How to Play" list before the vanilla ones? Does each page show at a moment when it helps?
+2. Open each Hot Cargo page. Is it short enough to read in a fight? Is a term unclear or a page missing?
+3. Do the vanilla tutorials come back after about 5 minutes, once you read the Hot Cargo pages? Is that too early or too late?
+4. Turn "Show tutorials" off in the game settings. Do the Hot Cargo pages stop too?
+5. Open the career log (the mission log button) and the "Hot Cargo run" tab. Does it tell the story of your run? Is a line missing, or is one noise?
+6. Co-op: do both players see the same run log lines?

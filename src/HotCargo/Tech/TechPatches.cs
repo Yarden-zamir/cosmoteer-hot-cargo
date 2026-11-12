@@ -71,5 +71,6 @@ static class VaultDamagePatch
         int removed = Math.Min(lost, grid.Resources);
         grid.AddResources(-removed);
         Log.Info($"vault at {__instance.Location} took {oldHealth - newHealth} damage: lost {removed} tech, {grid.Resources} left");
+        Onboarding.RunLog.TechLost(run, removed, Vaults.CountFleetTech(__instance.Ship.Sim));
     });
 }

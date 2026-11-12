@@ -140,7 +140,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 13. Tunables, debug and live tuning
 
-50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78, 100 to 104, 130 to 141, 160 to 175, 190 to 202, 221 to 225 and 400 to 412 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
+50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78, 100 to 104, 130 to 141, 160 to 175, 190 to 202, 221 to 225, 400 to 412 and 723 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
 51. The file uses the game's `.rules` format.
 52. The mod watches the file. When the file changes, the mod reloads it on the next frame, without a game restart. The settings menu (requirement 500) writes the same file.
 53. If the file has an error, the mod keeps the last valid values and shows the error in game. Errors include values that break sim logic later, for example a stage name that `Hunters.Stages` or a tactic does not match (`TunablesFile.Validate`).
@@ -152,7 +152,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 57. Heat, the stages that already started, the sector index, the run result, notoriety and the peak tier (requirement 19), the event state (requirement 76), the chain state (requirement 172) and the contract state (requirement 107) are saved with the career save and loaded with it. Ship tactics are saved with each ship, not in the run state (requirement 407). Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
 58. All logic that changes simulation state runs in the deterministic simulation tick. It uses the simulation random source, not `System.Random`. The integrity hash includes heat, sector, stages, result, fleet tech, delivered units, run time, the loss timer, the event serials, notoriety, the peak tier, the contract counts and the tunables hash, so a divergence starts a resync at once. Each ship's hash includes its tactics state (requirement 411). Each desync that the game detects writes an `MP DESYNC` line to the Hot Cargo log.
-57. Heat, the stages that already started, the sector index, the run result, notoriety and the peak tier (requirement 19), the event state (requirement 76), the chain state (requirement 172), the contract state (requirement 107) and the enemy scaling setting (requirement 330) are saved with the career save and loaded with it. Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
+57. Heat, the stages that already started, the sector index, the run result, notoriety and the peak tier (requirement 19), the event state (requirement 76), the chain state (requirement 172), the contract state (requirement 107), the enemy scaling setting (requirement 330) and the run log (requirement 730) are saved with the career save and loaded with it. Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
 58. All logic that changes simulation state runs in the deterministic simulation tick. It uses the simulation random source, not `System.Random`. The integrity hash includes heat, sector, stages, result, fleet tech, delivered units, run time, the loss timer, the event serials, notoriety, the peak tier, the contract counts and the tunables hash, so a divergence starts a resync at once. Each desync that the game detects writes an `MP DESYNC` line to the Hot Cargo log.
 59. The fleet tech count and the loss rule count all human players together. A loss ends the run for everyone.
 60. In multiplayer, the mod does not reload tunables. A new co-op run starts with the default tunables on every machine. On its first frame the host sends its `tunables.rules` as a multiplayer input (`HotCargoTunables`), and every machine applies it at the same tick. The starting vault and the first system's offers exist before that and use the defaults. A loaded game uses the tunables in the save. The client's file has no effect. Changes in the host's settings menu use the same input (requirement 504). The heat panel shows a short hash of the tunables in effect, so players can compare.
@@ -231,6 +231,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `Worlds.SundiveSalvageSeconds`, `HeatWarnDepth` | 5 s, 0.5 | 223 |
 | `Worlds.LairDiscoverDistance` | 2000 | 224 |
 | `Worlds.ArrivalLine`, `ArrivalLineDelaySeconds` | on, 4 s | 225 |
+| `Onboarding.VanillaTutorialDelaySeconds` | 300 s | 723 |
 | `ShipAi.Enabled`, `TickSeconds` | on, 1 s | 403 |
 | `ShipAi.KiteRangeFraction`, `CloseInDistance`, `RetreatDistance`, `HoldTolerance` | 0.9, 100, 2000, 150 | 402 |
 
@@ -255,12 +256,13 @@ mod/                       rules content; scripts/assemble-mod.sh builds mod.rul
   worlds/                  system archetypes: sector types, run map weights, archetype spawners, current nebula, wave spawns
   shipai/                  strings of the ship tactics editor
   scaling/                 co-op enemy scaling: the fleet opt-in tag on the vanilla ambush, slider strings
+  onboarding/              Hot Cargo How to Play pages (codex.rules), the action that puts them first, run log strings
 src/HotCargo.Loader/       startup hook entry point, assembly resolve
 src/HotCargo/
   Mod.cs                   Harmony setup, area registration
   Core/                    Run, RunState (save), Tunables, TunablesFile (live reload, validation), HeatModel,
                            CareerPatches (lifecycle), Activation (requirement 63), Errors, SimQueries, DebugKeys
-  Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/ Chains/ Worlds/ Scaling/   one folder for each area: <Area>Area.Register, tunables, patches
+  Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/ Chains/ Worlds/ Scaling/ Onboarding/   one folder for each area: <Area>Area.Register, tunables, patches
   Ai/                      enemy AI behaviors (flee, call, regroup, focus); TacticsArea registers it, Tactics tunables
   ShipAi/                  player ship tactics: model (ShipAiModel), per-ship state and save hooks (ShipTactics), sim controller, MP input, editor
   Ui/                      overlay, heat panel, run intro and end panels
@@ -477,6 +479,44 @@ Dragon Age style tactics for the players' own ships. Code: `src/HotCargo/ShipAi`
 410. **Editor**: Ctrl+K, or the "AI" button in the ships card (one selected own ship), opens a window: the Auto switch, the preset list with Apply, Copy, Paste, Clear, one line per row (condition, its parameter, action, its parameter, up, down, remove) and a status line (off, waiting for a player order, the current target). The number of each row in effect now is green. The window uses the vanilla window, drop list and button styles. Autotests never use the system clipboard.
 411. Determinism: the tactics run in the sim tick (`EventHub.Tick`), walk the ships in sim order, and read only sim state. They give vanilla commands with sim command IDs. The tactics state is part of the ship's integrity hash. They also run after a win, because the career goes on.
 412. Limit: the tactics control only player ships; they are not a vanilla `ShipAI`. A vanilla AI on a player ship would change comms, stasis and ship splits. Revisit if the game adds an autopilot for player ships.
+
+## 31. How to Play and the run log
+
+Players of the mod likely know the base game. So the Hot Cargo mechanics join the game's own help, and they come first. Code: `src/HotCargo/Onboarding`. Rules: `mod/onboarding`. Tunables: the `Onboarding` section.
+
+720. Each Hot Cargo mechanic has a vanilla codex page (`CodexPages`, `mod/onboarding/codex.rules`) in the "Hot Cargo" codex tab. The page ID starts with `hc_`, and the title starts with "Hot Cargo:". A page shows like a vanilla tutorial: a button in the "How to Play" list of the HUD with the new tutorial sound, and the page in the codex dialog. Page texts are short, in the Hot Cargo voice, and name no numbers that a tunable sets.
+721. Pages and triggers. A page shows the first UI frame its trigger holds:
+
+| Page | Trigger |
+|---|---|
+| `hc_run` The Run | 5 s of game time in a run, after the run intro |
+| `hc_vault` The Tech Vault | a Tech Vault of a human ship is damaged |
+| `hc_heat` Heat | the first heat stage starts |
+| `hc_hunters` Hunters | a hunter is in the system |
+| `hc_selling` Selling Tech | a comms window is open while the fleet holds tech |
+| `hc_contracts` Contracts | a comms window is open and the system has contract offers |
+| `hc_missions` New Jobs | a comms window is open and the system offers a Hot Cargo mission (a mission type that starts with `HotCargo`) |
+| `hc_chains` Story Chains | a chain stage mission is in the log, or a comms window is open and the system offers one |
+| `hc_events` Events | an event page waits for a choice |
+| `hc_worlds` System Types | the current system has a Hot Cargo archetype (sector type `hc_*`) |
+| `hc_wanted` Wanted and Hunted | the Wanted warning (requirement 470) |
+| `hc_buyer` The Buyer | the Buyer spawned |
+| `hc_settings` Settings | sector 2 |
+| `hc_ship_tactics` Ship Tactics | `ShipAi.Enabled` and the Hunt stage (3 stages started), or more human ships than human players |
+| `hc_coop` Co-op | a multiplayer run with 2 or more human players |
+
+722. The game keeps the page state in its settings (`Settings.CodexPageStates`), so each page shows once per player, across careers, and "Reset Tutorials" in the game settings shows them again. With "Show tutorials" off, no trigger runs and no page shows. Triggers only read state and change no sim state.
+723. Priority. The Hot Cargo pages come first in the codex list (requirement 725), so the How to Play list checks them first, and their buttons move to the top of the list. Vanilla tutorials (the "Tutorials" tab) wait while a Hot Cargo run is active: during the first `VanillaTutorialDelaySeconds` (default 300 s) of run time, and while a Hot Cargo page is in the list unread. A waiting tutorial is not removed: it shows when the wait ends and its own condition holds. A tutorial that shows for now (`TempShowCondition`) keeps its update. Lore and tips never wait. Without a Hot Cargo run, the codex stays vanilla.
+724. A trigger is C# code: `Onboarding.Hints.Add(pageId, condition)` in an area's `Register`. CONTRIBUTING.md says how an area adds a page.
+725. `mod/onboarding/actions.rules` adds the Hot Cargo page list as the first base of the vanilla `CodexPages` list (`AddBase` with `Index = 0`). At the first frame of a run the mod checks that each trigger has a page, each `hc_` page has a trigger, no `hc_` page comes after a vanilla page, and each page string exists. A failure shows in the overlay.
+726. The autotest `onboarding-hints` checks each trigger, that each page shows once (also after a load), the wait of the vanilla tutorials and its end, the button order, and the "Show tutorials" switch.
+730. The run log. The run state saves a list of lines (`RunState.Log`): game time, sector index, kind and text. At most 400 lines; the oldest drop.
+731. Lines: the run start, each new sector (name and system type), each heat stage and strike wave, each event result (title and result lines; a choice that leads to a follow-up page logs nothing), each contract accept (fee, withdrawn rivals) and informant sell-out, each chain stage result (story line, result lines, chain end), each tech sale and buy-back at a station, each Buyer delivery, tech that vault damage destroys, and the win or the loss. Areas add lines with `Onboarding.RunLog.Add` (or a named helper) from sim logic.
+732. The vanilla career log window gets a third tab, "Hot Cargo run", with the Stolen Tech icon. It lists the lines newest first: sector, game time and text.
+733. Lines are written in sim logic on every machine, so co-op players see the same lines. The text is in the language of each machine. The log is not in the integrity hash.
+734. The autotest `onboarding-log` checks each line kind, the tab rows and that the log loads with the save.
+
+Screenshots (`tests/screens/onboarding.txt`): `docs/screenshots/onboarding-howtoplay.jpg`, `onboarding-page.jpg`, `onboarding-careerlog.jpg`.
 
 ### Wanted and hunted
 

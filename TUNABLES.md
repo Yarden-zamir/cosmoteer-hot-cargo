@@ -29,13 +29,14 @@ Fields not listed in the "Not now" column apply Now.
 | Chains | `StationChance`, `LaterDelaySeconds`: next new system. `StoryLines`: next time it shows | `Enabled` and `PageTriggerDistance` apply now. |
 | Worlds | `PassWaveDistance`: next spawned ships. `ArrivalLine`, `ArrivalLineDelaySeconds`: next new system | Before a run is active (the first system of a new career), sim code uses the defaults (spec 227). |
 | Ux | `RunIntro`: new runs only. `StageAlertSeconds`, `CommsStayOnMap`, `PauseOnComms`, `PauseOnCommsMultiplayer`: next time it shows | All other switches apply on the next frame. Known limit: in an open event window, the dialogue key numbers keep their state until the page changes. |
+| Onboarding | (none) | `VanillaTutorialDelaySeconds` counts run time, so a loaded run that is older than the delay does not hold vanilla tutorials. |
 | Debug | (none) | |
 
 ## Values that a change cannot reach
 
 - Rules content (parts, missions, archetype weights, `FinalSectorTier`, the galaxy size): needs a game restart (spec 54).
 - A new co-op run starts with the defaults. The host's file arrives as an input on the first frame, so the starting vault and the first system's offers use the defaults (spec 60).
-- Test commands that change a tunable in place (`ev_set`, `ux`, `contract_set`, `mech_set`, `aiset`, `buyer sectors`, `maxhunters`, `tacticlog`): a later menu change or file reload replaces the tunables and drops those edits. Tests that mix the two set every value through the menu.
+- Test commands that change a tunable in place (`ev_set`, `ux`, `onboarding`, `contract_set`, `mech_set`, `aiset`, `buyer sectors`, `maxhunters`, `tacticlog`): a later menu change or file reload replaces the tunables and drops those edits. Tests that mix the two set every value through the menu.
 
 ## Screenshots
 

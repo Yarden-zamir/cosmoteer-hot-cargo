@@ -1,0 +1,8 @@
+	// Onboarding (spec 720 to 726): Hot Cargo How to Play pages. Index 0 puts them before the vanilla pages, so the
+	// How to Play list checks them first and the codex shows the Hot Cargo tab first.
+	{
+		Action = AddBase
+		AddBaseTo = "<codex/codex.rules>/CodexPages"
+		BaseToAdd = &<onboarding/codex.rules>/CodexPages
+		Index = 0
+	}

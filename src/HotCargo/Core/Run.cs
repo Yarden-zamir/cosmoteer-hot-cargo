@@ -28,7 +28,10 @@ public sealed class Run
         public static event Action<Run>? NewRunStarted;
         /// <summary>Runs inside each sim tick while the run is Running, after FleetTech is updated. Arguments: run, sim, tick seconds.</summary>
         public static event Action<Run, SimRoot, double>? Tick;
+        /// <summary>Runs once when the run is won or lost, after State.Result and State.EndReason are set. Sim logic.</summary>
+        public static event Action<Run>? RunEnded;
 
+        internal static void RaiseRunEnded(Run r) => Each(RunEnded, h => h(r));
         internal static void RaiseStageStarted(Run r, SimRoot s, int i) => Each(StageStarted, h => h(r, s, i));
         internal static void RaiseStrikeWave(Run r, SimRoot s) => Each(StrikeWave, h => h(r, s));
         internal static void RaiseSystemEntered(Run r, bool first) => Each(SystemEntered, h => h(r, first));
@@ -208,6 +211,7 @@ public sealed class Run
         State.Result = RunResult.Lost;
         State.EndReason = reason;
         Log.Info($"run lost: {reason}");
+        Hooks.RaiseRunEnded(this);
     }
 
     /// <summary>Ends the run as won. Heat stops; the career can continue.</summary>
@@ -218,6 +222,7 @@ public sealed class Run
         State.HeatEnabled = false;
         State.EndReason = reason;
         Log.Info($"run won: {reason}");
+        Hooks.RaiseRunEnded(this);
     }
 
     /// <summary>
