@@ -1,0 +1,29 @@
+# Run modes, Strike music (spec 688). The battle layers play only at the last heat stage. The log names the playing track.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+expect musicbattle >= 0
+expect strikemusic == 0
+maxhunters 0
+heat 99
+wait 2
+expect strikemusic == 0
+heat 5
+wait 2
+expect stages == 4
+expect strikemusic == 1
+expect musicbattle == 1
+# Off switch: vanilla music at once.
+rm_set StrikeMusic off
+wait 2
+expect strikemusic == 0
+rm_set StrikeMusic on
+wait 2
+expect strikemusic == 1
+# Heat below the last threshold re-arms the stage: vanilla music again.
+heat -20
+wait 2
+expect stages == 3
+expect strikemusic == 0
+quit

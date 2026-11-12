@@ -31,8 +31,11 @@ public static class Mod
             Worlds.WorldsArea.Register();
             ShipAi.ShipAiArea.Register();
             Scaling.ScalingArea.Register();
+            RunModes.RunModesArea.Register();
             TunablesMenu.TunablesMenuArea.Register();
             Diplomacy.DiplomacyArea.Register();
+            // Last: its run log hooks run after the hooks of the other areas.
+            Onboarding.OnboardingArea.Register();
             Log.Info($"harmony patched {harmony.GetPatchedMethods().Count()} methods; mod root {ModRoot}");
         }
         catch (Exception ex)

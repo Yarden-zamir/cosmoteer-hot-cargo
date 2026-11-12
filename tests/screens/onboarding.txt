@@ -1,0 +1,27 @@
+# How to Play pages and the run log tab. Main slot only (needs graphics).
+# codex_reset and codex_restore keep the player's own tutorial states and "Show tutorials" setting.
+render on
+codex_reset
+tutorials on
+newgame run
+wait 10
+closepanel
+# The Start event: pick an option and continue, like a player.
+uxpick 3
+wait 2
+uxpick 1
+wait 1
+ev_set Enabled false
+pause off
+wait 6
+heat 30
+wait 4
+screenshot onboarding-howtoplay
+careerlog
+wait 2
+screenshot onboarding-careerlog
+codex_open hc_heat
+wait 2
+screenshot onboarding-page
+codex_restore
+quit

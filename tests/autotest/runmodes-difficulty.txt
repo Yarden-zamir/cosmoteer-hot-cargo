@@ -1,0 +1,34 @@
+# Run modes, difficulty pressure (spec 680 to 684). Every vanilla level has a row, every level reaches every effective value,
+# and one hard combination goes through the real paths: the vanilla settings inputs, the heat tick, the hunter spawn, the fee roll.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+expect rm_levels_without_row == 0
+rm_log defaults
+rm_check_levels
+# Heat tick at the default levels.
+rm_ratemark
+wait 30
+expect rm_rategap < 0.02
+rm_feemark
+# A hard combination through the vanilla settings inputs (the settings tab sends the same inputs).
+rm_difficulty very_hard slow scarce
+rm_log hard
+expect rm_heatrate > 1
+expect rm_ships > 1
+expect rm_tiers >= 1
+expect rm_fees > 1
+expect rm_tech < 1
+expect rm_techgap < 0.01
+expect pricegap == 0
+rm_ratemark
+wait 30
+expect rm_rategap < 0.02
+rm_feecheck
+# Each fee rounds to 500, so the sum can drift a few percent.
+expect rm_feegap < 0.1
+spawnstage Patrol
+wait 2
+rm_expect_stage Patrol
+quit

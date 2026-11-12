@@ -59,4 +59,6 @@ public sealed class RunState
     [Serialize(Optional = true)] public float EnemyScale = Scaling.ScalingModel.DefaultSetting;
     /// <summary>Diplomacy area state: once-per-ship offers, held tech, hires, mercenaries (spec 586).</summary>
     [Serialize(Optional = true)] public Diplomacy.DiplomacyState Diplomacy = new();
+    /// <summary>Spec 730: the run log that the career log window shows, oldest first.</summary>
+    [Serialize(Optional = true)] public List<Onboarding.RunLogEntry> Log = new();
 }

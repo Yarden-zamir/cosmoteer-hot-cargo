@@ -49,7 +49,7 @@ Out of scope for this batch:
 2. The career map is small enough that a direct route crosses all sectors in about `RunSectorCount` sector jumps. The mod adds the map size "Hot Cargo run" (`mod/journey/galaxy.rules`, 50 systems, about 7 jumps from the start to the far edge). It is first in the map size list, so it is the default while the mod is on. The player can still choose Standard. These are rules values: a change needs a game restart and applies to new careers only.
 3. The danger tier of a sector rises with the sector index. Sector 1 is tier 1. The last sector is about tier `FinalSectorTier` (default 12). On the main route the tier rises by 2 for each jump. `FinalSectorTier` is a rules value in `mod/journey/galaxy.rules`, not a live tunable. Side systems keep the vanilla faction tiers, but no system has a low tier above start tier + 2 × its jumps from the start (rules type `HotCargoTierCap`). So a side system is never more dangerous than the main route at the same distance. Faction home systems (low tier above `FinalSectorTier`) keep their tier.
 4. Fame and money rewards are scaled by `RewardScale` (default 2.0), so that ship growth keeps up with the shorter run. The scale multiplies the difficulty reward factors. So it applies to mission rewards, fame for defeated ships and the reward text in the UI.
-5. The new career screen keeps the vanilla difficulty options. The mod does not add its own difficulty screen. It adds one row: the co-op enemy scaling slider (requirement 330).
+5. The new career screen keeps the vanilla difficulty options. The mod does not add its own difficulty screen. It adds one row: the co-op enemy scaling slider (requirement 330). The vanilla levels scale Hot Cargo's pressure (requirement 680).
 
 ## 6. Win and loss
 
@@ -58,7 +58,7 @@ Out of scope for this batch:
 8. After a win, heat turns off. The win panel shows the score and the run numbers, and the players can continue the career.
 9. **Loss**: when the fleet tech count reaches 0, the run is lost. Any cause counts: vault damage, a destroyed vault, crew that die while they carry tech, or a sale of the last unit. A Buyer delivery is the only exception, because it wins the run first.
 10. A loss shows the game-over screen with the title "The corporation recovered the tech", the reason and the run numbers.
-11. The mod does not delete save files after a loss.
+11. Outside Ironman, the mod does not delete save files after a loss. In an Ironman career a loss deletes the save (requirement 685).
 12. The loss check runs only when the count is certain: no ship jump is in progress (no ship in jump limbo; the local jump animation does not count, because it differs between multiplayer machines), and no friendly ships wait in another system. The count must stay at 0 for `LossGraceSeconds` (default 3 s), so tech that crew carry between ships does not trigger a loss. The run state saves the time at 0, so a load or a client that joins sees the same timer.
 
 ## 7. Tech units and the Tech Vault
@@ -77,7 +77,7 @@ Out of scope for this batch:
 19. Tech value = ship value × (`TechShipFraction` + `TechShipFractionPerGameHour` × game hours + `TechShipFractionPer100Notoriety` × notoriety ÷ 100), rounded to 100.
     - Ship value = the vanilla `TierValueMaximums` entry (`Data/modes/career/tier_tables.rules`) of the peak tier: the highest low tier of a system that the players were in. It is the most that a ship of that tier is worth.
     - Notoriety = the sum of every heat gain in the run (time, fame, contracts, events, debug keys). Heat losses do not lower it. The run state saves it.
-    - Game time, notoriety and the peak tier never go down, so the tech value never goes down. Time and notoriety count in whole steps (`PriceStepMinutes` 1 min, `NotorietyStep` 5), so a sale in flight sees one price.
+    - Game time, notoriety and the peak tier never go down, so the tech value never goes down. Exception: a lower economic difficulty factor set mid-run (requirement 683). Time and notoriety count in whole steps (`PriceStepMinutes` 1 min, `NotorietyStep` 5), so a sale in flight sees one price.
     - Defaults 0.25, 0.10 and 0.05. Purpose: 1 or 2 units pay for a ship of even power for the current stage. Examples: start (tier 1) 15,000, a quarter of a tier 1 ship. Mid-run (tier 7, 1.2 h, 250 notoriety) about 114,000 = 0.5 × 230,000, so 2 units buy a full tier 7 ship. Late (tier 12, 2.5 h, 600 notoriety) 640,000 = 0.8 × 800,000. A later sale pays more.
     - Against rewards: a standard mission pays 0.05 × the tier's ship value × the difficulty money factor × `RewardScale`. On the default Fast economy (2×) with `RewardScale` 2 that is 0.2 × ship value, so one unit mid-run is worth about 2.5 standard missions. Ship prices do not change with difficulty, so the tech value does not use the money factors.
 20. The trade screen shows the current tech value as the resource price.
@@ -87,7 +87,7 @@ Out of scope for this batch:
 ## 9. Heat
 
 23. Heat belongs to the current sector and starts at 0 in sector 1.
-24. Each simulation tick, heat increases by heat multiplier × `HeatPerGameMinute` × elapsed game minutes. Default: 2 heat per minute. Open contracts add a trail on top (requirement 101).
+24. Each simulation tick, heat increases by heat multiplier × `HeatPerGameMinute` × elapsed game minutes. The heat multiplier includes the difficulty heat rate (requirement 681). Default: 2 heat per minute. Open contracts add a trail on top (requirement 101).
 25. When the players earn fame, heat increases by heat multiplier × `HeatPerStandardMission` × (fame earned ÷ standard mission fame of the sector tier). Default: 15 heat for each standard mission. The standard mission fame includes the same factors as the payout: the difficulty fame factor and `RewardScale`.
     The division keeps "heat per mission" stable across tiers, so that the tunable reads as "missions per sector".
 26. Heat multiplier = `HeatMultiplierByUnits[fleet tech count]`. Default table for 0 to 8 units: `[0.25, 0.4, 0.52, 0.64, 0.76, 0.88, 1.0, 1.1, 1.2]`. A count above the table uses the last entry.
@@ -110,7 +110,7 @@ With defaults and 8 units held (no contract trail), a sector reaches the top sta
 
 31. Each stage starts once for each sector visit. The Strike stage repeats its waves. A stage response can arrive in groups (requirement 191). A group spawns only enough ships to reach `MaxLiveHunters` (default 12) live hunters in the system. In co-op the group and the cap scale (requirement 334).
 32. Hunters spawn at a distance of `SpawnDistanceMin` to `SpawnDistanceMax` (default 2,000 to 3,000) from the center of the player fleet. All ships of one wave come from one direction, spread over `WaveArcDegrees` (default 40°). They always know where the players are, move to them and attack. Hunters far from the players move toward them in stasis too.
-33. Hunters are a corporate force, not a rules faction. They use built-in ships with the `ShipTags` tag (default `combat`) from the `ShipFactions` pools (default: all factions), at the wanted tier or the nearest lower tier. Their names start with `ShipNamePrefix` (default "Corporate"). All hunters in a system share one hostile player index, so they are allies of each other and enemies of the players. Like vanilla ambushes, they are also enemies of faction ships. Every hunter carries FTL fuel (requirement 192). Hunters never offer or accept surrender through the vanilla dialogue; the diplomacy hails of section 33 handle their demands and surrenders. Resolved: a rules faction needs an icon, two player indices and its own ship pool, and the faction reputation systems would treat it as a normal faction. A unique player index gives the same result at much lower cost.
+33. Hunters are a corporate force, not a rules faction. They use built-in ships with the `ShipTags` tag (default `combat`) from the `ShipFactions` pools (default: all factions), at the wanted tier or the nearest lower tier. Their names start with `ShipNamePrefix` (default "Corporate"). All hunters in a system share one hostile player index, so they are allies of each other and enemies of the players. Like vanilla ambushes, they are also enemies of faction ships. Every hunter carries FTL fuel (requirement 192). Hunters never offer or accept surrender through the vanilla dialogue; the diplomacy hails of section 37 handle their demands and surrenders. Resolved: a rules faction needs an icon, two player indices and its own ship pool, and the faction reputation systems would treat it as a normal faction. A unique player index gives the same result at much lower cost.
 34. Hunters prefer to attack ships that carry Tech Vaults. A ship with a Tech Vault part counts `VaultTargetFactor` times more (default 3) when a hunter picks the nearest target.
 35. The Strike stage is dangerous but survivable. Its ships arrive in groups, so players who can fight have time to destroy a hunter, take its fuel and jump away (requirements 191 and 192). It does not end the run directly. Only a loss under requirement 9 ends the run. **Open decision:** the user may choose a hard fail instead.
 
@@ -140,7 +140,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 13. Tunables, debug and live tuning
 
-50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78, 100 to 104, 130 to 141, 160 to 175, 190 to 202, 221 to 225, 360 to 367, 400 to 412 and 561 to 584 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
+50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78, 100 to 104, 130 to 141, 160 to 175, 190 to 202, 221 to 225, 360 to 367, 400 to 412, 561 to 584, 680 to 688 and 723 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
 51. The file uses the game's `.rules` format.
 52. The mod watches the file. When the file changes, the mod reloads it on the next frame, without a game restart. The settings menu (requirement 500) writes the same file.
 53. If the file has an error, the mod keeps the last valid values and shows the error in game. Errors include values that break sim logic later, for example a stage name that `Hunters.Stages` or a tactic does not match (`TunablesFile.Validate`).
@@ -150,7 +150,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 14. Persistence and multiplayer
 
-57. Heat, the stages that already started, the sector index, the run result, notoriety and the peak tier (requirement 19), the event state (requirement 76), the chain state (requirement 172), the contract state (requirement 107), the shared choice votes and mode (requirement 607), the diplomacy state (requirement 586) and the enemy scaling setting (requirement 330) are saved with the career save and loaded with it. Ship tactics are saved with each ship, not in the run state (requirement 407). Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
+57. Heat, the stages that already started, the sector index, the run result, notoriety and the peak tier (requirement 19), the event state (requirement 76), the chain state (requirement 172), the contract state (requirement 107), the shared choice votes and mode (requirement 607), the diplomacy state (requirement 586), the enemy scaling setting (requirement 330) and the run log (requirement 730) are saved with the career save and loaded with it. Ship tactics are saved with each ship, not in the run state (requirement 407). Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
 58. All logic that changes simulation state runs in the deterministic simulation tick. It uses the simulation random source, not `System.Random`. The integrity hash includes heat, sector, stages, result, fleet tech, delivered units, run time, the loss timer, the event serials, notoriety, the peak tier, the contract counts, the shared choice votes and mode and the tunables hash, so a divergence starts a resync at once. Each ship's hash includes its tactics state (requirement 411). Each desync that the game detects writes an `MP DESYNC` line to the Hot Cargo log.
 59. The fleet tech count and the loss rule count all human players together. A loss ends the run for everyone.
 60. In multiplayer, the mod does not reload tunables. A new co-op run starts with the default tunables on every machine. On its first frame the host sends its `tunables.rules` as a multiplayer input (`HotCargoTunables`), and every machine applies it at the same tick. The starting vault and the first system's offers exist before that and use the defaults. A loaded game uses the tunables in the save. The client's file has no effect. Changes in the host's settings menu use the same input (requirement 504). The heat panel shows a short hash of the tunables in effect, so players can compare.
@@ -235,9 +235,13 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `Worlds.SundiveSalvageSeconds`, `HeatWarnDepth` | 5 s, 0.5 | 223 |
 | `Worlds.LairDiscoverDistance` | 2000 | 224 |
 | `Worlds.ArrivalLine`, `ArrivalLineDelaySeconds` | on, 4 s | 225 |
+| `Onboarding.VanillaTutorialDelaySeconds` | 300 s | 723 |
 | `Diplomacy.*` (chances, prices, radii, hire and mercenary times) | see `Diplomacy/DiplomacyTunables.cs` | 561 to 584 |
 | `ShipAi.Enabled`, `TickSeconds` | on, 1 s | 403 |
 | `ShipAi.KiteRangeFraction`, `CloseInDistance`, `RetreatDistance`, `HoldTolerance` | 0.9, 100, 2000, 150 | 402 |
+| `RunModes.Combat`, `Economy`, `Crew` | see section 34 | 680 |
+| `RunModes.FameTitleTiers`, `FameTierCap` | off, 2 | 686 |
+| `RunModes.StrikeMusic` | on | 688 |
 
 The defaults are first guesses. Live tuning sets the real values.
 
@@ -260,14 +264,16 @@ mod/                       rules content; scripts/assemble-mod.sh builds mod.rul
   worlds/                  system archetypes: sector types, run map weights, archetype spawners, current nebula, wave spawns
   shipai/                  strings of the ship tactics editor
   scaling/                 co-op enemy scaling: the fleet opt-in tag on the vanilla ambush, slider strings
+  onboarding/              Hot Cargo How to Play pages (codex.rules), the action that puts them first, run log strings
   diplomacy/               the HcHired module for vanilla AIs (ai.rules), diplomacy strings
   sharedchoice/            strings of the co-op bar of shared choice dialogs
+  runmodes/                run mode strings: difficulty intro line, Ironman lines
 src/HotCargo.Loader/       startup hook entry point, assembly resolve
 src/HotCargo/
   Mod.cs                   Harmony setup, area registration
   Core/                    Run, RunState (save), Tunables, TunablesFile (live reload, validation), HeatModel,
                            CareerPatches (lifecycle), Activation (requirement 63), Errors, SimQueries, DebugKeys
-  Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/ Chains/ Worlds/ Scaling/ SharedChoice/ Diplomacy/   one folder for each area: <Area>Area.Register, tunables, patches
+  Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/ Chains/ Worlds/ Scaling/ SharedChoice/ Onboarding/ RunModes/ Diplomacy/   one folder for each area: <Area>Area.Register, tunables, patches
   Ai/                      enemy AI behaviors (flee, call, regroup, focus) and personalities; TacticsArea registers it, Tactics tunables
   ShipAi/                  player ship tactics: model (ShipAiModel), per-ship state and save hooks (ShipTactics), sim controller, MP input, editor
   Ui/                      overlay, heat panel, run intro and end panels
@@ -279,7 +285,7 @@ scripts/                   pull-game, deploy, run, stop, logs, autotest, release
 
 Rules:
 
-- The model files (`HeatModel`, `TechModel`, `MissionModel`, `TacticsModel`, `EventModel`, `MechanicsModel`, `WaveModel`, `AiModel`, `ShipAiModel`, `ScalingModel`, `PersonalityModel`, `VoteModel`) have no game types, so that they are testable on the Mac without the game.
+- The model files (`HeatModel`, `TechModel`, `MissionModel`, `TacticsModel`, `EventModel`, `MechanicsModel`, `WaveModel`, `AiModel`, `ShipAiModel`, `ScalingModel`, `PersonalityModel`, `VoteModel`, `PressureModel`) have no game types, so that they are testable on the Mac without the game.
 - Patches stay thin. They call into the mod classes.
 - One tunables record type. The overlay and the code read the same values.
 
@@ -349,11 +355,18 @@ FTL-style choice events. EVENTS.md holds the design and the catalog.
 88. Dead in Space: a broken-down freighter needs repair supplies or a tow. It opens as an Arrival event or as a follow-up of the Distress Beacon. The tow choice needs a Tractor Beam Emitter and starts a Tow Job mission: the freighter has no AI, and the mission completes when it is within 1,200 of the nearest trade station at least 3,000 from it (`HotCargoTow` objective). It fails when the freighter is destroyed.
 89. Event texts show no counts that live elsewhere (starting tech, spawn counts). The token `{crates}` shows the live fleet tech count. The choice buttons have no number prefix; the UX area draws the key numbers.
 
+### Wanted and hunted
+
+470. When the players are wanted (vanilla: a faction in the system hunts them with police) and heat reached `WantedWarningMinStage` (default 1, the first stage), a warning shows once: a short message at the top of the screen and a chat line that names the factions and the ways out. Ways out: pay the bounty (hail one of their police ships; the vanilla surrender dialogue offers to pay it), leave the system (wanted belongs to the system), outlast the search timer, or a Wanted event (requirement 473). The warning shows again only after the players stop being both. Wanted alone stays vanilla.
+471. The Wanted trigger: when the warning in requirement 470 shows, a Wanted event opens with chance `WantedEventChance` (default 0.7). It ignores the cooldown and the per-system cap. It does not open while another page waits.
+472. A need can require wanted status (`Wanted = true`). An outcome can clear wanted (`ClearWanted`): every faction in the system stops wanting the players, as a paid bounty does.
+473. Wanted events: A Clean Record (pay 0.4 + 0.01 × heat money units, with a sell-out risk that grows with heat; or pay one crate for a sure clear and heat −5) and Decoy Run (pay 0.5 money units, with a failure risk that grows with heat; or a Sensor Array ghost). Each opens once per run.
+
 ## 23. Strike waves and enemy AI
 
 Tunables: `Hunters` (requirements 190 to 192) and `Tactics` (requirements 193 to 202). Pure math: `Hunters/WaveModel.cs`, `Ai/AiModel.cs`.
 
-190. **Stage scaling.** A stage response sends `ShipCount` ships of the sector tier + `TierOffset` in the last sector of the run. In sector 1 it sends `ShipCount` × `EarlyScale` ships (rounded, at least 1) of the sector tier + `TierOffset` − `EarlyTierReduction`. Both values rise linearly with the sector index. By default only Strike scales: 2 ships of tier + 1 in sector 1, 3 ships of tier + 2 in the last sector.
+190. **Stage scaling.** A stage response sends `ShipCount` ships of the sector tier + `TierOffset` in the last sector of the run. In sector 1 it sends `ShipCount` × `EarlyScale` ships (rounded, at least 1) of the sector tier + `TierOffset` − `EarlyTierReduction`. Both values rise linearly with the sector index. By default only Strike scales: 2 ships of tier + 1 in sector 1, 3 ships of tier + 2 in the last sector. The difficulty factors (requirement 682) and the fame title prototype (requirement 686) apply on top.
 191. **Waves.** A stage response arrives in `Waves` groups, `WaveGapSeconds` apart. Defaults: Strike 3 groups 45 s apart (one ship at a time), other stages 1 group. The first group arrives when the stage starts, with the stage alert. Each later group plays the alert sound with the "more ships" text. The repeat Strike waves of requirement 30 split the same way. The run state saves the waiting groups. A jump to another system drops them: a jump is how the players escape a strike.
 192. **Hunter fuel.** Every hunter carries at least `MinFuel` (default 40) hyperium, the FTL fuel resource. Built-in ships spawn with full hyperdrive tanks. A hunter with less fuel gets the rest in any storage that takes hyperium. Some built-in ships have no hyperdrive and no such storage; the run state holds the fuel that does not fit, and it drops with the same roll when the hunter is destroyed or becomes derelict. Vanilla drop rates apply when it dies: hyperdrive tanks drop their fuel when destroyed (`DropResourcesWhenDestroyed`), each unit with the hyperium `StorageDestroyed` chance (50 %), and crew salvage recovers all of it (`StorageSalvaged` 100 %). Death, salvage and a surrender (requirement 569) are the ways to get their fuel. A hunter that jumps out (requirement 195 or 562) takes its fuel with it.
 
@@ -416,7 +429,7 @@ A contract is a mission offer that a client gives: every offer in the station co
      - Vanilla missions: fee, trail and informant use the roll. Pirate and faction base attacks have flat heat 5.
      - Mechanics missions (requirement 130 and later), chain missions (requirement 160 and later) and event missions (requirement 86) carry their own `HotCargoContract` terms. The same UI, accept input, trail and informant rules apply to them. Missions that go straight to the log (not offered) are not contracts.
 101. **Trail.** Open contracts (accepted, in progress, with terms) leave a trail. Heat per game minute = (sum of trail weights − `TrailFreeContracts`) × `TrailHeatPerContractMinute`, never below 0. Defaults: 3 free, 1 heat per minute for each contract above 3. The trail ignores the tech multiplier.
-102. **Fees.** About half of the contracts (`FeeChance` 0.5) cost a fee. Model: purchase. The player who accepts pays the fee and does not get it back. A fee is `FeeMin` to `FeeMax` (0.3 to 0.8) standard mission pays at the mission tier, with the difficulty money factor and `RewardScale`, rounded to 500. A paid contract pays a bonus of fee × `PaidBonusFactor` (2) on completion to the player who paid the fee, so fee and bonus stay with one player in co-op. If that player left the game, the bonus is split like vanilla mission money. So a paid contract nets one fee more than a free one, and a failed one loses the fee. The bonus is a reward line on the offer (`HotCargoContractBonus`). A player with less money than the fee cannot accept: the accept button shows the fee and does not react, and the accept input refuses.
+102. **Fees.** About half of the contracts (`FeeChance` 0.5) cost a fee. Model: purchase. The player who accepts pays the fee and does not get it back. A fee is `FeeMin` to `FeeMax` (0.3 to 0.8) standard mission pays at the mission tier, with the difficulty money factor and `RewardScale`, rounded to 500. A paid contract pays a bonus of fee × `PaidBonusFactor` (2) on completion to the player who paid the fee, so fee and bonus stay with one player in co-op. If that player left the game, the bonus is split like vanilla mission money. So a paid contract nets one fee more than a free one, and a failed one loses the fee. The bonus is a reward line on the offer (`HotCargoContractBonus`). A player with less money than the fee cannot accept: the accept button shows the fee and does not react, and the accept input refuses. The difficulty fee factor applies on top (requirement 682).
 103. **Rivals.** Offers in one system with the same rival group are rivals. Accepting one dismisses the others, and a chat line names them. `RivalsEnabled` (default on) turns all rivals off, the rival groups of rules terms too, and at once also for offers that got a rival group before the switch. The scan pairs a new offer with an earlier offer of another client (another faction or another station): always when one offer targets the other's faction, otherwise with chance `RivalPairChance` (0.2). A new offer in the group of an open contract is dismissed.
 104. **Informants.** `InformantShare` (75 %) of contracts carry an informant chance of 5 to 15 %. The accept rolls it with the simulation random source. On a hit, `InformantDelayMin` to `InformantDelayMax` (45 to 150) game seconds later, if the contract is still open, the client sells the players out: heat + `InformantHeat` (15) and a hunter wave of `InformantShips` (2) at the sector tier. A banner and a chat line name the client and the contract, and the mission log shows "<client> sold you out on this contract".
 105. **Smaller systems.** For shorter in-system travel, gameplay spawns move in to about 70 % of the vanilla radius: military stations, bounties, wanderers and pirates, asteroid fields and belts, discoverables, beacons and the jump gates. Counts drop with the area. Trade stations keep the vanilla ring (at least 7500 from the sun), but there are 2 to 3 per system (was 2 to 4). Fewer missions: 2 to 4 bounties (was as many as fit), 1 delivery per station (was 2), Convoy Duty 45 % (was 60 %), Joint Strike 30 % (was 40 %), one Discreet Bounty at 60 % (was 1 to 2 at 70 %). Scenery (suns, planets, nebulas, fog) keeps the vanilla size. Military stations keep 4,500 from other stations and 2,500 from gates (was 6,000 and 3,000), or they rarely fit. Hot Cargo sites move inside the gate ring too: mechanics missions (requirement 130 and later), event signals and the archetype objects (requirement 229). The Buyer (requirement 1) keeps 3,000 from bounty ships, which now crowd its ring. The vanilla changes and the mission counts are rules in `mod/contracts/actions.rules` and `mod/missions/sysgen_hotcargo.rules`; the Hot Cargo sites are in the rules of their areas. The vanilla changes change the shared sector rules, so they apply to every map size while the mod is on, and need a game restart.
@@ -484,13 +497,6 @@ Dragon Age style tactics for the players' own ships. Code: `src/HotCargo/ShipAi`
 411. Determinism: the tactics run in the sim tick (`EventHub.Tick`), walk the ships in sim order, and read only sim state. They give vanilla commands with sim command IDs. The tactics state is part of the ship's integrity hash. They also run after a win, because the career goes on.
 412. Limit: the tactics control only player ships; they are not a vanilla `ShipAI`. A vanilla AI on a player ship would change comms, stasis and ship splits. Revisit if the game adds an autopilot for player ships.
 
-### Wanted and hunted
-
-470. When the players are wanted (vanilla: a faction in the system hunts them with police) and heat reached `WantedWarningMinStage` (default 1, the first stage), a warning shows once: a short message at the top of the screen and a chat line that names the factions and the ways out. Ways out: pay the bounty (hail one of their police ships; the vanilla surrender dialogue offers to pay it), leave the system (wanted belongs to the system), outlast the search timer, or a Wanted event (requirement 473). The warning shows again only after the players stop being both. Wanted alone stays vanilla.
-471. The Wanted trigger: when the warning in requirement 470 shows, a Wanted event opens with chance `WantedEventChance` (default 0.7). It ignores the cooldown and the per-system cap. It does not open while another page waits.
-472. A need can require wanted status (`Wanted = true`). An outcome can clear wanted (`ClearWanted`): every faction in the system stops wanting the players, as a paid bounty does.
-473. Wanted events: A Clean Record (pay 0.4 + 0.01 × heat money units, with a sell-out risk that grows with heat; or pay one crate for a sure clear and heat −5) and Decoy Run (pay 0.5 money units, with a failure risk that grows with heat; or a Sensor Array ghost). Each opens once per run.
-
 ## 31. AI personalities
 
 Every hostile AI fights with a personality: a weighted mix of tactics, set per faction, varied per ship and fitted to the ship's build. Tunables: `Tactics`. Pure math: `Ai/PersonalityModel.cs`. Code: `Ai/PersonalityStrategy.cs` (`HcPersonality`), `Tactics/TeamStrategy.cs` (`HcTeam`), `Tactics/RoleTactic.cs` (`HcRole`), `Tactics/CoverStrategy.cs` (`HcCover`).
@@ -531,7 +537,81 @@ A shared choice is a dialog page that decides for all players: event pages and c
 607. The run state saves the votes of the open pages, and the integrity hash includes the vote count and the mode. Votes of a page that closed are dropped.
 608. The co-op autotest `sharedchoice` checks that the client's hover shows in the host's UI state, the unanimous, timeout and host force decisions, that a pick in vote mode does nothing, and that no desync happens. With two players a majority is always unanimous, so the unit tests (`VoteModelTests`) cover the majority and tie rules.
 
-## 33. Diplomacy
+## 33. How to Play and the run log
+
+Players of the mod likely know the base game. So the Hot Cargo mechanics join the game's own help, and they come first. Code: `src/HotCargo/Onboarding`. Rules: `mod/onboarding`. Tunables: the `Onboarding` section.
+
+720. Each Hot Cargo mechanic has a vanilla codex page (`CodexPages`, `mod/onboarding/codex.rules`) in the "Hot Cargo" codex tab. The page ID starts with `hc_`, and the title starts with "Hot Cargo:". A page shows like a vanilla tutorial: a button in the "How to Play" list of the HUD with the new tutorial sound, and the page in the codex dialog. Page texts are short, in the Hot Cargo voice, and name no numbers that a tunable sets.
+721. Pages and triggers. A page shows the first UI frame its trigger holds:
+
+| Page | Trigger |
+|---|---|
+| `hc_run` The Run | 5 s of game time in a run, after the run intro |
+| `hc_vault` The Tech Vault | a Tech Vault of a human ship is damaged |
+| `hc_heat` Heat | the first heat stage starts |
+| `hc_hunters` Hunters | a hunter is in the system |
+| `hc_selling` Selling Tech | a comms window is open while the fleet holds tech |
+| `hc_contracts` Contracts | a comms window is open and the system has contract offers |
+| `hc_missions` New Jobs | a comms window is open and the system offers a Hot Cargo mission (a mission type that starts with `HotCargo`) |
+| `hc_chains` Story Chains | a chain stage mission is in the log, or a comms window is open and the system offers one |
+| `hc_events` Events | an event page waits for a choice |
+| `hc_worlds` System Types | the current system has a Hot Cargo archetype (sector type `hc_*`) |
+| `hc_wanted` Wanted and Hunted | the Wanted warning (requirement 470) |
+| `hc_buyer` The Buyer | the Buyer spawned |
+| `hc_settings` Settings | sector 2 |
+| `hc_ship_tactics` Ship Tactics | `ShipAi.Enabled` and the Hunt stage (3 stages started), or more human ships than human players |
+| `hc_coop` Co-op | a multiplayer run with 2 or more human players |
+
+722. The game keeps the page state in its settings (`Settings.CodexPageStates`), so each page shows once per player, across careers, and "Reset Tutorials" in the game settings shows them again. With "Show tutorials" off, no trigger runs and no page shows. Triggers only read state and change no sim state.
+723. Priority. The Hot Cargo pages come first in the codex list (requirement 725), so the How to Play list checks them first, and their buttons move to the top of the list. Vanilla tutorials (the "Tutorials" tab) wait while a Hot Cargo run is active: during the first `VanillaTutorialDelaySeconds` (default 300 s) of run time, and while a Hot Cargo page is in the list unread. A waiting tutorial is not removed: it shows when the wait ends and its own condition holds. A tutorial that shows for now (`TempShowCondition`) keeps its update. Lore and tips never wait. Without a Hot Cargo run, the codex stays vanilla.
+724. A trigger is C# code: `Onboarding.Hints.Add(pageId, condition)` in an area's `Register`. CONTRIBUTING.md says how an area adds a page.
+725. `mod/onboarding/actions.rules` adds the Hot Cargo page list as the first base of the vanilla `CodexPages` list (`AddBase` with `Index = 0`). At the first frame of a run the mod checks that each trigger has a page, each `hc_` page has a trigger, no `hc_` page comes after a vanilla page, and each page string exists. A failure shows in the overlay.
+726. The autotest `onboarding-hints` checks each trigger, that each page shows once (also after a load), the wait of the vanilla tutorials and its end, the button order, and the "Show tutorials" switch.
+730. The run log. The run state saves a list of lines (`RunState.Log`): game time, sector index, kind and text. At most 400 lines; the oldest drop.
+731. Lines: the run start, each new sector (name and system type), each heat stage and strike wave, each event result (title and result lines; a choice that leads to a follow-up page logs nothing), each contract accept (fee, withdrawn rivals) and informant sell-out, each chain stage result (story line, result lines, chain end), each tech sale and buy-back at a station, each Buyer delivery, tech that vault damage destroys, and the win or the loss. Areas add lines with `Onboarding.RunLog.Add` (or a named helper) from sim logic.
+732. The vanilla career log window gets a third tab, "Hot Cargo run", with the Stolen Tech icon. It lists the lines newest first: sector, game time and text.
+733. Lines are written in sim logic on every machine, so co-op players see the same lines. The text is in the language of each machine. The log is not in the integrity hash.
+734. The autotest `onboarding-log` checks each line kind, the tab rows and that the log loads with the save.
+
+Screenshots (`tests/screens/onboarding.txt`): `docs/screenshots/onboarding-howtoplay.jpg`, `onboarding-page.jpg`, `onboarding-careerlog.jpg`.
+
+## 34. Run modes
+
+Difficulty pressure, Ironman losses, Strike music and the fame title prototype. Code: `src/HotCargo/RunModes`. Pure math: `RunModes/PressureModel.cs`. Tunables: the `RunModes` section.
+
+680. **Difficulty table.** The vanilla difficulty settings of the career (combat difficulty, economic difficulty, crew scarcity) scale Hot Cargo's pressure. `RunModes.Combat`, `RunModes.Economy` and `RunModes.Crew` hold one row for each vanilla level, by level ID, with five factors: `HeatRate`, `HunterShips`, `HunterTiers`, `ContractFees` and `TechValue`. The rows of the career's three levels combine: the factors multiply and the tiers add. A level without a row counts as 1 and 0 tiers, so a level that another mod adds plays like the default. The tunables keep their values; the code multiplies at each read. The levels are the confirmed vanilla values, so a level change in the game settings (host only in co-op) applies on every machine at the same tick, with the timing in TUNABLES.md. A row that names no vanilla level is a tunables error. Defaults (an empty cell is 1, or 0 tiers):
+
+| Setting | Level | Heat | Hunter ships | Hunter tiers | Fees | Tech value |
+|---|---|---|---|---|---|---|
+| Combat | `no_death` | 0.8 | 0.67 | −1 | | |
+| Combat | `easy` (vanilla default) | | | | | |
+| Combat | `normal` | 1.1 | | | | |
+| Combat | `hard` | 1.2 | 1.34 | | | |
+| Combat | `very_hard` | 1.3 | 1.34 | +1 | | |
+| Economy | `free_build` | | | | | |
+| Economy | `fast` (vanilla default) | | | | | |
+| Economy | `normal` | | | | 1.2 | 0.9 |
+| Economy | `slow` | | | | 1.4 | 0.8 |
+| Crew | `max` | 0.9 | | | | |
+| Crew | `plentiful` | 0.95 | | | | |
+| Crew | `standard` (vanilla default) | | | | | |
+| Crew | `scarce` | 1.1 | | | | |
+
+The vanilla defaults stay at 1, so the balance numbers (BALANCE.md) hold for them. Combat difficulty sets the danger, so it scales heat and hunters. The economy sets the money, so it scales fees and the tech value: on a slow economy missions pay less, and a lower tech value keeps a sale from replacing missions. Crew scarcity limits how fast a fleet grows, so it scales heat a little.
+681. **Heat rate.** Heat from time and from fame (requirements 24, 25) × `HeatRate`. `Run.HeatMultiplier` is the tech multiplier (requirement 26) × `HeatRate`. The heat panel rate, the overlay and the trade hint use it. Contract heat (flat heat, trail, informants), event, mission and debug heat keep their values.
+682. **Hunters and fees.** Each hunter stage response (requirement 190), the repeat Strike waves too, sends round(ships × `HunterShips`) ships, half away from zero and at least 1, of the tier + `HunterTiers`. The co-op scaling (requirement 334) applies after it. Informant sell-outs (requirement 104) keep their count and tier. Each contract accept fee (requirement 102), rules fees too, × `ContractFees` when its terms roll. The completion bonus follows the fee. An offer keeps the terms that it rolled.
+683. **Tech value.** The tech value (requirement 19) × `TechValue`, rounded to 100. The station price, the buy-back price, the Buyer price and the score follow it. A level change mid-run can lower it.
+684. **Display.** When a factor differs from 1, the run intro (UX.md H4) shows a "DIFFICULTY" line with the names of the three levels and each factor that is not 1. The heat panel has no tooltip. A loaded run and a level change mid-run show no line.
+685. **Ironman.** In an Ironman career (vanilla `IronmanModeEnabled`), a Hot Cargo loss (requirement 9) deletes the Ironman save and clears the last save, like the vanilla game over. Only the host has the save, so only the host deletes it. The save does not come back: no save is allowed after a loss (`AllowSaveGame`), so the exit save and the autosave do not run. The run intro says "IRONMAN: lose the tech and this save is deleted.". The game-over screen says that the save is deleted and that the run cannot be reloaded. The win screen says that the score is final; a win keeps the save. Without Ironman nothing changes (requirement 11).
+686. **Fame title tiers (prototype).** With `FameTitleTiers` on (default off), each hunter stage response gets one more tier for each tier of the current vanilla fame title above the system tier, up to `FameTierCap` (default 2). The tier of a fame title is its `WantedPoliceTier`. A fame title at or below the system tier adds nothing. It adds to requirement 682.
+687. **Fame title measure and recommendation.** Headless probes (`tests/runmodes/fame-probe-*.txt`) follow the main route for 8 sectors and give typical missions (3.4 standard mission fame each, BALANCE.md) with the vanilla fame cap of the system tier, on the Fast economy with `RewardScale` 2. Results:
+     - With 3, 6 or 12 missions in each sector the numbers are the same. The vanilla cap holds fame at the MaxFame of the system tier after 2 missions (1 in sectors 1 and 7). That fame is the threshold of the fame title one tier above the system. So the bonus is 0 on arrival and 1 from the second mission on, in every sector. It never reaches 2 on the main route. Example: sector 5 (tier 9), Strike tier 11 off, 11 on arrival and 12 after 2 missions.
+     - Side route: after main route sector 5 (fame title tier 10), a tier 6 side system gives the bonus 2 (the cap; the gap is 4). Strike tier 10 instead of 8.
+     - Recommendation: keep the sector and stage scaling of requirement 190, and keep `FameTitleTiers` off. On the main route the fame title adds a step of +1 after the second mission of each sector. Mission count above 2 has no effect, so it does not measure how the players play; heat already counts the missions, and the Strike usually comes after about 6 missions, when the step is always on. So it equals `TierOffset` + 1 for most of each sector, and the players cannot see why. Its one useful effect is a floor in low side systems (BALANCE.md open question 1). A direct floor does that more clearly: hunter tier at least the main route tier of the sector index (`HotCargoTierCap.Cap`).
+688. **Strike music.** With `StrikeMusic` on (default), while the run is at the last heat stage (all stages started, requirement 31), the music plays its battle layers: a postfix on `MusicParameters.Update` sets the vanilla `battle` value to true. Each vanilla track has a battle layer (`battle == True or wanted == True`), and the vanilla fade-out waits while battle is true. Below the last stage, after a jump, after a win or with the switch off, the music is vanilla. Limit: the intro track of a cluster has no battle layer, so the battle layers start with the next track. The log names the playing track and its active conditional layers at each switch. Local audio only, no sim state.
+689. **Tests.** `runmodes-difficulty` (every vanilla level against its row: heat multiplier, tech value, station price, fee factor, every stage response; then a hard combination through the vanilla settings inputs: the heat tick rate, the station price, re-rolled fees and a real Patrol spawn), `runmodes-ironman` (a loss keeps the save without Ironman; deletes it with Ironman, with the game-over line; a win keeps it, with the win line), `runmodes-music` (the switch at Strike, the off switch, the return below the last stage), `runmodes-fame` (the prototype off and on, the cap, a real spawn), co-op `runmodes` (the host's level change, heat, tech value, fame tiers and a spawn on both machines, no desync). The fame probes are in `tests/runmodes/` and are not part of `autotest-all`.
+
+## 37. Diplomacy
 
 Hails and deals with other ships: hunter demands, surrenders, friendly ships that hold tech or fight for pay, mercenaries. Code: `src/HotCargo/Diplomacy`, the comms hook `src/HotCargo/Ui/CommsHail.cs`, the slider `src/HotCargo/Ui/SliderRow.cs`. Rules: `mod/diplomacy`. Numbers: the `Diplomacy` tunables section. Pure math: `Diplomacy/DiplomacyModel.cs`.
 
@@ -565,4 +645,3 @@ Hails and deals with other ships: hunter demands, surrenders, friendly ships tha
 587. **Co-op.** Every choice goes through the shared choice input (domain `diplomacy`, requirement 600 and later), so co-op players see hovers and can vote. The page serial is the ship ID; an option packs the offer and the slider amount. The sim checks the choice again when it applies (comms range, amount, money, once per ship) and rejects it otherwise. The caller is the chooser's nearest ship in comms range. Money costs come from the chooser.
 588. **Dialog slider.** `SliderRow` is a reusable row: label, slider, value text. A comms page shows its slider above the buttons; the value is local UI state until a choice sends it. The friendly page opens one topic at a time (hold, hire, mercenary), so each sub-page has one slider.
 589. **Tests.** Autotests `diplomacy-hunters`, `diplomacy-surrender` and `diplomacy-friends`, the co-op test `diplomacy`, and unit tests in `DiplomacyModelTests`.
-
