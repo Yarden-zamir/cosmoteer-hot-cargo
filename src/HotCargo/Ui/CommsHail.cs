@@ -222,7 +222,16 @@ public static class CommsHail
                 views.Add(new OptionRowView(r.Key, r.Text, r.Active, r.Tooltip, r.Toggle, r.Selected, r.Slider, value, SliderActive: !r.Toggle || r.Selected));
             }
         rows.Show(views);
+        // The tab does not scroll: the window grows with the rows and buttons of the page, up to MaxWindowHeight.
+        if (page is not null && tab._window is { } window)
+        {
+            float wanted = Math.Min(MaxWindowHeight, 260f + page.Rows.Count * 84f + page.Buttons.Count * 76f);
+            if (window.Size.Y < wanted) window.Size = new Halfling.Geometry.Vector2(window.Size.X, wanted);
+        }
     }
+
+    /// <summary>Tallest hail window. Limit: a page with more rows than fit runs off the bottom; revisit if a page needs more than about seven rows.</summary>
+    const float MaxWindowHeight = 880f;
 
     static HailRow? RowOf(CommDialogueTab tab, string key) => (tab._currentDialogue as HailPage)?.Rows.FirstOrDefault(r => r.Key == key);
 

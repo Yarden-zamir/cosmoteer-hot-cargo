@@ -27,6 +27,7 @@ public sealed class OptionRows
     }
 
     readonly List<Row> _rows = [];
+    const float RowHeight = 72f;
 
     public LayoutBox Box { get; }
     public event Action<OptionRowView>? Clicked;
@@ -76,15 +77,14 @@ public sealed class OptionRows
 
     Row NewRow()
     {
-        var box = new LayoutBox { PercentileWidth = 100f };
+        // Fixed row height: two lines of option text fit. An auto height grew without limit when a row first showed before the
+        // window had its width (the text wrapped at width 0).
+        var box = new LayoutBox { PercentileWidth = 100f, Height = RowHeight };
         box.NineSlice.Flags = NineSliceFlags.None;
-        box.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
         box.Children.LayoutAlgorithm = LayoutAlgorithms.StretchLeftToRight;
         box.Children.WidgetPadding = new Halfling.Geometry.Vector2(10f);
         var button = new ImageButton();
         button.CopySettingsFrom(WidgetRules.Instance.FlatButton);
-        button.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
-        button.AutoSize.MinHeight = 56f;
         foreach (var t in new[] { button.StateNormalTextRenderer, button.StateHighlightedTextRenderer, button.StatePressedTextRenderer, button.StateDisabledTextRenderer })
         {
             t.XmlFormatting = true;
@@ -99,7 +99,6 @@ public sealed class OptionRows
         button.ImageRectController.InnerRectSize = button.ImageSprite.DesiredSize;
         var slider = new SliderRow(labelPercent: 0f) { };
         slider.Row.PercentileWidth = 38f;
-        slider.Row.Height = 56f;
         box.AddChild(button);
         box.AddChild(slider.Row);
         Box.AddChild(box);

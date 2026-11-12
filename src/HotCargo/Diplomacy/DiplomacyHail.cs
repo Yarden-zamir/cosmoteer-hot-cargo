@@ -116,7 +116,9 @@ public sealed class DiplomacyHail : IHailProvider
         // One shared choice domain per page (CommsHail limit): a page that another provider owns (an event page) shows no diplomacy options.
         if (page.Shared is { } owner && owner.Domain != DiplomacyChoiceDomain.Name) return;
         page.Shared = (DiplomacyChoiceDomain.Name, DiplomacyChoiceDomain.Serial(callee));
-        if (S(run).Results.FirstOrDefault(r => r.Ship == callee.UniqueID) is { } result) page.AddText(result.Text);
+        // The punishment page leaves out the last result (the hand-over line is in the chat), so its rows fit the window.
+        bool punishPage = S(run).Punish is not null && Situation.IsHunter(callee) && caller.IsEnemiesWith(callee);
+        if (!punishPage && S(run).Results.FirstOrDefault(r => r.Ship == callee.UniqueID) is { } result) page.AddText(result.Text);
         if (caller.IsEnemiesWith(callee))
         {
             if (Situation.IsHunter(callee)) HunterPage(run, sim, player, caller, callee, page);
