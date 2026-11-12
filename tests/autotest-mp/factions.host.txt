@@ -1,4 +1,4 @@
-# Co-op factions prices, host side (spec 644, 655). Prices are sim state: the client's trades at a fence and at a heat markup
+# Co-op factions prices and the blind switch, host side (spec 644, 650, 655). Prices are sim state: the client's trades at a fence and at a heat markup
 # pass the sim's exact price check (MPMoveResourcesInput) on both machines, with no desync.
 mphost {PORT}
 mpstart 2
