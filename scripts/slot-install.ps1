@@ -5,8 +5,12 @@
 # $minFreeGB (free memory that a test slot needs before its game starts).
 $ErrorActionPreference = "Stop"
 if ($autotestFile -and $slot -ne "main") {
-  $running = Get-SlotProcess
-  if ($running) { $running | Stop-Process -Force; $running | Wait-Process -Timeout 20 -ErrorAction SilentlyContinue }
+  # The pid file can miss a game of this slot: a killed run, or an old stop.sh that removed the file before the game
+  # exited. Such a game still holds the mod files, so also find the slot's games by their --rootsavepath argument.
+  $mark = "HotCargoSlots\" + $slot + [char]34
+  $orphans = @(Get-CimInstance Win32_Process -Filter ("Name = " + [char]39 + "Cosmoteer.exe" + [char]39) | Where-Object { $_.CommandLine -like "*$mark*" } | ForEach-Object { Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue })
+  $running = @(@(Get-SlotProcess) + $orphans | Where-Object { $_ } | Sort-Object Id -Unique)
+  if ($running.Count -gt 0) { $running | Stop-Process -Force; $running | Wait-Process -Timeout 20 -ErrorAction SilentlyContinue }
   if (Test-Path $pidFile) { Remove-Item $pidFile -Force }
 }
 if (Get-SlotProcess) { throw "Cosmoteer is running in slot $slot. Stop it before deploy (scripts/stop.sh)." }
@@ -16,7 +20,11 @@ New-Item -ItemType Directory -Force $mods | Out-Null
 # Mod folder: replace everything but the live tunables, their backups and the telemetry files (TELEMETRY.md).
 $keep = Join-Path $env:TEMP ("hot_cargo_tunables_keep_" + $slot + ".rules"); if (Test-Path $keep) { Remove-Item $keep -Force }
 if (Test-Path (Join-Path $modDir "tunables.rules")) { Copy-Item (Join-Path $modDir "tunables.rules") $keep -Force }
-if (Test-Path $modDir) { Get-ChildItem $modDir | Where-Object { $_.Name -notlike "tunables.rules*" -and $_.Name -ne "telemetry" } | Remove-Item -Recurse -Force }
+# A game that just exited can hold its files for a moment, so the removal tries again for up to 10 s.
+for ($try = 1; Test-Path $modDir; $try++) {
+  try { Get-ChildItem $modDir | Where-Object { $_.Name -notlike "tunables.rules*" -and $_.Name -ne "telemetry" } | Remove-Item -Recurse -Force; break }
+  catch { if ($try -ge 10) { throw }; Start-Sleep -Seconds 1 }
+}
 Copy-Item (Join-Path $cache "hot_cargo") $mods -Recurse -Force
 $new = Join-Path $modDir "tunables.rules.deploy"; $live = Join-Path $modDir "tunables.rules"
 # The player edits tunables in the game (settings window) and by hand. Never overwrite them:
