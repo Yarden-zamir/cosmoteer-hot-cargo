@@ -43,8 +43,8 @@ Category switches are in the `Telemetry` tunables section. The table names the s
 | `session.end` | Run | `reason` (`game_closed`, `game_closed_after_loss`, `replaced`, `process_exit`), `result`, `real_s`, `sim_s`, `events`, `dropped`, `overhead_ms`, `overhead_pct_wall`, `writer_ms`, `frames`, `frame_ms`, `ticks`, `tick_ms`, `trace_missing` |
 | `run.new`, `run.loaded` | Run | `starting_tech`; `result`, `sessions` |
 | `run.save` | Run | `caller` (who saved: a save, an autosave, a co-op sync) |
-| `run.jump` | Run | `from`, `stay_s`, `open_contracts`. The first tick with player ships in the new system takes a snapshot (`why` = entry). |
-| `system.enter` | Run | `from`, `first_visit`, `prev_stay_s`, `prev_stay_real_s`, `prev_missions_done`, `prev_missions_accepted`, `heat_before`, `stages`, `peak_tier`, `visited` |
+| `run.jump` | Run | `from`, `kind` (View, RelayWatched, RelayClear, Blind), `heat_kept` (share of heat the jump keeps), `stay_s`, `open_contracts`. The first tick with player ships in the new system takes a snapshot (`why` = entry). |
+| `system.enter` | Run | `from`, `first_visit`, `prev_stay_s`, `prev_stay_real_s`, `prev_missions_done`, `prev_missions_accepted`, `heat_before`, `jump_kind`, `heat_kept`, `stages`, `peak_tier`, `visited` |
 | `system.poi` | Run | `poi` |
 | `run.won`, `run.lost` | Run | `reason`, `score`, `delivered`, `notoriety`, `peak_tier`, `money` (per player). A snapshot follows. |
 | `heat.change` | Heat | `src`, `caller`, `amount` (asked), `delta` (applied), `before`, `after`, `stages` |

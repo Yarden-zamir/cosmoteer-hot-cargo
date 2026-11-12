@@ -81,7 +81,8 @@ sealed class Session
     /// <summary>Set at system entry. The first tick with player ships in the new system takes a snapshot.</summary>
     bool _snapAfterEntry;
     int _missionsDoneInSystem, _missionsAcceptedInSystem;
-    float _heatBeforeJump;
+    float _heatBeforeJump, _jumpHeatKept = 1f;
+    string _jumpKind = "";
 
     // ---- Heat accrual of continuous sources and hints for tech count changes
     readonly Dictionary<string, double> _heatAccrual = [];
@@ -495,11 +496,16 @@ sealed class Session
     internal void BeforeSwitch()
     {
         _heatBeforeJump = Run.State.Heat;
+        // Factions (jump heat cuts): the kind of this jump and the share of heat it keeps. Read now, before the Factions area clears them.
+        _jumpKind = Factions.Jumps.PendingKind(Run).ToString();
+        _jumpHeatKept = Run.Hooks.JumpHeatKept(Run);
         // The ships are in jump limbo now, so the fleet tech count drops to 0 until they arrive.
         AddTechHint("jump");
         Tele.Emit(Cat.Run, "run.jump", w =>
         {
             w.WriteString("from", _system);
+            w.WriteString("kind", _jumpKind);
+            Tele.Num(w, "heat_kept", _jumpHeatKept);
             Tele.Num(w, "stay_s", _simSeconds - _enteredSim);
             w.WriteNumber("open_contracts", ContractBook.Open(Run).Count());
         });
@@ -521,6 +527,8 @@ sealed class Session
             w.WriteNumber("prev_missions_done", done);
             w.WriteNumber("prev_missions_accepted", accepted);
             Tele.Num(w, "heat_before", s._heatBeforeJump);
+            w.WriteString("jump_kind", s._jumpKind);
+            Tele.Num(w, "heat_kept", s._jumpHeatKept);
             w.WriteNumber("stages", run.State.StagesStarted);
             w.WriteNumber("peak_tier", run.State.PeakTier);
             w.WriteNumber("visited", run.State.VisitedNodes.Count);

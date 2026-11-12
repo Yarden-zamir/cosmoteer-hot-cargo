@@ -154,7 +154,8 @@ def sector_section(rep: RunReport) -> None:
     for e in enters:
         visits[-1]["stay"] = e["gs"] - visits[-1]["gs"]
         visits[-1]["heat_out"] = e.get("heat_before")
-        visits.append({"sys": e["sys"], "sec": e["sec"], "tier": e["tier"], "arch": e["arch"], "gs": e["gs"], "heat_in": e["heat"], "first": e.get("first_visit")})
+        visits.append({"sys": e["sys"], "sec": e["sec"], "tier": e["tier"], "arch": e["arch"], "gs": e["gs"], "heat_in": e["heat"], "first": e.get("first_visit"),
+                       "jump": e.get("jump_kind", "")})
     end = ev[-1]
     visits[-1]["stay"] = end["gs"] - visits[-1]["gs"]
     visits[-1]["heat_out"] = end["heat"]
@@ -186,14 +187,14 @@ def sector_section(rep: RunReport) -> None:
     for i, v in enumerate(visits):
         c = per[i]
         rows.append([
-            v["sec"], v["sys"], v["arch"], v["tier"], mmss(v["gs"]), mmss(v.get("stay")), fmt(v["heat_in"]), fmt(v.get("heat_out")),
+            v["sec"], v["sys"], v["arch"], v["tier"], v.get("jump", ""), mmss(v["gs"]), mmss(v.get("stay")), fmt(v["heat_in"]), fmt(v.get("heat_out")),
             c["stages"], c["missions_accepted"], c["missions_done"], c["hunters"], c["destroyed_hunter"], c["destroyed_hostile"], c["tech_sold"],
         ])
         rep.sector_stays.append((f"S{v['sec']} {v['sys']}", v.get("stay") or 0))
     rep.tables.append(
         Table(
             "Sectors",
-            ["sector", "system", "type", "tier", "entered", "stay", "heat in", "heat out", "stages", "missions taken", "missions done",
+            ["sector", "system", "type", "tier", "jump in", "entered", "stay", "heat in", "heat out", "stages", "missions taken", "missions done",
              "hunters", "hunters killed", "hostiles killed", "tech sold"],
             rows,
             "Stay is run game time in the system; it stops after a win. A load of an older save replays game time, so such a visit can show twice.",

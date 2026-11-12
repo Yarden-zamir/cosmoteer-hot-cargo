@@ -17,16 +17,16 @@ wait 3
 contract_money 200000
 contract_pick any
 contract_accept
+tostation
+wait 3
+tech sell 1
+wait 30
 hc_accept escort
 hc_escort_goto
 pause off
 wait 5
 hc_escort_arrive
 wait 3
-tostation
-wait 3
-tech sell 1
-wait 30
 damagehostiles 0.05
 fame 15
 heat 10
@@ -49,7 +49,7 @@ damagehostiles 0.05
 wait 25
 damagehostiles 0.05
 wait 25
-vault damage 0.12
+vault damage 0.5
 wait 3
 event distress_beacon
 choose 1
