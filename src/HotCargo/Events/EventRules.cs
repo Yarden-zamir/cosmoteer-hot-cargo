@@ -23,6 +23,31 @@ public enum EventTrigger
     Station,
     /// <summary>When the players become wanted while heat is at stage 1 or more (spec 471).</summary>
     Wanted,
+    /// <summary>When a human ship first comes near a vanilla abandoned ship (spec 764).</summary>
+    Abandoned,
+    /// <summary>When a human ship comes close to the run's relic ship (spec 765).</summary>
+    Relic,
+    /// <summary>A line in the comms of a station or faction ship (HailLine, HailTarget). Clicking it opens the page there (spec 769).</summary>
+    Hail,
+}
+
+/// <summary>Which ships show a Hail event's line in their comms (spec 769).</summary>
+public enum HailTarget
+{
+    /// <summary>Trade stations (not the Buyer).</summary>
+    Station,
+    /// <summary>Faction ships that are not stations and not hostile.</summary>
+    FactionShip,
+}
+
+/// <summary>A computed offer that an event page carries (spec 760-762). Its contents come from the tech tree when the page opens.</summary>
+public enum OfferKind
+{
+    None,
+    /// <summary>Techs that the players have not researched, for tech units. Always worth more than buying them.</summary>
+    ResearchTrade,
+    /// <summary>Copies of researched techs, for money above their worth.</summary>
+    ResearchSale,
 }
 
 /// <summary>Event categories with their own per-run limits.</summary>
@@ -86,6 +111,8 @@ public sealed class CostRules
     [Serialize(Optional = true)] public int Tech;
     [Serialize(Optional = true)] public int Crew;
     [Serialize(Optional = true)] public ResourceAmount[] Resources = [];
+    /// <summary>True: the choice costs the tech units of the page's research trade.</summary>
+    [Serialize(Optional = true)] public bool OfferUnits;
 }
 
 /// <summary>One possible result of a choice. The weights pick one outcome when the player chooses.</summary>
@@ -107,6 +134,10 @@ public sealed class OutcomeRules
     [Serialize(Optional = true)] public float Reputation;
     /// <summary>Multiplies the Buyer price for the rest of the run (above 0, at most 1). 0 means no change.</summary>
     [Serialize(Optional = true)] public float BuyerPrice;
+    /// <summary>True: the techs of the page's research trade unlock.</summary>
+    [Serialize(Optional = true)] public bool UnlockOffer;
+    /// <summary>True: the players get the price of the page's research sale.</summary>
+    [Serialize(Optional = true)] public bool OfferPrice;
     /// <summary>True: every faction in this system stops wanting the players, like a paid bounty (spec 472).</summary>
     [Serialize(Optional = true)] public bool ClearWanted;
     [Serialize(Optional = true)] public int Tech;
@@ -141,6 +172,18 @@ public sealed class EventRules
     [Serialize] public string ID = "";
     [Serialize(Optional = true)] public EventTrigger Trigger;
     [Serialize(Optional = true)] public EventCategory Category;
+    /// <summary>
+    /// A generator in spawns.rules for the ship that carries the page (spec 767). It spawns when the page opens; its ship must have
+    /// the tag hc_ev_carrier. The page shows in that ship's comms, not in the event window.
+    /// </summary>
+    [Serialize(Optional = true)] public string Carrier = "";
+    /// <summary>True: the carrier hails the players when the page opens. False: the players must hail it.</summary>
+    [Serialize(Optional = true)] public bool CarrierHails = true;
+    /// <summary>Hail events: the button text in the target's comms.</summary>
+    [Serialize(Optional = true)] public string HailLine = "";
+    [Serialize(Optional = true)] public HailTarget HailTarget;
+    /// <summary>A computed offer. The event can open only when the offer can be built.</summary>
+    [Serialize(Optional = true)] public OfferKind Offer;
     [Serialize(Optional = true)] public float Weight = 10f;
     [Serialize(Optional = true)] public float WeightPerHeat;
     [Serialize(Optional = true)] public float WeightPerTech;
@@ -224,6 +267,7 @@ public static class EventLibrary
         }
         foreach (var e in ordered) Validate(e, map);
         Spawn(EventRunner.CourierSpawn);
+        Spawn(Abandoned.RelicSpawn);
         _ordered = [.. ordered];
         Log.Info($"events loaded: {map.Count} events, {map.Values.Count(e => e.Trigger != EventTrigger.None)} with a trigger");
         return map;
@@ -235,6 +279,8 @@ public static class EventLibrary
         string at = $"event '{e.ID}'";
         if (e.ID.Length == 0) throw new InvalidDataException("an event has no ID");
         if (e.Title.Length == 0 || e.Text.Length == 0) throw new InvalidDataException($"{at} needs a Title and a Text");
+        if (e.Trigger == EventTrigger.Hail && e.HailLine.Length == 0) throw new InvalidDataException($"{at}: a Hail event needs a HailLine");
+        if (e.Carrier.Length > 0) Spawn(e.Carrier);
         if (e.Choices.Length is < 1 or > MaxChoices) throw new InvalidDataException($"{at} needs 1 to {MaxChoices} choices");
         if (e.Weight < 0) throw new InvalidDataException($"{at}: Weight must not be negative");
         ValidateNeed(e.Need, at);
@@ -247,6 +293,7 @@ public static class EventLibrary
             if (choice.Outcomes.All(o => o.Weight <= 0)) throw new InvalidDataException($"{cat}: at least one outcome needs a Weight above 0");
             ValidateNeed(choice.Need, cat);
             foreach (var r in choice.Cost?.Resources ?? []) ValidateResource(r.ID, cat);
+            if (choice.Cost?.OfferUnits == true && e.Offer != OfferKind.ResearchTrade) throw new InvalidDataException($"{cat}: Cost.OfferUnits needs Offer = ResearchTrade");
             if (choice.Cost is { } cost && (cost.Money < 0 || cost.MoneyPerHeat < 0 || cost.Tech < 0 || cost.Crew < 0)) throw new InvalidDataException($"{cat}: Cost values must not be negative");
             for (int o = 0; o < choice.Outcomes.Length; o++)
             {
@@ -256,6 +303,8 @@ public static class EventLibrary
                 if (outcome.Text.Length == 0 && outcome.Next.Length == 0) throw new InvalidDataException($"{oat} needs a Text or a Next");
                 if (outcome.Next.Length > 0 && !all.ContainsKey(outcome.Next)) throw new InvalidDataException($"{oat}: Next '{outcome.Next}' is not an event");
                 if (outcome.HullDamage is < 0 or > 1) throw new InvalidDataException($"{oat}: HullDamage must be 0 to 1");
+                if (outcome.UnlockOffer && e.Offer != OfferKind.ResearchTrade) throw new InvalidDataException($"{oat}: UnlockOffer needs Offer = ResearchTrade");
+                if (outcome.OfferPrice && e.Offer != OfferKind.ResearchSale) throw new InvalidDataException($"{oat}: OfferPrice needs Offer = ResearchSale");
                 if (outcome.BuyerPrice is < 0 or > 1) throw new InvalidDataException($"{oat}: BuyerPrice must be 0 (no change) or above 0 and at most 1");
                 foreach (var r in outcome.Resources) ValidateResource(r.ID, oat);
                 if (outcome.Spawn.Length > 0) Spawn(outcome.Spawn);

@@ -29,6 +29,9 @@ public static class EventsArea
         Run.Hooks.NewRunStarted += EventRunner.OnNewRun;
         Run.Hooks.SystemEntered += EventRunner.OnSystemEntered;
         Run.Hooks.Tick += EventRunner.OnTick;
+        Run.Hooks.NewRunStarted += Abandoned.OnNewRun;
+        Ui.CommsHail.Providers.Add(new EventHailProvider());
+        Run.Hooks.SystemEntered += Abandoned.OnSystemEntered;
         SharedChoice.SharedChoices.Register(EventsChoiceDomain.Instance);
         AddAutotest();
     }
@@ -274,12 +277,128 @@ public static class EventsArea
         // Wanted (spec 470-472): vanilla wanted status in this system, and the saved warning state.
         Autotest.Fields["ev_wanted"] = () => ((CareerSimModeManager)RequireSim().Mode).Wanted.IsLocalPlayerWanted ? 1 : 0;
         Autotest.Fields["ev_wanted_warned"] = () => RequireRun().State.Events.WantedWarned ? 1 : 0;
+        // Research offers (spec 760-763): the pending page's offer, and the researched tech count.
+        Autotest.Fields["ev_offer_units"] = () => RequirePending().OfferUnits;
+        Autotest.Fields["ev_offer_techs"] = () => RequirePending().OfferTechs.Length;
+        Autotest.Fields["ev_offer_value"] = () => RequirePending().OfferValue;
+        Autotest.Fields["ev_offer_price"] = () => RequirePending().OfferPrice;
+        // Research value per tech value of the units asked: must be at least Events.ResearchMinRate.
+        Autotest.Fields["ev_offer_rate"] = () => RequirePending() is var p && p.OfferUnits > 0 ? p.OfferValue / (double)(p.OfferUnits * p.TechValue) : 0;
+        Autotest.Commands["ev_researched_mark"] = _ => { double at = Autotest.Fields["ev_researched"](); Autotest.Fields["ev_researched_gain"] = () => Autotest.Fields["ev_researched"]() - at; };
+        // Sale price per research worth: must be above 1 (Events.ResearchSalePremium).
+        Autotest.Fields["ev_offer_premium"] = () => RequirePending() is var p && p.OfferValue > 0 ? p.OfferPrice / (double)p.OfferValue : 0;
+        Autotest.Fields["ev_researched"] = () => GameApp.Rules.CareerMode.Techs.Count(t => RequireRun().Mode.Techs.IsTechUnlocked(t.ID));
+        // Relic ship (spec 765).
+        Autotest.Fields["ev_relic_sector"] = () => RequireRun().State.Events.RelicSector;
+        Autotest.Fields["ev_relic_dist"] = () =>
+        {
+            var sim = RequireSim();
+            var found = Abandoned.RelicLocations(sim);
+            if (found.Count == 0) return -2;
+            return sim.Ships.HumanPlayerSignificantShips.Min(h => h.DetWorldCenter.DistanceTo(found[0].Location) - h.WorldBoundingRadius) - found[0].Radius;
+        };
+        Autotest.Fields["ev_relic_messaged"] = () => RequireRun().State.Events.RelicMessaged ? 1 : 0;
+        Autotest.Commands["ev_relic_spawn"] = _ => { Abandoned.SpawnRelic(RequireRun(), RequireSim()); Autotest.Wait(2); };
+        // ev_relic_goto <distance>: puts the player ships this far from the relic's hull (two calls: the first loads it out of stasis).
+        Autotest.Commands["ev_relic_goto"] = arg =>
+        {
+            var sim = RequireSim();
+            var found = Abandoned.RelicLocations(sim);
+            if (found.Count == 0) throw new InvalidOperationException("no relic ship in this system");
+            MoveNextTo(sim, found[0].Location, found[0].Radius + float.Parse(arg, CultureInfo.InvariantCulture));
+        };
+        // ev_abandoned: spawns a vanilla abandoned ship (the sector generator's own spawner) 1,500 from the fleet; ev_abandoned_goto flies next to it.
+        Autotest.Commands["ev_abandoned"] = _ => SpawnVanillaAbandoned();
+        Autotest.Commands["ev_abandoned_goto"] = _ =>
+        {
+            var sim = RequireSim();
+            var wreck = sim.Ships.Where(s => s.HasLabel(Abandoned.Label) && !s.HasTag(Abandoned.RelicTag)).OrderBy(s => s.UniqueID).FirstOrDefault()
+                ?? throw new InvalidOperationException("no live abandoned ship in this system");
+            MoveNextTo(sim, wreck.WorldCenter, wreck.WorldBoundingRadius + 150f);
+        };
+        // Comms (spec 767-771). ev_comms <target> <button text>: clicks the comms button whose plain text contains the text.
+        Autotest.Commands["ev_comms"] = arg =>
+        {
+            int space = arg.IndexOf(' ');
+            if (space < 0) throw new InvalidOperationException("ev_comms needs: target text");
+            string which = arg[..space], text = arg[(space + 1)..];
+            var page = CommsPage(which) ?? throw new InvalidOperationException($"the {which} ship shows no Hot Cargo comms page");
+            var button = page.Buttons.FirstOrDefault(b => EventView.Plain(b.Text).Contains(text, StringComparison.Ordinal))
+                ?? throw new InvalidOperationException($"no comms button with '{text}' on the {which} ship; buttons: {string.Join(" | ", page.Buttons.Select(b => EventView.Plain(b.Text)))}");
+            if (!button.SelfInputActive) throw new InvalidOperationException($"comms button '{text}' is disabled");
+            // A shared choice gets its click from the comms tab's shared choice panel; headless, send what the panel sends (first pick).
+            if (button is Ui.HailChoice choice && page.Shared is { } shared)
+                RequireRun().Game.NetManager.EnqueueInput(new SharedChoice.SharedChoiceInput(shared.Domain, shared.Serial, SharedChoice.SharedChoiceAction.Choose, choice.Option));
+            else button.OnClick?.Invoke(null, EventArgs.Empty);
+            Autotest.Wait(2);
+        };
+        // expectcomms <target> <text> 1|0: the target's Hot Cargo comms page has (1) or lacks (0) a button or line with the text.
+        Autotest.Commands["expectcomms"] = arg =>
+        {
+            var parts = arg.Split(' ');
+            string which = parts[0], want = parts[^1], text = string.Join(' ', parts[1..^1]);
+            var page = CommsPage(which);
+            string all = page is null ? "" : EventView.Plain(page.PrimaryDialogue) + "\n" + string.Join("\n", page.Buttons.Select(b => EventView.Plain(b.Text)));
+            bool has = all.Contains(text, StringComparison.Ordinal);
+            Autotest.Check(has == (want == "1"), $"{which} comms {(want == "1" ? "show" : "do not show")} '{text}'");
+        };
+        Autotest.Fields["ev_carrier"] = () => RequireRun().State.Events.Pending?.Carrier is null ? 0 : 1;
+        // 1 when the pending page's carrier is hailing the local player (vanilla hailer list).
+        Autotest.Fields["ev_hailing"] = () =>
+        {
+            var run = RequireRun();
+            if (run.State.Events.Pending?.Carrier is not { } id) return 0;
+            var mode = (CareerSimModeManager)RequireSim().Mode;
+            return mode.ShipsHailingPlayer.TryGetValue(run.Game.LocalPlayerIndex, out var list) && list.Any(h => h.Item1.UniqueID == id) ? 1 : 0;
+        };
+        Autotest.Commands["ev_carrier_goto"] = _ =>
+        {
+            var ship = CommsTarget("carrier");
+            MoveNextTo(RequireSim(), ship.WorldCenter, ship.WorldBoundingRadius + 100f);
+        };
+        Autotest.Commands["ev_kill_carrier"] = _ =>
+        {
+            var ship = CommsTarget("carrier");
+            RequireSim().Ships.Remove(ship, dispose: true, handleLostShip: false);
+            Autotest.Wait(2);
+        };
         Autotest.Fields["ev_buyer_mult"] = () => RequireRun().State.BuyerPriceMultiplier;
         Autotest.Fields["ev_pending"] = () => RequireRun().State.Events.Pending is null ? 0 : 1;
         Autotest.Fields["ev_seen"] = () => RequireRun().State.Events.Seen.Values.Sum();
         Autotest.Fields["ev_result"] = () => RequireRun().State.Events.LastResult?.Serial ?? 0;
         Autotest.Fields["ev_signals"] = () => RequireSim().Doodads.Count(d => d.Tags?.Contains(EventRunner.SignalTag) == true);
         Autotest.Fields["ev_stdmoney"] = () => EventRunner.Credits(RequireRun(), 1f, 0f, RequireRun().CurrentTier, 0);
+    }
+
+    static PendingEvent RequirePending() => RequireRun().State.Events.Pending ?? throw new InvalidOperationException("no pending event");
+
+    static void MoveNextTo(SimRoot sim, Vector2 center, float offset)
+    {
+        foreach (var s in sim.Ships.HumanPlayerSignificantShips.ToList())
+        {
+            Autotest.Teleport(s, center + new Vector2(offset + s.WorldBoundingRadius, 0));
+            offset += 2 * s.WorldBoundingRadius + 100f;
+        }
+        Autotest.Wait(2);
+    }
+
+    static void SpawnVanillaAbandoned()
+    {
+        var sim = RequireSim();
+        var mode = (CareerSimModeManager)sim.Mode;
+        var spawner = All(mode.SectorType.SystemGenerator.Spawners).OfType<ShipSpawner>().FirstOrDefault(s => s.Labels?.Contains(Abandoned.Label) == true)
+            ?? throw new InvalidOperationException("no vanilla abandoned-ship spawner in the sector generator");
+        var at = SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no player ships");
+        // Test distance, restored after, like SpawnSignal.
+        var saved = spawner.Distance;
+        try
+        {
+            spawner.Distance = new Halfling.Range<float>(1500f, 1500f);
+            new SimulationGenerator { Spawners = [spawner] }.Generate(sim, new Halfling.Random.FastRand(99UL), loadInstantly: true, rootLoc: at);
+        }
+        finally { spawner.Distance = saved; }
+        Log.Info($"AUTOTEST vanilla abandoned ship spawned; abandoned ships: {sim.Ships.Count(s => s.HasLabel(Abandoned.Label))}");
+        Autotest.Wait(2);
     }
 
     static readonly ID<SimObjectSpawner> CourierContactTag = new("hc_courier_contact");
@@ -305,10 +424,34 @@ public static class EventsArea
         return _lastTow ?? throw new InvalidOperationException("no accepted mission has a HotCargoTow objective");
     }
 
+    /// <summary>The pending page as either surface shows it (the event window, or a carrier's comms), or the last result.</summary>
     static EventPage? CurrentView()
     {
         var run = RequireRun();
+        if (run.State.Events.Pending is { } p) return EventView.Pending(run, RequireSim(), p, run.Game.LocalPlayerIndex);
         return EventView.Current(run, RequireSim(), run.Game.LocalPlayerIndex, lastResultShown: int.MaxValue);
+    }
+
+    /// <summary>The ship a comms test talks to: carrier (the pending page's ship), station (nearest trade station), faction (nearest faction ship).</summary>
+    static Ship CommsTarget(string which)
+    {
+        var sim = RequireSim();
+        var caller = SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("no player ship");
+        Ship? found = which switch
+        {
+            "carrier" => RequireRun().State.Events.Pending?.Carrier is { } id ? sim.Ships[id] : null,
+            "station" => sim.Ships.Where(s => EventHail.TargetOf(s, caller) == HailTarget.Station).MinBy(s => s.DetWorldCenter.DistanceSquaredTo(caller.DetWorldCenter)),
+            "faction" => sim.Ships.Where(s => EventHail.TargetOf(s, caller) == HailTarget.FactionShip).MinBy(s => s.DetWorldCenter.DistanceSquaredTo(caller.DetWorldCenter)),
+            _ => throw new InvalidOperationException($"unknown comms target '{which}' (carrier, station, faction)"),
+        };
+        return found ?? throw new InvalidOperationException($"no live {which} ship for comms");
+    }
+
+    /// <summary>The Hot Cargo comms page of a target, as the dialogue tab builds it (vanilla part left out).</summary>
+    static Ui.HailPage? CommsPage(string which)
+    {
+        var caller = SimQueries.FirstHumanShip(RequireSim()) ?? throw new InvalidOperationException("no player ship");
+        return Ui.CommsHail.Page(caller, CommsTarget(which), vanilla: null);
     }
 
     static IEnumerable<(string Name, Func<double> Value)> Gauges()
