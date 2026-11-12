@@ -1,4 +1,4 @@
-# Tech: Model-M has no 2x2 storage bay, so its 4 vaults replace a 3x2 bay and keep a corridor walkway through it (spec 441).
+# Tech: the Model-M preset has its 4 vaults in place of a 3x2 bay, with a corridor walkway through it (spec 441, 1017).
 # A vault built outside the hull gets doors and a crew path (spec 441). Tech moves between vaults. Destroyed vaults, loss rule.
 newgame run 3
 wait 8

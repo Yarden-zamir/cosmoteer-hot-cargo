@@ -21,7 +21,41 @@ static class VaultDesigns
     {
         Autotest.Commands["vaultdesigns"] = Run;
         Autotest.Commands["newgamecheck"] = arg => NewGameCheck.Off = arg == "off";
+        // shipcheck preset|vanilla N: the career new-game check on starter ship N, from the mod (preset) or the vanilla Data folder.
+        // A refused ship shows the vanilla "invalid ship" dialog, like the Load Ship menu of the new-game screen.
+        Autotest.Commands["shipcheck"] = arg =>
+        {
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length != 2 || parts[0] is not ("preset" or "vanilla")) throw new InvalidOperationException("shipcheck needs: preset|vanilla <index>");
+            var preset = GameApp.Rules.CareerMode.StarterShips[int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture)].Ship;
+            var file = parts[0] == "preset" ? preset : new ShipFile(Paths.DataFolder / "builtin_ships" / "Starter" / Path.GetFileName((string)preset.FilePath));
+            using var ship = file.LoadShipBlueprints();
+            _checkPassed = GameApp.Rules.CareerMode.IsShipDesignLegal(ship);
+            _checkVaults = NewGameCheck.VaultCapacity(ship);
+            Log.Info($"AUTOTEST shipcheck {file.FilePath}: legal={_checkPassed} vault capacity={_checkVaults}");
+            if (!_checkPassed) _ = Halfling.Gui.Dialogs.OneButtonDialog.Show(Cosmoteer.Localization.Strings.GetText("GameSetupScreen/InvalidShip"));
+        };
+        Autotest.Fields["shiplegal"] = () => _checkPassed ? 1 : 0;
+        Autotest.Fields["shipvaulttech"] = () => _checkVaults;
+        // 1 when the top dialog explains the missing vaults (spec 1012). Closes the dialog.
+        Autotest.Fields["vaultdialog"] = () =>
+        {
+            var dialog = Halfling.App.Director.States.OfType<Halfling.Gui.Dialogs.OneButtonDialog>().LastOrDefault();
+            if (dialog is null) return 0;
+            bool explains = dialog.MessageLabel.Text?.Contains("Tech Vaults for") == true;
+            Halfling.App.Director.PopState(dialog);
+            return explains ? 1 : 0;
+        };
+        // Spec 1015: StartingResearch techs that the run has unlocked.
+        Autotest.Fields["startresearch"] = () =>
+        {
+            var run = Autotest.RequireRun();
+            return run.T.Tech.StartingResearch.Count(id => run.Mode.Techs.IsTechUnlocked(new Cosmoteer.Data.ID<Cosmoteer.Modes.Career.TechTree.TechRules>(id)));
+        };
     }
+
+    static bool _checkPassed;
+    static int _checkVaults;
 
     static void Run(string arg)
     {

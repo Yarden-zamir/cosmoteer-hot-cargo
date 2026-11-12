@@ -1,8 +1,8 @@
-# Tech: starting cargo, price, storage rule, vault damage, save and load, a sale through the trade inputs, loss on the last sale.
+# Tech: starting cargo in the vaults of the preset design, starting research, price, storage rule, vault damage, save and load.
 newgame run
 wait 8
 log start
-# Spec 441: 4 one-tile vaults of 2 units in place of a storage bay, valid design, crew can walk to every vault and part.
+# Spec 1014, 1017: the Model-L preset has 4 one-tile vaults of 2 units by design. The run fills them. Valid design, crew can walk to every vault and part.
 expect vaults == 4
 expect vaulttech == 8
 expect vaultpaths == 4
@@ -11,6 +11,8 @@ expect shipvalid == 1
 expect tech == 8
 expect livetech == 8
 expect heatmult == 1.2
+# Spec 1015: the run starts with the FTL drive research.
+expect startresearch == 1
 # Spec 14: normal storage on the player ship refuses tech. The station takes it.
 expect flexsinks == 0
 expect stationsinks > 0
