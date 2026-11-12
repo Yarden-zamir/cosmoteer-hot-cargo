@@ -13,4 +13,7 @@ LOG="$STATE_DIR/suites/$NAME-$(date +%Y%m%d-%H%M%S)-$$.log"
 # perl is part of macOS; it gives setsid without extra tools. bash -c then runs as the session leader.
 nohup perl -MPOSIX -e 'POSIX::setsid() or die "setsid: $!"; exec @ARGV or die "exec: $!"' \
   bash -c 'echo "== suite pid $$"; "$@"; echo "== suite exit $?"' suite "$@" > "$LOG" 2>&1 < /dev/null &
+# Return only after setsid ran (the pid line comes after it). A caller killed before that would take the run with it.
+for ((i = 0; i < 100; i++)); do [[ -s "$LOG" ]] && break; sleep 0.1; done
+[[ -s "$LOG" ]] || { echo "detach: the run did not start ($LOG)" >&2; exit 1; }
 echo "$LOG"

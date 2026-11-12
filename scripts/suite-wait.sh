@@ -12,6 +12,7 @@ while (( SECONDS < TIMEOUT )); do
   [[ -z "$PID" ]] && PID="$(head -1 "$LOG" | cut -s -d' ' -f4)"
   END="$(grep '^== suite exit ' "$LOG" | tail -1)"
   if [[ -n "$END" ]]; then tail -60 "$LOG"; exit "${END##* }"; fi
+  if [[ -z "$PID" && $SECONDS -gt 30 ]]; then echo "suite-wait: the log has no pid line; the run did not start"; exit 3; fi
   if [[ -n "$PID" ]] && ! kill -0 "$PID" 2>/dev/null; then
     tail -30 "$LOG"; echo "suite-wait: the run (pid $PID) died without an exit line"; exit 3
   fi
