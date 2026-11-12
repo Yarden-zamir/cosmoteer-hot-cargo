@@ -70,13 +70,12 @@ public static class UxKit
         var root = game.Gui.RootWidget;
         float w = Math.Min(1100f, root.ScreenRect.Width - 80f);
         CenterTexts.RemoveAll(l => l.Root != game.Gui);
-        float y = 100f + CenterTexts.Sum(l => l.ScreenRect.Height + 8f);
         var lbl = new Label
         {
             AnchorRect = AnchorPresets.TopCenter,
             Left = -w / 2f,
             Right = w / 2f,
-            Y = y,
+            Y = 100f,
             Text = xml,
             InputBlockMode = InputBlockMode.Never,
         };
@@ -88,6 +87,17 @@ public static class UxKit
         lbl.TextRenderer.OversizeMode = OversizeMode.Wrap;
         lbl.TextRenderer.Clip = false;
         lbl.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
+        // Placed each frame below the older texts: a text has its height only after its first layout.
+        lbl.BeforeFrameDraw += (_, _) =>
+        {
+            float y = 100f;
+            foreach (var l in CenterTexts)
+            {
+                if (l == lbl) break;
+                y += l.Height + 8f;
+            }
+            if (Math.Abs(lbl.Y - y) > 0.5f) lbl.Y = y;
+        };
         root.AddChild(lbl);
         CenterTexts.Add(lbl);
         try
