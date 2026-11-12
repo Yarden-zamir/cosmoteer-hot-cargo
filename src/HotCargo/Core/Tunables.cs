@@ -6,6 +6,7 @@ using HotCargo.Hunters;
 using HotCargo.Journey;
 using HotCargo.Missions;
 using HotCargo.Missions.Mechanics;
+using HotCargo.RunModes;
 using HotCargo.SharedChoice;
 using HotCargo.ShipAi;
 using HotCargo.Tactics;
@@ -38,6 +39,7 @@ public sealed class Tunables
     [Serialize(Optional = true)] public WorldsTunables Worlds = new();
     [Serialize(Optional = true)] public ShipAiTunables ShipAi = new();
     [Serialize(Optional = true)] public Onboarding.OnboardingTunables Onboarding = new();
+    [Serialize(Optional = true)] public RunModesTunables RunModes = new();
     [Serialize(Optional = true)] public DebugTunables Debug = new();
 }
 

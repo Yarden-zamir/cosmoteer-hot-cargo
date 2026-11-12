@@ -58,7 +58,8 @@ public static class ContractBook
         float feeRoll = r.Single(), feeUnits = r.Single(new Range<float>(t.FeeMin, t.FeeMax));
         float informantRoll = r.Single(), informantChance = r.Single(new Range<float>(t.InformantChanceMin, t.InformantChanceMax));
 
-        float units = rules?.AcceptFee ?? (feeRoll < t.FeeChance ? feeUnits : 0f);
+        // Spec 682: the difficulty fee factor scales every fee, the rules fees too. The bonus follows the fee.
+        float units = (rules?.AcceptFee ?? (feeRoll < t.FeeChance ? feeUnits : 0f)) * RunModes.Difficulty.Pressure(run).ContractFees;
         int tier = m.GetTierRange(m.Game.Sim)?.Max ?? run.CurrentTier;
         float moneyFactor = run.Mode.EconDifficulty.MoneyRewardFactor * run.T.Journey.RewardScale;
         int fee = ContractsModel.Fee(units, GameData.StandardMissionMoney(tier), moneyFactor, t.MoneyRoundTo);

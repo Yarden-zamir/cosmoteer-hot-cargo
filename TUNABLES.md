@@ -31,6 +31,7 @@ Fields not listed in the "Not now" column apply Now.
 | Worlds | `PassWaveDistance`: next spawned ships. `ArrivalLine`, `ArrivalLineDelaySeconds`: next new system | Before a run is active (the first system of a new career), sim code uses the defaults (spec 227). |
 | Ux | `RunIntro`: new runs only. `StageAlertSeconds`, `CommsStayOnMap`, `PauseOnComms`, `PauseOnCommsMultiplayer`: next time it shows | All other switches apply on the next frame. Known limit: in an open event window, the dialogue key numbers keep their state until the page changes. |
 | Onboarding | (none) | `VanillaTutorialDelaySeconds` counts run time, so a loaded run that is older than the delay does not hold vanilla tutorials. |
+| RunModes | `Combat`, `Economy`, `Crew` rows: `HunterShips`, `HunterTiers`, `FameTitleTiers`, `FameTierCap`: next spawned ships. `ContractFees`: next mission offers | `HeatRate`, `TechValue` and `StrikeMusic` apply now. A change of the vanilla difficulty level in the game settings follows the same timing (spec 680). |
 | Debug | (none) | |
 
 ## Values that a change cannot reach

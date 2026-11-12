@@ -2,6 +2,7 @@ using Cosmoteer.Game;
 using Cosmoteer.Modes.Career;
 using Cosmoteer.Simulation;
 using Halfling.Events;
+using HotCargo.RunModes;
 
 namespace HotCargo.Core;
 
@@ -127,8 +128,7 @@ public sealed class Run
         State.PeakTier = Math.Max(State.PeakTier, CurrentTier);
         Hooks.RaiseTick(this, sim, dt);
         if (State.Result != RunResult.Running || !State.HeatEnabled) return;
-        float mult = HeatModel.Multiplier(T.Heat.HeatMultiplierByUnits, State.FleetTech);
-        AddHeat(HeatModel.TimeHeat(T.Heat.HeatPerGameMinute, mult, dt), sim);
+        AddHeat(HeatModel.TimeHeat(T.Heat.HeatPerGameMinute, HeatMultiplier(State.FleetTech), dt), sim);
         TickStrikeWaves(sim, dt);
     }
 
@@ -137,9 +137,14 @@ public sealed class Run
         if (!PressureActive) return;
         int gained = e.NewValue - e.OldValue;
         if (gained <= 0) return;
-        float mult = HeatModel.Multiplier(T.Heat.HeatMultiplierByUnits, State.FleetTech);
-        AddHeat(HeatModel.FameHeat(T.Heat.HeatPerStandardMission, mult, gained, (int)Math.Round(StandardMissionFamePaid(CurrentTier))), Game.Sim);
+        AddHeat(HeatModel.FameHeat(T.Heat.HeatPerStandardMission, HeatMultiplier(State.FleetTech), gained, (int)Math.Round(StandardMissionFamePaid(CurrentTier))), Game.Sim);
     }
+
+    /// <summary>
+    /// Multiplier of time and fame heat (spec 24, 25) for a fleet tech count: the tech table (spec 26) × the difficulty heat rate (spec 681).
+    /// Every heat gain from time or fame and every shown heat rate uses it.
+    /// </summary>
+    public float HeatMultiplier(int units) => HeatModel.Multiplier(T.Heat.HeatMultiplierByUnits, units) * this.Pressure().HeatRate;
 
     /// <summary>
     /// Fame that a standard mission of the tier pays: the vanilla table value times the same factors as the payout

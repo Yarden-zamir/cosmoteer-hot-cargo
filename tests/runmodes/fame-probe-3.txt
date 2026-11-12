@@ -1,0 +1,32 @@
+# Fame title probe (spec 687): 3 typical missions in each sector of the main route. Logs FAME lines; scripts/autotest.sh prints them.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+maxhunters 0
+# Workaround: CallStrategy.Assist crashes after a jump (null sim of the assist target).
+aiset CallOnVanilla false
+aiset CallEnabled false
+rm_sector 3
+rm_route
+wait 12
+rm_sector 3
+rm_route
+wait 12
+rm_sector 3
+rm_route
+wait 12
+rm_sector 3
+rm_route
+wait 12
+rm_sector 3
+rm_route
+wait 12
+rm_sector 3
+rm_route
+wait 12
+rm_sector 3
+rm_route
+wait 12
+rm_sector 3
+quit

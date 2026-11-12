@@ -5,7 +5,7 @@ Read SPEC.md first. It holds the design, the numbered requirements and the plan.
 ## Layout
 
 - `src/HotCargo/Core`, `Ui`, `Dev`: shared core. Change it only when an area cannot work through the hooks in `Core/Run.cs` (`Run.Hooks`), `Core/DebugKeys.cs` (`DebugKeys.Extra`) and `Dev/Autotest.cs` (`Autotest.Commands`, `Autotest.Fields`).
-- `src/HotCargo/<Area>`: one folder for each area (Tech, Journey, Hunters, Missions, Tactics, Ux, Events, Chains, Contracts, SharedChoice, Onboarding). Each area has `<Area>Area.Register()`, its tunables section class and its patches.
+- `src/HotCargo/<Area>`: one folder for each area (Tech, Journey, Hunters, Missions, Tactics, Ux, Events, Chains, Contracts, SharedChoice, Onboarding, RunModes). Each area has `<Area>Area.Register()`, its tunables section class and its patches.
 - Shared helpers in Core: `Errors.Guard` / `Errors.Report` for any failure in a patch, sim tick or UI frame (log once, show in the overlay, never crash the game), and `SimQueries` for tagged ships, human ships and sim lookups. Use them before you write a new one.
 - `mod/mod.header.rules`: the mod header. `scripts/assemble-mod.sh` builds `mod.rules` from it and from every `mod/<area>/actions.rules`.
 - `mod/<area>/actions.rules`: only Action objects `{ ... }`, without an outer list.
