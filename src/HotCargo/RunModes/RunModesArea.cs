@@ -28,6 +28,18 @@ public static class RunModesArea
         return run.Mode.IsIronmanModeEnabled ? $"{lines}\n\n<bad>{Difficulty.Text("IronmanIntro")}</bad>" : lines;
     }
 
+    /// <summary>
+    /// Spec 684: the difficulty tooltip on the heat panel, for new and loaded runs, live after a level change.
+    /// The panel takes hover input for it (Auto); its labels and bar let input pass to it. The game reads a tooltip's TextProvider
+    /// once and then waits for change events, and it opens a tooltip only when that text is not empty. So the text is set each frame.
+    /// </summary>
+    internal static void AttachHeatPanelTip(Halfling.Gui.Widget panel, CareerGameModeManager mode)
+    {
+        panel.InputBlockMode = Halfling.Gui.InputBlockMode.Auto;
+        panel.BeforeFrameDraw += (_, _) => Errors.Guard("heat panel tooltip", () =>
+            panel.ToolTips.Text = Run.Current is { } run && run.Mode == mode ? Difficulty.Tooltip(run) : "");
+    }
+
     /// <summary>Lines for the win screen (spec 685).</summary>
     public static string WinLines(Run run)
     {
@@ -120,6 +132,24 @@ public static class RunModesArea
                      $"ships={p.HunterShips:0.###} tiers={p.HunterTiers} fees={p.ContractFees:0.###} tech={p.TechValue:0.###} heatMult={run.HeatMultiplier(run.State.FleetTech):0.###} " +
                      $"techValue={run.TechValue()} baseTech={BaseTechValue(run)} intro=\"{Difficulty.IntroLine(run)}\"");
         };
+        // rm_check_paneltip: the heat panel tooltip names the three current levels and lists exactly the factors that are not 1 (spec 684).
+        Autotest.Commands["rm_check_paneltip"] = _ => CheckPanelTip(R());
+        // rm_showpaneltip: shows the heat panel tooltip as if the mouse were over the panel. For screenshots.
+        Autotest.Commands["rm_showpaneltip"] = _ =>
+        {
+            var panel = HeatPanelOf(R());
+            (panel.GetToolTipDisplay() ?? throw new InvalidOperationException("the heat panel has no tooltip display")).SetToolTipSource(panel.ToolTips);
+            Autotest.Wait(1.5);
+        };
+        // 1 when the game's tooltip box is open on the heat panel and its label holds the difficulty text.
+        Autotest.Fields["rm_tipshown"] = () =>
+        {
+            var box = R().Game.Gui.ToolTipRight;
+            return box.ToolTipDisplayController.CurrentSource == HeatPanelOf(R()).ToolTips && box.IsActive
+                && box.PrimaryToolTip.TooltipLabel.Text == Difficulty.Tooltip(R()) ? 1 : 0;
+        };
+        // rm_tipshot <name>: a screenshot that keeps the open tooltips (the screenshot command hides them).
+        Autotest.Commands["rm_tipshot"] = arg => { Ux.Screenshot.Capture(arg, keepToolTips: true); Autotest.Wait(1.5); };
         // rm_ironman_newgame <name>: a new Ironman career on the run map with the save HotCargoTest_<name>. Test only.
         Autotest.Commands["rm_ironman_newgame"] = arg =>
         {
@@ -203,6 +233,29 @@ public static class RunModesArea
             return $"{s.Name} {ships}xt{tier}";
         });
         Log.Info($"AUTOTEST RUNMODES level {label}: heat x{heatRate:0.###}, fees x{fees:0.###}, tech x{techFactor:0.###} ({tech}), {string.Join(", ", stages)}");
+    }
+
+    static Ui.HeatPanel HeatPanelOf(Run run) =>
+        run.Game.Gui.TopLeftHudBox.Children.OfType<Ui.HeatPanel>().SingleOrDefault() ?? throw new InvalidOperationException("no heat panel in the HUD");
+
+    static void CheckPanelTip(Run run)
+    {
+        // The text that the game's tooltip box shows, not our own source.
+        string tip = ((Halfling.Gui.Components.ToolTips.IToolTipSource)HeatPanelOf(run).ToolTips).TextProvider.Text;
+        Log.Info($"AUTOTEST RUNMODES panel tip: {tip.Replace("\n", " | ")}");
+        var m = run.Mode;
+        foreach (string level in new[] { m.CombatDifficulty.NameKey.Text, m.EconDifficulty.NameKey.Text, m.CrewScarcity.NameKey.Text })
+            Autotest.Check(tip.Contains(level), $"panel tip names the level {level}");
+        var p = run.Pressure();
+        var factors = new (string Key, bool Changed, object Value)[]
+        {
+            ("HeatFmt", p.HeatRate != 1f, p.HeatRate), ("ShipsFmt", p.HunterShips != 1f, p.HunterShips),
+            ("TiersFmt", p.HunterTiers != 0, p.HunterTiers.ToString("+0;-0", CultureInfo.InvariantCulture)),
+            ("FeesFmt", p.ContractFees != 1f, p.ContractFees), ("TechFmt", p.TechValue != 1f, p.TechValue),
+        };
+        foreach (var (key, changed, value) in factors)
+            Autotest.Check(tip.Contains(Difficulty.Fmt(key, value)) == changed, $"panel tip {(changed ? "lists" : "leaves out")} {key} {value}");
+        Autotest.Check(tip.Contains(Difficulty.Text("TipNeutral")) == factors.All(f => !f.Changed), "panel tip says 'no change' only when every factor is 1");
     }
 
     static int LevelsWithoutRow(RunModesTunables t)
