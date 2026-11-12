@@ -8,6 +8,7 @@ using Halfling.PortableHashing;
 using Halfling.Serialization;
 using Halfling.Timing;
 using HotCargo.Ai;
+using HotCargo.Core;
 using HotCargo.Hunters;
 using static HotCargo.Ai.PersonalityModel;
 using NVector2 = System.Numerics.Vector2;
