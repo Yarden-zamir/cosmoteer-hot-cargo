@@ -5,16 +5,21 @@
 #   vault-saved-ships.sh --from B      the same, but the designs come from the folder B in the save folder (an earlier backup,
 #                                      for example "Saved Ships.backup-20261112-222246"). B is only read.
 #   vault-saved-ships.sh --starters D  the vanilla starter ships; the new designs go to the local folder D (mod/tech/starters).
+# Options after the mode: --range FIRST,COUNT handles only those designs (name order), so a run fits in one short foreground chunk;
+# --no-install skips the install of origin/main at the end (for all chunks but the last).
 # Runs in the player's game slot (main, the only slot with graphics), only when that game is closed, under the main-slot lock.
 # Then it installs origin/main back into the player's game (scripts/install-player.sh).
 set -euo pipefail
-MODE=saved; OUT=""; FROM=""
-case "${1:-}" in
-  --starters) MODE=starters; OUT="${2:?usage: vault-saved-ships.sh [--from <backup folder> | --starters <local out dir>]}" ;;
-  --from) FROM="${2:?usage: vault-saved-ships.sh --from <backup folder>}" ;;
-  "") ;;
-  *) echo "usage: vault-saved-ships.sh [--from <backup folder> | --starters <local out dir>]"; exit 2 ;;
-esac
+MODE=saved; OUT=""; FROM=""; RANGE=""; INSTALL=1
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --starters) MODE=starters; OUT="${2:?--starters needs a local out dir}"; shift 2 ;;
+    --from) FROM="${2:?--from needs a backup folder name}"; shift 2 ;;
+    --range) RANGE="|${2:?--range needs FIRST,COUNT}"; shift 2 ;;
+    --no-install) INSTALL=0; shift ;;
+    *) echo "usage: vault-saved-ships.sh [--from <backup folder> | --starters <local out dir>] [--range FIRST,COUNT] [--no-install]"; exit 2 ;;
+  esac
+done
 source "$(dirname "$0")/autotest-lib.sh"
 export SLOT=main
 LOCK=/tmp/hot_cargo_main_slot.lock
@@ -39,6 +44,7 @@ if [[ "$MODE" == saved ]]; then
     Copy-Item $ships $backup -Recurse
     $a = @(Get-ChildItem $ships -Recurse -File).Count; $b = @(Get-ChildItem $backup -Recurse -File).Count
     if ($a -ne $b) { throw "backup has $b files, Ships has $a" }
+    Get-ChildItem $ships -Recurse -Filter *.ship.png.tmp | Remove-Item -Force
     $from = "'"$FROM"'"; $src = if ($from) { Join-Path $mainRoot $from } else { $ships }
     if (-not (Test-Path $src)) { throw "no folder $from in the save folder" }
     "$src|$ships|$backup|$a"' </dev/null | tr -d '\r')"
@@ -55,11 +61,11 @@ fi
   [[ "$MODE" == starters ]] && echo "newgamecheck off"
   echo "newgame run"
   echo "wait 8"
-  echo "vaultdesigns $SRC|$DST"
+  echo "vaultdesigns $SRC|$DST$RANGE"
   echo "quit"
 } | start_slot main
 LOG=""
-for ((t = 0; t < 600; t += 10)); do
+for ((t = 0; t < 450; t += 10)); do
   sleep 10
   LOG="$(slot_log main)"
   if grep -q '<<GAME EXITED>>' <<<"$LOG"; then break; fi
@@ -76,4 +82,4 @@ fi
 [[ "$MODE" == saved ]] && echo "backup: $BACKUP"
 log_passed <<<"$LOG" || { echo "the run failed: see $LOG_DIR/vault-$MODE.log"; exit 1; }
 rm -rf "$LOCK"
-"$LIB_DIR/install-player.sh"
+if [[ $INSTALL -eq 1 ]]; then "$LIB_DIR/install-player.sh"; fi

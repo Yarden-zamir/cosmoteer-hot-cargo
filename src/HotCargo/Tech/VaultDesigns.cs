@@ -10,7 +10,7 @@ namespace HotCargo.Tech;
 
 /// <summary>
 /// Spec 1016-1018: builds Tech Vaults into saved ship designs with the game's own load, build and save code.
-/// Autotest command: vaultdesigns &lt;source folder&gt;|&lt;output folder&gt;. It needs a running game (the build steps need a sim)
+/// Autotest command: vaultdesigns &lt;source folder&gt;|&lt;output folder&gt;[|first,count]. It needs a running game (the build steps need a sim)
 /// and graphics (the game saves a design as a picture of the ship), so it runs in the main slot.
 /// Each *.ship.png in the source folder (and its subfolders) gets vaults for the starting tech, and the design goes to the same
 /// relative path in the output folder. The output folder may be the source folder. The report goes to vault-report.txt in the mod folder.
@@ -98,13 +98,16 @@ static class VaultDesigns
 
     static void Run(string arg)
     {
+        // Optional part 3: "first,count", a range of the designs in name order, so one run stays short (PC work runs in chunks).
         var dirs = arg.Split('|', StringSplitOptions.TrimEntries);
-        if (dirs.Length != 2 || dirs.Any(string.IsNullOrEmpty)) throw new InvalidOperationException("vaultdesigns needs: <source folder>|<output folder>");
+        if (dirs.Length is not (2 or 3) || dirs.Any(string.IsNullOrEmpty)) throw new InvalidOperationException("vaultdesigns needs: <source folder>|<output folder>[|first,count]");
         var (src, dst) = (dirs[0], dirs[1]);
+        var range = dirs.Length == 3 ? dirs[2].Split(',').Select(n => int.Parse(n, System.Globalization.CultureInfo.InvariantCulture)).ToArray() : [0, int.MaxValue];
+        if (range.Length != 2 || range[0] < 0 || range[1] < 1) throw new InvalidOperationException($"bad range {dirs[2]}: needs first,count");
         if (!Directory.Exists(src)) throw new DirectoryNotFoundException(src);
         var game = Autotest.Game ?? throw new InvalidOperationException("vaultdesigns needs a running game");
         int units = NewGameCheck.RequiredUnits(coop: false);
-        var files = new Queue<string>(Directory.EnumerateFiles(src, "*.ship.png", SearchOption.AllDirectories).Order(StringComparer.Ordinal));
+        var files = new Queue<string>(Directory.EnumerateFiles(src, "*.ship.png", SearchOption.AllDirectories).Order(StringComparer.Ordinal).Skip(range[0]).Take(range[1]));
         Next(new Batch(game, src, dst, units, files, [$"Tech Vaults for {units} starting tech. Source {src}, output {dst}."]));
     }
 
