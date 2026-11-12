@@ -79,6 +79,14 @@ public static class PursuitArea
             var dir = Halfling.Geometry.Vector2.FromAngle(s.RelayAt.DirectionTo(ship.DetWorldCenter));
             Autotest.Teleport(ship, s.RelayAt + dir * d);
         };
+        // pu_focusscout: centers the camera on the scout, zoomed out so its marker label shows (screenshots).
+        Autotest.Commands["pu_focusscout"] = _ =>
+        {
+            var s = R().State.Pursuit.Scouts.FirstOrDefault() ?? throw new InvalidOperationException("no scout");
+            var ship = Sim().Ships[s.Ship] ?? throw new InvalidOperationException("scout is not live");
+            ship.FocusCamera(playSound: false);
+            Sim().Camera.ViewController.ZoomToFit(new Halfling.Geometry.Vector2(2500f));
+        };
         // pu_blockade: the live hunters park at the needed relay, through the pacer.
         Autotest.Commands["pu_blockade"] = _ =>
         {
