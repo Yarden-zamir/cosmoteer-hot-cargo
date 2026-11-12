@@ -29,6 +29,7 @@ public static class EventsArea
         Run.Hooks.NewRunStarted += EventRunner.OnNewRun;
         Run.Hooks.SystemEntered += EventRunner.OnSystemEntered;
         Run.Hooks.Tick += EventRunner.OnTick;
+        SharedChoice.SharedChoices.Register(EventsChoiceDomain.Instance);
         AddAutotest();
     }
 
@@ -56,7 +57,7 @@ public static class EventsArea
             var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             int choice = parts[0] == "last" ? EventLibrary.Get(p.EventId).Choices.Length - 1 : Int(parts[0]) - 1;
             if (parts.Length > 1) EventRunner.Choose(run, RequireSim(), run.Game.LocalPlayerIndex, p.Serial, choice, Int(parts[1]) - 1);
-            else run.Game.NetManager.EnqueueInput(new EventChoiceInput(p.Serial, choice));
+            else run.Game.NetManager.EnqueueInput(EventsChoiceDomain.Pick(p.Serial, choice));
             Autotest.Wait(2);
         };
         Autotest.Commands["expectevent"] = arg =>

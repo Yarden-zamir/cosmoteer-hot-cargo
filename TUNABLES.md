@@ -27,6 +27,7 @@ Fields not listed in the "Not now" column apply Now.
 | Events | `ArrivalEventChance`, `ArrivalDelaySeconds`, `StationEventChance`, `CourierChance`: next new system. `StartDelaySeconds`: new runs only. `PauseOnEvent`: next time it shows | `MoneyScale` applies at once, also to an open event page. |
 | Contracts | `FeeChance`, `FeeMin`, `FeeMax`, `PaidBonusFactor`, `MoneyRoundTo`, `RivalPairChance`, `InformantShare`, `InformantChanceMin`, `InformantChanceMax`, `InformantDelayMin`, `InformantDelayMax`, `ExcludedCategories`, `Metatypes`: next mission offers | The terms of an offer are saved within a second of its first scan (spec 100). Fixed in this change: `RivalsEnabled` off now also stops the rival groups that offers got before the switch. The trail, `InformantHeat` and `InformantShips` apply now. |
 | Chains | `StationChance`, `LaterDelaySeconds`: next new system. `StoryLines`: next time it shows | `Enabled` and `PageTriggerDistance` apply now. |
+| SharedChoice | (none) | `VoteTimeoutSeconds` applies to open votes at once: the timeout counts from the first vote. |
 | Worlds | `PassWaveDistance`: next spawned ships. `ArrivalLine`, `ArrivalLineDelaySeconds`: next new system | Before a run is active (the first system of a new career), sim code uses the defaults (spec 227). |
 | Ux | `RunIntro`: new runs only. `StageAlertSeconds`, `CommsStayOnMap`, `PauseOnComms`, `PauseOnCommsMultiplayer`: next time it shows | All other switches apply on the next frame. Known limit: in an open event window, the dialogue key numbers keep their state until the page changes. |
 | Debug | (none) | |
@@ -35,7 +36,7 @@ Fields not listed in the "Not now" column apply Now.
 
 - Rules content (parts, missions, archetype weights, `FinalSectorTier`, the galaxy size): needs a game restart (spec 54).
 - A new co-op run starts with the defaults. The host's file arrives as an input on the first frame, so the starting vault and the first system's offers use the defaults (spec 60).
-- Test commands that change a tunable in place (`ev_set`, `ux`, `contract_set`, `mech_set`, `aiset`, `buyer sectors`, `maxhunters`, `tacticlog`): a later menu change or file reload replaces the tunables and drops those edits. Tests that mix the two set every value through the menu.
+- Test commands that change a tunable in place (`ev_set`, `sc_set`, `ux`, `contract_set`, `mech_set`, `aiset`, `buyer sectors`, `maxhunters`, `tacticlog`): a later menu change or file reload replaces the tunables and drops those edits. Tests that mix the two set every value through the menu.
 
 ## Screenshots
 
