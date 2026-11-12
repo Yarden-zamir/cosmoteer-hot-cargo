@@ -50,6 +50,14 @@ static class RelaysAutotest
         };
         // rl_toguard: single player. Moves the player ship next to the first live guard.
         Autotest.Commands["rl_toguard"] = _ => MoveNear(FirstGuard());
+        // rl_guardsnear: moves every guard next to the acting player's ship. Sim safe, so co-op tests run it under "mp".
+        Autotest.Commands["rl_guardsnear"] = _ =>
+        {
+            var run = R();
+            var me = Autotest.ActingShip(run.Game.Sim) ?? throw new InvalidOperationException("no acting ship");
+            foreach (var id in RelaysArea.ActiveHere(run)?.Guards ?? [])
+                if (RelaysArea.Guard(run.Game.Sim, id) is { } g) Autotest.Teleport(g, Autotest.ClearSpotNear(run.Game.Sim, me.DetWorldCenter, 900f, g.WorldBoundingRadius));
+        };
         // rl_pay: the shared choice that pays the fee at the nearest fee station.
         Autotest.Commands["rl_pay"] = _ =>
         {
@@ -107,6 +115,7 @@ static class RelaysAutotest
         Autotest.Fields["rl_blocks"] = () => RelaysArea.Blocks(R()) ? 1 : 0;
         Autotest.Fields["rl_guards"] = () => RelaysArea.ActiveHere(R())?.Guards.Count(id => RelaysArea.Guard(R().Game.Sim, id) is not null) ?? 0;
         Autotest.Fields["rl_bribefailed"] = () => RelaysArea.ActiveHere(R())?.BribeFailed == true ? 1 : 0;
+        Autotest.Fields["rl_picks"] = () => R().State.MultiChoice.Drafts.Where(d => d.Domain == RelayMultiDomain.Name).Sum(d => d.Picks.Count);
         Autotest.Fields["rl_ready"] = () => R().Game.PlayersReadyToJump.Count;
         Autotest.Fields["rl_spent"] = () => _markMoney - R().Game.LocalPlayerState.Money;
         Autotest.Fields["rl_fee"] = () => RelaysArea.FeeCredits(R());

@@ -44,5 +44,6 @@ expect rl_blocks == 0
 fa_gatejump
 waitfor fa_ready == 1 180
 fa_engage
-waitfor fa_jumpstarts == 1 60
+# fa_jumpstarts counts for the whole test process: the first game jumped once.
+waitfor fa_jumpstarts >= 2 60
 quit
