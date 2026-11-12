@@ -7,7 +7,7 @@
 # - Test names: only those, for example "tech-sell mp:trade" (autotest-affected.sh passes its list this way).
 #   "mp3:<name>" runs a co-op test with 3 players (the host and 2 clients).
 # Each test retries once (see autotest.sh); a pass on the retry counts as FLAKY, not as a failure.
-# Exit code 0 only if every test passed. Full logs: /tmp/hot_cargo_logs/<worktree>/ (summary per test in run/).
+# Exit code 0 only if every test passed. Full logs: <container>/.state/logs/<worktree>/ (summary per test in run/).
 set -uo pipefail
 cd "$(dirname "$0")/.."
 TELEMETRY=no
@@ -62,7 +62,7 @@ FLAKY="$(grep '^FLAKY ' "$RUN_DIR/summary.txt" | cut -d' ' -f2- | tr '\n' ' ')"
 if [[ -z "$FAILED" ]]; then
   echo "== all $(grep -c . "$RUN_DIR/summary.txt") autotests passed ($RUN_DIR)"
   if [[ "$CLEAN_AT_START" == yes && "$(git rev-parse HEAD)" == "$START_SHA" && -z "$(git status --porcelain)" ]]; then
-    touch "/tmp/hot_cargo_autotest_pass_$START_SHA"; echo "== pass marker written for $START_SHA"
+    touch "$STATE_DIR/autotest_pass_$START_SHA"; echo "== pass marker written for $START_SHA"
   fi
   exit 0
 fi
