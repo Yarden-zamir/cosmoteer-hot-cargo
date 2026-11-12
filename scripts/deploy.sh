@@ -20,7 +20,7 @@ trap 'rm -rf "$STAGE"' EXIT
 DEV_VERSION="$(git -C "$REPO_ROOT" describe --tags --always --dirty)"
 sed -i '' "s/^Version = .*/Version = ${DEV_VERSION#v}/" "$STAGE/hot_cargo/mod.rules"
 mkdir -p "$STAGE/hot_cargo/csharp" "$STAGE/loader"
-cp "$BUILD/HotCargo.dll" "$BUILD/HotCargo.pdb" "$BUILD/0Harmony.dll" "$STAGE/hot_cargo/csharp/"
+cp "$BUILD/HotCargo.dll" "$BUILD/HotCargo.pdb" "$BUILD/HotCargo.xml" "$BUILD/0Harmony.dll" "$STAGE/hot_cargo/csharp/"
 cp "$LOADER" "$REPO_ROOT/src/HotCargo.Loader/VERSION" "$STAGE/loader/"
 # The tunables file is staged under a temporary name. The PC side decides if it overwrites the live copy.
 if [[ -f "$STAGE/hot_cargo/tunables.rules" ]]; then mv "$STAGE/hot_cargo/tunables.rules" "$STAGE/hot_cargo/tunables.rules.deploy"; fi

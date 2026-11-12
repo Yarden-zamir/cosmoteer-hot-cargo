@@ -39,6 +39,14 @@ public static class TunablesFile
         }
     }
 
+    /// <summary>Writes the file and records its time, so that the change watcher does not read the same values back.</summary>
+    public static void Write(byte[] bytes)
+    {
+        File.WriteAllBytes(FilePath, bytes);
+        _lastWrite = File.GetLastWriteTimeUtc(FilePath);
+        LastError = null;
+    }
+
     /// <summary>Reads the file bytes or null when the file is missing. For the host's tunables input in multiplayer.</summary>
     public static byte[]? ReadBytes() => File.Exists(FilePath) ? File.ReadAllBytes(FilePath) : null;
 

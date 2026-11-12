@@ -1,0 +1,28 @@
+# Co-op settings menu, host side (spec 504): the host's change reaches the client through the tunables input, at the same tick, with no desync.
+# The host's file has a value. A menu edit must keep it, also when the edit comes right after the start.
+tunablesfile Heat { HeatCarryOverFraction = 0.5 }
+mphost {PORT}
+mpstart 2
+mp godmode on
+waitfor menu_ready == 1 30
+menu open
+expect menu_readonly == 0
+# Through the menu, not ev_set: a menu change replaces the tunables, so an earlier in-place test edit would be lost.
+menu set Events.Enabled off
+menu set Heat.HeatPerGameMinute 45
+menu set Hunters.Stages[0].ShipCount 2
+menu close
+waitfor heatperminute == 45 30
+menu file has HeatPerGameMinute = 45
+menu file has HeatCarryOverFraction = 0.5
+menu value Heat.HeatCarryOverFraction == 0.5
+# Barrier: the client saw the values and checked that its window is read-only.
+waitfor mpmark >= 1 120
+# The changed Warning response spawns 2 hunters on both machines.
+mp stage
+waitfor hunters >= 2 30
+wait 20
+expect desyncs == 0
+log host-end
+waitfor mpconnected == 0 240
+quit

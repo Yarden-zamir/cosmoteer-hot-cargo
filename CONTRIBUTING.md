@@ -11,6 +11,7 @@ Read SPEC.md first. It holds the design, the numbered requirements and the plan.
 - `mod/<area>/actions.rules`: only Action objects `{ ... }`, without an outer list.
 - `mod/<area>/strings.en.rules`: string sections for the area. Two areas must not define the same top-level section.
 - `mod/tunables.rules`: changed values only. The mod writes `tunables.defaults.rules` with every value at game start.
+- New tunables show in the in-game settings menu by themselves (`src/HotCargo/TunablesMenu`). Give each one a `/// <summary>` comment: the menu shows it as the description. If a change does not take effect within a second, add the field to `TunableTiming.cs` and to TUNABLES.md.
 
 ## Build and test
 
