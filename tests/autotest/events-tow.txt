@@ -22,7 +22,8 @@ expect ev_heat_gain >= 9
 expect ev_rep_gain < 0
 # The Tow Job mission, spawned directly (the outcome needs a tractor beam).
 ev_spawn TowJob
-expecttagged hc_ev_towed == 1
+# Two freighters to tow: the Dead in Space carrier above, and this one.
+expecttagged hc_ev_towed == 2
 expect ev_tow_state == 0
 expect ev_tow_dist > 2500
 ev_mark

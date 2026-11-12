@@ -22,6 +22,7 @@
     <Compile Include="../../src/HotCargo/Missions/Mechanics/MechanicsModel.cs" />
     <Compile Include="../../src/HotCargo/ShipAi/ShipAiModel.cs" />
     <Compile Include="../../src/HotCargo/Scaling/ScalingModel.cs" />
+    <Compile Include="../../src/HotCargo/Diplomacy/DiplomacyModel.cs" />
     <Compile Include="../../src/HotCargo/SharedChoice/VoteModel.cs" />
     <Compile Include="../../src/HotCargo/RunModes/PressureModel.cs" />
     <Compile Include="../../src/HotCargo/Factions/FactionsModel.cs" />

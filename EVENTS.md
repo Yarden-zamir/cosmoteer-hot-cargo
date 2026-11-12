@@ -286,12 +286,63 @@ Vanilla wanted (police of one faction hunt you) stacks with corporate heat. When
 
 Reads as: the hotter you are, the less a fixer can do for you. A crate is the sure way out, and it costs score.
 
+### Research (spec 760-763)
+
+Offers are built from the vanilla tech tree when the page opens, never from a list. Research value = what buying the tech costs in this system (vanilla `Cost` × your reputation price factor). A trade always gives at least 1.2 × the tech value of the crates it asks for (default `ResearchRate` 1.5 is the target), and can bundle up to 3 techs.
+
+#### 27. The Archive (Station, 2+ tech; weight 8)
+Trade {offer_units} for research (shown: "Trade 1 crate (worth 15,000) for research worth 21,000"), or keep the crates.
+
+#### 28. A Lab That Won't Take No (Arrival, sector 2+, 2+ tech; weight 6 + 0.1 × heat)
+Extortion: trade, pay 0.6 money units, or refuse (heat +20).
+
+#### 29. Data Broker (Arrival, sector 2+; weight 6)
+Copies of research you have, for 1.3 × their worth (cap 1.5 money units). You keep the research. 20 % + 0.2 × heat: the transfer carried a tracker (heat +15).
+
+Reads as: tech units are also research currency. Spending one buys parts now and lowers the heat multiplier, at a cost to the final score.
+
+### Abandoned ships (spec 764-765)
+
+Vanilla 0.30.5 spawns abandoned civilian ships. Flying close to one rolls an event once (60 %).
+
+#### 30. Abandoned Ship (Abandoned; no run limit)
+| Choice | Need | Outcomes |
+|---|---|---|
+| Board it | 2 crew | 40 % steel and processors, 30 % hyperium, 15 % nothing, 15 % + 0.25 × heat a corporate trap (heat +10, corporate patrol). |
+| Leave it | — | Nothing. The hull is still there to salvage. |
+
+#### 31. Cold Hulk (Abandoned; twice per run; weight 5)
+Drain the tanks (1 crew): 70 % hyperium, 30 % less hyperium and hull damage 20 %. Or leave.
+
+#### 32. Dead Courier (the run's relic ship)
+One per run, in a sector from 2 to the one before the Buyer. Within 3,000 the vault senses it: "Your vault hums: stolen tech nearby". Within 900 the event opens; leaving and coming back opens it again until you take the crate.
+| Choice | Need | Outcomes |
+|---|---|---|
+| Recover the crate | 1 vault slot | +1 tech. 15 % + 0.1 × heat: also a corporate patrol. |
+| Leave it for now | — | Nothing; it waits. |
+
+### Events in ship comms (spec 767-771)
+
+Events do not only pop up. Ships carry them and talk:
+- **Ship-carried pages.** An event with a `Carrier` spawns its ship when it opens. The ship calls ("Courier is calling. Fly within comms range to answer, or hail it."), hails you in comms range, and its comms tab shows the page and the choices. It stays a real ship: attack it and the page closes ("The ship is gone, and so is the offer"), or leave it behind. Dead in Space now comes from its freighter, and the tow choice tows that freighter.
+- **Stations hail.** A Station event (The Fence, Smugglers' Den, The Informant, The Archive) comes from the station's comms.
+- **Hot Cargo lines in vanilla hails.** Stations offer "Sell a crate off the books." Faction ships offer "Ask about hunters nearby." (heat 10+). Once per ship and line.
+
+#### 33. Off the Books (Hail line, trade stations; 2+ tech)
+Sell one crate: 0.85 × tech value, heat −10. Or change your mind.
+
+#### 34. Patrol Chatter (Hail line, faction ships; heat 10+)
+Pay 0.2 money units for patrol logs (heat −8), ask nicely (50 %: heat −4; 50 % + 0.3 × heat: heat +5, they log your question), or never mind.
+
+Hunter demands ("hand over the tech") are the diplomacy area's, through the same comms hook.
+
 All catalog items are implemented.
 
 ## 4. Content rules for authors
 
 - Do not write counts that live elsewhere (the starting tech, spawn counts in spawns.rules): they drift. Use `{crates}` for the live fleet tech count. Counts that the same choice's Cost sets are fine.
 - Do not number the choices: the UX area draws the key numbers next to the buttons.
+- A page that a ship should say (a hail, a demand, a deal) gets a `Carrier` or is a `Hail` line, so it shows in that ship's comms.
 - Keep text to 2 to 4 short sentences. Name concrete things (a crate, a cutter, a forger), not abstractions.
 - Put the cost on the button (`Cost`), not in the text. The window adds "(-10,000 credits)" for you.
 - Hide story options (`HideIfUnmet = true`) when a flag gates them. Show part and crew options greyed out, so players learn what to build.
