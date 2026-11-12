@@ -138,12 +138,12 @@ dip refuse focus
 wait 1
 expect dip_vaulttech == 3
 expect dip_picks == 0
-# The demand hail: a hunter in comms range hails the players once.
+# The demand hail: a new hunter in comms range hails the players once.
 dip_set DemandHailChance 1
 dip_set DemandHailGapSeconds 0
 spawnstage Warning
 wait 2
-dip_near hunter 250
+dip_near hunters 250
 wait 3
 expect dip_hailing >= 1
 quit
