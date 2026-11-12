@@ -118,7 +118,8 @@ public sealed class Run
         double dt = sim.FixedUpdater.Interval.Seconds;
         State.GameSeconds += dt;
         State.FleetTech = Hooks.CountFleetTech(sim);
-        State.PeakTier = Math.Max(State.PeakTier, CurrentTier);
+        if (CurrentTier > State.PeakTier)
+            State.PeakTier = Math.Max(State.PeakTier, Math.Min(CurrentTier, Journey.TierCapSpawner.PeakTierCap(Mode, State.SectorIndex) ?? int.MaxValue));
         Hooks.RaiseTick(this, sim, dt);
         if (State.Result != RunResult.Running || !State.HeatEnabled) return;
         float mult = HeatModel.Multiplier(T.Heat.HeatMultiplierByUnits, State.FleetTech);

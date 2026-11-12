@@ -39,8 +39,13 @@ public sealed class Tunables
 [ReflectiveSerialization(Explicit = true)]
 public sealed class HeatTunables
 {
-    [Serialize(Optional = true)] public float HeatPerGameMinute = 2f;
-    [Serialize(Optional = true)] public float HeatPerStandardMission = 15f;
+    /// <summary>Spec 24: heat per game minute at multiplier 1. About a quarter of a sector's heat comes from time (BALANCE.md).</summary>
+    [Serialize(Optional = true)] public float HeatPerGameMinute = 1.2f;
+    /// <summary>
+    /// Spec 25: heat per standard mission fame unit at multiplier 1. A typical mission pays about 3.4 units (kill fame plus reward fame),
+    /// so it adds about 5 heat, and six missions with the time and contract heat fill a sector.
+    /// </summary>
+    [Serialize(Optional = true)] public float HeatPerStandardMission = 1.5f;
     /// <summary>Index = fleet tech count. A count above the table uses the last entry.</summary>
     [Serialize(Optional = true)] public float[] HeatMultiplierByUnits = [0.25f, 0.4f, 0.52f, 0.64f, 0.76f, 0.88f, 1.0f, 1.1f, 1.2f];
     [Serialize(Optional = true)] public float HeatCarryOverFraction = 0.25f;

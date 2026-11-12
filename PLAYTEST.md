@@ -176,7 +176,7 @@ The autotests cover assignment, offers, results (success, abandoned, lost, timeo
 7. Return stages: refuse Mara's bill, leave the system and come back. Do the collectors appear about 8 seconds after you arrive? Does the result read as a consequence of your refusal?
 8. Arrival stages: take Okafor aboard or sell her. Do "Old Schedules" or "Okafor's Friends" come at a fair moment in the next system or the one after?
 9. Mara's standing offer: does it show on each visit and stay away inside one visit? Is 1.33 × the tech value worth a detour?
-10. Frequency: with every station holding a chain, are there too many offers per system? If yes, lower `Chains.StationChance` (for example 0.5) in `tunables.rules`.
+10. Frequency: chains start at 60 % of stations, at most 2 per system. Are there too many or too few chain offers? Tune `Chains.StationChance` and `Chains.MaxNewChainsPerSystem` in `tunables.rules`.
 11. Multiplayer (co-op): both players see the chain offer and the chain pages. One player chooses. Does the chain advance the same for both?
 
 ## System archetypes (spec 220-229, WORLDS.md)
