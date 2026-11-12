@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Merge a feature branch into main and ship it, stopping at the first failure:
 # merge -> build -> unit tests -> private-data check -> affected autotests -> push -> install into the player's game.
-# Usage: integrate.sh <branch> [--no-autotest]
+# Usage: integrate.sh <branch | PR number> [--no-autotest]
 #        integrate.sh --continue [--no-autotest]   after you resolved merge conflicts (staged them, no commit needed)
 # Run it in the main worktree. Nothing is pushed unless every step passed. On a failure the merge commit stays local:
 # fix it with a new commit and run "integrate.sh --continue", or undo it with "git reset --hard origin/main".
@@ -22,6 +22,12 @@ else
   [[ -z "$(git status --porcelain --untracked-files=no)" ]] || { echo "integrate: main has uncommitted changes"; exit 1; }
   step "update main"
   git pull -q --ff-only origin main
+  # A PR number merges the PR's branch from origin. Merging it into main marks the PR as merged on GitHub.
+  if [[ "$ARG" != *[!0-9]* ]]; then
+    HEAD_BRANCH="$(gh pr view "$ARG" --json headRefName --jq .headRefName)"
+    git fetch -q origin "$HEAD_BRANCH"
+    ARG="origin/$HEAD_BRANCH"
+  fi
   step "merge $ARG"
   if ! git merge --no-ff "$ARG" -m "Merge branch '$ARG'"; then
     echo "integrate: conflicts. Resolve them, git add the files, then run: scripts/integrate.sh --continue"
