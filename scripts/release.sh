@@ -5,6 +5,7 @@
 # Set FORCE=1 to skip the test marker check (not for normal use).
 set -euo pipefail
 cd "$(dirname "$0")/.."
+STATE_DIR="${HOT_CARGO_STATE:-$(cd "$(dirname "$0")/../.." && pwd)/.state}"; mkdir -p "$STATE_DIR"
 VERSION="${1:?usage: release.sh <version> [--prerelease]}"
 PRE="${2:-}"
 TAG="v$VERSION"
@@ -16,7 +17,7 @@ git fetch -q origin main
 # A pass marker on HEAD, or on an ancestor when only docs (*.md, docs/) changed since then.
 tested() {
   local marker sha
-  for marker in /tmp/hot_cargo_autotest_pass_*; do
+  for marker in "$STATE_DIR"/autotest_pass_*; do
     [[ -f "$marker" ]] || continue
     sha="${marker##*_}"
     git merge-base --is-ancestor "$sha" HEAD 2>/dev/null || continue
