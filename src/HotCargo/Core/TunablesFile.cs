@@ -108,6 +108,7 @@ public static class TunablesFile
         t.RunModes.Validate(Require, Cosmoteer.GameApp.Assets?.Rules is null ? null : RunModes.Difficulty.IsVanillaLevel);
         t.Factions.Validate(Require);
         t.Relays.Validate(Require);
+        t.Stash.Validate(Require);
         t.Telemetry.Validate(Require);
     }
 }

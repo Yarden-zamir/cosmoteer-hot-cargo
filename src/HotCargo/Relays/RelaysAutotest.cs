@@ -58,7 +58,7 @@ static class RelaysAutotest
                 .OrderBy(s => s.DetWorldCenter.DistanceSquaredTo(TechAutotest.PlayerShip().DetWorldCenter)).First();
             run.Game.NetManager.EnqueueInput(new SharedChoiceInput(RelayChoiceDomain.Name, RelayChoiceDomain.Serial(station), SharedChoiceAction.Choose, (int)RelayOption.PayFee));
         };
-        // rl_pick money <credits> | res <amount>: selects a bribe option on the first guard's page (res: the first resource option).
+        // rl_pick money <credits|price|max> | res <amount|max>: selects a bribe option on the first guard's page (res: the first resource option).
         Autotest.Commands["rl_pick"] = arg =>
         {
             var run = R();
@@ -66,7 +66,12 @@ static class RelaysAutotest
             var guard = FirstGuard();
             var options = RelayMultiDomain.OptionsFor(run, run.Game.Sim);
             int option = parts[0] == "money" ? RelayMultiDomain.MoneyOption : options.First(o => o.Id != RelayMultiDomain.MoneyOption).Id;
-            int value = parts[1] == "max" ? options.First(o => o.Id == option).Max : int.Parse(parts[1], CultureInfo.InvariantCulture);
+            int value = parts[1] switch
+            {
+                "max" => options.First(o => o.Id == option).Max,
+                "price" => RelaysArea.BribePrice(run),
+                _ => int.Parse(parts[1], CultureInfo.InvariantCulture),
+            };
             run.Game.NetManager.EnqueueInput(new MultiChoiceInput(RelayMultiDomain.Name, RelayChoiceDomain.Serial(guard), option, true, value));
         };
         // rl_bribe | rl_refuse: the shared choices of the first guard's page.

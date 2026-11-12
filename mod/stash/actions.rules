@@ -1,0 +1,20 @@
+// Hot Cargo stash (spec 970 to 989): a rumoured stash, offered like a shady mission. It spawns with each star system.
+{
+	Action = Add
+	AddTo = "<modes/career/sectors/sector_basic/sector_basic.rules>/Sector/SystemGenerator/Spawners"
+	ToAdd = &<stash/sysgen_stash.rules>/Stash
+}
+{
+	Action = Overrides
+	OverrideIn = "<modes/career/mission_metatypes.rules>"
+	Overrides
+	{
+		// Sits with the vanilla bounties and the shady offers (spec 38).
+		HotCargoStash
+		{
+			NameKey = "HotCargoStash/Name"
+			DescriptionKey = "HotCargoStash/Desc"
+			CategoryID = bounties
+		}
+	}
+}
