@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # Run the autotests that the changes since a base commit touch, in parallel (through autotest-all.sh).
-# Usage: autotest-affected.sh [base-ref] [timeout-per-test]   (base default: origin/main)
+# Usage: autotest-affected.sh [--detach] [base-ref] [timeout-per-test]   (base default: origin/main)
 #        LIST_ONLY=1 autotest-affected.sh ...   prints the tests and runs nothing.
 #        COMMITTED_ONLY=1 ignores uncommitted changes.
+#        HEAD_REF=<ref> uses the changes of that ref in place of HEAD (no uncommitted changes); integrate.sh uses it
+#        with LIST_ONLY=1 to tell which branch of a batch touches a failed test.
+# --detach: run the suite detached (see autotest-all.sh).
 # Rule, derived from the folder names (no list to keep up to date):
 # - A changed file under src/HotCargo/<A>/<B>/... or mod/<a>/<b>/... touches the areas a, b (lowercase).
 # - An area runs the single-player tests named "<area>-*.txt" and the co-op tests whose name starts with "<area>".
@@ -13,12 +16,15 @@
 # The "core" smoke test always runs.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+DETACH=()
+if [[ "${1:-}" == "--detach" ]]; then DETACH=(--detach); shift; fi
 BASE="${1:-origin/main}"
 TIMEOUT="${2:-400}"
 
 # Committed changes since BASE, plus uncommitted ones unless COMMITTED_ONLY=1.
-CHANGED="$( { git diff --name-only "$BASE"...HEAD
-  if [[ "${COMMITTED_ONLY:-}" != 1 ]]; then git diff --name-only HEAD; git ls-files --others --exclude-standard; fi; } | sort -u)"
+HEAD_REF="${HEAD_REF:-}"
+CHANGED="$( { git diff --name-only "$BASE"..."${HEAD_REF:-HEAD}"
+  if [[ "${COMMITTED_ONLY:-}" != 1 && -z "$HEAD_REF" ]]; then git diff --name-only HEAD; git ls-files --others --exclude-standard; fi; } | sort -u)"
 TESTS=("core")
 FULL=no
 add() { local x; for x in "${TESTS[@]}"; do [[ "$x" == "$1" ]] && return; done; TESTS+=("$1"); }
@@ -55,8 +61,8 @@ done <<<"$CHANGED"
 if [[ "$FULL" == yes ]]; then
   echo "== shared code changed: full suite"
   [[ "${LIST_ONLY:-}" == 1 ]] && exit 0
-  exec scripts/autotest-all.sh "$TIMEOUT"
+  exec scripts/autotest-all.sh "${DETACH[@]}" "$TIMEOUT"
 fi
 echo "== affected: ${TESTS[*]}"
 [[ "${LIST_ONLY:-}" == 1 ]] && exit 0
-exec scripts/autotest-all.sh "$TIMEOUT" "${TESTS[@]}"
+exec scripts/autotest-all.sh "${DETACH[@]}" "$TIMEOUT" "${TESTS[@]}"
