@@ -139,6 +139,7 @@ public static class HunterGrab
             if (ship is not null && ship.IsJunk)
             {
                 Drop(sim, ship.DetWorldCenter, h.Units);
+                WreckSpills++;
                 Log.Info($"hunter {h.ShipName} is a wreck; {h.Units} tech dropped");
                 Tell(run, string.Format(Strings.GetText("HotCargoTech/HunterWreckFmt"), h.ShipName, h.Units), toast: false);
             }
@@ -150,6 +151,9 @@ public static class HunterGrab
             held.RemoveAt(i--);
         }
     }
+
+    /// <summary>Hunter wrecks that spilled held tech since start. For autotests.</summary>
+    internal static int WreckSpills;
 
     internal static void Drop(SimRoot sim, Vector2 at, int units) =>
         sim.Nuggets.DropNuggets(Vaults.TechId, units, new RotRect(at, new Vector2(10f, 10f), Direction.Zero), Vector2.Zero, randomVelocity: true);

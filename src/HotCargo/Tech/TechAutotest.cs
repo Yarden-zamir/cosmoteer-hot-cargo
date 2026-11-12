@@ -63,6 +63,7 @@ static class TechAutotest
         Autotest.Fields["vaultdamage"] = () => PlayerShip().Parts.Where(p => p.Rules.ID == Vaults.VaultId).Sum(p => p.Rules.MaxHealth - p.Health);
         Autotest.Fields["partdamage"] = () => PlayerShip().Parts.Where(p => p.Rules.ID != Vaults.VaultId).Sum(p => p.Rules.MaxHealth - p.Health);
         Autotest.Fields["vaultburned"] = () => VaultDropPatch.LostMessages;
+        Autotest.Fields["wreckspills"] = () => HunterGrab.WreckSpills;
         Autotest.Fields["hunterheld"] = () => Active().State.Tech.HunterHeld.Sum(h => h.Units);
         // The units on the blip of the first hunter that holds tech, or 0 when the blip does not show them.
         Autotest.Fields["holdertag"] = () =>
