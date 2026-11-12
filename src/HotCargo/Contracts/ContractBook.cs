@@ -97,12 +97,28 @@ public static class ContractBook
     public static float TrailPerMinute(Run run, float openWeight) =>
         ContractsModel.TrailPerMinute(openWeight, run.T.Contracts.TrailFreeContracts, run.T.Contracts.TrailHeatPerContractMinute);
 
-    /// <summary>The other offer in this system that accepting m dismisses, or null.</summary>
-    public static Mission? RivalOf(Run run, SimRoot sim, Mission m)
+    /// <summary>
+    /// Every offer in this system that accepting m dismisses (spec 103). A comms tab shows its own station list plus the system and
+    /// galaxy lists (CommMissionsTab), so a rival in the list of another station comes with the name of that station.
+    /// </summary>
+    public static List<(Mission Mission, string? Station)> RivalsOf(Run run, SimRoot sim, Mission m)
     {
         string group = run.T.Contracts.RivalsEnabled ? Preview(run, m)?.RivalGroup ?? "" : "";
-        if (group.Length == 0) return null;
-        return Offers(sim).Select(o => o.Mission).FirstOrDefault(o => o != m && Find(run, o)?.RivalGroup == group);
+        if (group.Length == 0) return [];
+        var offers = Offers(sim);
+        var mine = offers.FirstOrDefault(o => o.Mission == m).List;
+        return offers.Where(o => o.Mission != m && Find(run, o.Mission)?.RivalGroup == group)
+            .Select(o => (o.Mission, o.List == mine ? null : StationName(sim, o.List))).ToList();
+    }
+
+    /// <summary>The name of the station that offers the missions of a list, or null for the system and galaxy lists.</summary>
+    static string? StationName(SimRoot sim, MissionList list)
+    {
+        foreach (MetaSpaceStation station in SpaceStation.GetStations(sim, onlyOperating: false))
+            if (station.GetProvidedMissions() == list)
+                return station.PhysicalShip?.Metadata.PlainShipName ?? station.Spawner?.ObjectName
+                    ?? throw new InvalidOperationException($"station {station.StationID} has no ship and no spawner");
+        return null;
     }
 
     public static string ClientName(Mission m) =>
@@ -212,9 +228,9 @@ public static class ContractBook
         Log.Info($"contracts: accepted {m.MetatypeID} {m.MissionID} by player {playerIndex}: fee={terms.Fee} bonus={terms.Bonus} flatHeat={terms.FlatHeat} " +
                  $"trail={terms.TrailWeight} rival='{terms.RivalGroup}' dismissed={dismissed.Count} informant={terms.InformantChance:0.00} sellout={informant}");
         Onboarding.RunLog.ContractAccepted(run, m.Name.Text, terms.Fee, dismissed.Count);
-        // UI only: a line in the chat log for each dismissed rival, so the players see why an offer vanished.
+        // UI only: a line in the chat log for each dismissed rival, so the players see why an offer vanished. Mission names are XML already.
         foreach (string name in dismissed)
-            Ux.UxKit.ChatLine(run.Game, Strings.FormatText("HotCargoContracts/RivalDismissedChatFmt", StringTools.EscapeForXml(name), StringTools.EscapeForXml(m.Name.Text)));
+            Ux.UxKit.ChatLine(run.Game, Strings.FormatText("HotCargoContracts/RivalDismissedChatFmt", name, m.Name.Text));
     }
 
     /// <summary>Spec 104: a client sells the players out when its time comes, while the contract is still open.</summary>
@@ -240,7 +256,8 @@ public static class ContractBook
         run.AddHeat(t.InformantHeat, sim);
         if (t.InformantShips > 0)
             Errors.Guard("informant wave", () => HunterSpawner.SpawnWave(run, sim, t.InformantShips, run.CurrentTier, "Informant", firstOfStage: false));
-        string client = StringTools.EscapeForXml(ClientName(m)), contract = StringTools.EscapeForXml(m.Name.Text);
+        // Mission names are XML already (a chain stage name carries a color tag), so only the client name is escaped.
+        string client = StringTools.EscapeForXml(ClientName(m)), contract = m.Name.Text;
         Log.Info($"contracts: informant sold out {m.MetatypeID} {m.MissionID} ({ClientName(m)})");
         Onboarding.RunLog.SoldOut(run, ClientName(m), m.Name.Text, t.InformantHeat);
         InformantWarnings++;

@@ -56,7 +56,7 @@ public static class ContractsArea
                         "paid" => t.Fee > 0,
                         "free" => t.Fee == 0 && t.FlatHeat == 0 && t.RivalGroup.Length == 0,
                         "flatheat" => t.FlatHeat > 0,
-                        "rival" => ContractBook.RivalOf(run, sim, m) is not null,
+                        "rival" => ContractBook.RivalsOf(run, sim, m).Count > 0,
                         "informant" => t.InformantChance > 0,
                         "discreet" => t.InformantChance == 0 && t.RivalGroup.Length == 0,
                         _ => throw new InvalidOperationException($"unknown filter '{filter}'"),
