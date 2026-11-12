@@ -1,10 +1,11 @@
 using Halfling.Serialization;
+using HotCargo.Ai;
 
 namespace HotCargo.Tactics;
 
 /// <summary>
-/// Spec 43-49. Each tactic has an on/off switch and a minimum stage: a Heat.Stages name, or "" for no minimum.
-/// A tactic works only while the current system has started its minimum stage.
+/// Spec 43-49 and 360-369. Each tactic has an on/off switch and a minimum stage: a Heat.Stages name, or "" for no minimum.
+/// The minimum stage applies to the hunter AI only: a hunter tactic works only while the current system has started it.
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
 public sealed class TacticsTunables
@@ -42,6 +43,48 @@ public sealed class TacticsTunables
     [Serialize(Optional = true)] public float BaitApproachSeconds = 20f;
     /// <summary>The bait stays near the group this long, then comes close again.</summary>
     [Serialize(Optional = true)] public float BaitPullBackSeconds = 12f;
+
+    [Serialize(Optional = true)] public bool TeamEnabled = true;
+    [Serialize(Optional = true)] public string TeamMinStage = "";
+    /// <summary>Allies with the Team trait within this distance of a ship form its team.</summary>
+    [Serialize(Optional = true)] public float TeamRadius = 2500f;
+    /// <summary>Flankers attack from this many degrees left or right of the side where the tank attacks.</summary>
+    [Serialize(Optional = true)] public float TeamFlankDegrees = 90f;
+
+    [Serialize(Optional = true)] public bool CoverEnabled = true;
+    [Serialize(Optional = true)] public string CoverMinStage = "";
+    /// <summary>A ship looks for rocks to hide behind within this distance of itself.</summary>
+    [Serialize(Optional = true)] public float CoverSearchRange = 2000f;
+    /// <summary>The cover cycle runs only while the target is within this edge-to-edge distance.</summary>
+    [Serialize(Optional = true)] public float CoverEngageRange = 1500f;
+    /// <summary>A rock gives cover only when its radius is at least this fraction of the ship's radius.</summary>
+    [Serialize(Optional = true)] public float CoverMinRockFactor = 0.5f;
+    /// <summary>Space between the rock and the hiding ship.</summary>
+    [Serialize(Optional = true)] public float CoverGap = 30f;
+    [Serialize(Optional = true)] public float CoverPeekSeconds = 8f;
+    [Serialize(Optional = true)] public float CoverHideSeconds = 6f;
+
+    [Serialize(Optional = true)] public bool BrawlEnabled = true;
+    [Serialize(Optional = true)] public string BrawlMinStage = "";
+    /// <summary>Brawlers and team tanks close to this fraction of their longest weapon range, edge to edge.</summary>
+    [Serialize(Optional = true)] public float BrawlRangeFraction = 0.5f;
+
+    // Personalities (spec 360-369).
+
+    /// <summary>
+    /// On: every hostile ship uses the traits that its personality and build choose. Off: hunters use every tactic (spec 43-48)
+    /// and the vanilla AIs use none.
+    /// </summary>
+    [Serialize(Optional = true)] public bool PersonalitiesEnabled = true;
+    /// <summary>A trait is on when its jittered weight × build fit is at least this.</summary>
+    [Serialize(Optional = true)] public float PersonalityThreshold = 0.45f;
+    /// <summary>Personality names that are switched off. A ship rolls only among the others of its group.</summary>
+    [Serialize(Optional = true)] public string[] PersonalitiesOff = [];
+    /// <summary>A ship measures its build again after this long (damage changes it).</summary>
+    [Serialize(Optional = true)] public float ProfileRefreshSeconds = 10f;
+    /// <summary>Where each build number reaches its score 0 and 1 (spec 362).</summary>
+    [Serialize(Optional = true)] public ProfileScaleTunables Profile = new();
+    [Serialize(Optional = true)] public Personality[] Personalities = DefaultPersonalities();
 
     // Enemy AI behaviors (spec 193-202). "Enabled" switches the behavior for hunters (HotCargoHunter AI),
     // "OnVanilla" for the vanilla combat AIs (Normal, Easy, Wanderer, StationGuard, Police: pirates, bounties, faction ships).
@@ -102,5 +145,132 @@ public sealed class TacticsTunables
         require(CallSeconds > 0 && CallRange > 0, "Tactics.CallSeconds and CallRange must be above 0");
         require(CallStormStrength is > 0 and <= 1, "Tactics.CallStormStrength must be above 0 and at most 1");
         require(RegroupMinGroup >= 1, "Tactics.RegroupMinGroup must be 1 or more");
+        require(TeamRadius > 0 && CoverSearchRange > 0 && CoverPeekSeconds > 0 && CoverHideSeconds > 0,
+            "Tactics.TeamRadius, CoverSearchRange, CoverPeekSeconds and CoverHideSeconds must be above 0");
+        require(BrawlRangeFraction is > 0 and <= 1, "Tactics.BrawlRangeFraction must be above 0 and at most 1");
+        require(ProfileRefreshSeconds > 0, "Tactics.ProfileRefreshSeconds must be above 0");
+        var p = Profile;
+        require(p.AccelAgile > p.AccelHeavy && p.TurnFast > p.TurnSlow && p.RangeLong > p.RangeShort && p.RadiusLarge > p.RadiusSmall
+                && p.ArmorHeavy > p.ArmorLight && p.ShieldsPerRadiusFull > 0, "Tactics.Profile: each high value must be above its low value, ShieldsPerRadiusFull above 0");
+        var names = new HashSet<string>();
+        foreach (var personality in Personalities)
+        {
+            require(personality.Name.Length > 0 && names.Add(personality.Name), $"Tactics.Personalities: name '{personality.Name}' is empty or used twice");
+            require(personality.Groups.Length > 0, $"Tactics.Personalities '{personality.Name}' needs Groups");
+            require(personality.Chance >= 0 && personality.Jitter is >= 0 and <= 1, $"Tactics.Personalities '{personality.Name}': Chance must be 0 or more, Jitter 0 to 1");
+            require(personality.Weights.ToArray().All(w => w is >= 0 and <= 1), $"Tactics.Personalities '{personality.Name}': weights must be 0 to 1");
+        }
+        foreach (string off in PersonalitiesOff)
+            require(names.Contains(off), $"Tactics.PersonalitiesOff names '{off}', which is not a personality");
     }
+
+    public ProfileScale Scale => new(Profile.AccelHeavy, Profile.AccelAgile, Profile.TurnSlow, Profile.TurnFast, Profile.RangeShort,
+        Profile.RangeLong, Profile.ArmorLight, Profile.ArmorHeavy, Profile.ShieldsPerRadiusFull, Profile.RadiusSmall, Profile.RadiusLarge);
+
+    /// <summary>
+    /// Default personalities (spec 361). Groups: a faction ID, "pirates" (hostile ships of no faction) or "hunters" (the hunter AI).
+    /// Weights in Trait order: Kite, Pincer, Disable, FallBack, Bait, Team, Cover, Brawl, Call.
+    /// </summary>
+    static Personality[] DefaultPersonalities() =>
+    [
+        new("Monolith Phalanx", ["monolith"], 2, new(Kite: 0.1f, Pincer: 0.3f, Disable: 0.3f, FallBack: 0.6f, Bait: 0f, Team: 1f, Cover: 0.2f, Brawl: 0.8f, Call: 0.9f)),
+        new("Monolith Lancers", ["monolith"], 1, new(Kite: 0.7f, Pincer: 0.4f, Disable: 0.6f, FallBack: 0.5f, Bait: 0f, Team: 0.9f, Cover: 0.3f, Brawl: 0.1f, Call: 0.8f)),
+        new("Cabal Zealots", ["cabal"], 2, new(Kite: 0.1f, Pincer: 0.8f, Disable: 0.2f, FallBack: 0.1f, Bait: 0.3f, Team: 0.3f, Cover: 0f, Brawl: 1f, Call: 0.5f)),
+        new("Cabal Inquisitors", ["cabal"], 1, new(Kite: 0.3f, Pincer: 0.6f, Disable: 1f, FallBack: 0.3f, Bait: 0f, Team: 0.5f, Cover: 0.2f, Brawl: 0.4f, Call: 0.6f)),
+        new("Imperial Line", ["imperium"], 2, new(Kite: 0.6f, Pincer: 0.5f, Disable: 0.4f, FallBack: 0.7f, Bait: 0f, Team: 1f, Cover: 0f, Brawl: 0.3f, Call: 1f)),
+        new("Imperial Hussars", ["imperium"], 1, new(Kite: 0.5f, Pincer: 1f, Disable: 0.3f, FallBack: 0.5f, Bait: 0.7f, Team: 0.6f, Cover: 0.1f, Brawl: 0.2f, Call: 0.8f)),
+        new("Fringe Skirmishers", ["fringe"], 2, new(Kite: 0.9f, Pincer: 0.4f, Disable: 0.2f, FallBack: 0.8f, Bait: 0.7f, Team: 0.1f, Cover: 0.9f, Brawl: 0.1f, Call: 0.3f)),
+        new("Fringe Scrappers", ["fringe"], 1, new(Kite: 0.2f, Pincer: 0.5f, Disable: 0.3f, FallBack: 0.6f, Bait: 0.3f, Team: 0.1f, Cover: 0.6f, Brawl: 0.9f, Call: 0.3f)),
+        new("Io Disruptors", ["io"], 2, new(Kite: 0.7f, Pincer: 0.3f, Disable: 1f, FallBack: 0.6f, Bait: 0f, Team: 0.5f, Cover: 0.6f, Brawl: 0.1f, Call: 0.7f)),
+        new("Io Swarm", ["io"], 1, new(Kite: 0.3f, Pincer: 1f, Disable: 0.4f, FallBack: 0.3f, Bait: 0.6f, Team: 0.9f, Cover: 0.2f, Brawl: 0.5f, Call: 0.7f)),
+        new("Pirate Raiders", ["pirates"], 2, new(Kite: 0.3f, Pincer: 0.8f, Disable: 0.5f, FallBack: 0.9f, Bait: 0.8f, Team: 0.2f, Cover: 0.6f, Brawl: 0.5f, Call: 0.5f)),
+        new("Pirate Ambushers", ["pirates"], 1, new(Kite: 0.6f, Pincer: 0.3f, Disable: 0.3f, FallBack: 0.7f, Bait: 0.5f, Team: 0.3f, Cover: 1f, Brawl: 0.2f, Call: 0.6f)),
+        new("Corporate Hunters", ["hunters"], 2, new(Kite: 0.6f, Pincer: 0.8f, Disable: 0.8f, FallBack: 0.7f, Bait: 0.7f, Team: 0.8f, Cover: 0.3f, Brawl: 0.3f, Call: 1f)),
+        new("Corporate Sweepers", ["hunters"], 1, new(Kite: 0.2f, Pincer: 0.5f, Disable: 0.6f, FallBack: 0.5f, Bait: 0.2f, Team: 1f, Cover: 0.3f, Brawl: 0.8f, Call: 1f)),
+    ];
+}
+
+/// <summary>
+/// Spec 361. One AI personality: a weighted mix of traits for the ships of its groups. A ship of a group rolls one of the group's
+/// personalities by Chance, then each trait weight moves by up to ±Jitter from the ship's seed.
+/// </summary>
+[ReflectiveSerialization(Explicit = true)]
+public sealed class Personality
+{
+    [Serialize] public string Name = "";
+    /// <summary>Faction IDs (monolith, cabal, imperium, fringe, io), "pirates" or "hunters".</summary>
+    [Serialize] public string[] Groups = [];
+    [Serialize(Optional = true)] public float Chance = 1f;
+    [Serialize(Optional = true)] public float Jitter = 0.3f;
+    [Serialize(Optional = true)] public TraitWeights Weights = new();
+
+    public Personality() { }
+
+    public Personality(string name, string[] groups, float chance, TraitWeights weights) =>
+        (Name, Groups, Chance, Weights) = (name, groups, chance, weights);
+}
+
+/// <summary>Weight of each trait, 0 to 1. The field names are the Trait names.</summary>
+[ReflectiveSerialization(Explicit = true)]
+public sealed class TraitWeights
+{
+    [Serialize(Optional = true)] public float Kite, Pincer, Disable, FallBack, Bait, Team, Cover, Brawl, Call;
+
+    public TraitWeights() { }
+
+    public TraitWeights(float Kite, float Pincer, float Disable, float FallBack, float Bait, float Team, float Cover, float Brawl, float Call) =>
+        (this.Kite, this.Pincer, this.Disable, this.FallBack, this.Bait, this.Team, this.Cover, this.Brawl, this.Call) =
+        (Kite, Pincer, Disable, FallBack, Bait, Team, Cover, Brawl, Call);
+
+    public float Get(Trait trait) => trait switch
+    {
+        Trait.Kite => Kite, Trait.Pincer => Pincer, Trait.Disable => Disable, Trait.FallBack => FallBack, Trait.Bait => Bait,
+        Trait.Team => Team, Trait.Cover => Cover, Trait.Brawl => Brawl, Trait.Call => Call,
+        _ => throw new ArgumentOutOfRangeException(nameof(trait), trait, null),
+    };
+
+    public void Set(Trait trait, float value)
+    {
+        switch (trait)
+        {
+            case Trait.Kite: Kite = value; break;
+            case Trait.Pincer: Pincer = value; break;
+            case Trait.Disable: Disable = value; break;
+            case Trait.FallBack: FallBack = value; break;
+            case Trait.Bait: Bait = value; break;
+            case Trait.Team: Team = value; break;
+            case Trait.Cover: Cover = value; break;
+            case Trait.Brawl: Brawl = value; break;
+            case Trait.Call: Call = value; break;
+            default: throw new ArgumentOutOfRangeException(nameof(trait), trait, null);
+        }
+    }
+
+    /// <summary>Weights indexed by Trait value.</summary>
+    public float[] ToArray() => Enum.GetValues<Trait>().Select(Get).ToArray();
+}
+
+/// <summary>
+/// Spec 362. Low and high ends of each build score. Units: acceleration in thrust per mass, turn in torque per inertia.
+/// Defaults come from a census of the built-in combat ships (autotest command aicensus): acceleration 11 to 90 (median about 33),
+/// turn 0.25 to 15 (median about 2), range 150 to 700, armor 0.02 to 0.46 of the cells, radius 5 to 39.
+/// With AccelHeavy 20, about one built-in ship in ten is heavy, mostly big tier 10 to 12 ships.
+/// </summary>
+[ReflectiveSerialization(Explicit = true)]
+public sealed class ProfileScaleTunables
+{
+    /// <summary>At or below this acceleration a ship is heavy: agility 0, it never kites or baits.</summary>
+    [Serialize(Optional = true)] public float AccelHeavy = 20f;
+    [Serialize(Optional = true)] public float AccelAgile = 50f;
+    [Serialize(Optional = true)] public float TurnSlow = 0.5f;
+    [Serialize(Optional = true)] public float TurnFast = 4f;
+    [Serialize(Optional = true)] public float RangeShort = 220f;
+    [Serialize(Optional = true)] public float RangeLong = 600f;
+    /// <summary>Armor cells over all part cells: armor score 0 at ArmorLight, 1 at ArmorHeavy.</summary>
+    [Serialize(Optional = true)] public float ArmorLight = 0.15f;
+    [Serialize(Optional = true)] public float ArmorHeavy = 0.45f;
+    /// <summary>Shield parts per unit of radius for a full shield score.</summary>
+    [Serialize(Optional = true)] public float ShieldsPerRadiusFull = 0.25f;
+    [Serialize(Optional = true)] public float RadiusSmall = 8f;
+    [Serialize(Optional = true)] public float RadiusLarge = 35f;
 }

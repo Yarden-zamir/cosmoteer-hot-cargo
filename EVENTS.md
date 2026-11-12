@@ -32,11 +32,12 @@ FTL-style choice events for the Hot Cargo run. Spec requirements 67 to 87 (SPEC.
 - Outcome effects: money, money in tech value, fame (gain or loss), heat, reputation with the system's faction, the Buyer price, tech units (through the vaults), crew, vanilla resources, hull damage, spawned ships (from `spawns.rules`, some with a mission), story flags, and a follow-up page (`Next`).
 - Needs can also check how old a flag is (`FlagAges`, in sectors) and how many sectors are left before the Buyer (`MinSectorsLeft`, `MaxSectorsLeft`). A cost can grow with heat (`MoneyPerHeat`).
 - After the choice, the window shows the outcome text and one line per effect, in the colors of vanilla reward lines.
+- Co-op: each player sees which option the others hover. A mode button switches between "first pick decides" and a vote (SPEC.md requirements 600 to 608).
 - Story chains (CHAINS.md) use the same window for their pages. Chain pages live in `mod/chains/pages.rules`, have no trigger, and each outcome gives a `ChainResult` that the chain stage handles.
 
 ### Units and balance
 
-- **Event money unit**: 1 = the middle of a standard mission's pay at the sector tier, times the economy reward factor and `RewardScale`. On the default economy it is about 10,000 credits at tier 1, a bit less than one Stolen Tech at the start (15,000). It grows with the tier, so late events stay relevant.
+- **Event money unit**: 1 = the middle of a standard mission's pay at the sector tier, times the economy reward factor and `RewardScale`. On the default economy it is about 5,000 credits at tier 1, a third of one Stolen Tech at the start (15,000). It grows with the tier, so late events stay relevant.
 - **Fame unit**: 1 = a standard mission's fame. Fame adds heat through spec 25, like a mission.
 - **Heat**: plain heat points. A stage starts every 25.
 - **Resources**: `Amount + PerTier × (tier − 1)`.

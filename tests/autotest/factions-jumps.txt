@@ -1,0 +1,42 @@
+# Factions: relay and blind jumps (spec 650, 651). A relay jump keeps Heat.HeatCarryOverFraction x RelayCarryOverFactor of the heat,
+# a blind jump x BlindCarryOverFactor and costs BlindFuelFactor more fuel. The switch holds for one jump.
+# Headless slots draw no frames, so the sim stays paused after a jump (see journey-jump.txt): one jump per game.
+newgame
+wait 8
+ev_set Enabled false
+godmode on
+fa_drive
+wait 1
+expect fa_fuel > 0
+fa_base
+expect fa_blind == 0
+fa_blind on
+wait 1
+expect fa_blind == 1
+expect fa_fuelratio > 1
+expect fa_blindfuelgap == 0
+fa_tooltip
+fa_blind off
+wait 1
+expect fa_fuelratio == 1
+# Relay: 80 heat x 0.25 x 1 = 20. Time heat after the arrival adds up to about 1 in the wait.
+heat 80
+fa_jump relay
+wait 20
+expect sector == 2
+expect heat >= 19.5
+expect heat <= 21.5
+# Blind: 80 heat x 0.25 x 0.3 = 6. The switch turns off after the blind jump.
+newgame
+wait 8
+ev_set Enabled false
+fa_blind on
+wait 1
+heat 80
+fa_jump blind
+wait 20
+expect sector == 2
+expect heat >= 5.5
+expect heat <= 7.5
+expect fa_blind == 0
+quit

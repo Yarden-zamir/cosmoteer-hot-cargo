@@ -35,12 +35,12 @@ public static class RunEndUi
         {
             var st = run.State;
             string body = $"<s24>{st.EndReason}</s24>\n\n{UxKit.Format("WinScoreFmt", st.Score.ToString("N0"), st.DeliveredUnits)}\n\n" +
-                          $"{StatsLine(run)}\n<gray>{UxKit.Text("WinContinue")}</gray>";
+                          $"{StatsLine(run)}\n<gray>{UxKit.Text("WinContinue")}</gray>" + RunModes.RunModesArea.WinLines(run);
             CenterPanel.Show(run.Game, UxKit.Text("WinTitle"), WidgetRules.Instance.GoodTextColor, body, UxKit.Text("WinButton"));
         }
         else
         {
-            _ = OneButtonDialog.Show($"{UxKit.Text("WinTitle")}\n\n{run.State.EndReason}\n{UxKit.Format("ScoreFmt", run.State.Score.ToString("N0"), run.State.DeliveredUnits)}\n\n{UxKit.Text("WinContinue")}");
+            _ = OneButtonDialog.Show($"{UxKit.Text("WinTitle")}\n\n{run.State.EndReason}\n{UxKit.Format("ScoreFmt", run.State.Score.ToString("N0"), run.State.DeliveredUnits)}\n\n{UxKit.Text("WinContinue")}" + RunModes.RunModesArea.WinLines(run));
         }
     }
 
@@ -51,7 +51,7 @@ public static class RunEndUi
         _introFor = run;
         if (!run.T.Ux.RunIntro) return;
         var t = run.T;
-        string body = UxKit.Format("IntroBodyFmt", t.Journey.RunSectorCount, t.Heat.Stages.Length, t.Heat.HeatCarryOverFraction);
+        string body = UxKit.Format("IntroBodyFmt", t.Journey.RunSectorCount, t.Heat.Stages.Length, t.Heat.HeatCarryOverFraction) + RunModes.RunModesArea.IntroLines(run);
         // Wider than the win panel, so each rule fits on one line at 1280 x 720.
         CenterPanel.Show(run.Game, UxKit.Text("IntroTitle"), WidgetRules.Instance.FameTextColor, body, UxKit.Text("IntroButton"), width: 760f);
     }
@@ -61,7 +61,7 @@ public static class RunEndUi
     {
         var s = run.State;
         var time = TimeSpan.FromSeconds(s.GameSeconds);
-        long value = run.T.Tech.Value(s);
+        long value = run.TechValue();
         return UxKit.Format("RunStatsFmt", s.SectorIndex, run.T.Journey.RunSectorCount, $"{(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}",
             s.FleetTech, value.ToString("N0"));
     }

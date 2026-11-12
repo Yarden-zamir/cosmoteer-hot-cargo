@@ -2,6 +2,8 @@
 # Money rises by the tech value for each unit, the station holds the tech, and the sale of the last unit loses the run.
 newgame run
 wait 8
+# A short loss timer (spec 443), so the last sale loses the run within the test.
+tech_set LossGraceSeconds 3
 tostation
 wait 3
 expect pricegap == 0

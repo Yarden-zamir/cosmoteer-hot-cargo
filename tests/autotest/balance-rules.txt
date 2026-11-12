@@ -1,0 +1,26 @@
+# Balance (spec 300 to 303, BALANCE.md): fuel rules, blueprint price scale, heat for fame above the cap, peak tier cap.
+newgame run
+wait 8
+# Spec 300: scarce FTL fuel.
+expect balance_fuel_stack == 10
+expect balance_fuel_price == 150
+expect balance_fuel_station_typed_max >= 0.39
+expect balance_fuel_station_typed_max <= 0.41
+expect balance_jump_cost_per_mass_ly >= 0.0019
+expect balance_jump_cost_per_mass_ly <= 0.0021
+# Spec 301: blueprint price = rules cost x reputation factor x TechCostScale (2.5), rounded to 100.
+tostation
+wait 3
+expect balance_techcost_scale >= 2.4
+expect balance_techcost_scale <= 2.6
+# Spec 302: a fame reward above the fame cap gives no fame, but it adds the heat of its uncapped fame.
+# 10 fame x 1.5 (Fast) x 1 (RewardScale) = 15 fame = 2 standard units at tier 1: 2 x 1.5 x 1.2 = 3.6 heat.
+heat_mark
+balance_fame_over_cap 10
+expect heat_change >= 3
+expect balance_fame_heat_gap >= -0.05
+expect balance_fame_heat_gap <= 0.2
+# Spec 303: the peak tier counts at most start tier + 2 per sector after the first.
+expect balance_peak_tier_cap == 1
+expect peaktier == 1
+quit

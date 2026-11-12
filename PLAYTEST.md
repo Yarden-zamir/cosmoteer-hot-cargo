@@ -16,16 +16,18 @@ Mission checks are in [tests/playtest/missions.md](tests/playtest/missions.md).
 
 ## Tech
 
-1. Look at the starting ship. Check that a tinted 2×2 Tech Vault replaces one storage bay, and that its 4 tiles show 2 units each (8 units).
-2. Start a career with the Model-M starter ship. Check that the vault is outside the hull with a door, and that crew can walk to it.
+1. Look at the starting ship. Check that 4 tinted 1×1 Tech Vaults replace one storage bay, and that each vault shows 2 units (8 units).
+2. Start a career with the Model-M starter ship. Check that 4 vaults replace 4 tiles of a 3×2 storage bay, with a corridor walkway between them, and that crew can walk to each vault.
 3. Open the build menu, Storage group. Check that "Tech Vault" is there with its name, description and tinted icon.
 4. Dock at a trade station and open the trade window. Check that "Stolen Tech" shows the overlay tech value as its sell price.
 5. Sell 1 unit through the trade window. Check that the money rises by the shown price and the overlay tech count drops by 1.
 6. In the trade window, check that the station offers the sold unit back at 1.5 × the sell price.
 7. Try to move tech into a normal storage bay with the transfer window. Check that the game refuses it.
-8. Let an enemy shoot the vault. Check that the stacks shrink as it takes damage, and that repair does not bring them back.
-9. Sell the last unit. Check that the loss dialog "The corporation recovered the tech." shows about 3 seconds after the delivery.
+8. Let an enemy shoot a vault. Check that it loses 1 unit at half health and the other when it is destroyed, that other vaults keep their tech, and that repair does not bring units back.
+9. Sell the last unit. Check that a toast says "No tech left!", and that the heat panel shows "NO TECH, run lost in 3:00" and counts down. Wait it out. Check that the loss dialog "The corporation recovered the tech." shows at 0:00.
 10. Press F11 and Shift+F11. Check that the overlay tech count goes up and down by 1.
+11. Remove all tech with Shift+F11, then press F11 before the countdown ends. Check that the NO TECH line goes away and the run goes on.
+12. Zoom out to the map view. Check that your ship blip shows "TECH 8". Deconstruct a full vault. Check that each crate in space shows the tech icon and "TECH", also as an arrow at the screen edge, and that the collect tool brings the crates back into a vault.
 
 ## Economy and contracts (spec 19, 100-108)
 
@@ -43,6 +45,8 @@ To see sell-outs fast, put `Contracts { InformantShare = 1  InformantChanceMin =
 
 ## Hunters and tactics (spec 30-35, 43-49)
 
+Each hunter uses only the tactics of its personality (spec 361). To see every tactic on every hunter, set `Tactics { PersonalitiesEnabled = false }`.
+
 1. Press F10 four times, a few seconds apart. Each stage shows its message at the top of the screen and plays the wanted alert.
 2. Each wave comes in from one side with the FTL jump-in effect. Do the ships appear far enough away (2,000 to 3,000)? Is one side per wave readable?
 3. Hunters show the "Corporate" name prefix. Is that enough to tell them apart from pirates and police? If not, a colored name or icon needs C# work.
@@ -54,7 +58,7 @@ To see sell-outs fast, put `Contracts { InformantShare = 1  InformantChanceMin =
 9. Fall back: shoot a hunter to about a third of its value. Does it turn and run, then sit still and repair? Does it come back? Is the 45 s limit too long?
 10. Bait (Strike): does one small ship dive in alone and then run back to the group? Is it clear enough that chasing it is a trap?
 11. Save during a fight with hunters, load, and check that the fight continues the same way.
-12. With the Tech area merged: hunters prefer the ship with the Tech Vault (`VaultTargetFactor`). Put the vault on a second ship and check that hunters switch to it.
+12. With the Tech area merged: hunters prefer a ship with Tech Vaults (`VaultTargetFactor`). Move all vaults to a second ship and check that hunters switch to it.
 
 ## Strike waves and enemy AI (spec 190-202)
 
@@ -72,6 +76,19 @@ Switch a behavior off to compare: `Tactics { CallEnabled = false }` for hunters,
 10. Focus fire: let one of your ships get badly hurt. Do the enemies switch to it? Is that too punishing (lower `FocusWeakFactor`)?
 11. Regroup: a lone weak enemy near stronger friends should turn toward them (label REGROUPING) and attack together. Does it look smart, or like hesitation? Is 25 s too long?
 12. Co-op: run a strike with calls and flees for 20 minutes. Check for no desync.
+
+## AI personalities (spec 360-369)
+
+Hover an enemy ship: the mouseover names its personality, its traits and its team role. Switch personalities off to compare: `Tactics { PersonalitiesEnabled = false }` (hunters use every tactic, pirates and faction ships use none). Switch one off by name: `Tactics { PersonalitiesOff = ["Cabal Zealots"] }`.
+
+1. Fight pirates, then a faction that wants you (attack one of its ships). Do the two feel different? Can you name a faction's style after one or two fights?
+2. Two ships of one faction: do they behave a little differently (one calls, one does not; one flanks, one brawls)? Or does the jitter make factions blur together (lower `Jitter`)?
+3. Heavy ships: a big, slow ship never kites or baits. Does any big ship still dance at long range? Report its name and the mouseover line.
+4. Fast, light, long-range ships: do they hold distance and back off? Fast short-range ships: do they flank? Short-range armored ships: do they close in?
+5. Cover: fight pirates or Fringe ships in an asteroid field. Does a small ship duck behind a rock (label IN COVER), then come out to shoot? Can you flank it, or does it feel like cheating? Tune `CoverPeekSeconds` and `CoverHideSeconds`.
+6. Teams (Monolith, Imperium, hunters): do the team's ships all turn on one of your ships? Does the tank lead, the sniper hang back and the flankers swing wide? Put two of your ships in the fight: does the team stay on one?
+7. Do the profile scores match the ships? `Debug { TacticsLog = true }` writes each ship's scores to `hot_cargo_log.txt` ("tactic personality"). If too many ships count as heavy or protected, tune `Tactics { Profile { ... } }`.
+8. Co-op: fight a faction team among asteroids for 10 minutes. Check for no desync.
 
 ## Run and UX
 
@@ -176,7 +193,7 @@ The autotests cover assignment, offers, results (success, abandoned, lost, timeo
 7. Return stages: refuse Mara's bill, leave the system and come back. Do the collectors appear about 8 seconds after you arrive? Does the result read as a consequence of your refusal?
 8. Arrival stages: take Okafor aboard or sell her. Do "Old Schedules" or "Okafor's Friends" come at a fair moment in the next system or the one after?
 9. Mara's standing offer: does it show on each visit and stay away inside one visit? Is 1.33 × the tech value worth a detour?
-10. Frequency: with every station holding a chain, are there too many offers per system? If yes, lower `Chains.StationChance` (for example 0.5) in `tunables.rules`.
+10. Frequency: chains start at 60 % of stations, at most 2 per system. Are there too many or too few chain offers? Tune `Chains.StationChance` and `Chains.MaxNewChainsPerSystem` in `tunables.rules`.
 11. Multiplayer (co-op): both players see the chain offer and the chain pages. One player chooses. Does the chain advance the same for both?
 
 ## System archetypes (spec 220-229, WORLDS.md)
@@ -196,9 +213,35 @@ The autotests cover the archetype mix on the map, the hazard tooltip, the curren
 11. Mix: in one run of 8 sectors, did you meet each archetype at least once? Did any feel like extra travel? The weights are in `mod/worlds/archetypes.rules` (restart needed).
 12. Co-op: both players see the current push and the same pass hold clock.
 
+## Ship tactics (spec 400-412)
+
+The autotests `shipai-basic`, `shipai-save` and the co-op test `shipai` cover row order, most conditions and actions, saves, designs and sync. These checks need a person.
+
+1. Select your ship and press Ctrl+K, or click the "AI" button in the ships card. Does the window fit the game's look? Are the drop lists easy to read?
+2. Apply each preset with Auto on and fight a Patrol stage (F10 with debug keys). Does each preset behave the way its name says? Which one feels useless?
+3. Sniper: does the ship keep its distance, and does it still hit? Note any target that it never reaches.
+4. Give a move order while Auto is on. Does the ship obey at once, and do the tactics take over again when it arrives?
+5. Put two weapons in part group 1 (build menu, part groups) and add a row "Always → Fire: hold, group 1". Do only those two stop firing?
+6. Save the ship design, then start a new career with it (or use "Load ship (replace)" in the build menu). Do the rows and the Auto switch come back?
+7. Copy the tactics of one ship and paste them into another. Paste text from a chat message. Does a bad text show a clear message?
+8. Buy a second ship and give it the Escort preset. Does it stay with your first ship and fight the enemies that attack it?
+9. Flee and jump: give a ship with an FTL drive "My health below 40% → Move: flee (FTL jump)". Does it jump to an ally when hurt?
+10. Co-op: each player edits their own ship's tactics with the window open on both machines. Does the other player see the change? Is a "resyncing" message shown?
+11. Is something missing from the condition or action lists that you wanted in a fight?
 ## Wanted and hunted (spec 470-473)
 
 1. Attack a faction ship (or a station) so that police hunt you, and get heat to the first stage (25). Does the top message read clearly? Does the chat line explain the ways out well enough to act on?
 2. Try the vanilla payoff: hail one of the police ships. Does the "pay the bounty" option show, as the hint says?
 3. A Clean Record and Decoy Run: is the price fair against the vanilla bounty? Does the heat risk feel fair?
 4. Does the warning come back too often (it shows again each time you become both wanted and hunted)?
+
+## How to Play and the run log (spec 720-734)
+
+The autotests `onboarding-hints` and `onboarding-log` cover each trigger, the order and the log lines. These checks need a person.
+
+1. In the game settings, click "Reset Tutorials", then start a new career. Do the Hot Cargo pages show in the "How to Play" list before the vanilla ones? Does each page show at a moment when it helps?
+2. Open each Hot Cargo page. Is it short enough to read in a fight? Is a term unclear or a page missing?
+3. Do the vanilla tutorials come back after about 5 minutes, once you read the Hot Cargo pages? Is that too early or too late?
+4. Turn "Show tutorials" off in the game settings. Do the Hot Cargo pages stop too?
+5. Open the career log (the mission log button) and the "Hot Cargo run" tab. Does it tell the story of your run? Is a line missing, or is one noise?
+6. Co-op: do both players see the same run log lines?

@@ -12,4 +12,23 @@ HotCargoAi
 	LabelJumpFmt = "FLEEING, JUMP {0}s"
 	LabelFleeing = "FLEEING"
 	LabelRegroup = "REGROUPING"
+	LabelCover = "IN COVER"
+
+	// Mouseover line of a hostile ship (spec 368). {0} is the personality name, {1} the trait list, {2} the team role.
+	PersonalityFmt = "{0}: {1}"
+	PersonalityRoleFmt = "{0}: {1} ({2})"
+	TraitKite = "kites"
+	TraitPincer = "flanks"
+	TraitDisable = "aims at guns and engines"
+	TraitFallBack = "falls back to repair"
+	TraitBait = "baits"
+	TraitTeam = "team play"
+	TraitCover = "uses cover"
+	TraitBrawl = "brawls"
+	TraitCall = "calls for help"
+	RoleTank = "tank"
+	RoleSniper = "sniper"
+	RoleFlankLeft = "flanker"
+	RoleFlankRight = "flanker"
+	RoleLine = "line"
 }

@@ -10,15 +10,16 @@ You stole corporate tech. The corporation wants it back. Get it across about 8 s
 
 ## How it plays
 
-- **Hold or sell.** You start with 8 Stolen Tech in a Tech Vault. The more you hold, the harder the corporation hunts you. Stations pay for tech now, and the price rises as the run goes on: one or two units buy a new ship of your stage. The Buyer pays 4× the price, and unsold units count the same in the score.
+- **Hold or sell.** You start with 8 Stolen Tech in four Tech Vaults. The more you hold, the harder the corporation hunts you. Stations pay for tech now, and the price rises as the run goes on: one or two units buy a new ship of your stage. The Buyer pays 4× the price, and unsold units count the same in the score.
 - **Move on or burn.** Heat rises over time and with every mission. Each heat stage sends corporate hunters that kite, flank, bait and go for your guns. A jump to a new system cools you down.
-- **Protect the cargo.** Hits on the vault destroy tech. Lose it all and the run is over.
+- **Protect the cargo.** Hits on a vault destroy tech. Each vault is one tile that holds 2 units: build more, spread them out, armor and shield them. If your tech reaches 0, the run is over.
 - **Deliver.** The Buyer waits in the last sector. Sell it your tech to win.
 - **New missions.** Convoy escorts, joint strikes, shady bounties that may be traps, sieges, salvage, sundives and more.
 - **Contracts.** Some clients charge a fee, some are rivals, and some sell you out to the corporation.
 - **Sector types.** Trade hubs with currents, mining belts, solar zones and ion storms, each with its own hazard.
 - **FTL-style events.** Distress beacons, checkpoints, fences, rival thieves: choices with risks, costs and rewards.
 - **Story chains.** Each station has a story in parts. What you do in one part decides the next, and some choices come back later.
+- **Learn as you go.** Hot Cargo pages join the game's "How to Play" list and codex. The career log gets a "Hot Cargo run" tab with the story of your run.
 
 ![Heat stage alert](docs/screenshots/heat-alert.jpg)
 
@@ -31,6 +32,12 @@ You stole corporate tech. The corporation wants it back. Get it across about 8 s
 ![Tech delivered](docs/screenshots/win.jpg)
 
 ![Run lost](docs/screenshots/loss.jpg)
+
+![How to Play list with Hot Cargo pages first](docs/screenshots/onboarding-howtoplay.jpg)
+
+![A Hot Cargo How to Play page](docs/screenshots/onboarding-page.jpg)
+
+![Hot Cargo run tab in the career log](docs/screenshots/onboarding-careerlog.jpg)
 
 It also improves some of the base game's UI. You can switch off each change in `tunables.rules`:
 

@@ -1,0 +1,21 @@
+# Team play (spec 364-365): allies with the Team trait share their leader's target and take roles from their builds.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+tacticlog on
+aiset FleeOnVanilla false
+aiset RegroupOnVanilla false
+aiset CallOnVanilla false
+aiset BaitEnabled false
+aiset CoverEnabled false
+# Two player ships, so a team has two targets to choose from.
+aiplayership
+expect ai_humanships >= 2
+aispawn monolith 4 3
+waitfor ai_team_members >= 2 60
+wait 6
+aiprofiles team
+expect tactic_team > 0
+expect ai_team_off_target == 0
+quit

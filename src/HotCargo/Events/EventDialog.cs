@@ -10,12 +10,13 @@ using Halfling.Gui;
 using Halfling.Gui.Components.Hierarchy;
 using Halfling.Gui.Components.Rects;
 using HotCargo.Core;
+using HotCargo.SharedChoice;
 
 namespace HotCargo.Events;
 
 /// <summary>
 /// The event window: a comms-style window with the event text and one button per choice, like the game's comms dialogue tab.
-/// It only reads sim state and sends EventChoiceInput. The window cannot close while a choice waits, like FTL.
+/// It only reads sim state and sends shared choice inputs (SharedChoicePanel: hover markers and votes in co-op). The window cannot close while a choice waits, like FTL.
 /// </summary>
 internal sealed class EventDialog : WindowBox
 {
@@ -39,6 +40,7 @@ internal sealed class EventDialog : WindowBox
     readonly ScrollBox _pageBox;
     readonly LayoutBox _header;
     readonly LayoutBox<ImageButton, Widget> _buttons;
+    readonly SharedChoicePanel _shared;
     EventPage? _page;
     bool _sent;
     double _sentAt;
@@ -67,6 +69,7 @@ internal sealed class EventDialog : WindowBox
                 PauseIfWanted(run);
             }
             _open.Show(page);
+            _open.UpdateShared(page);
         }
         catch
         {
@@ -135,6 +138,9 @@ internal sealed class EventDialog : WindowBox
         _body.TextRenderer.HAlignment = HAlignment.Left;
         header.Children.Add(_body);
         page.Children.Add(header);
+
+        _shared = new SharedChoicePanel(run, EventsChoiceDomain.Name);
+        page.Children.Add(_shared.Bar);
 
         _buttons = new LayoutBox<ImageButton, Widget>();
         _buttons.NineSlice.Flags = NineSliceFlags.None;
@@ -205,6 +211,15 @@ internal sealed class EventDialog : WindowBox
         }
     }
 
+    /// <summary>Every frame: hover markers and votes. A result page is local to each player and has no shared options.</summary>
+    void UpdateShared(EventPage page)
+    {
+        if (page.Choices.Any(c => c.Index < 0)) { _shared.Hide(_buttons.Children); return; }
+        var slots = new List<OptionSlot>(page.Choices.Count);
+        for (int i = 0; i < page.Choices.Count && i < _buttons.Children.Count; i++) slots.Add(new OptionSlot(_buttons.Children[i], page.Choices[i].Index));
+        _shared.Update(page.Serial, slots);
+    }
+
     ImageButton NewButton(int slot)
     {
         var b = new ImageButton();
@@ -236,9 +251,9 @@ internal sealed class EventDialog : WindowBox
             _resultShown = Math.Max(_resultShown, page.Serial);
             return;
         }
+        if (!_shared.Click(page.Serial, choice.Index)) return;
         _sent = true;
         _sentAt = App.Clock.Time.Seconds;
         foreach (var b in _buttons.Children) b.SelfInputActive = false;
-        _forRun.Game.NetManager.EnqueueInput(new EventChoiceInput(page.Serial, choice.Index));
     }
 }

@@ -1,0 +1,163 @@
+HotCargoCodex
+{
+	Tab = "Hot Cargo"
+
+	Run
+	{
+		Title = "Hot Cargo: The Run"
+		Goal = "You stole corporate <fame_color>tech</fame_color>. Sell it to the <good>Buyer</good> in the last sector. The first delivery wins the run."
+		Sectors = "Each jump to a <b>new</b> system is one sector. The heat panel shows where you are. Danger rises with every sector."
+		Score = "Score = money + tech you still hold × the Buyer price. The Buyer pays far more than a station."
+		Loss = "If the last unit of tech is gone, a <bad>loss timer</bad> starts. Get tech back before it ends, or the corporation wins."
+	}
+
+	Vault
+	{
+		Title = "Hot Cargo: The Tech Vault"
+		Store = "Tech sits only in a <fame_color>Tech Vault</fame_color>. Damage to the vault <bad>destroys tech</bad> inside it, one unit at half health. Each vault holds 2."
+		Repair = "Repairs fix the vault, not the tech. Lost tech is gone."
+		Spread = "Spread the risk: each vault is one tile. Build more, spread them through the hull or onto a second ship, and let the crew carry tech over."
+		Target = "Hunters go for ships with a vault. Bury it deep in the hull, behind armor."
+	}
+
+	Heat
+	{
+		Title = "Hot Cargo: Heat"
+		What = "<bad>Heat</bad> shows how close the corporation is. It rises with time and with the fame of each mission."
+		Tech = "More tech aboard, faster heat."
+		Stages = "Each heat stage sends hunters. The last stage sends wave after wave."
+		Cool = "Jump to a new system to cool off. Most of the heat stays behind."
+	}
+
+	Hunters
+	{
+		Title = "Hot Cargo: Hunters"
+		Know = "Corporate <bad>hunters</bad> always know where you are. Each wave comes from one direction."
+		Pick = "They go for ships with a vault first, and turn on badly hurt ships."
+		Tactics = "Read their moves: a kiter holds at range, a pincer comes from two sides, a hurt ship falls back to repair, a bait ship darts in and pulls back."
+		Call = "A red ring means a call for help. Ion beams, disruptors or EMP stop it."
+		Fuel = "Hunters carry FTL fuel. Destroy one and salvage the wreck to refuel."
+	}
+
+	Selling
+	{
+		Title = "Hot Cargo: Selling Tech"
+		Where = "Stations buy tech in the trade tab. The heat panel shows what one unit is worth."
+		Trade = "A sale pays now and slows heat, but each unit sold lowers your final score."
+		Value = "The tech value only goes up: deeper sectors, more time and more heat pay more."
+		BuyBack = "You can buy tech back, at a markup."
+	}
+
+	Contracts
+	{
+		Title = "Hot Cargo: Contracts"
+		Terms = "Every mission offer is a <fame_color>contract</fame_color>. Its terms show under the rewards."
+		Fee = "<b>Fee</b>: some clients sell the job. Pay up front. Finish it and the extra pay beats the fee."
+		Trail = "<b>Trail</b>: a few open contracts are quiet. Each one above that adds heat every minute."
+		Rivals = "<b>Rivals</b>: take one rival offer and the other is gone."
+		Informants = "<b>Informants</b>: some clients sell you out. Heat jumps and hunters come. Discreet clients never talk."
+	}
+
+	Missions
+	{
+		Title = "Hot Cargo: New Jobs"
+		New = "New jobs sit next to the vanilla ones. Convoy Duty hides your trail: heat drops when you collect."
+		Shady = "A Discreet Bounty pays double and has no faction. It can be a trap, more likely when heat is high."
+		Mechanics = "Some jobs use the game itself: hold a post, tow a hulk, scan inside a storm, mine near a sun, capture a ship."
+		Worlds = "Each system type has its own job: hold a pass, dive into a sun, raid a hidden lair."
+	}
+
+	Chains
+	{
+		Title = "Hot Cargo: Story Chains"
+		What = "Some stations offer a <fame_color>story chain</fame_color>: a job in parts, marked [Chain] in comms."
+		Parts = "Each result changes the next part. Some parts start when you come back, or sectors later."
+		Log = "Results show in the event window and in the career log."
+	}
+
+	Events
+	{
+		Title = "Hot Cargo: Events"
+		What = "Out here, things happen. An event gives you a choice. A cost shows on its button."
+		Needs = "A grey choice needs something you lack. Some outcomes roll, for better or worse."
+		Coop = "In co-op, the first pick decides for everyone. Switch the bar to <b>vote</b> to decide together."
+	}
+
+	Worlds
+	{
+		Title = "Hot Cargo: System Types"
+		What = "Some systems have a type and a hazard. The arrival line and the galaxy map name it."
+		TradeHub = "<b>Trade Hub</b>: a current pushes ships downstream. Ride it or fight it."
+		MiningBelt = "<b>Mining Belt</b>: a dense rock belt. Big ships go through the passes."
+		SolarZone = "<b>Solar Zone</b>: a close star. Its heat burns hulls, and a hot vault loses tech."
+		DeepSpace = "<b>Deep Space</b>: ion storms block calls for help. Pirates hide in the calm eye of a storm."
+	}
+
+	Wanted
+	{
+		Title = "Hot Cargo: Wanted and Hunted"
+		Worst = "Wanted by a faction while the corporation hunts you: the worst place to be."
+		Out = "Ways out: pay the bounty (hail one of their police ships), leave the system, or outlast the search."
+	}
+
+	Buyer
+	{
+		Title = "Hot Cargo: The Buyer"
+		Here = "The <good>Buyer</good> is in this system. A mission in your log points to it."
+		Sell = "Hail the Buyer and sell tech in the trade tab. The first delivery wins the run."
+		Keep = "Tech you keep still counts in the score, at the Buyer price."
+		After = "After the win, heat is off and the career goes on."
+	}
+
+	Settings
+	{
+		Title = "Hot Cargo: Settings"
+		Where = "Too hot? Too slow? Press Escape and open <b>Hot Cargo settings</b>."
+		What = "Every number of the mod is there, with a description. Changes apply at once."
+		Coop = "In co-op, only the host can change them."
+	}
+
+	ShipTactics
+	{
+		Title = "Hot Cargo: Ship Tactics"
+		Open = "Give your ships standing orders: <b>Ctrl+K</b>, or the AI button in the ships card."
+		Rows = "Each row is a condition and an action, checked from the top. Start from a preset."
+		Orders = "Your own orders come first. The tactics wait until a player order is done."
+		Save = "Tactics save with the ship design."
+	}
+
+	Coop
+	{
+		Title = "Hot Cargo: Co-op"
+		Scale = "More players, more enemies. The host sets the extra ships per player on the new career screen."
+		Tech = "Each player starts with vaults and a share of the tech. The loss counts the whole fleet."
+		Fees = "The player who accepts a contract pays its fee and gets its extra pay."
+		Host = "Only the host changes the Hot Cargo settings."
+	}
+}
+
+HotCargoRunLog
+{
+	TabName = "Hot Cargo run"
+	Empty = "<gray>Nothing yet.</gray>"
+	RowFmt = "<gray>Sector {0}  {1}</gray>   {2}"
+	StartFmt = "<fame_color>Run start</fame_color>: {0} tech aboard. The Buyer waits in sector {1}."
+	SectorFmt = "<fame_color>Sector {0}/{1}</fame_color>: {2}, {3}."
+	StageFmt = "<bad>{0}</bad>: {1}"
+	StrikeWave = "<bad>Strike wave</bad>: more hunters inbound."
+	SaleFmt = "Sold {0} tech at <money>{1}</money> each to {2}."
+	BuyBackFmt = "Bought back {0} tech at <money>{1}</money> each."
+	DeliveryFmt = "<good>Buyer</good>: {0} tech delivered at <money>{1}</money> each."
+	ContractFmt = "Contract taken: {0}."
+	ContractFeeFmt = "Contract taken: {0}. Fee <money>{1}</money>."
+	RivalsFmt = "Rival offers withdrawn: {0}."
+	SoldOutFmt = "<bad>Informant</bad>: {0} sold you out over \"{1}\". Heat +{2}."
+	ChainFmt = "<fame_color>[Chain] {0}</fame_color>: {1}"
+	ChainPlainFmt = "<fame_color>[Chain] {0}</fame_color>"
+	ChainEnded = "<gray>Chain ends.</gray>"
+	EventFmt = "<fame_color>{0}</fame_color>: {1}"
+	EventPlainFmt = "<fame_color>{0}</fame_color>"
+	VaultHitFmt = "<bad>Vault hit</bad>: {0} tech lost, {1} left."
+	WonFmt = "<good>Tech delivered.</good> Score <money>{0}</money>."
+	LostFmt = "<bad>Run lost</bad>: {0}"
+}

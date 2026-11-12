@@ -17,7 +17,7 @@ using HotCargo.Tactics;
 
 namespace HotCargo.Ai;
 
-/// <summary>Enemy AI behaviors (spec 193-202). TacticsArea.Register calls Register once at startup.</summary>
+/// <summary>Enemy AI behaviors (spec 193-202) and personalities (spec 360-369). TacticsArea.Register calls Register once at startup.</summary>
 public static class AiArea
 {
     // TacticsLog event names. Each one is an autotest field "ai_<name>" that counts the events.
@@ -25,14 +25,16 @@ public static class AiArea
     public const string CallStart = "call_start", CallComplete = "call_complete", CallInterrupt = "call_interrupt";
     public const string CallBlocked = "call_blocked", CallAssist = "call_assist";
     public const string Regroup = "regroup", RegroupEnd = "regroup_end";
+    public const string PersonalityEvent = "personality";
 
     static readonly string[] EventNames =
-        [Flee, FleeStay, FleeEnd, FleeJump, CallStart, CallComplete, CallInterrupt, CallBlocked, CallAssist, Regroup, RegroupEnd];
+        [Flee, FleeStay, FleeEnd, FleeJump, CallStart, CallComplete, CallInterrupt, CallBlocked, CallAssist, Regroup, RegroupEnd, PersonalityEvent];
 
     public static void Register()
     {
         foreach (string name in EventNames) Autotest.Fields[$"ai_{name}"] = () => TacticsLog.Count(name);
         Autotest.Fields["ai_calling"] = () => Sim().Ships.Count(s => s.AI?.GetStrategyModule<CallStrategy>() is { Calling: true });
+        PersonalityAutotest.Register();
         Autotest.Fields["ai_fleeing"] = () => Sim().Ships.Count(s => s.AI?.GetStrategyModule<FleeStrategy>() is { Fleeing: true });
 
         // aiset <TacticsTunables field> <value>: sets one tactics tunable for this run. Test only.
