@@ -27,10 +27,18 @@ internal sealed class EventDialog : WindowBox
     static bool _pausedByUs;
     static bool _broken;
 
+    /// <summary>True while the window shows. For autotests.</summary>
+    internal static bool IsShown => _open is { Parent: not null };
+
+    /// <summary>The window rect and the screen rect, for autotests.</summary>
+    internal static string Rects => _open is { Parent: not null } w ? $"window {w.ScreenRect} screen {w.Parent.RectProvider.ScreenRect}" : "no event window";
+
     static CommsGuiRules Comms => GameApp.Rules.CareerMode.Gui.Comms;
 
     readonly Run _forRun;
     readonly Label _body;
+    readonly ScrollBox _pageBox;
+    readonly LayoutBox _header;
     readonly LayoutBox<ImageButton, Widget> _buttons;
     readonly SharedChoicePanel _shared;
     EventPage? _page;
@@ -54,6 +62,8 @@ internal sealed class EventDialog : WindowBox
             if (page is null) { Close(run); return; }
             if (_open is null || _open.Parent is null)
             {
+                // The run intro shows first. The event waits in the sim until the player closes the intro.
+                if (Ui.CenterPanel.IsOpen(run.Game)) return;
                 _open = new EventDialog(run);
                 run.Game.Gui.FloatingWindows.AddChild(_open);
                 PauseIfWanted(run);
@@ -93,10 +103,10 @@ internal sealed class EventDialog : WindowBox
         TitleLabel.TextRenderer.HAlignment = HAlignment.Left;
         TitleLabel.TextRenderer.Padding = new Borders(10f, 0f, 0f, 0f);
         CloseButton.SelfActive = false;
-        Size = new Vector2(760f, 560f);
-        ResizeController.MinSize = new Vector2(600f, 400f);
+        Size = new Vector2(WindowWidth, 400f);
+        ResizeController.MinSize = new Vector2(600f, MinHeight);
 
-        var page = new ScrollBox();
+        var page = _pageBox = new ScrollBox();
         page.AnchorRect = AnchorPresets.Fill;
         page.NineSlice.Flags = NineSliceFlags.None;
         page.ScrollBarController.ShowHorizontal = ScrollBarShowMode.Never;
@@ -106,7 +116,7 @@ internal sealed class EventDialog : WindowBox
         AddChild(page);
 
         // Text with the comms dialogue icon on its left, as in CommDialogueTab.
-        var header = new LayoutBox();
+        var header = _header = new LayoutBox();
         header.NineSlice.Flags = NineSliceFlags.None;
         header.PercentileWidth = 100f;
         header.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
@@ -144,14 +154,39 @@ internal sealed class EventDialog : WindowBox
 
         Parented += OnParented;
         Unparenting += (_, _) => BoundsProvider = null;
+        // Guarded: an exception in a GUI frame event opens the game's error dialog, which stalls a co-op game until the link drops.
+        BeforeFrameDraw += (_, _) => Errors.Guard("event window height", FitHeight);
         WidgetRules.AddDialogTweens(this);
         WidgetRules.AddBlur(this);
     }
+
+    const float WindowWidth = 760f;
+    const float MinHeight = 240f;
 
     void OnParented(object? sender, ParentEventArgs e)
     {
         ScreenRect = Rect.CenteredOn(Parent.RectProvider.ScreenRect.Size / 2f, Size);
         BoundsProvider = Parent.RectProvider;
+    }
+
+    /// <summary>
+    /// Fits the window height to the page: text, choices and paddings, at most 80 % of the screen (the page scrolls past that).
+    /// It keeps the window center, so a short result page does not leave a tall empty window over the HUD.
+    /// </summary>
+    void FitHeight()
+    {
+        if (Parent is null) return;
+        // Screen rects: the page fills the window through its anchors, so its Height property stays 0.
+        float chrome = ScreenRect.Height - _pageBox.ScreenRect.Height;
+        // Measured from the header top to the last button bottom: both move together when the page scrolls. The layout
+        // stretches the button box to fill the page, so its own height would grow the window each frame.
+        var last = _buttons.Children.Count > 0 ? _buttons.Children[_buttons.Children.Count - 1].ScreenRect : _header.ScreenRect;
+        float content = last.Bottom - _header.ScreenRect.Top + _pageBox.Children.BorderPadding.Top + _pageBox.Children.BorderPadding.Bottom;
+        // The screen can have no size for a moment (a co-op resync builds the GUI again); Math.Clamp throws when max < min.
+        float max = Math.Max(MinHeight, Parent.RectProvider.ScreenRect.Height * 0.8f);
+        float h = Math.Clamp(chrome + content, MinHeight, max);
+        if (Math.Abs(h - ScreenRect.Height) < 1f) return;
+        ScreenRect = Rect.CenteredOn(ScreenRect.Center, new Vector2(WindowWidth, h));
     }
 
     /// <summary>Rebuilds on a new page. Refreshes the enabled states once a second, because money and cargo change while the window is open.</summary>
