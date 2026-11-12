@@ -76,8 +76,11 @@ public sealed class MechanicsTunables
 [ReflectiveSerialization(Explicit = true)]
 public sealed class HoldOutTunables
 {
+    /// <summary>Guarded seconds needed to complete the mission.</summary>
     [Serialize(Optional = true)] public float Seconds = 300f;
+    /// <summary>Distance from the target within which a human ship keeps the clock running.</summary>
     [Serialize(Optional = true)] public float GuardRadius = 1500f;
+    /// <summary>Guarded seconds between waves.</summary>
     [Serialize(Optional = true)] public float WaveSeconds = 40f;
     /// <summary>Guarded seconds before the first wave.</summary>
     [Serialize(Optional = true)] public float FirstWaveSeconds = 10f;

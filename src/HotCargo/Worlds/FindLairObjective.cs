@@ -104,7 +104,7 @@ internal sealed class FindLairObjective : Objective
         float reach = Current.Tunables(sim).LairDiscoverDistance;
         if (!sim.Ships.HumanPlayerSignificantShips.Any(s => s.DetWorldCenter.DistanceTo(at) <= reach)) return;
         Log.Info($"lair found at {at}");
-        sim.RequireGame().Gui.ShowAreaName(Strings.GetText("HotCargoWorlds/LairFound"));
+        Ux.UxKit.CenterText(sim.RequireGame(), Strings.GetText("HotCargoWorlds/LairFound"));
         Complete();
     }
 

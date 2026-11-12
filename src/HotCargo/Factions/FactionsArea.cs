@@ -166,7 +166,7 @@ static class HeatBandAlerts
         {
             string line = band == 2 ? FactionsArea.Text("RefuseBand") : FactionsArea.Text("MarkupBand");
             // The markup band starts with the Hunt stage (both at 75 by default), whose alert takes the toast. So it gets a chat line only.
-            if (band == 2) run.Game.Gui.ShowAreaName(line);
+            if (band == 2) UxKit.CenterText(run.Game, line);
             UxKit.ChatLine(run.Game, line);
         });
     }

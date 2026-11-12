@@ -22,7 +22,8 @@ sealed class HeatPanel : LayoutBox
 {
     const float BarHeight = 14f;
     static readonly Color Calm = new(0.35f, 0.75f, 0.95f);
-    static readonly Color Warm = new(1f, 0.8f, 0.2f);
+    /// <summary>Heat orange: the game's limited text color, the same as the stage name and the title accent.</summary>
+    static Color Warm => WidgetRules.Instance.LimitedTextColor;
     static readonly Color Hot = new(0.96f, 0.19f, 0.17f);
 
     readonly CareerGameModeManager _mode;
@@ -163,7 +164,8 @@ sealed class HeatPanel : LayoutBox
         var stage = run.T.Heat.Stages[s.StagesStarted - 1];
         string what = UxKit.StageText(stage.Name);
         AlertsShown++;
-        _alert.Text = $"<bad>{stage.Name.ToUpperInvariant()}</bad>  {what}";
+        // The status line above already names the stage, so the strip shows only the threat.
+        _alert.Text = $"<bad>{what}</bad>";
         _alertUntil = now + run.T.Ux.StageAlertSeconds;
         _flashUntil = now + 2.0;
         UxKit.ChatLine(_mode.Game, UxKit.Format("StageChatFmt", stage.Name.ToUpperInvariant(), what));

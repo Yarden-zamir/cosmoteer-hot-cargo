@@ -34,12 +34,12 @@ Mission checks are in [tests/playtest/missions.md](tests/playtest/missions.md).
 
 To see sell-outs fast, put `Contracts { InformantShare = 1  InformantChanceMin = 1  InformantChanceMax = 1  InformantDelayMin = 10  InformantDelayMax = 10 }` in `tunables.rules`.
 
-1. Hail a station and open the missions tab. Select offers. Each one shows a "Contract terms" section under the rewards: fee or "No fee", flat heat, trail, rival, informant risk or "Discreet client". Is it readable at a glance? Does it look like the rest of the window?
+1. Hail a station and open the missions tab. Select offers. Each one shows a "CONTRACT" section under the rewards: fee or "No fee", flat heat, trail, rival, informant risk or "Discreet client". Is it readable at a glance? Does it look like the rest of the window?
 2. Select a paid offer. The accept button reads "Accept (pay N)", and the rewards show an extra "(paid contract)" money line. Accept it. Check that the money drops by the fee.
 3. With less money than a fee, the button reads "Fee N: not enough money" and does nothing.
-4. Find an offer with "Rival offer: accepting dismisses ...". Accept it. Check that the named offer is gone and that a chat line says why.
-5. Accept 4 or more contracts. Check that the heat panel shows "N contracts open, trail +X/min" and that the heat rate in the status line rises.
-6. Wait for a sell-out (see the tunables above). Check that the banner names the client and the contract, that hunters jump in, and that the mission log shows "... sold you out on this contract".
+4. Find an offer with "Rival: taking this cancels ...". Accept it. Check that the named offer is gone and that a chat line says so.
+5. Accept 4 or more contracts. Check that the heat panel shows "N open contracts   trail +X/min" and that the heat rate in the status line rises.
+6. Wait for a sell-out (see the tunables above). Check that the banner names the client, that the chat line names the contract, that hunters jump in, and that the mission log shows "... sold you out on this contract".
 7. Balance: are fees worth paying? Does a 4th contract feel like a real choice? Is the informant risk scary but not run-ending?
 8. Tech value: watch the heat panel price over a sector. It goes up with time and heat and never down, also when convoy cover lowers heat. Mid-run, do 2 units buy roughly a ship of the current tier?
 9. Systems are smaller: is the travel between stations, bounties and gates noticeably shorter? Do systems look too crowded or too empty?
@@ -68,7 +68,7 @@ Switch a behavior off to compare: `Tactics { CallEnabled = false }` for hunters,
 1. Sector 1, low FTL fuel: raise heat to 100 (F9). Strike sends one ship now and one 45 s later. Can you destroy the first one, pick up or salvage its fuel, and jump before the second one arrives? Is it "by the skin of your teeth", or too easy, or impossible? Tune `Hunters.Stages` Strike `EarlyScale`, `WaveGapSeconds` and `Hunters.MinFuel`.
 2. Destroy a hunter's hyperdrive or storage. Do hyperium nuggets drop (about half the fuel)? Does salvaging the wreck give the rest?
 3. Last sector: three strike ships of tier + 2, one at a time. Is the last sector a real threat but still survivable?
-4. Call for help: a hunter calls when it first sees you while another group waits. Is the red ring and "CALLING FOR HELP n%" label easy to notice in a fight? Is 6 s the right window?
+4. Call for help: a hunter calls when it first sees you while another group waits. Is the red ring and "CALLING HELP n%" label easy to notice in a fight? Is 6 s the right window?
 5. Hit a calling ship with a disruptor, an EMP missile or an ion beam. Does the call stop at once, with the "call was cut off" log line? Does that feel like a reward for carrying disruptors?
 6. Fight a pirate group (asteroid field pirates or a fleet bounty). When you engage one, does it call the others, and do they come? Is a 6,000 call range too far or too short?
 7. Fly into an ion storm or electron nebula and fight there. Are calls blocked as expected? Is it clear to the player why no one called?
