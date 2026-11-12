@@ -114,7 +114,7 @@ public static class EventText
     /// <summary>Spec 765: the vault senses the relic ship. UI only and local.</summary>
     public static void ShowRelicMessage(GameRoot game)
     {
-        game.Gui.ShowAreaName(Strings.GetText("HotCargoEvents/RelicSensed"));
+        Ux.UxKit.CenterText(game, Strings.GetText("HotCargoEvents/RelicSensed"));
         Ux.UxKit.ChatLine(game, Unlocked.FormatWithXml(Strings.GetText("HotCargoEvents/RelicSensedChat")));
     }
 

@@ -18,6 +18,8 @@ public sealed class UxTunables
     [Serialize(Optional = true)] public bool StageAlerts = true;
     /// <summary>Seconds that the stage strip stays after a stage starts.</summary>
     [Serialize(Optional = true)] public float StageAlertSeconds = 10f;
+    /// <summary>A big center text when a hunter wave arrives. Off: only the heat panel strip, the chat line and the alarm sound tell you.</summary>
+    [Serialize(Optional = true)] public bool HunterCenterText = true;
     /// <summary>Short premise and rules panel at the start of a new run.</summary>
     [Serialize(Optional = true)] public bool RunIntro = true;
     /// <summary>Win panel and the Hot Cargo lines on the game-over screen. Off: plain dialogs.</summary>
