@@ -41,7 +41,7 @@ static class ContractsUi
             if (state.SoldOut.Contains(m.MissionID)) lines.Add(($"<bad>{F("SoldOutFmt", Esc(ContractBook.ClientName(m)))}</bad>", T("SoldOutTip")));
             if (m.Completion != CompletionState.InProgress) return lines;
             if (terms.Fee > 0) lines.Add(($"<gray>{F("FeePaidFmt", terms.Fee)}</gray>", null));
-            lines.Add((F("OpenTrailFmt", Num(terms.TrailWeight), Num(open), Rate(rateNow)), F("TrailTipFmt", Num(run.T.Contracts.TrailFreeContracts), Num(run.T.Contracts.TrailHeatPerContractMinute))));
+            lines.Add((F(rateNow > 0 ? "OpenTrailFmt" : "OpenQuietFmt", Num(terms.TrailWeight), Num(open), Rate(rateNow)), F("TrailTipFmt", Num(run.T.Contracts.TrailFreeContracts), Num(run.T.Contracts.TrailHeatPerContractMinute))));
             if (terms.InformantChance > 0 && !state.SoldOut.Contains(m.MissionID))
                 lines.Add(($"<limited_color>{F("InformantFmt", Pct(terms.InformantChance))}</limited_color>", T("InformantTip")));
             return lines;
@@ -57,7 +57,7 @@ static class ContractsUi
         if (terms.FlatHeat > 0) lines.Add(($"<bad>{F("FlatHeatFmt", Num(terms.FlatHeat))}</bad>", T("FlatHeatTip")));
         float after = open + terms.TrailWeight;
         float rateAfter = ContractBook.TrailPerMinute(run, after);
-        string trail = F("TrailFmt", Num(terms.TrailWeight), Num(open), Num(after), Rate(rateNow), Rate(rateAfter));
+        string trail = F(rateAfter > 0 ? "TrailFmt" : "TrailQuietFmt", Num(terms.TrailWeight), Num(open), Num(after), Rate(rateNow), Rate(rateAfter));
         lines.Add((rateAfter > rateNow ? $"<bad>{trail}</bad>" : trail,
             F("TrailTipFmt", Num(run.T.Contracts.TrailFreeContracts), Num(run.T.Contracts.TrailHeatPerContractMinute))));
         if (ContractBook.RivalOf(run, m.Game.Sim, m) is { } rival)

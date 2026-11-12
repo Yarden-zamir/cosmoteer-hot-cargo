@@ -240,6 +240,9 @@ public static class ChainRunner
         m.AddReward(new ChainStageReward(chain.Title, stage.Title, stage.Text, ChainModel.StorySoFar(c.Story, run.T.Chains.StoryLines), c.Part + 1));
         // Contract terms (economy area). Return and Arrival missions carry zero terms in missions.rules, like event missions (spec 86).
         if (stage.Terms is { } terms) m.AddReward(terms.CreateReward(m, rand, objects, at, null, null) ?? throw new InvalidOperationException("contract terms made no carrier"));
+        // The mission name and description cache their text on first read. A read before the chain mark existed left the raw
+        // "{chain_tag} {chain_name}" in the comms list, so they format again now (the event that the game raises for new objectives).
+        m.OnMissionDisplayLinesChanged(null, EventArgs.Empty);
         c.MissionId = m.MissionID;
         c.MissionSince = run.State.GameSeconds;
         Log.Info($"chain {c.ChainId} stage {c.Stage}: mission {stage.Mission} spawned ({m.MissionID})");
