@@ -57,6 +57,13 @@ public static class UxKit
     /// </summary>
     public static async void CenterText(GameRoot game, string xml)
     {
+        // async void: an exception here would end the game, so it reports instead.
+        try { await ShowCenterText(game, xml); }
+        catch (Exception ex) { Errors.Report("ux center text", ex.Message, ex); }
+    }
+
+    static async Task ShowCenterText(GameRoot game, string xml)
+    {
         var root = game.Gui.RootWidget;
         float w = Math.Min(1100f, root.ScreenRect.Width - 80f);
         var lbl = new Label

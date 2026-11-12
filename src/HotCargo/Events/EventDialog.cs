@@ -148,7 +148,8 @@ internal sealed class EventDialog : WindowBox
 
         Parented += OnParented;
         Unparenting += (_, _) => BoundsProvider = null;
-        BeforeFrameDraw += (_, _) => FitHeight();
+        // Guarded: an exception in a GUI frame event opens the game's error dialog, which stalls a co-op game until the link drops.
+        BeforeFrameDraw += (_, _) => Errors.Guard("event window height", FitHeight);
         WidgetRules.AddDialogTweens(this);
         WidgetRules.AddBlur(this);
     }
@@ -175,7 +176,9 @@ internal sealed class EventDialog : WindowBox
         // stretches the button box to fill the page, so its own height would grow the window each frame.
         var last = _buttons.Children.Count > 0 ? _buttons.Children[_buttons.Children.Count - 1].ScreenRect : _header.ScreenRect;
         float content = last.Bottom - _header.ScreenRect.Top + _pageBox.Children.BorderPadding.Top + _pageBox.Children.BorderPadding.Bottom;
-        float h = Math.Clamp(chrome + content, MinHeight, Parent.RectProvider.ScreenRect.Height * 0.8f);
+        // The screen can have no size for a moment (a co-op resync builds the GUI again); Math.Clamp throws when max < min.
+        float max = Math.Max(MinHeight, Parent.RectProvider.ScreenRect.Height * 0.8f);
+        float h = Math.Clamp(chrome + content, MinHeight, max);
         if (Math.Abs(h - ScreenRect.Height) < 1f) return;
         ScreenRect = Rect.CenteredOn(ScreenRect.Center, new Vector2(WindowWidth, h));
     }
