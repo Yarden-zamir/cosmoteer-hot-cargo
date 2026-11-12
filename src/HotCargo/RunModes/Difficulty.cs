@@ -45,17 +45,30 @@ public static class Difficulty
     /// <summary>Spec 684: the intro line with the level names and the factors that differ from 1. Null when every factor is 1.</summary>
     public static string? IntroLine(Run run)
     {
-        var p = run.Pressure();
-        if (p.IsNeutral) return null;
-        var m = run.Mode;
-        string levels = $"{m.CombatDifficulty.NameKey.Text} / {m.EconDifficulty.NameKey.Text} / {m.CrewScarcity.NameKey.Text}";
+        var parts = FactorTexts(run.Pressure());
+        return parts.Count == 0 ? null : Fmt("DifficultyFmt", LevelNames(run.Mode), string.Join(", ", parts));
+    }
+
+    /// <summary>Spec 684: the heat panel tooltip. The level names, then one line for each factor that differs from 1, or a "no change" line.</summary>
+    public static string Tooltip(Run run)
+    {
+        var parts = FactorTexts(run.Pressure());
+        return Fmt("TipFmt", LevelNames(run.Mode), parts.Count == 0 ? Text("TipNeutral") : string.Join("\n", parts));
+    }
+
+    static string LevelNames(CareerGameModeManager m) =>
+        $"{m.CombatDifficulty.NameKey.Text} / {m.EconDifficulty.NameKey.Text} / {m.CrewScarcity.NameKey.Text}";
+
+    /// <summary>One text for each factor that differs from 1.</summary>
+    internal static List<string> FactorTexts(Pressure p)
+    {
         var parts = new List<string>();
         if (p.HeatRate != 1f) parts.Add(Fmt("HeatFmt", p.HeatRate));
         if (p.HunterShips != 1f) parts.Add(Fmt("ShipsFmt", p.HunterShips));
         if (p.HunterTiers != 0) parts.Add(Fmt("TiersFmt", p.HunterTiers.ToString("+0;-0", CultureInfo.InvariantCulture)));
         if (p.ContractFees != 1f) parts.Add(Fmt("FeesFmt", p.ContractFees));
         if (p.TechValue != 1f) parts.Add(Fmt("TechFmt", p.TechValue));
-        return Fmt("DifficultyFmt", levels, string.Join(", ", parts));
+        return parts;
     }
 
     internal static string Fmt(string key, params object?[] args) => Cosmoteer.Localization.Strings.FormatText("HotCargoRunModes/" + key, args);

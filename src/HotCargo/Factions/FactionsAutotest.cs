@@ -52,16 +52,43 @@ static class FactionsAutotest
         Autotest.Commands["fa_set"] = arg => Autotest.SetField(R().T.Factions, arg);
         // fa_blind on|off: the real player action (the MP input of the switch under ENGAGE).
         Autotest.Commands["fa_blind"] = arg => R().Game.NetManager.EnqueueInput(new BlindJumpInput(arg == "on"));
-        // fa_jump relay|blind|view: single player. Jumps to an unvisited neighbor like the "jump" command, as a jump of that kind.
+        // fa_jump relay|blind|view: single player. Jumps to the first unvisited neighbor like the "jump" command, without the animation.
+        // relay picks watched or clear from the hunters near that relay now (spec 650), like a real jump start.
         Autotest.Commands["fa_jump"] = arg =>
         {
             var run = R();
-            var next = run.Game.CurrentMapNode.Connections.FirstOrDefault(n => !run.State.VisitedNodes.Contains(n.UniqueID))
-                ?? throw new InvalidOperationException("no unvisited neighbor system");
-            Jumps.TestOverride = Enum.Parse<JumpKind>(arg, ignoreCase: true);
+            var next = Next();
+            Jumps.TestOverride = arg switch
+            {
+                "relay" => Jumps.HuntersNearRelay(run, run.Game.Sim, next) > 0 ? JumpKind.RelayWatched : JumpKind.RelayClear,
+                _ => Enum.Parse<JumpKind>(arg, ignoreCase: true),
+            };
             run.Game.JumpToNode(next, doFtlAnimation: false, run.Game.Sim.Ships.HumanPlayerShips.ToList())
                 .ContinueWith(t => Log.Error("AUTOTEST fa_jump failed", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
         };
+        // fa_torelay: single player. Moves the player ship next to the relay toward the first unvisited neighbor.
+        Autotest.Commands["fa_torelay"] = _ =>
+        {
+            var ship = TechAutotest.PlayerShip();
+            var gate = Gate();
+            Autotest.Teleport(ship, Autotest.ClearSpotNear(R().Game.Sim, gate.DetWorldCenter, 700f, ship.WorldBoundingRadius));
+            Log.Info($"AUTOTEST factions: {ship.Name} at the relay to {Next().Name}");
+        };
+        // fa_gatejump: single player. Plots the jump to the first unvisited neighbor and orders the player ship onto its relay,
+        // like a right click on the relay. The drives then spin up (they need power).
+        Autotest.Commands["fa_gatejump"] = _ =>
+        {
+            var game = R().Game;
+            var ship = TechAutotest.PlayerShip();
+            game.DestinationMapNode = new Cosmoteer.Game.Multiplayer.MPValue<Cosmoteer.GalaxyMap.MapNode>(Next());
+            var gateShip = Gate().PhysicalShip ?? throw new InvalidOperationException("the relay is in stasis; run fa_torelay first");
+            ship.Commands.EnqueueCommand(new Cosmoteer.Ships.Commands.FtlGateJumpCommand(ship, ship.Commands.AllocGlobalCommandID(), gateShip,
+                Cosmoteer.Ships.Commands.CollisionAvoidanceFlags.All, isTentative: false), append: false, confirmed: true);
+        };
+        // fa_saveblock <seconds>: holds a vanilla game save block for that many game seconds, like a multi-step explosion in a fight.
+        Autotest.Commands["fa_saveblock"] = arg => HoldSaveBlock(float.Parse(arg, CultureInfo.InvariantCulture));
+        // fa_engage: the real player action of the ENGAGE button (MPReadyFtlJumpInput).
+        Autotest.Commands["fa_engage"] = _ => R().Game.NetManager.EnqueueInput(new Cosmoteer.Modes.Creative.MPInputs.MPReadyFtlJumpInput());
         // fa_drive: single player. Builds a small hyperdrive on the player ship (the starter ships have none), for the fuel checks.
         Autotest.Commands["fa_drive"] = _ =>
         {
@@ -69,7 +96,9 @@ static class FactionsAutotest
             // Careers start with the hyperdrive blueprint locked, and a locked part is not a valid blueprint part.
             R().Mode.Techs.UnlockTech(new ID<Cosmoteer.Modes.Career.TechTree.TechRules>("cosmoteer.hyperdrive_small"));
             StartingVault.PlaceOutside(ship, ship.Rules.PartsByID[new ID<Cosmoteer.Ships.Parts.PartRules>("cosmoteer.hyperdrive_small")], requireCrewPath: false);
-            Log.Info($"AUTOTEST factions drive: {ship.Name} has drives={ship.Ftl.HasFtlDrives}");
+            // The starter ships carry no hyperium. Fill the new drive's tank, so it can spin up.
+            foreach (var drive in ship.Ftl) drive.Fuel = drive.MaxFuel;
+            Log.Info($"AUTOTEST factions drive: {ship.Name} has drives={ship.Ftl.HasFtlDrives}, fuel {ship.Ftl.GetTotalFuel()}");
         };
         // fa_base: records the prices that the ratio fields compare to.
         Autotest.Commands["fa_base"] = _ =>
@@ -136,11 +165,44 @@ static class FactionsAutotest
         Autotest.Fields["fa_trade"] = () => R().Game.Sim.Mode.AllowResourceTrade(TechAutotest.PlayerShip(), TechAutotest.NearestStation()) ? 1 : 0;
         Autotest.Fields["fa_refusal"] = () => CommsPatches.LastRefusal.Length > 0 ? 1 : 0;
         Autotest.Fields["fa_blind"] = () => R().State.Factions.BlindJump ? 1 : 0;
+        Autotest.Fields["fa_huntersnear"] = () => Jumps.HuntersNearRelay(R(), R().Game.Sim, Next());
+        Autotest.Fields["fa_hurtparts"] = () => TechAutotest.PlayerShip().Parts.Count(p => p.Health < p.Rules.MaxHealth);
+        Autotest.Fields["fa_preparing"] = () => TechAutotest.PlayerShip().Ftl.IsPreparingToGateJump ? 1 : 0;
+        Autotest.Fields["fa_progress"] = () => TechAutotest.PlayerShip().Ftl.FtlReadinessProgress;
+        Autotest.Fields["fa_ready"] = () => TechAutotest.PlayerShip().Ftl.IsReadyToJump ? 1 : 0;
+        Autotest.Fields["fa_spin"] = () => R().State.Factions.SpinSeconds.GetValueOrDefault(TechAutotest.PlayerShip().UniqueID);
+        Autotest.Fields["fa_fullat"] = () => R().State.Factions.FullAtSeconds.TryGetValue(TechAutotest.PlayerShip().UniqueID, out float at) ? at : -1;
+        Autotest.Fields["fa_spinratio"] = () => R().State.Factions.FullAtSeconds.TryGetValue(TechAutotest.PlayerShip().UniqueID, out float at) && at > 0
+            ? R().State.Factions.SpinSeconds.GetValueOrDefault(TechAutotest.PlayerShip().UniqueID) / at : 0;
+        Autotest.Fields["fa_saveblocked"] = () => R().Game.IsGameSavingBlocked ? 1 : 0;
+        Autotest.Fields["fa_jumpstarts"] = () => Jumps.JumpStarts;
+        Autotest.Fields["fa_combat"] = () => R().Game.Sim.Ships.AllShips.Count(s => s.HasTag(Hunters.HunterSpawner.HunterTag) && !s.IsJunk);
         Autotest.Fields["fa_markers"] = () => Markers.Compute(R()).Count;
         Autotest.Fields["fa_markershere"] = () => Markers.Compute(R()).Count(m => m.Node == R().Game.CurrentMapNode);
         Autotest.Fields["fa_spent"] = () => double.IsNaN(_moneyBeforeBuy) ? 0 : _moneyBeforeBuy - Money();
         // Money that fa_buy took minus amount x the price in its input. 0 when the sim accepted the trade at the price of the click.
         Autotest.Fields["fa_buygap"] = () => (double.IsNaN(_moneyBeforeBuy) ? 0 : _moneyBeforeBuy - Money()) - _expectedBuy;
+    }
+
+    static Cosmoteer.GalaxyMap.MapNode Next()
+    {
+        var run = R();
+        return run.Game.CurrentMapNode.Connections.FirstOrDefault(n => !run.State.VisitedNodes.Contains(n.UniqueID))
+            ?? throw new InvalidOperationException("no unvisited neighbor system");
+    }
+
+    static Cosmoteer.Ships.Special.MetaFtlGate Gate() =>
+        Cosmoteer.Ships.Special.FtlGate.GetGateForDestination(R().Game.Sim, Next()) ?? throw new InvalidOperationException("no relay toward the neighbor");
+
+    static async void HoldSaveBlock(float seconds)
+    {
+        var game = R().Game;
+        using (game.BlockGameSaving())
+        {
+            Log.Info($"AUTOTEST factions: save block for {seconds} s");
+            await game.Sim.UntilLogicalTimeElapsed(new Halfling.Timing.Time(seconds));
+        }
+        Log.Info("AUTOTEST factions: save block released");
     }
 
     static double Base(double value) => double.IsNaN(value) || value <= 0 ? throw new InvalidOperationException("run fa_base first (and the base must be above 0)") : value;

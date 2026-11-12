@@ -1,4 +1,3 @@
-using HotCargo.Core;
 using HotCargo.Factions;
 using Xunit;
 
@@ -61,10 +60,22 @@ public class FactionsModelTests
     }
 
     [Fact]
-    public void Carry_over_scales_the_base_share_and_stays_in_0_to_1()
+    public void A_jump_keeps_the_heat_that_its_cut_leaves()
     {
-        Assert.Equal(0.075f, HeatModel.CarryOverFraction(0.25f, 0.3f), 5);
-        Assert.Equal(1f, HeatModel.CarryOverFraction(0.8f, 2f));
-        Assert.Equal(0f, HeatModel.CarryOverFraction(0.25f, 0f));
+        Assert.Equal(0.8f, FactionsModel.HeatKept(0.2f), 5);
+        Assert.Equal(0.45f, FactionsModel.HeatKept(0.55f), 5);
+        Assert.Equal(1f, FactionsModel.HeatKept(-1f));
+        Assert.Equal(0f, FactionsModel.HeatKept(2f));
+    }
+
+    [Fact]
+    public void Blind_spin_up_takes_factor_times_the_vanilla_time()
+    {
+        Assert.False(FactionsModel.BlindSpinDone(100f, null, 2f));
+        Assert.False(FactionsModel.BlindSpinDone(19.9f, 10f, 2f));
+        Assert.True(FactionsModel.BlindSpinDone(20f, 10f, 2f));
+        Assert.Equal(0.25f, FactionsModel.BlindSpinProgress(0.5f, 3f, null, 2f), 5);
+        Assert.Equal(0.75f, FactionsModel.BlindSpinProgress(1f, 15f, 10f, 2f), 5);
+        Assert.Equal(1f, FactionsModel.BlindSpinProgress(1f, 30f, 10f, 2f));
     }
 }

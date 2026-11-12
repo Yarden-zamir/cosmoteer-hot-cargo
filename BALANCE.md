@@ -60,7 +60,7 @@ Heat sources and sinks in one sector (8 units held, multiplier 1.2, after the ch
 
 | Source or sink | Rule | Heat per sector |
 |---|---|---|
-| Carried in | 25 % of the heat at the jump | about +25 |
+| Carried in | a jump removes 75 % (watched relay), 85 % (clear relay) or 90 % (blind) of the heat (requirement 650) | about +25, +15 or +10 |
 | Missions | 6 × 3.4 std fame × 1.5 × 1.2 | +37 |
 | Time | 17.5 min × 1.2 × 1.2 | +25 |
 | Contracts | 6 × (flat heat 1.5 + informant 0.75 × 10 % × 15) | +16 |
@@ -70,6 +70,7 @@ Heat sources and sinks in one sector (8 units held, multiplier 1.2, after the ch
 | **Total at the end of the sector** | | **about 100: the Strike after about 6 missions in 17 minutes** |
 
 - With no missions, the Strike comes after about 50 minutes (from 25 carried heat). A very fast player who picks low-fame missions (bounties, 2.5 std fame) does about 8.
+- The budget is for a watched relay (25 heat on arrival). A clear relay (15) gives about 0.7 more missions before the Strike (6.5), a blind jump (10) about 1.1 more (6.9). Both are earned (a relay without hunters near it, or 1.5 × fuel, a slower spin-up and a damage risk), and they stay inside "about 6, a fast player more". No retune.
 - **Changes:** `HeatPerStandardMission` 15 → **1.5** (per std fame unit). `HeatPerGameMinute` 2 → **1.2**. `EscortHeatChange` −15 → **−8** (the old value was one old mission; it would now be three).
 - **Boards.** Each system offers 20 to 26 missions on its station boards (about 4 per station), plus 50 galaxy "visit" offers in a separate list. Hot Cargo adds 4 to 6 of them; the largest share was story chains (2 to 3 per system, one at every station). With 6 missions per sector, a board of about 3 × 6 = 18 to 24 offers is enough choice. **Change:** chains start at 60 % of stations and at most 2 per system (`Chains.StationChance` 1 → 0.6, new `Chains.MaxNewChainsPerSystem` = 2). Measured after: 0 to 2 chains and 3 to 4 Hot Cargo offers per system, 20 to 25 offers in total. Mechanics missions already average under 1 per system (they need asteroids, storms or a single sun). No other cut.
 

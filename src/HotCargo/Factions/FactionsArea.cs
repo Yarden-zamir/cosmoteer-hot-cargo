@@ -23,7 +23,8 @@ public static class FactionsArea
         Run.Hooks.TimeHeatFactor = run =>
             FactionsModel.TimeHeatFactor(ZoneOf(run, run.Game.CurrentMapNode), run.T.Factions.AllyHeatFactor, run.T.Factions.ShelterHeatFactor);
         Run.Hooks.NotorietyFactor = run => ZoneOf(run, run.Game.CurrentMapNode) == Zone.Ally ? run.T.Factions.AllyNotorietyFactor : 1f;
-        Run.Hooks.CarryOverFactor = run => CarryOverFactor(run.T.Factions, Jumps.PendingKind(run));
+        Run.Hooks.JumpHeatKept = run => HeatKept(run, Jumps.PendingKind(run));
+        Run.Hooks.Tick += Jumps.OnTick;
         Run.Hooks.SystemEntered += OnSystemEntered;
         FactionsAutotest.Register();
     }
@@ -65,15 +66,21 @@ public static class FactionsArea
         return IsAlly(run, f) ? Zone.Ally : Shelters(run, f) ? Zone.Shelter : Zone.Neutral;
     }
 
-    static float CarryOverFactor(FactionsTunables t, JumpKind kind) => kind switch
+    /// <summary>Spec 650: the share of heat that a switch of this kind keeps. A view switch (no jump) keeps Heat.HeatCarryOverFraction.</summary>
+    public static float HeatKept(Run run, JumpKind kind)
     {
-        JumpKind.Relay => t.RelayCarryOverFactor,
-        JumpKind.Blind => t.BlindCarryOverFactor,
-        _ => 1f,
-    };
+        var t = run.T.Factions;
+        return kind switch
+        {
+            JumpKind.RelayWatched => FactionsModel.HeatKept(t.RelayWatchedHeatCut),
+            JumpKind.RelayClear => FactionsModel.HeatKept(t.RelayClearHeatCut),
+            JumpKind.Blind => FactionsModel.HeatKept(t.BlindHeatCut),
+            _ => run.T.Heat.HeatCarryOverFraction,
+        };
+    }
 
-    /// <summary>Spec 650: the share of heat that a jump of this kind keeps.</summary>
-    public static float CarryOver(Run run, JumpKind kind) => HeatModel.CarryOverFraction(run.T.Heat.HeatCarryOverFraction, CarryOverFactor(run.T.Factions, kind));
+    /// <summary>Spec 650: the heat cut of a jump kind, for the UI. 0 for a view switch.</summary>
+    public static float HeatCut(Run run, JumpKind kind) => kind == JumpKind.View ? 0f : 1f - HeatKept(run, kind);
 
     /// <summary>Spec 655: the price factor of station goods and services now. 1 while heat is off.</summary>
     public static float Markup(Run run)
@@ -118,8 +125,12 @@ public static class FactionsArea
     /// <summary>Spec 645, 650: on arrival, the blind switch turns off after a blind jump (sim), and a chat line names the zone (GUI).</summary>
     static void OnSystemEntered(Run run, bool firstVisit)
     {
-        // Spec 650: the blind switch holds for one jump, so a player never pays blind fuel by mistake on the next one.
-        if (Jumps.PendingKind(run) == JumpKind.Blind) run.State.Factions.BlindJump = false;
+        // Spec 650, 651: the blind switch holds for one jump, so a player never pays blind fuel by mistake on the next one.
+        if (Jumps.PendingKind(run) == JumpKind.Blind)
+        {
+            run.State.Factions.BlindJump = false;
+            Jumps.DamageOnArrival(run);
+        }
         if (!run.PressureActive) return;
         var f = Controller(run.Game.CurrentMapNode);
         if (f is null) return;
