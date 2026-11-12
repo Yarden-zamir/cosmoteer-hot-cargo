@@ -130,16 +130,18 @@ public static class Invariants
     static readonly Dictionary<ObjectID, int> _strayMarkerChecks = [];
 
     /// <summary>
-    /// Spec 996: a mission marker (a shown target area POI) belongs to a mission in progress. A marker without one for two checks
+    /// Spec 996: a mission marker (a shown target area POI) belongs to a mission in progress or an offer. A marker without one for two checks
     /// in a row stayed after its mission ended. Limit: only the target area type counts, the marker type that Hot Cargo missions use.
     /// </summary>
     static void MarkersEndWithMission(Run run, SimRoot sim)
     {
         var seen = new HashSet<ObjectID>();
+        var offers = Contracts.ContractBook.Offers(sim).Select(o => o.Mission).ToList();
         foreach (Doodad d in sim.Doodads)
         {
             if (d is not POIDoodad poi || poi.Rules.ID != TargetArea || (!poi.IsExplored && poi.IsUndiscovered)) continue;
             if (run.Mode.Missions.Any(m => m.Completion == CompletionState.InProgress && m.IsPOIAssociated(poi))) continue;
+            if (offers.Any(m => m.IsPOIAssociated(poi))) continue;
             seen.Add(poi.UniqueID);
             int n = _strayMarkerChecks.GetValueOrDefault(poi.UniqueID) + 1;
             _strayMarkerChecks[poi.UniqueID] = n;
@@ -158,10 +160,11 @@ public static class Invariants
         foreach (var (m, _) in Contracts.ContractBook.Offers(sim))
         {
             if (Contracts.ContractBook.RivalOf(run, sim, m) is not { } rival) continue;
-            if (Contracts.ContractBook.RivalOf(run, sim, rival) == m) continue;
+            if (Contracts.ContractBook.RivalOf(run, sim, rival) is { } back && back.MissionID.Equals(m.MissionID) && !rival.MissionID.Equals(m.MissionID)) continue;
             Fail("rival_symmetric", m.MissionID.ToString(),
                 $"offer {m.MetatypeID} {m.MissionID} names rival {rival.MetatypeID} {rival.MissionID}, which does not name it back " +
-                $"(group '{Contracts.ContractBook.Find(run, m)?.RivalGroup}')");
+                $"(group '{Contracts.ContractBook.Find(run, m)?.RivalGroup}'; offer lists that hold {rival.MissionID}: " +
+                $"{Contracts.ContractBook.Offers(sim).Count(o => o.Mission.MissionID.Equals(rival.MissionID))})");
         }
     }
 
