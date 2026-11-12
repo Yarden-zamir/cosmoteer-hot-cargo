@@ -1,17 +1,25 @@
 using System.Reflection;
 using System.Runtime.Loader;
 using Mono.Cecil;
+using Mono.Cecil.Cil;
+using TypeAttributes = Mono.Cecil.TypeAttributes;
+using MethodAttributes = Mono.Cecil.MethodAttributes;
 
 /// <summary>
 /// The game ships win-x64 ReadyToRun images. CoreCLR on macOS arm64 refuses them ("The data is invalid").
 /// This resolver rewrites each game assembly to an IL-only AnyCPU copy and loads that copy instead.
+/// It also serves stand-ins (standins/) for game dependencies whose exact version is not on NuGet (Steamworks.NET).
+/// A stand-in gets a throwing stub for each type and member that the game references but the stand-in lacks,
+/// because the JIT compiles a whole method, also the branches that a runtime guard (Steam.IsInitialized) skips.
 /// </summary>
 static class GameAssemblies
 {
     static readonly string Bin = typeof(GameAssemblies).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
         .Single(a => a.Key == "CosmoteerBin").Value ?? throw new InvalidOperationException("CosmoteerBin metadata missing");
 
+    static readonly string StandIns = Path.Combine(AppContext.BaseDirectory, "standins");
     static readonly string Cache = Path.Combine(AppContext.BaseDirectory, "il-only");
+    static readonly string[] GameModules = ["Cosmoteer.dll", "HalflingCore.dll"];
 
     public static void Install()
     {
@@ -19,20 +27,21 @@ static class GameAssemblies
         AssemblyLoadContext.Default.Resolving += (ctx, name) =>
         {
             var source = Path.Combine(Bin, name.Name + ".dll");
-            return File.Exists(source) ? ctx.LoadFromAssemblyPath(IlOnlyCopy(source)) : null;
+            if (File.Exists(source)) return ctx.LoadFromAssemblyPath(IlOnlyCopy(source, standIn: false));
+            var standIn = Path.Combine(StandIns, name.Name + ".dll");
+            return File.Exists(standIn) ? ctx.LoadFromAssemblyPath(IlOnlyCopy(standIn, standIn: true)) : null;
         };
     }
 
-    static string IlOnlyCopy(string source)
+    static string IlOnlyCopy(string source, bool standIn)
     {
         var target = Path.Combine(Cache, Path.GetFileName(source));
         if (File.Exists(target) && File.GetLastWriteTimeUtc(target) >= File.GetLastWriteTimeUtc(source))
             return target;
-        var resolver = new DefaultAssemblyResolver();
-        resolver.AddSearchDirectory(Bin);
-        resolver.AddSearchDirectory(AppContext.BaseDirectory);
+        using (var resolver = Resolver())
         using (var module = ModuleDefinition.ReadModule(source, new ReaderParameters { AssemblyResolver = resolver }))
         {
+            if (standIn) AddMissingStubs(module);
             module.Architecture = TargetArchitecture.I386;
             module.Attributes = ModuleAttributes.ILOnly;
             module.Write(target + ".tmp");
@@ -40,4 +49,61 @@ static class GameAssemblies
         File.Move(target + ".tmp", target, overwrite: true);
         return target;
     }
+
+    static DefaultAssemblyResolver Resolver()
+    {
+        var resolver = new DefaultAssemblyResolver();
+        resolver.AddSearchDirectory(Bin);
+        resolver.AddSearchDirectory(StandIns);
+        resolver.AddSearchDirectory(AppContext.BaseDirectory);
+        return resolver;
+    }
+
+    static void AddMissingStubs(ModuleDefinition standIn)
+    {
+        string name = standIn.Assembly.Name.Name;
+        using var resolver = Resolver();
+        var game = GameModules.Select(m => ModuleDefinition.ReadModule(Path.Combine(Bin, m), new ReaderParameters { AssemblyResolver = resolver })).ToList();
+        // Game references carry the game's version. Match them by name against the stand-in that is being written.
+        TypeDefinition? Find(TypeReference t) => t.DeclaringType is { } outer
+            ? Find(outer)?.NestedTypes.FirstOrDefault(n => n.Name == t.Name)
+            : standIn.GetType(t.Namespace, t.Name);
+
+        foreach (var t in game.SelectMany(m => m.GetTypeReferences()).Where(t => t.Scope.Name == name && t.DeclaringType is null))
+        {
+            if (Find(t) is not null) continue;
+            var stub = new TypeDefinition(t.Namespace, t.Name, TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.SequentialLayout,
+                standIn.ImportReference(t.IsValueType ? typeof(ValueType) : typeof(object)));
+            standIn.Types.Add(stub);
+            Out.Line($"stand-in {name}: added type {t.FullName}");
+        }
+        foreach (var r in game.SelectMany(m => m.GetMemberReferences()).OfType<MethodReference>())
+        {
+            if (r.DeclaringType is not { IsArray: false, IsGenericInstance: false } dt || dt.Scope?.Name != name) continue;
+            var owner = Find(r.DeclaringType);
+            if (owner is null || owner.HasGenericParameters || r.HasGenericParameters) continue;
+            if (owner.Methods.Any(m => m.Name == r.Name && SameSignature(m, r))) continue;
+            var stub = new MethodDefinition(r.Name, MethodAttributes.Public | (r.HasThis ? 0 : MethodAttributes.Static), Import(standIn, r.ReturnType, Find));
+            foreach (var p in r.Parameters) stub.Parameters.Add(new ParameterDefinition(Import(standIn, p.ParameterType, Find)));
+            var il = stub.Body.GetILProcessor();
+            il.Emit(OpCodes.Ldnull);
+            il.Emit(OpCodes.Throw);
+            owner.Methods.Add(stub);
+            Out.Line($"stand-in {name}: added method {r.FullName}");
+        }
+        game.ForEach(m => m.Dispose());
+    }
+
+    static bool SameSignature(MethodDefinition m, MethodReference r) =>
+        m.Parameters.Count == r.Parameters.Count && m.ReturnType.FullName == r.ReturnType.FullName
+        && m.Parameters.Select(p => p.ParameterType.FullName).SequenceEqual(r.Parameters.Select(p => p.ParameterType.FullName));
+
+    /// <summary>Maps a type from a game signature into the stand-in: its own types by name, everything else imported.</summary>
+    static TypeReference Import(ModuleDefinition standIn, TypeReference t, Func<TypeReference, TypeDefinition?> find) => t switch
+    {
+        ArrayType a => new ArrayType(Import(standIn, a.ElementType, find), a.Rank),
+        ByReferenceType b => new ByReferenceType(Import(standIn, b.ElementType, find)),
+        _ when t.Scope.Name == standIn.Assembly.Name.Name => find(t) ?? throw new InvalidOperationException($"stand-in lacks {t.FullName}"),
+        _ => standIn.ImportReference(t),
+    };
 }

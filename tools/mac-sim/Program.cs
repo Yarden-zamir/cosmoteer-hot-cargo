@@ -1,20 +1,31 @@
 using System.Runtime.CompilerServices;
-using HarmonyLib;
 
 GameAssemblies.Install();
-Console.WriteLine($".NET {Environment.Version} {System.Runtime.InteropServices.RuntimeInformation.OSArchitecture}");
-HarmonyProbe.Run();
-
-static class HarmonyProbe
+// GameApp redirects Console to its log file. This writer goes to the real stdout.
+var stdout = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true };
+Out.Writer = stdout;
+Out.Line($".NET {Environment.Version} {System.Runtime.InteropServices.RuntimeInformation.OSArchitecture}; cwd {Environment.CurrentDirectory}");
+try
 {
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Run()
-    {
-        var h = new Harmony("mac-sim.probe");
-        h.Patch(AccessTools.Method(typeof(Halfling.Mathx), nameof(Halfling.Mathx.Max), [typeof(int), typeof(int)]),
-            prefix: new HarmonyMethod(typeof(HarmonyProbe), nameof(Prefix)));
-        Console.WriteLine($"Mathx.Max(1,2) patched => {Halfling.Mathx.Max(1, 2)}");
-    }
+    Run();
+}
+catch (Exception ex)
+{
+    Out.Line($"FAILED: {ex}");
+    Environment.Exit(1);
+}
 
-    static bool Prefix(ref int __result) { __result = 42; return false; }
+[MethodImpl(MethodImplOptions.NoInlining)]
+static void Run()
+{
+    Boot.App();
+    Out.Line("GameApp constructed");
+    var rules = Boot.Rules();
+    Out.Line($"ships in rules: {rules.Ships.Length}");
+}
+
+static class Out
+{
+    public static TextWriter Writer { get; set; } = Console.Out;
+    public static void Line(string text) => Writer.WriteLine(text);
 }
