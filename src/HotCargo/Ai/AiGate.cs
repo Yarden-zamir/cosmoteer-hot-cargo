@@ -38,6 +38,10 @@ public static class AiGate
 
     public static bool IsHunterAi(Ship ship) => ship.AI?.Rules.ID == HunterAi;
 
+    /// <summary>Spec 361. True when personalities are off, or the ship's personality has the trait.</summary>
+    public static bool PersonalityAllows(Ship ship, Trait trait, TacticsTunables t) =>
+        !t.PersonalitiesEnabled || PersonalityStrategy.Traits(ship, t).Has(trait);
+
     /// <summary>
     /// A hunter of the corporate response (hc_hunter tag). Only these jump out when they flee and pull hunter groups with calls.
     /// Shady trap and event ambushers run the hunter AI too, but they are mission targets and act like vanilla ships there.

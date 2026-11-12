@@ -85,7 +85,8 @@ def analyze(run: Run) -> RunReport:
         ("Game / mod", f"{h.get('game_version')} / {h.get('mod_version', '')[:19]}"),
         ("Tunables", f"{h.get('tunables_hash')} (full {h.get('tunables_full_hash')})"),
         ("Difficulty", (f"combat {h.get('combat_difficulty')}, economy {h.get('econ_difficulty')}, crew {h.get('crew_scarcity')}, "
-                       f"enemy scale {h.get('enemy_scale_setting', '-')} (x{h.get('enemy_scale_factor', '-')})")),
+                       f"enemy scale {h.get('enemy_scale_setting', '-')} (x{h.get('enemy_scale_factor', '-')}), ironman {h.get('ironman', '-')}, "
+                       f"pressure {h.get('pressure', '-')}")),
         ("Map, seed", f"{h.get('map')}, {h.get('seed')}"),
         ("Players", f"{h.get('players')}{' co-op' if h.get('mp') else ''}{' (autotest ' + h.get('label', '') + ')' if h.get('autotest') else ''}"),
         ("Events", f"{len(ev):,}"),

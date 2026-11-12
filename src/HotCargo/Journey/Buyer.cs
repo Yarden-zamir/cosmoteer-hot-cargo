@@ -46,9 +46,8 @@ public static class Buyer
 
     internal static void OnSystemEntered(Run run, bool firstVisit)
     {
-        // Limit: the Buyer appears only on the first visit at exactly RunSectorCount. If the tunable drops below the
-        // current sector index mid-run, no Buyer appears in this run. Revisit if designers change it mid-run.
-        if (!firstVisit || run.State.SectorIndex != run.T.Journey.RunSectorCount) return;
+        // At or after RunSectorCount, so that a value lowered mid-run below the current sector still gives a Buyer in the next new system.
+        if (!firstVisit || run.State.BuyerSpawned || run.State.SectorIndex < run.T.Journey.RunSectorCount) return;
         Spawn(run);
     }
 
@@ -67,6 +66,7 @@ public static class Buyer
             addExistingSpawnTags: true, extraTagLocs: null, spawnFlags: careerSim.GetSpawnFlags());
         int after = Count(sim);
         if (after <= before) throw new InvalidOperationException("the Buyer generator spawned no hc_buyer station (no free location?)");
+        run.State.BuyerSpawned = true;
         Log.Info($"Buyer spawned in {run.Game.CurrentMapNode.Name} (sector {run.State.SectorIndex})");
         // A co-op launch runs this on a worker thread (Buyer in the first sector), so the GUI part starts on the next frame.
         Run.OnNextFrame(() => ShowWhereAsync(run));

@@ -27,8 +27,15 @@ public sealed class TechTunables
 
 public static class TechTunablesExtensions
 {
-    /// <summary>Spec 19: the tech value of one unit now. Every input is saved sim state, so all clients compute the same value.</summary>
-    public static long Value(this TechTunables t, Core.RunState s) =>
-        TechModel.Value(Core.GameData.TierValueMaximum(s.PeakTier), t.TechShipFraction, t.TechShipFractionPerGameHour, t.TechShipFractionPer100Notoriety,
-            t.PriceStepMinutes, t.NotorietyStep, s.GameSeconds, s.Notoriety);
+    /// <summary>
+    /// Spec 19 and 683: the tech value of one unit now, times the difficulty tech factor. Every input is saved sim state or a confirmed
+    /// difficulty level, so all clients compute the same value.
+    /// </summary>
+    public static long TechValue(this Core.Run run)
+    {
+        var (t, s) = (run.T.Tech, run.State);
+        long value = TechModel.Value(Core.GameData.TierValueMaximum(s.PeakTier), t.TechShipFraction, t.TechShipFractionPerGameHour,
+            t.TechShipFractionPer100Notoriety, t.PriceStepMinutes, t.NotorietyStep, s.GameSeconds, s.Notoriety);
+        return RunModes.Difficulty.Pressure(run).Tech(value);
+    }
 }

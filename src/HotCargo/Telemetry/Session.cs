@@ -21,6 +21,7 @@ using HotCargo.Contracts;
 using HotCargo.Core;
 using HotCargo.Hunters;
 using HotCargo.Journey;
+using HotCargo.RunModes;
 using HotCargo.Tech;
 
 namespace HotCargo.Telemetry;
@@ -277,6 +278,16 @@ sealed class Session
             w.WriteString("combat_difficulty", mode.CombatDifficulty.ID.ToString());
             w.WriteString("econ_difficulty", mode.EconDifficulty.ID.ToString());
             w.WriteString("crew_scarcity", mode.CrewScarcity.ID.ToString());
+            w.WriteBoolean("ironman", mode.IsIronmanModeEnabled);
+            // Run modes (SPEC section 34): the Hot Cargo pressure that the three difficulty levels give.
+            var pressure = Run.Pressure();
+            w.WriteStartObject("pressure");
+            Tele.Num(w, "heat_rate", pressure.HeatRate);
+            Tele.Num(w, "hunter_ships", pressure.HunterShips);
+            w.WriteNumber("hunter_tiers", pressure.HunterTiers);
+            Tele.Num(w, "contract_fees", pressure.ContractFees);
+            Tele.Num(w, "tech_value", pressure.TechValue);
+            w.WriteEndObject();
             Tele.Num(w, "money_reward_factor", mode.EconDifficulty.MoneyRewardFactor);
             Tele.Num(w, "fame_reward_factor", mode.EconDifficulty.FameRewardFactor);
             w.WriteNumber("players", Game.HumanPlayersIndexes.Count());
@@ -453,7 +464,7 @@ sealed class Session
             {
                 Tele.Num(w, "window_s", T.AccrualSeconds);
                 foreach (var (src, sum) in sums) Tele.Num(w, src, sum);
-                Tele.Num(w, "mult", HeatModel.Multiplier(Run.T.Heat.HeatMultiplierByUnits, Run.State.FleetTech));
+                Tele.Num(w, "mult", Run.HeatMultiplier(Run.State.FleetTech));
                 Tele.Num(w, "trail_per_min", ContractBook.TrailPerMinute(Run, ContractBook.OpenWeight(Run)));
             });
         }
@@ -883,7 +894,7 @@ sealed class Session
             w.WriteNumber("peak_tier", s.PeakTier);
             w.WriteNumber("tech_value", TechPrice.Sell(Run));
             Tele.Num(w, "buyer_mult", s.BuyerPriceMultiplier);
-            Tele.Num(w, "heat_mult", HeatModel.Multiplier(Run.T.Heat.HeatMultiplierByUnits, s.FleetTech));
+            Tele.Num(w, "heat_mult", Run.HeatMultiplier(s.FleetTech));
             Tele.Num(w, "enemy_scale_factor", Scaling.EnemyScale.Factor(sim));
             w.WriteNumber("fame", Run.Mode.PlayerFame);
             WriteMoney(w);

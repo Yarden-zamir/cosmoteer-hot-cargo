@@ -1,7 +1,7 @@
 # Telemetry
 
 Hot Cargo records each game session to a JSONL file, so test runs and playtests can be analyzed afterwards.
-Spec: SPEC.md section 29 (requirements 530 to 545). Code: `src/HotCargo/Telemetry/`. Analysis: `tools/telemetry/`.
+Spec: SPEC.md section 36 (requirements 530 to 545). Code: `src/HotCargo/Telemetry/`. Analysis: `tools/telemetry/`.
 
 ## Files
 
@@ -39,7 +39,7 @@ Category switches are in the `Telemetry` tunables section. The table names the s
 
 | Event | Switch | Fields |
 |---|---|---|
-| `session.start` | Run | `schema`, `run`, `session`, `session_no`, `new_run`, `loaded`, `wall_utc`, `game_version`, `mod_version` (`1.0.0+<commit>`), `tunables_hash` (of the file), `tunables_full_hash` (of the values in effect), `seed`, `map`, `map_size_index`, `combat_difficulty`, `econ_difficulty`, `crew_scarcity`, `money_reward_factor`, `fame_reward_factor`, `players`, `enemy_scale_setting`, `enemy_scale_factor`, `local_player`, `mp`, `host`, `autotest`, `label`, `cores`, `os`, `tunables` (every tunable value) |
+| `session.start` | Run | `schema`, `run`, `session`, `session_no`, `new_run`, `loaded`, `wall_utc`, `game_version`, `mod_version` (`1.0.0+<commit>`), `tunables_hash` (of the file), `tunables_full_hash` (of the values in effect), `seed`, `map`, `map_size_index`, `combat_difficulty`, `econ_difficulty`, `crew_scarcity`, `ironman`, `pressure` (run mode pressure: `heat_rate`, `hunter_ships`, `hunter_tiers`, `contract_fees`, `tech_value`), `money_reward_factor`, `fame_reward_factor`, `players`, `enemy_scale_setting`, `enemy_scale_factor`, `local_player`, `mp`, `host`, `autotest`, `label`, `cores`, `os`, `tunables` (every tunable value) |
 | `session.end` | Run | `reason` (`game_closed`, `game_closed_after_loss`, `replaced`, `process_exit`), `result`, `real_s`, `sim_s`, `events`, `dropped`, `overhead_ms`, `overhead_pct_wall`, `writer_ms`, `frames`, `frame_ms`, `ticks`, `tick_ms`, `trace_missing` |
 | `run.new`, `run.loaded` | Run | `starting_tech`; `result`, `sessions` |
 | `run.save` | Run | `caller` (who saved: a save, an autosave, a co-op sync) |
