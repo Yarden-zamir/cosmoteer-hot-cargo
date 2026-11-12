@@ -22,7 +22,8 @@ run_once() {
   RUN_SLOT="$SLOT"
   RUN_LOG="$LOG_DIR/$NAME.$(date +%Y%m%d-%H%M%S).$SLOT.log"
   echo "== $NAME: slot $SLOT, log $RUN_LOG"
-  start_slot "$SLOT" < "$SCRIPT" > "$RUN_LOG.deploy" 2>&1 || true
+  # telename labels the telemetry of this test with the script name (TELEMETRY.md).
+  { echo "telename $NAME"; cat "$SCRIPT"; } | start_slot "$SLOT" > "$RUN_LOG.deploy" 2>&1 || true
   local log="" t
   for ((t = 0; t < TIMEOUT; t += 10)); do
     sleep 10

@@ -97,5 +97,9 @@
 | `Factions.CrewPriceAtMaxHeat` | 2 | 656 |
 | `Factions.RefuseHeat`, `RefuseChance` | 90, 0.5 | 657 |
 | `Factions.MapMarkers` | on | 660 |
+| `Telemetry.Enabled` and category switches | on | 540 |
+| `Telemetry.SnapshotSeconds`, `PerfSeconds`, `AccrualSeconds`, `ScanSeconds` | 30 s, 10 s, 5 s, 5 s | 537 to 539 |
+| `Telemetry.AiSwitchMinSeconds`, `AiEventsPerMinute`, `CallerLookupsPerSecond` | 3 s, 600, 50 | 534, 537 |
+| `Telemetry.MaxFileMegabytes`, `MaxFolderMegabytes` | 32, 1024 | 541 |
 
 The defaults are first guesses. Live tuning sets the real values.

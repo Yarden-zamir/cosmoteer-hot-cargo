@@ -10,11 +10,27 @@ mkdir -p "$LOG_DIR"
 
 slot_lock() { echo "/tmp/hot_cargo_slot_${1#t}.lock"; }
 
+# While the player's own game runs (slot main), tests use at most HOT_CARGO_SLOTS_WHILE_PLAYING slots (default 3), so
+# the player's game keeps its frame rate. The check is cached for 60 s in a shared file, so it costs one PC call a minute.
+PLAYING_CACHE=/tmp/hot_cargo_player_playing
+usable_slots() {
+  local now age
+  now="$(date +%s)"
+  age=$(( now - $(stat -f %m "$PLAYING_CACHE" 2>/dev/null || echo 0) ))
+  if [[ $age -gt 60 ]]; then
+    if [[ -n "$(SLOT=main bash -c 'source "$0/pc.sh"; pc "$PS_PATHS"Get-SlotProcess' "$LIB_DIR" 2>/dev/null)" ]]; then echo yes > "$PLAYING_CACHE"; else echo no > "$PLAYING_CACHE"; fi
+  fi
+  if [[ "$(cat "$PLAYING_CACHE" 2>/dev/null)" == yes ]]; then echo "${HOT_CARGO_SLOTS_WHILE_PLAYING:-3}"; else echo "$SLOTS"; fi
+}
+
 # Waits for one free test slot, locks it for this shell process and prints its name.
 # A lock whose owner process is gone is stale and is taken over.
 take_one_slot() {
-  local i lock
+  local i lock limit busy
   while :; do
+    limit="$(usable_slots)"
+    busy="$(ls -d /tmp/hot_cargo_slot_*.lock 2>/dev/null | wc -l | tr -d ' ')"
+    if [[ $busy -ge $limit ]]; then sleep 5; continue; fi
     for ((i = 1; i <= SLOTS; i++)); do
       lock="$(slot_lock "t$i")"
       if mkdir "$lock" 2>/dev/null; then echo $$ > "$lock/pid"; echo "$REPO_ROOT" > "$lock/owner"; echo "t$i"; return; fi

@@ -8,3 +8,5 @@ obj/
 tests/**/bin/
 tests/**/obj/
 scripts/pc.local.sh
+tools/telemetry/.venv/
+__pycache__/
