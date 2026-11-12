@@ -6,6 +6,9 @@ newgame run
 wait 8
 godmode
 tacticlog on
+# The starter ship cannot outlast every stage of five systems (crew die in fires, which godmode does not stop).
+# Fewer live hunters and frequent won fights keep it alive; a balance analysis must leave both out.
+maxhunters 2
 # System 1 (tier 1): the Start event, a contract, an escort, a sale, then time heat and a Warning scout.
 choose 1
 wait 2
@@ -41,7 +44,9 @@ pause off
 wait 15
 fame 15
 heat 25
-wait 45
+wait 20
+damagehostiles 0.05
+wait 25
 damagehostiles 0.05
 wait 25
 vault damage 0.12
@@ -55,7 +60,9 @@ jump
 pause off
 wait 15
 heat 45
-wait 40
+wait 20
+damagehostiles 0.05
+wait 20
 damagehostiles 0.05
 wait 20
 save telerun
@@ -71,7 +78,9 @@ jump
 pause off
 wait 15
 heat 70
-wait 40
+wait 20
+damagehostiles 0.05
+wait 20
 damagehostiles 0.05
 wait 20
 tostation

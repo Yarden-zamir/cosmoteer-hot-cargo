@@ -542,6 +542,8 @@ sealed class Session
 
     void TechChanged(int before, int after)
     {
+        // Ships enter jump limbo a moment before the system switch, so the count drops before BeforeSwitch gives its hint.
+        if (Game.ShipsInJumpLimbo.Count > 0) AddTechHint("jump");
         const double HintSeconds = 5;
         string[] recent;
         lock (_techHints)
