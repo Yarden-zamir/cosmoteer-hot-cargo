@@ -4,13 +4,12 @@ name: dev release
 on:
   push:
     branches: [main]
+# A newer push cancels the running build, so only the newest main gets a release.
 concurrency:
   group: dev-release
-  cancel-in-progress: false
+  cancel-in-progress: true
 permissions:
   contents: write
-env:
-  KEEP_DEV_RELEASES: 10
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -49,10 +48,3 @@ jobs:
           } > "$RUNNER_TEMP/notes.md"
           gh release create "v$version" "$zip" --target "$GITHUB_SHA" --prerelease \
             --title "Hot Cargo $version (dev)" --notes-file "$RUNNER_TEMP/notes.md"
-      - name: Keep the newest dev releases
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release list --limit 200 --json tagName,createdAt \
-            --jq "[.[] | select(.tagName | contains(\"-dev.\"))] | sort_by(.createdAt) | reverse | .[$KEEP_DEV_RELEASES:] | .[].tagName" |
-          while read -r tag; do gh release delete "$tag" --yes --cleanup-tag; done
