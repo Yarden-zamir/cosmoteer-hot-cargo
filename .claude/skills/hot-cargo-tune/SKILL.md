@@ -32,3 +32,5 @@ description: Change Hot Cargo tunables in the player's running game when the pla
 ## What tune.sh cannot change
 - Part, resource, mission and other rules content in `mod/**/*.rules` (for example the tech vault part): change the repo, install the build (`hot-cargo-install`) and restart the game (spec 54).
 - A value that applies at `NewRun`: tell the player that it needs a new career.
+- A new default or a new tunable field: that is a code change. Merge it, install it (`hot-cargo-install`) and restart the game.
+- An installed build from before `TuneRequest` (spec 853) gives no answer: install a newer build first.
