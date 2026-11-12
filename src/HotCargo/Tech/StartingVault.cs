@@ -63,7 +63,9 @@ internal static class StartingVault
         int perVault = Capacity(vault);
         int count = (units + perVault - 1) / perVault;
         // The game's grab rule names the corridor part: the part that a grabbed part leaves on each tile.
-        var corridors = ship.Rules.Parts.Select(p => p.CreatePartPerTileWhenGrabbed).Where(id => id != default).ToHashSet();
+        // Rules may name it by an alias (base_part.rules: "corridor"), so the ID resolves through PartsByID like the grab does (ShipUpdateInfo.TryRemoveBlueprintParts).
+        var corridors = ship.Rules.Parts.Select(p => p.CreatePartPerTileWhenGrabbed).Where(id => id != default).Distinct()
+            .Select(id => ship.Rules.PartsByID.TryGetValue(id, out var r) ? r.ID : throw new InvalidOperationException($"no part {id} (CreatePartPerTileWhenGrabbed)")).ToHashSet();
         if (corridors.Count == 0) throw new InvalidOperationException("no part rules name a corridor part (CreatePartPerTileWhenGrabbed)");
         var center = Center2(ship);
         var candidates = (GrabStorage(ship) ?? []).Concat(InteriorCells(ship, corridors).OrderBy(c => Distance2(new IntRect(c.X, c.Y, 1, 1), center))
