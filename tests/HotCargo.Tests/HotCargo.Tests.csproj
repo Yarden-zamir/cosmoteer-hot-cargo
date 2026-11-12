@@ -19,6 +19,7 @@
     <Compile Include="../../src/HotCargo/Hunters/WaveModel.cs" />
     <Compile Include="../../src/HotCargo/Ai/AiModel.cs" />
     <Compile Include="../../src/HotCargo/Missions/Mechanics/MechanicsModel.cs" />
+    <Compile Include="../../src/HotCargo/ShipAi/ShipAiModel.cs" />
     <Compile Include="../../src/HotCargo/Scaling/ScalingModel.cs" />
   </ItemGroup>
   <ItemGroup>

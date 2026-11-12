@@ -28,6 +28,7 @@ public static class Mod
             Contracts.ContractsArea.Register();
             Ux.UxArea.Register();
             Worlds.WorldsArea.Register();
+            ShipAi.ShipAiArea.Register();
             Scaling.ScalingArea.Register();
             TunablesMenu.TunablesMenuArea.Register();
             Log.Info($"harmony patched {harmony.GetPatchedMethods().Count()} methods; mod root {ModRoot}");

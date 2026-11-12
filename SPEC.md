@@ -140,7 +140,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 13. Tunables, debug and live tuning
 
-50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78, 100 to 104, 130 to 141, 160 to 175, 190 to 202 and 221 to 225 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
+50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78, 100 to 104, 130 to 141, 160 to 175, 190 to 202, 221 to 225 and 400 to 412 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
 51. The file uses the game's `.rules` format.
 52. The mod watches the file. When the file changes, the mod reloads it on the next frame, without a game restart. The settings menu (requirement 500) writes the same file.
 53. If the file has an error, the mod keeps the last valid values and shows the error in game. Errors include values that break sim logic later, for example a stage name that `Hunters.Stages` or a tactic does not match (`TunablesFile.Validate`).
@@ -150,6 +150,8 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 14. Persistence and multiplayer
 
+57. Heat, the stages that already started, the sector index, the run result, notoriety and the peak tier (requirement 19), the event state (requirement 76), the chain state (requirement 172) and the contract state (requirement 107) are saved with the career save and loaded with it. Ship tactics are saved with each ship, not in the run state (requirement 407). Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
+58. All logic that changes simulation state runs in the deterministic simulation tick. It uses the simulation random source, not `System.Random`. The integrity hash includes heat, sector, stages, result, fleet tech, delivered units, run time, the loss timer, the event serials, notoriety, the peak tier, the contract counts and the tunables hash, so a divergence starts a resync at once. Each ship's hash includes its tactics state (requirement 411). Each desync that the game detects writes an `MP DESYNC` line to the Hot Cargo log.
 57. Heat, the stages that already started, the sector index, the run result, notoriety and the peak tier (requirement 19), the event state (requirement 76), the chain state (requirement 172), the contract state (requirement 107) and the enemy scaling setting (requirement 330) are saved with the career save and loaded with it. Resolved: the save hook is a postfix on `CareerGameModeManager.WriteTo` (path `HotCargo`), and the load hook a postfix on its `GenericSerialReader` constructor. A save from before the mod was enabled has no Hot Cargo state. At load, a new run starts at that point of the career, with the starting Tech Vault and the run intro.
 58. All logic that changes simulation state runs in the deterministic simulation tick. It uses the simulation random source, not `System.Random`. The integrity hash includes heat, sector, stages, result, fleet tech, delivered units, run time, the loss timer, the event serials, notoriety, the peak tier, the contract counts and the tunables hash, so a divergence starts a resync at once. Each desync that the game detects writes an `MP DESYNC` line to the Hot Cargo log.
 59. The fleet tech count and the loss rule count all human players together. A loss ends the run for everyone.
@@ -229,6 +231,8 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `Worlds.SundiveSalvageSeconds`, `HeatWarnDepth` | 5 s, 0.5 | 223 |
 | `Worlds.LairDiscoverDistance` | 2000 | 224 |
 | `Worlds.ArrivalLine`, `ArrivalLineDelaySeconds` | on, 4 s | 225 |
+| `ShipAi.Enabled`, `TickSeconds` | on, 1 s | 403 |
+| `ShipAi.KiteRangeFraction`, `CloseInDistance`, `RetreatDistance`, `HoldTolerance` | 0.9, 100, 2000, 150 | 402 |
 
 The defaults are first guesses. Live tuning sets the real values.
 
@@ -249,6 +253,7 @@ mod/                       rules content; scripts/assemble-mod.sh builds mod.rul
   events/                  choice events (events.rules), outcome spawns (spawns.rules), signal POIs
   chains/                  story chains (chains.rules), stage missions (missions.rules), chain pages (pages.rules)
   worlds/                  system archetypes: sector types, run map weights, archetype spawners, current nebula, wave spawns
+  shipai/                  strings of the ship tactics editor
   scaling/                 co-op enemy scaling: the fleet opt-in tag on the vanilla ambush, slider strings
 src/HotCargo.Loader/       startup hook entry point, assembly resolve
 src/HotCargo/
@@ -257,6 +262,7 @@ src/HotCargo/
                            CareerPatches (lifecycle), Activation (requirement 63), Errors, SimQueries, DebugKeys
   Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/ Chains/ Worlds/ Scaling/   one folder for each area: <Area>Area.Register, tunables, patches
   Ai/                      enemy AI behaviors (flee, call, regroup, focus); TacticsArea registers it, Tactics tunables
+  ShipAi/                  player ship tactics: model (ShipAiModel), per-ship state and save hooks (ShipTactics), sim controller, MP input, editor
   Ui/                      overlay, heat panel, run intro and end panels
   Dev/Autotest.cs          headless test commands
 tests/HotCargo.Tests/      fast unit tests for the pure model files
@@ -266,6 +272,7 @@ scripts/                   pull-game, deploy, run, stop, logs, autotest, release
 
 Rules:
 
+- The model files (`HeatModel`, `TechModel`, `MissionModel`, `TacticsModel`, `EventModel`, `MechanicsModel`, `WaveModel`, `AiModel`, `ShipAiModel`) have no game types, so that they are testable on the Mac without the game.
 - The model files (`HeatModel`, `TechModel`, `MissionModel`, `TacticsModel`, `EventModel`, `MechanicsModel`, `WaveModel`, `AiModel`, `ScalingModel`) have no game types, so that they are testable on the Mac without the game.
 - Patches stay thin. They call into the mod classes.
 - One tunables record type. The overlay and the code read the same values.
@@ -426,13 +433,6 @@ WORLDS.md holds the design. The archetypes give each system an identity, a hazar
 228. Contract terms (`HotCargoContract`, requirement 100 and later): Hold the Pass is free, flat heat 6, trail weight 1, informant chance 10 %. Sundive costs 0.3 standard mission pay, flat heat 2, trail weight 0.5, informant chance 5 %. Raid the Lair is free, flat heat 4, trail weight 1, informant chance 20 %. Pay: Hold the Pass 2 × a standard mission's money and fame, Sundive 3 × money and 1.5 × fame, Raid the Lair 2.5 × money and 2 × fame.
 229. Archetype objects fit the smaller Hot Cargo systems (requirement 105): the belt lies between the trade station ring (up to 11,000 from the center) and the FTL gates (13,500 to 16,000). The hub world keeps 2,500 from the gates. The autotest `worlds-fit` checks that real system generation places each archetype mission and keeps the archetype objects clear of stations and gates.
 
-### Wanted and hunted
-
-470. When the players are wanted (vanilla: a faction in the system hunts them with police) and heat reached `WantedWarningMinStage` (default 1, the first stage), a warning shows once: a short message at the top of the screen and a chat line that names the factions and the ways out. Ways out: pay the bounty (hail one of their police ships; the vanilla surrender dialogue offers to pay it), leave the system (wanted belongs to the system), outlast the search timer, or a Wanted event (requirement 473). The warning shows again only after the players stop being both. Wanted alone stays vanilla.
-471. The Wanted trigger: when the warning in requirement 470 shows, a Wanted event opens with chance `WantedEventChance` (default 0.7). It ignores the cooldown and the per-system cap. It does not open while another page waits.
-472. A need can require wanted status (`Wanted = true`). An outcome can clear wanted (`ClearWanted`): every faction in the system stops wanting the players, as a paid bounty does.
-473. Wanted events: A Clean Record (pay 0.4 + 0.01 × heat money units, with a sell-out risk that grows with heat; or pay one crate for a sure clear and heat −5) and Decoy Run (pay 0.5 money units, with a failure risk that grows with heat; or a Sensor Array ghost). Each opens once per run.
-
 ## 28. Co-op enemy scaling
 
 Vanilla Cosmoteer does not scale enemies with the player count: each player gets full starting money and a ship, and enemy counts are fixed. So the mod scales hostile ship counts in co-op. Code: `src/HotCargo/Scaling`. Pure math: `Scaling/ScalingModel.cs`.
@@ -459,3 +459,28 @@ TUNABLES.md lists when each tunable takes effect. Code: `src/HotCargo/TunablesMe
 504. Multiplayer: only the host can change values. The host's change goes to every machine as the `HotCargoTunables` input (requirement 60), so every machine applies it at the same sim tick. Clients see the window read-only. Live reload of the file stays single player only.
 505. Each row with a delayed effect has a tag: next time it shows, next spawned ships, next mission offers, next new system, or new runs only. TUNABLES.md has the full list. The list lives in `TunablesMenu/TunableTiming.cs`, and the mod checks at startup that each entry names a field.
 506. The autotests `menu-live` (single player) and `menu` (co-op) change tunables through the window rows and check the effect in the sim, the file, the rejections, the read-only client and that no desync happens.
+
+## 30. Player ship tactics
+
+Dragon Age style tactics for the players' own ships. Code: `src/HotCargo/ShipAi`. Pure model: `ShipAiModel.cs`. Strings: `mod/shipai/strings.en.rules`. Tunables: the `ShipAi` section.
+
+400. Each player ship can have a tactics list: up to 16 rows of "condition → action". A ship without rows has no tactics state.
+401. **Conditions**: always, my health below X % (health as in requirement 47), my shields below X % (shield charge over shield capacity; a ship without shields never matches), I lost a part of a kind (weapon, thruster, shield, Tech Vault; a destroyed part that is not rebuilt yet), an enemy within R / no enemy within R (edge to edge, enemies on the team radar), an enemy targets me, an ally under attack (an enemy has an attack order on another human ship), my ammo below X % (the supplies that parts burn, as in UX.md V7, without battery, hyperium and tech), my battery below X %, an enemy of a class on radar (smaller or larger by blueprint value, or a station: a ship without thrusters), at least N enemies on radar, I carry Stolen Tech, my Tech Vault is damaged.
+402. **Actions** have three kinds. Target: nearest, weakest (lowest health), strongest (highest blueprint value), the enemy that attacks an ally, the enemy that attacks a ship with a Tech Vault. Move: keep at range (the target at `KiteRangeFraction` of the longest weapon range, edge to edge), close in (to `CloseInDistance`), hold position, retreat to the nearest ally, retreat and repair (move away from the nearest enemy until `RetreatDistance` away; the crew repair as usual), flee and jump (a local FTL jump to the friendly ship furthest from the nearest enemy when the vanilla jump rules allow it, else flee on thrusters), follow my first ship, guard (my first ship, the vault ship or the weakest ally: follow it and attack the enemy that attacks it). Fire, for a weapon group (all weapons or part control group 1 to 10): at will, focus (the part that the vanilla AI values most), at their weapons, at their engines (the nearest such part), point defense only, hold fire. Ties go to the nearest ship, then to the sim order.
+403. With `Auto` on, the ship evaluates its rows every `TickSeconds` (default 1 s) of game time. Rows run from top to bottom. A row matches when its condition holds and its action can run now (a target action needs that target, keep at range and close in need an enemy; retreat to an ally, follow and guard need that ship). The first matching target row picks the target, and the first matching move row picks the movement. With a target and no move row, the ship attacks it with the vanilla attack order.
+404. Each weapon follows the first matching Fire row of its group or of all weapons, else fires at will. Hold fire and point defense only take away the fire permission (point defense weapons keep it under point defense only). Focus, weapons and engines give the weapon a part target on the tactics target; point defense keeps its own targets. A part target that the player set stays.
+405. The tactics text form is `HC1:` and rows joined by `;`, each `Cond[=n]>Act[=n]`. Copy and paste use it. Bad text (an unknown name, a missing or out-of-range number, more than 16 rows) is refused with a message and changes nothing.
+406. Presets are starting rows that the player can change: Aggressive, Defensive, Sniper, Escort, Vault Guard (`ShipAiModel.PresetRows`).
+407. The rows and the Auto switch are saved with the ship design: `Ship.SaveDesign` writes the nodes `HotCargoTactics` and `HotCargoTacticsAuto`, and `Ship.Load` reads them. The game reads design nodes by name, so a design with tactics loads without the mod (without tactics). The build menu's "Load ship (replace)" copies the tactics of the design to the live ship through the tactics input; a design without tactics keeps the ship's tactics. The live ship's full tactics state is saved in the career save, as the path `HotCargoTactics` of the ship. A co-op join and a resync carry it the same way. A design or a save with bad tactics text loads without tactics and shows the error.
+408. Player orders come first. While the ship has a player order (a command with a player ID) that is not done, the tactics wait and drop their own order and part targets. A move order is done when the ship arrives. The tactics remove only the order that they gave. Auto off, `ShipAi.Enabled` off, or a ship that is no longer a human ship drops the decision the same way. The rows stay.
+409. Every edit (the editor, a paste, a preset, a design load) sends the whole row list and the Auto switch as the MP input `HotCargoShipTactics`. Only a player who can command the ship can change it. The editor shows the sim's rows, so an edit by another player shows in the open window.
+410. **Editor**: Ctrl+K, or the "AI" button in the ships card (one selected own ship), opens a window: the Auto switch, the preset list with Apply, Copy, Paste, Clear, one line per row (condition, its parameter, action, its parameter, up, down, remove) and a status line (off, waiting for a player order, the current target). The number of each row in effect now is green. The window uses the vanilla window, drop list and button styles. Autotests never use the system clipboard.
+411. Determinism: the tactics run in the sim tick (`EventHub.Tick`), walk the ships in sim order, and read only sim state. They give vanilla commands with sim command IDs. The tactics state is part of the ship's integrity hash. They also run after a win, because the career goes on.
+412. Limit: the tactics control only player ships; they are not a vanilla `ShipAI`. A vanilla AI on a player ship would change comms, stasis and ship splits. Revisit if the game adds an autopilot for player ships.
+
+### Wanted and hunted
+
+470. When the players are wanted (vanilla: a faction in the system hunts them with police) and heat reached `WantedWarningMinStage` (default 1, the first stage), a warning shows once: a short message at the top of the screen and a chat line that names the factions and the ways out. Ways out: pay the bounty (hail one of their police ships; the vanilla surrender dialogue offers to pay it), leave the system (wanted belongs to the system), outlast the search timer, or a Wanted event (requirement 473). The warning shows again only after the players stop being both. Wanted alone stays vanilla.
+471. The Wanted trigger: when the warning in requirement 470 shows, a Wanted event opens with chance `WantedEventChance` (default 0.7). It ignores the cooldown and the per-system cap. It does not open while another page waits.
+472. A need can require wanted status (`Wanted = true`). An outcome can clear wanted (`ClearWanted`): every faction in the system stops wanting the players, as a paid bounty does.
+473. Wanted events: A Clean Record (pay 0.4 + 0.01 × heat money units, with a sell-out risk that grows with heat; or pay one crate for a sure clear and heat −5) and Decoy Run (pay 0.5 money units, with a failure risk that grows with heat; or a Sensor Array ghost). Each opens once per run.
