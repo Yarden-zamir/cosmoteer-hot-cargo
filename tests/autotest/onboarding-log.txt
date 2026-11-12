@@ -10,6 +10,7 @@ expect runlog_event == 1
 ev_set Enabled false
 # A new sector. Jump before any fight; combat blocks the jump.
 worlds jumpto hc_trade_hub
+waitfor runlog_sector >= 2 30
 expect runlog_sector == 2
 ev_tostation
 tostation

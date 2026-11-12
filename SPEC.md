@@ -496,7 +496,7 @@ TUNABLES.md lists when each tunable takes effect. Code: `src/HotCargo/TunablesMe
 503. Each change goes through `TunablesFile.Validate` first. An invalid value or text that is not a number is rejected: the window shows the reason in red, and the values in effect and the file stay. A change replaces the tunables of the run and gets a new tunables hash. New stage thresholds re-baseline the started stages like a system entry: a stage at or below the current heat counts as started and spawns nothing.
 504. Multiplayer: only the host can change values. The host's change goes to every machine as the `HotCargoTunables` input (requirement 60), so every machine applies it at the same sim tick. Clients see the window read-only. Live reload of the file stays single player only.
 505. Each row with a delayed effect has a tag: next time it shows, next spawned ships, next mission offers, next new system, or new runs only. TUNABLES.md has the full list. The list lives in `TunablesMenu/TunableTiming.cs`, and the mod checks at startup that each entry names a field.
-506. The autotests `menu-live` (single player) and `menu` (co-op) change tunables through the window rows and check the effect in the sim, the file, the rejections, the read-only client and that no desync happens.
+506. The autotests `tunablesmenu-live` (single player) and `tunablesmenu` (co-op) change tunables through the window rows and check the effect in the sim, the file, the rejections, the read-only client and that no desync happens.
 
 ## 30. Player ship tactics
 

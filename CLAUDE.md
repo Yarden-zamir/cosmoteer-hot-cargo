@@ -12,13 +12,14 @@ Procedures are skills in `.claude/skills/`:
 ## Git
 
 - Push straight to `main`. No pull requests. Conventional commits.
-- Feature work happens in a worktree of the bare repo (`../.bare`), one branch for each feature. The integrator merges into `main`.
+- Feature work happens in a worktree of the bare repo (`../.bare`), one branch for each feature. The integrator merges into `main` with `scripts/integrate.sh <branch>`: merge, build, unit tests, private-data check, affected autotests, push, install. It pushes only when every step passed.
 - Never credit an AI, model or tool in commits or files.
 - Never commit personal machine data. `scripts/check-private.sh` checks this, and CI runs it.
 
 ## The game
 
 - Cosmoteer 0.30.5a, .NET 10, Windows only. It runs on a Windows PC that `scripts/pc.local.sh` names (`PC_MACHINE`). You work on a Mac.
+- A spec or doc line that says how the vanilla game behaves names the decompiled method or rules file it comes from. Check it there before you build on it.
 - Ground truth for game code: the decompiled game in `../.game/decompiled/Cosmoteer/Cosmoteer/` and `../.game/decompiled/HalflingCore/Halfling/`. Read the definition of a game method before you call or patch it, and match its exact signature.
 - Vanilla rules: `../.game/Data/`. PNG files exist only on the PC.
 - The build publicizes Cosmoteer and HalflingCore, so internal and private members are accessible.
