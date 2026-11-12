@@ -1,0 +1,26 @@
+# Balance (spec 305, BALANCE.md): hunters are never below the main route tier of the sector index, also in a low side system.
+newgame run
+wait 8
+godmode on
+ev_set Enabled false
+# Three jumps to the lowest tier neighbor each time: sector 4, where the main route is tier 1 + 2 x 3 = 7.
+rm_route low
+wait 12
+rm_route low
+wait 12
+rm_route low
+wait 12
+expect sector == 4
+expect balance_hunter_base_tier == 7
+expect balance_hunter_floor_gap >= 1
+log side
+# A real stage response spawns hunters of the route tier (the pool walks down only where it has no ship of that tier).
+stage
+wait 3
+expect hunters >= 1
+expect huntertiermax >= 6
+hunters floor
+# With the switch off, hunters use the system tier again.
+balance_hunters_set RouteTierFloor false
+expect balance_hunter_floor_gap == 0
+quit

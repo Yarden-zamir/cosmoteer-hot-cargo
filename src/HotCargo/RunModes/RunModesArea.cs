@@ -67,8 +67,6 @@ public static class RunModesArea
         };
         // Vanilla difficulty levels without a row in the tables. 0 means the tables cover every vanilla level.
         Autotest.Fields["rm_levels_without_row"] = () => LevelsWithoutRow(R().T.RunModes);
-        Autotest.Fields["rm_fametier"] = () => R().Mode.GetCurrentFameTitle().WantedPoliceTier;
-        Autotest.Fields["rm_famebonus"] = () => Difficulty.FameTierBonus(R());
         Autotest.Fields["ironman"] = () => R().Mode.IsIronmanModeEnabled ? 1 : 0;
         Autotest.Fields["ironmansave"] = () => File.Exists(R().Mode.IronmanSavePath) ? 1 : 0;
         Autotest.Fields["lastsave"] = () => R().Game.LastSaveFile is { } f && File.Exists(f) ? 1 : 0;
@@ -137,7 +135,7 @@ public static class RunModesArea
         };
         // rm_ironman_save: saves the career to its Ironman save, like an Ironman autosave. Test only.
         Autotest.Commands["rm_ironman_save"] = _ => { var run = R(); run.Game.SaveAs(run.Mode.IronmanSavePath); Autotest.Wait(2); };
-        RegisterFameProbe();
+        RegisterRoute();
     }
 
     static long BaseTechValue(Run run)
@@ -159,8 +157,7 @@ public static class RunModesArea
         float progress = WaveModel.Progress(run.State.SectorIndex, run.T.Journey.RunSectorCount);
         float shipFactor = rows.Aggregate(1f, (f, row) => f * row.HunterShips);
         int ships = Math.Max(1, (int)MathF.Round(WaveModel.ShipCount(r.ShipCount, r.EarlyScale, progress) * shipFactor, MidpointRounding.AwayFromZero));
-        int fame = run.T.RunModes.FameTitleTiers ? Difficulty.FameTierBonus(run) : 0;
-        int tier = run.CurrentTier + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + rows.Sum(row => row.HunterTiers) + fame;
+        int tier = Hunters.HunterSpawner.BaseTier(run) + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + rows.Sum(row => row.HunterTiers);
         return (ships, tier);
     }
 
@@ -198,7 +195,7 @@ public static class RunModesArea
             var r = s;
             float progress = WaveModel.Progress(run.State.SectorIndex, run.T.Journey.RunSectorCount);
             int actualShips = run.Pressure().Ships(WaveModel.ShipCount(r.ShipCount, r.EarlyScale, progress));
-            int actualTier = run.CurrentTier + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + Difficulty.ExtraHunterTiers(run);
+            int actualTier = Hunters.HunterSpawner.BaseTier(run) + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + Difficulty.ExtraHunterTiers(run);
             Autotest.Check(actualShips == ships && actualTier == tier, $"{label}: {s.Name} {ships} ships of tier {tier} (actual {actualShips} of tier {actualTier})");
             return $"{s.Name} {ships}xt{tier}";
         });
@@ -237,49 +234,9 @@ public static class RunModesArea
         Log.Info($"AUTOTEST RUNMODES fees: {offers} paid offers, stored {before}, re-rolled {after}, ratio {_feeRatio:0.###}");
     }
 
-    /// <summary>
-    /// Spec 687: the fame title probe. rm_missions gives the fame of typical missions with the vanilla fame cap of the system tier;
-    /// rm_fame logs the fame title tier and the Strike tier with the prototype off and on. rm_route jumps along the main route.
-    /// </summary>
-    static void RegisterFameProbe()
+    /// <summary>rm_route jumps along the main route, or to the lowest tier neighbor (side systems), for tests of hunter tiers.</summary>
+    static void RegisterRoute()
     {
-        // rm_missions <count> [std fame per mission, default 3.4 (BALANCE.md median)]: one vanilla FameReward per mission, with the cap
-        // of the system tier. The cap of tier T is the fame of fame title T (FameTitles[T].Fame = TIER_TABLES MaxFame of tier T).
-        Autotest.Commands["rm_missions"] = arg =>
-        {
-            var run = R();
-            var a = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            int count = int.Parse(a[0], CultureInfo.InvariantCulture);
-            float perMission = a.Length > 1 ? float.Parse(a[1], CultureInfo.InvariantCulture) : 3.4f;
-            int tier = run.CurrentTier;
-            var titles = run.Mode.Rules.FameTitles;
-            int cap = titles[Math.Clamp(tier, 0, titles.Length - 1)].Fame;
-            int fame = (int)MathF.Round(perMission * GameData.StandardMissionFame(tier));
-            for (int i = 0; i < count; i++) new FameReward(fame, cap).GiveReward(run.Game);
-        };
-        // rm_sector <missions>: logs the FAME line on arrival and after each of the missions (3.4 standard mission fame each).
-        Autotest.Commands["rm_sector"] = arg =>
-        {
-            int missions = int.Parse(arg, CultureInfo.InvariantCulture);
-            int sector = R().State.SectorIndex;
-            Autotest.Commands["rm_fame"]($"s{sector} m0");
-            for (int i = 1; i <= missions; i++)
-            {
-                Autotest.Commands["rm_missions"]("1");
-                Autotest.Commands["rm_fame"]($"s{sector} m{i}");
-            }
-        };
-        Autotest.Commands["rm_fame"] = arg =>
-        {
-            var run = R();
-            var strike = run.T.Hunters.Stages[^1];
-            float progress = WaveModel.Progress(run.State.SectorIndex, run.T.Journey.RunSectorCount);
-            int baseOffset = WaveModel.TierOffset(strike.TierOffset, strike.EarlyTierReduction, progress);
-            int bonus = Difficulty.FameTierBonus(run);
-            Log.Info($"AUTOTEST FAME {arg}: sector={run.State.SectorIndex} tier={run.CurrentTier} fame={run.Mode.PlayerFame} " +
-                     $"titleTier={run.Mode.GetCurrentFameTitle().WantedPoliceTier} bonus={bonus} strikeTierOff={run.CurrentTier + baseOffset} " +
-                     $"strikeTierOn={run.CurrentTier + baseOffset + bonus}");
-        };
         // rm_route [low]: jumps to the unvisited neighbor with the highest low tier (the main route), or the lowest with "low". No fuel.
         Autotest.Commands["rm_route"] = arg =>
         {

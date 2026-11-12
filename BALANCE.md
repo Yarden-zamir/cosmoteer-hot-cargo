@@ -90,7 +90,7 @@ Heat sources and sinks in one sector (8 units held, multiplier 1.2, after the ch
 - Measured run map (`maptiers`): by jump distance the low tiers are 1 | 1–3 | 3–5 | 6–7 | 9 | 10–11 | 10–12 | 9–12. The main route reaches tier 12 after 6 jumps. `HotCargoTierCap` holds for all normal systems.
 - **Bug:** faction home systems (tier 13 or more) keep their tier and can sit 2 jumps from the start. A short visit raised the peak tier from 5 to 13 and so the tech value four-fold (and the Buyer score with it). **Change:** the peak tier counts a system only up to start tier + 2 × (sector index − 1) (requirement 303). A home system stays dangerous: its hunters use its own tier.
 - The new economy keeps a fleet of tier T + 1 affordable in each sector (income about 2.2 × TVM(T), fleet step about 0.5 to 0.75 × TVM(T)), so the +2 tier step per jump fits.
-- **Danger at the Buyer:** hunters use the tier of the current system. A player who takes low side routes can meet the Buyer in a tier 9 or 10 system. That run is easier, and the score is lower (the peak tier sets the tech value). No change; see open questions.
+- **Danger at the Buyer:** hunters used the tier of the current system, so a player who took low side routes met weak hunters late, and could meet the Buyer in a tier 9 or 10 system. **Change:** hunters (every stage response and strike wave) start from at least the main route tier of the sector index, the same route tier as the peak tier cap, up to the final sector tier (`Hunters.RouteTierFloor`, requirement 305). Missions in a low side system still pay its lower tier, and the peak tier (so the tech value and the score) stays low, so a side route is now the harder and poorer path, as in FTL.
 
 ### 7. Hunter bounty
 
@@ -111,6 +111,7 @@ Heat sources and sinks in one sector (8 units held, multiplier 1.2, after the ch
 | `Chains.StationChance` | 1 | 0.6 | 160 |
 | `Chains.MaxNewChainsPerSystem` (new) | no limit | 2 | 160 |
 | `Hunters.MinFuel` | 40 | 60 | 192 |
+| `Hunters.RouteTierFloor` (new) | system tier | at least the route tier of the sector index | 305 |
 | Hyperium price | 50 | 150 | 300 |
 | Hyperium stack | 20 | 10 | 300 |
 | Station fuel stock (typed, untyped) | 80–90 %, 0–10 % | 25–40 %, 0–2 % | 300 |
@@ -127,6 +128,6 @@ Heat sources and sinks in one sector (8 units held, multiplier 1.2, after the ch
 
 ## Open questions
 
-1. Hunter tier at the Buyer: use the system tier (now), or a floor of the main route tier for the sector index (FTL style), so that a low side route does not make the end easy?
+1. Resolved: hunters use a floor of the main route tier (requirement 305). The fame title prototype of run modes is removed.
 2. Co-op: rewards split between players, but heat and hunter counts do not. Telemetry should show if co-op needs a higher `RewardScale`.
 3. The model assumes 6 missions in 17.5 minutes. Telemetry should give the real mission time and the real share of base attacks (the biggest fame and heat).
