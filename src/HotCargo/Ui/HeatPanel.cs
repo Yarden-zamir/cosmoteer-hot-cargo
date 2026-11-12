@@ -136,15 +136,20 @@ sealed class HeatPanel : LayoutBox
     }
 
     /// <summary>
-    /// Spec 449: where the fleet tech is, under the total. In co-op the local player's share when other players hold some too,
-    /// and the units in derelict ships. Empty when the total says it all.
+    /// Spec 449: where the tech is, under the total. Inside the total: the local player's share in co-op (when others hold some too)
+    /// and the units in derelict ships. Outside it: crates in space and tech that hunters hold. Empty when the total says it all.
     /// </summary>
     static string TechSplit(Run run, int total)
     {
-        var (mine, derelict) = Vaults.Split(run.Game.Sim, run.Game.LocalPlayerIndex);
-        var parts = new List<string>(2);
+        var sim = run.Game.Sim;
+        var (mine, derelict) = Vaults.Split(sim, run.Game.LocalPlayerIndex);
+        int crates = Vaults.CrateUnits(sim);
+        int hunters = run.State.Tech.HunterHeld.Sum(h => h.Units);
+        var parts = new List<string>(4);
         if (run.IsMultiplayer && mine != total) parts.Add(UxKit.Format("TechYouFmt", mine));
         if (derelict > 0) parts.Add(UxKit.Format("TechDerelictFmt", derelict));
+        if (crates > 0) parts.Add(UxKit.Format("TechCratesFmt", crates));
+        if (hunters > 0) parts.Add(UxKit.Format("TechHuntersFmt", hunters));
         return parts.Count == 0 ? "" : $"\n<gray>{string.Join(", ", parts)}</gray>";
     }
 

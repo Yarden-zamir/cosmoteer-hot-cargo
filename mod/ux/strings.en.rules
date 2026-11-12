@@ -10,6 +10,8 @@ HotCargoUx
 	TechFmt = "<fame_color>{0}</fame_color> tech   <money>{1}</money> <gray>each</gray>"
 	TechYouFmt = "you hold {0}"
 	TechDerelictFmt = "{0} in a derelict ship"
+	TechCratesFmt = "+{0} in crates"
+	TechHuntersFmt = "hunters hold {0}"
 	StatusWonFmt = "DELIVERED   score {0}"
 	StatusLost = "TECH LOST"
 	StatusHeatOff = "Heat is off"

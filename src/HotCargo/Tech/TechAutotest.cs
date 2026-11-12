@@ -80,13 +80,9 @@ static class TechAutotest
         Autotest.Fields["vaultsbusy"] = () => Vaults.HumanShips(Active().Game.Sim).Sum(s => s.OptionalConstructionManager is not { } cm ? 0
             : cm.QueuedPartConstructions.Count(q => q.Part.Rules.ID == Vaults.VaultId) + cm.QueuedPartDeconstructions.Count(q => q.Part.Rules.ID == Vaults.VaultId));
         // The fleet count plus tech crates in space: no tech may vanish in a move.
-        Autotest.Fields["techall"] = () =>
-        {
-            var sim = Active().Game.Sim;
-            int crates = 0;
-            for (int i = 0; i < sim.Nuggets.Count; i++) if (sim.Nuggets[i].ResourceType == Vaults.TechId) crates += sim.Nuggets[i].Quantity;
-            return Active().State.FleetTech + crates;
-        };
+        Autotest.Fields["techall"] = () => Active().State.FleetTech + Vaults.CrateUnits(Active().Game.Sim);
+        // The heat panel names the crate units under the total (spec 449).
+        Autotest.Fields["panelcrates"] = () => Ui.HeatPanel.TechText.Contains(Ux.UxKit.Format("TechCratesFmt", Vaults.CrateUnits(Active().Game.Sim))) ? 1 : 0;
         Autotest.Fields["vaultunits"] = () => Active().Game.Sim.Ships.AllShips.Sum(Vaults.ShipTech);
         Autotest.Fields["derelicttech"] = () => Vaults.Split(Active().Game.Sim, Active().Game.LocalPlayerIndex).Derelict;
         Autotest.Fields["mytech"] = () => Vaults.Split(Active().Game.Sim, Active().Game.LocalPlayerIndex).Player;
@@ -94,7 +90,7 @@ static class TechAutotest
         Autotest.Fields["vaultminhealth"] = () => Vaults.HumanShips(Active().Game.Sim).SelectMany(Vaults.VaultParts).Where(p => !p.IsUnderConstruction).Min(p => (int?)p.Health) ?? -1;
         // The heat panel tech line shows the fleet total (1), and the derelict part (spec 449).
         Autotest.Fields["paneltotal"] = () => Ui.HeatPanel.TechText.StartsWith(Ux.UxKit.Format("TechFmt", Active().State.FleetTech, Active().TechValue().ToString("N0"))) ? 1 : 0;
-        Autotest.Fields["panelderelict"] = () => Ui.HeatPanel.TechText.Contains(string.Format(Ux.UxKit.Format("TechDerelictFmt", "{0}"), Vaults.Split(Active().Game.Sim, Active().Game.LocalPlayerIndex).Derelict)) ? 1 : 0;
+        Autotest.Fields["panelderelict"] = () => Ui.HeatPanel.TechText.Contains(Ux.UxKit.Format("TechDerelictFmt", Vaults.Split(Active().Game.Sim, Active().Game.LocalPlayerIndex).Derelict)) ? 1 : 0;
         // The blip of the first derelict ship with tech shows "TECH n" (spec 444, 449).
         Autotest.Fields["derelicttag"] = () =>
         {

@@ -21,6 +21,7 @@ expect tech == 6
 expect vaultunits == 6
 expect techcrates == 2
 expect paneltotal == 1
+expect panelcrates == 1
 # The ship becomes a derelict: the tech still counts, the loss timer stays off, the panel and the blip say where it is.
 tech derelict
 wait 2

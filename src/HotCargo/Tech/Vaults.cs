@@ -38,6 +38,15 @@ public static class Vaults
         return stored + carried;
     }
 
+    /// <summary>Spec 449: tech in crates (nuggets) in space. Not in the fleet count: crew must bring it back.</summary>
+    public static int CrateUnits(SimRoot sim)
+    {
+        int units = 0;
+        for (int i = 0; i < sim.Nuggets.Count; i++)
+            if (sim.Nuggets[i].ResourceType == TechId) units += sim.Nuggets[i].Quantity;
+        return units;
+    }
+
     /// <summary>Spec 449: the vault tech of one player's ships, and the vault tech on derelict ships. For the heat panel.</summary>
     public static (int Player, int Derelict) Split(SimRoot sim, int playerIndex)
     {
