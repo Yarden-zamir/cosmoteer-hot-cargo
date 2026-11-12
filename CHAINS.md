@@ -53,7 +53,7 @@ The content files are the source of truth: `mod/chains/chains.rules` (chains, st
 
 ### Presentation
 
-- Comms: a chain stage offer is named "[Chain] <chain title>: <stage title>" with "[Chain]" in gold. Its description starts with "So far:" and the last story lines. Its reward list has a gold "Story chain, part N" line.
+- Comms: a chain stage offer is named "[Chain] <chain title>: <stage title>" with "[Chain]" in gold. Its description is the stage brief: what to do, then the catch. Its reward list has a gold "Story chain, part N" line; its tooltip shows "So far:" and the last story lines.
 - The comms mission list and the mission log group chain stages in their own category, "Story Chains".
 - Chain pages and results use the event window. A result that leads to a page at the station shows above that page, so the window goes straight on.
 
