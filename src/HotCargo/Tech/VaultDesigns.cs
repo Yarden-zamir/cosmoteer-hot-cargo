@@ -32,16 +32,27 @@ static class VaultDesigns
             Log.Info($"AUTOTEST shipcheck {file.FilePath}: legal={_checkPassed} vault capacity={_checkVaults}");
             if (!_checkPassed) _ = Halfling.Gui.Dialogs.OneButtonDialog.Show(Cosmoteer.Localization.Strings.GetText("GameSetupScreen/InvalidShip"));
         };
-        // vaultbuild preset|vanilla N: loads starter ship N into the sim next to the player ship, builds vaults (spec 441) and removes it. Headless, no save.
+        // vaultbuild preset|vanilla N: loads starter ship N into the sim next to the player ship and builds vaults (spec 441).
+        // Then it runs PowerUpSeconds like vaultdesigns, records whether the ship still matches its blueprint, and removes it. Headless, no save.
         Autotest.Commands["vaultbuild"] = arg =>
         {
             var game = Autotest.Game ?? throw new InvalidOperationException("vaultbuild needs a running game");
             var file = StarterFile(arg);
             var (ship, line) = Build(new Batch(game, "", "", NewGameCheck.RequiredUnits(coop: false), new(), []), (string)file.FilePath);
-            _built = ship is null ? 0 : ship.BlueprintParts.Count(p => p.Rules.ID == Vaults.VaultId);
-            if (ship is not null) game.Sim.Ships.Remove(ship, dispose: true, handleLostShip: false);
             Log.Info($"AUTOTEST vaultbuild {file.FilePath}: {line}");
+            _built = ship is null ? 0 : ship.BlueprintParts.Count(p => p.Rules.ID == Vaults.VaultId);
+            _matches = false;
+            if (ship is null) return;
+            double until = Halfling.App.Clock.Time.Seconds + PowerUpSeconds;
+            Autotest.WaitFor(() => Halfling.App.Clock.Time.Seconds >= until, PowerUpSeconds + 30, "vaultbuild power-up", () =>
+            {
+                _matches = ship.PhysicalMatchesBlueprints && ship.OptionalConstructionManager?.HasAnyNonRepairsQueued != true;
+                if (!_matches) Log.Info($"AUTOTEST vaultbuild mismatch: physical [{string.Join(" ", ship.Parts.UnmatchedParts.Select(p => $"{p.Rules.ID}@{p.Location}"))}] " +
+                    $"blueprint [{string.Join(" ", ship.BlueprintParts.UnmatchedParts.Select(p => $"{p.Rules.ID}@{p.Location}"))}] doors={ship.Doors.MatchesBlueprints}");
+                game.Sim.Ships.Remove(ship, dispose: true, handleLostShip: false);
+            });
         };
+        Autotest.Fields["designmatches"] = () => _matches ? 1 : 0;
         Autotest.Fields["vaultsbuiltindesign"] = () => _built;
         Autotest.Fields["shiplegal"] = () => _checkPassed ? 1 : 0;
         Autotest.Fields["shipvaulttech"] = () => _checkVaults;
@@ -73,6 +84,7 @@ static class VaultDesigns
     }
 
     static int _built;
+    static bool _matches;
     static bool _checkPassed;
     static int _checkVaults;
 
@@ -155,6 +167,14 @@ static class VaultDesigns
             int vaults = check.BlueprintParts.Count(p => p.Rules.ID == Vaults.VaultId);
             if (vaults > 0) return (null, $"skipped: has {vaults} vault(s), they hold {NewGameCheck.VaultCapacity(check)} tech");
         }
+        // The design's techs, like a new career ship (CareerGameModeManager.FinishInitNewGame), so no part counts as locked.
+        using (var check = Ship.Load(bytes, name, blueprintsOnly: true))
+        {
+            var techs = new HashSet<Cosmoteer.Modes.Career.TechTree.TechRules>();
+            GameApp.Rules.CareerMode.GetTechsRequired(check, techs);
+            var mode = (Cosmoteer.Modes.Career.CareerGameModeManager)b.Game.Mode;
+            foreach (var t in techs) mode.Techs.UnlockTech(t.ID);
+        }
         var near = Autotest.ActingShip(sim) ?? throw new InvalidOperationException("no player ship to build next to");
         var ship = Ship.Load(bytes, name, b.Game.LocalPlayerIndex, spawnWithCrew: true, builtByPlayer: true, randSeed: 1UL);
         ship.WorldCenter = Autotest.ClearSpotNear(sim, near.DetWorldCenter, near.WorldBoundingRadius + ship.WorldBoundingRadius + 500f, ship.WorldBoundingRadius);
@@ -177,6 +197,14 @@ static class VaultDesigns
     {
         try
         {
+            // The game draws a blueprint in place of the ship when the two differ (Ship.SaveDesignToTextureData). That picture is no use.
+            if (!ship.PhysicalMatchesBlueprints || ship.OptionalConstructionManager?.HasAnyNonRepairsQueued == true)
+            {
+                var physical = ship.Parts.UnmatchedParts.Select(p => $"{p.Rules.ID}@{p.Location}");
+                var blueprint = ship.BlueprintParts.UnmatchedParts.Select(p => $"{p.Rules.ID}@{p.Location}");
+                throw new InvalidOperationException($"the ship no longer matches its blueprint after {PowerUpSeconds} s: physical [{string.Join(" ", physical)}], " +
+                    $"blueprint [{string.Join(" ", blueprint)}], doors match={ship.Doors.MatchesBlueprints}, queued={ship.OptionalConstructionManager?.HasAnyNonRepairsQueued}");
+            }
             // A temporary file first, so a failed save never leaves half a design in place of the old one.
             string tmp = dest + ".tmp";
             Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
