@@ -65,11 +65,12 @@ internal static class StartingVault
         // The game's grab rule names the corridor part: the part that a grabbed part leaves on each tile.
         var corridors = ship.Rules.Parts.Select(p => p.CreatePartPerTileWhenGrabbed).Where(id => id != default).ToHashSet();
         if (corridors.Count == 0) throw new InvalidOperationException("no part rules name a corridor part (CreatePartPerTileWhenGrabbed)");
-        var finder = new BlueprintPathfinder(ship);
-        var reachable = ship.BlueprintParts.Where(p => NeedsCrewAccess(p.Rules)).Select(Info).Where(p => HasCrewPath(finder, p)).ToList();
         var center = Center2(ship);
         var candidates = (GrabStorage(ship) ?? []).Concat(InteriorCells(ship, corridors).OrderBy(c => Distance2(new IntRect(c.X, c.Y, 1, 1), center))
             .ThenBy(c => c.Y).ThenBy(c => c.X)).Distinct().ToList();
+        // After the grab: the storage part is gone, and its corridor tiles carry its crew paths.
+        var finder = new BlueprintPathfinder(ship);
+        var reachable = ship.BlueprintParts.Where(p => NeedsCrewAccess(p.Rules)).Select(Info).Where(p => HasCrewPath(finder, p)).ToList();
         var placed = new List<IntVector2>();
         foreach (var cell in candidates)
         {

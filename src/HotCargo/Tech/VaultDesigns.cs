@@ -114,7 +114,11 @@ static class VaultDesigns
     static string Failed(string file, string dest, Exception ex)
     {
         Log.Info($"vaultdesigns {file}: {ex}");
-        if (Path.GetFullPath(file) != Path.GetFullPath(dest)) File.Copy(file, dest, overwrite: true);
+        if (Path.GetFullPath(file) != Path.GetFullPath(dest))
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+            File.Copy(file, dest, overwrite: true);
+        }
         return $"UNCHANGED (place vaults by hand): {ex.Message}";
     }
 
