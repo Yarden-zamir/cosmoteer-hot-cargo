@@ -42,7 +42,7 @@ static class VaultDropPatch
         // Destruction can run on a worker thread, so the toast and the chat line wait for the next frame.
         Run.OnNextFrame(() =>
         {
-            run.Game.Gui.ShowAreaName(text);
+            Ux.UxKit.CenterText(run.Game, text);
             Ux.UxKit.ChatLine(run.Game, text);
         });
     });

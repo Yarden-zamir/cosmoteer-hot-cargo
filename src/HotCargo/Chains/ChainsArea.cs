@@ -41,6 +41,11 @@ public static class ChainsArea
         return RequireRun().Mode.Missions[id] ?? (ChainRunner.FindStation(RequireSim(), c.StationId)?.GetProvidedMissions()?[id]);
     }
 
+    /// <summary>Test only: the live station ship of the test chain.</summary>
+    internal static Cosmoteer.Ships.Ship TestStationShip() =>
+        (ChainRunner.FindStation(RequireSim(), Test().StationId) ?? throw new InvalidOperationException("the chain station is not in this system")).PhysicalShip
+        ?? throw new InvalidOperationException("the chain station is in stasis; run chain_tostation first");
+
     static void AddAutotest()
     {
         // chain_force <chain id>: gives the station nearest to the fleet that chain, at its first stage. Test only (single player, from a frame).

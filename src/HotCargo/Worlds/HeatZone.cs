@@ -68,7 +68,7 @@ public static class HeatZone
             foreach (var ship in sim.Ships.LocalPlayerShips)
             {
                 float d = Depth(suns, ship.DetWorldCenter);
-                if (d > deepest) { deepest = d; name = ship.Name; }
+                if (d > deepest) { deepest = d; name = Halfling.StringTools.EscapeForXml(ship.Metadata.PlainShipName); }
             }
             if (name is not null)
             {

@@ -63,5 +63,5 @@ static class Ironman
 
     /// <summary>The Ironman line for the win screen, or "" outside Ironman.</summary>
     internal static string WinLine(Run run) =>
-        run.Mode.IsIronmanModeEnabled ? $"\n\n<fame>{Difficulty.Text("IronmanWin")}</fame>" : "";
+        run.Mode.IsIronmanModeEnabled ? $"\n\n<fame_color>{Difficulty.Text("IronmanWin")}</fame_color>" : "";
 }

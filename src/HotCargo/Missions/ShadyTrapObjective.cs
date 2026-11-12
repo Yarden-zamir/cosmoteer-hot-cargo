@@ -197,7 +197,7 @@ internal sealed class ShadyTrapObjective : Objective
         foreach (var a in Ambushers) a.Killed += OnAmbusherKilled;
         Log.Info($"shady trap sprung: {Ambushers.Count} ambushers");
         // UI and audio only, like a hunter wave alert: the players must read the ambush as a setup, not as random pirates.
-        sim.RequireGame().Gui.ShowAreaName(Strings.GetText("HotCargoObjectives/TrapSprung"));
+        Ux.UxKit.CenterText(sim.RequireGame(), Strings.GetText("HotCargoObjectives/TrapSprung"));
         App.Audio.Play(GameApp.Rules.CareerMode.Wanted.WantedAlertSound, AudioGroups.Interface);
         OnDisplayLinesChanged();
     }

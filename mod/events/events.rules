@@ -23,7 +23,7 @@ Events
 		Choices
 		[
 			{
-				Text = "Buy forged transponder codes from a dockside forger."
+				Text = "Buy forged transponder codes."
 				Cost { Money = 0.5 }
 				Outcomes
 				[
@@ -31,7 +31,7 @@ Events
 				]
 			}
 			{
-				Text = "Sell one crate to the getaway crew's fence before you go."
+				Text = "Sell one crate to the getaway crew's fence."
 				Need { Tech = 1 }
 				Cost { Tech = 1 }
 				Outcomes

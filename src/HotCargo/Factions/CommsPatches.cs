@@ -46,7 +46,7 @@ static class CommsPatches
         {
             if (For(__instance) is not { } run || !FactionsArea.Refuses(run, caller, callee)) return;
             string line = RefusalLine(callee);
-            run.Game.Gui.ShowAreaName(line);
+            UxKit.CenterText(run.Game, line);
             UxKit.ChatLine(run.Game, line);
             LastRefusal = line;
             Log.Info($"factions refusal: {line}");
