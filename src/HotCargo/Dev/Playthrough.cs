@@ -6,6 +6,7 @@ using Cosmoteer.Game.Multiplayer;
 using Cosmoteer.Game.Multiplayer.MPInputs;
 using Cosmoteer.Modes.Career.Comms;
 using Cosmoteer.Modes.Career.Missions;
+using Cosmoteer.Modes.Career.Missions.Objectives;
 using Cosmoteer.Modes.Career.TechTree;
 using Cosmoteer.Resources;
 using Cosmoteer.Ships;
@@ -100,6 +101,24 @@ public static class Playthrough
             Game().NetManager.EnqueueInput(new MPEnqueueCommandsInput(jump, append: false, playLocalSound: false));
         };
         Autotest.Fields["pt_ready"] = () => TechAutotest.PlayerShip().Ftl.IsReadyToJump ? 1 : 0;
+        // pt_fight <timeout seconds>: right clicks the mission's nearest live target ship, again every 20 seconds as it moves,
+        // until the mission ends. A target in stasis or out of sight gets a move order to the objective area instead.
+        Autotest.Commands["pt_fight"] = arg =>
+        {
+            double next = 0;
+            Autotest.WaitFor(() =>
+            {
+                var m = _mission ?? throw new InvalidOperationException("no accepted mission");
+                if (m.Completion != CompletionState.InProgress) return true;
+                double now = Halfling.App.Clock.Time.Seconds;
+                if (now >= next)
+                {
+                    next = now + 20;
+                    Engage(m);
+                }
+                return false;
+            }, double.Parse(arg, CultureInfo.InvariantCulture), "the mission to end");
+        };
         Autotest.Commands["pt_status"] = arg => Status(arg);
         // pt_watch <real seconds>: a status line at that interval, so a failed wait shows what the ship did. It only reads.
         Autotest.Commands["pt_watch"] = arg =>
@@ -113,6 +132,24 @@ public static class Playthrough
                 Errors.Guard("playthrough watch", () => Status("watch"));
             };
         };
+    }
+
+    /// <summary>One right click: an attack order on the nearest live target ship of the mission, else a move order to its area.</summary>
+    static void Engage(Mission m)
+    {
+        var ship = TechAutotest.PlayerShip();
+        var targets = new List<DefeatShipsObjective>();
+        m.GetObjectives(targets, activeOnly: true);
+        var target = targets.SelectMany(o => o.TargetShips).Select(t => t.TargetShip)
+            .Where(t => t is { IsJunk: false } && t.Sim == ship.Sim).MinBy(t => t!.DetWorldCenter.DistanceTo(ship.DetWorldCenter));
+        Command order;
+        if (target is not null)
+            order = new AttackCommand(ship, ship.Commands.AllocLocalCommandID(), target, CollisionAvoidanceFlags.All, isTentative: false, isConfirmed: true);
+        else if (m.GetClosestObjective(out _)?.GetAreaLocation(Game()) is { } area)
+            order = new MoveCommand(ship, ship.Commands.AllocLocalCommandID(), area.Center, null, CollisionAvoidanceFlags.All, isTentative: false);
+        else throw new InvalidOperationException($"mission {m.MetatypeID} has no target ship and no area");
+        Game().NetManager.EnqueueInput(new MPEnqueueCommandsInput(order, append: false, playLocalSound: false));
+        Log.Info($"AUTOTEST playthrough: {order.GetType().Name} {(target is null ? "to the mission area" : $"on {target.Metadata.PlainShipName}")}");
     }
 
     static Cosmoteer.Game.GameRoot Game() => Autotest.RequireRun().Game;

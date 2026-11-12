@@ -1,6 +1,7 @@
 using Cosmoteer.Data;
 using Cosmoteer.Game;
 using Cosmoteer.Modes.Career.Missions;
+using Cosmoteer.Modes.Career.Missions.Objectives;
 using Cosmoteer.Ships;
 using Cosmoteer.Ships.Commands;
 using Cosmoteer.Ships.Parts;
@@ -154,11 +155,28 @@ public static class Invariants
     }
 
     /// <summary>
-    /// A mission owns a marker when an objective claims it (IsPOIAssociated) or has its area at the marker. Vanilla bounty
-    /// objectives only point at their target area by location, so the claim alone misses them.
+    /// A mission owns a marker when an objective claims it (IsPOIAssociated) or names it as its POI (POIDoodadID).
+    /// Vanilla DefeatShips stops its claim while a target is on radar, so the claim alone misses a bounty in a fight.
+    /// The four types with POIDoodadID and the two containers are every such type in the 0.30.5a objectives.
     /// </summary>
     static bool Owns(Mission m, POIDoodad poi) =>
-        m.IsPOIAssociated(poi) || m.Objectives.Any(o => o.GetAreaLocation(m.Game) is { } area && area.Center.DistanceTo(poi.WorldLocation) < 1f);
+        m.IsPOIAssociated(poi) || m.Objectives.SelectMany(Flatten).Any(o => PoiOf(o) is { } id && id.Equals(poi.UniqueID));
+
+    static IEnumerable<Objective> Flatten(Objective o) => o switch
+    {
+        AnyOrderObjective a => a.SubObjectives.SelectMany(Flatten).Prepend(o),
+        SequentialObjective q => q.SubObjectives.SelectMany(Flatten).Prepend(o),
+        _ => [o],
+    };
+
+    static ObjectID? PoiOf(Objective o) => o switch
+    {
+        DefeatShipsObjective d => d.POIDoodadID,
+        ReceiveRewardsObjective r => r.POIDoodadID,
+        ProtectShipsObjective p => p.POIDoodadID,
+        GotoShipObjective g => g.POIDoodadID,
+        _ => null,
+    };
 
     /// <summary>Spec 103, 997: rivals are symmetric. When accepting A dismisses B, accepting B dismisses A.</summary>
     static void RivalsSymmetric(Run run, SimRoot sim)

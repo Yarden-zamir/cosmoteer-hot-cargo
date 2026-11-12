@@ -18,8 +18,7 @@ pt_status station
 pt_accept
 wait 3
 expect pt_mission == 1
-pt_goto mission
-waitfor pt_mission >= 2 480
+pt_fight 600
 pt_status fight
 expect pt_mission == 2
 # Back to the station: sell 1 tech, unlock and build a hyperdrive, buy fuel.
