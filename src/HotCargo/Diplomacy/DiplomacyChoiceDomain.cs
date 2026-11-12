@@ -27,7 +27,7 @@ internal sealed class DiplomacyChoiceDomain : ISharedChoiceDomain
 
     public static (Offer Offer, int Amount) Decode(int option) => ((Offer)(option / Span), option % Span);
 
-    static Ship? Callee(Run run, int serial)
+    internal static Ship? Callee(Run run, int serial)
     {
         if (run.Game.Sim is not { } sim) return null;
         var ship = sim.Ships[new Cosmoteer.Game.ObjectID(unchecked((uint)serial))];
@@ -44,7 +44,6 @@ internal sealed class DiplomacyChoiceDomain : ISharedChoiceDomain
     /// <summary>Open while some human ship can talk with the ship and gets Hot Cargo options.</summary>
     public int OptionCount(Run run, int serial)
     {
-        if (run.State.Diplomacy.Punish?.Serial == serial) return Offers * Span;
         if (Callee(run, serial) is not { } callee || callee.Sim is not { } sim) return 0;
         var career = Situation.Career(sim);
         bool open = sim.Ships.HumanPlayerShips.Any(h => career.CanShipCallShip(h, callee) && DiplomacyHail.Instance.Answers(h, callee));
@@ -53,8 +52,6 @@ internal sealed class DiplomacyChoiceDomain : ISharedChoiceDomain
 
     public bool Apply(Run run, SimRoot sim, int playerIndex, int serial, int option)
     {
-        if (run.State.Diplomacy.Punish is { } punish && punish.Serial == serial)
-            return Deals.Punish(run, sim, playerIndex, Decode(option).Offer);
         if (Callee(run, serial) is not { } callee) return false;
         if (Caller(sim, playerIndex, callee) is not { } caller) { Log.Info($"diplomacy: player {playerIndex} has no ship in comms range of {callee.Metadata.PlainShipName}"); return false; }
         var (offer, amount) = Decode(option);
@@ -65,7 +62,10 @@ internal sealed class DiplomacyChoiceDomain : ISharedChoiceDomain
     public static SharedChoiceInput Pick(Ship callee, Offer offer, int amount) => new(Name, Serial(callee), SharedChoiceAction.Choose, Option(offer, amount));
 }
 
-/// <summary>The punishment page as a multiselect domain (spec 594): its options while the punishment waits, else closed.</summary>
+/// <summary>
+/// The pay-off rows of a hunter page as a multiselect domain (spec 594). The serial is the hunter's ship ID, like the shared choice page.
+/// Open while the hunter takes a pay-off: a hunter that did not leave and was not talked out yet.
+/// </summary>
 internal sealed class DiplomacyMultiDomain : MultiChoice.IMultiChoiceDomain
 {
     public const string Name = "diplomacy";
@@ -73,6 +73,11 @@ internal sealed class DiplomacyMultiDomain : MultiChoice.IMultiChoiceDomain
 
     string MultiChoice.IMultiChoiceDomain.Name => Name;
 
-    public IReadOnlyList<MultiChoice.MultiOption>? Options(Run run, int serial) =>
-        run.State.Diplomacy.Punish is { } p && p.Serial == serial && run.Game.Sim is { } sim ? Quotes.PunishOptions(run, sim) : null;
+    public IReadOnlyList<MultiChoice.MultiOption>? Options(Run run, int serial)
+    {
+        if (DiplomacyChoiceDomain.Callee(run, serial) is not { } hunter || hunter.Sim is not { } sim || !Situation.IsHunter(hunter)) return null;
+        var s = run.State.Diplomacy;
+        if (s.WasUsed(hunter.UniqueID, Offer.PayOff) || s.Leaving.Any(l => l.Ship == hunter.UniqueID)) return null;
+        return Quotes.PayOptions(run, sim);
+    }
 }

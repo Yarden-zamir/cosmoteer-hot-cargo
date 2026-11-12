@@ -52,8 +52,6 @@ static class DiplomacyAutotest
         return (id is { } x ? sim.Ships[x] : null) ?? throw new InvalidOperationException($"no live {name} ship");
     }
 
-    static int PunishSerial() => R().State.Diplomacy.Punish?.Serial ?? throw new InvalidOperationException("no punishment waits");
-
     static Ship Me() => Autotest.ActingShip(Sim()) ?? throw new InvalidOperationException("no player ship");
 
     internal static void Register()
@@ -114,21 +112,24 @@ static class DiplomacyAutotest
         };
         // dip_open <target>: opens the comms window to the target (for screenshots). dip_close closes every comms window.
         Autotest.Commands["dip_open"] = arg => R().Game.Gui.FloatingWindows.AddChild(new CommWindow(R().Game, Me(), Target(arg.Trim())));
-        // dip_pick <option> [value] | dip_unpick <option>: changes the punishment draft through its MP input, like a click on a row.
+        // dip_pick <target> <option> [value] | dip_unpick <target> <option>: changes a hunter's pay-off draft through its MP input, like a click on a row.
         Autotest.Commands["dip_pick"] = arg =>
         {
             var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var option = Enum.Parse<PunishOption>(p[0], ignoreCase: true);
-            R().Game.NetManager.EnqueueInput(new MultiChoice.MultiChoiceInput(DiplomacyMultiDomain.Name, PunishSerial(), (int)option, true, p.Length > 1 ? Int(p[1]) : 0));
+            if (p.Length is < 2 or > 3) throw new InvalidOperationException("dip_pick needs: target option [value]");
+            var option = Enum.Parse<PayOption>(p[1], ignoreCase: true);
+            R().Game.NetManager.EnqueueInput(new MultiChoice.MultiChoiceInput(DiplomacyMultiDomain.Name, DiplomacyChoiceDomain.Serial(Target(p[0])), (int)option, true, p.Length > 2 ? Int(p[2]) : 0));
         };
         Autotest.Commands["dip_unpick"] = arg =>
-            R().Game.NetManager.EnqueueInput(new MultiChoice.MultiChoiceInput(DiplomacyMultiDomain.Name, PunishSerial(), (int)Enum.Parse<PunishOption>(arg.Trim(), ignoreCase: true), false, 0));
-        // dip_punish submit|refuse: the punishment page's buttons, through the shared choice input.
-        Autotest.Commands["dip_punish"] = arg =>
         {
-            var offer = arg.Trim() == "refuse" ? Offer.PunishRefuse : arg.Trim() == "submit" ? Offer.Punish : throw new InvalidOperationException("dip_punish needs: submit | refuse");
-            R().Game.NetManager.EnqueueInput(new SharedChoice.SharedChoiceInput(DiplomacyChoiceDomain.Name, PunishSerial(), SharedChoice.SharedChoiceAction.Choose, DiplomacyChoiceDomain.Option(offer, 0)));
+            var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (p.Length != 2) throw new InvalidOperationException("dip_unpick needs: target option");
+            var option = Enum.Parse<PayOption>(p[1], ignoreCase: true);
+            R().Game.NetManager.EnqueueInput(new MultiChoice.MultiChoiceInput(DiplomacyMultiDomain.Name, DiplomacyChoiceDomain.Serial(Target(p[0])), (int)option, false, 0));
         };
+        // dip_payoff <target>: the pay-off button, through the shared choice input. dip_bluff <target>: the bluff button with its amount now.
+        Autotest.Commands["dip_payoff"] = arg => R().Game.NetManager.EnqueueInput(DiplomacyChoiceDomain.Pick(Target(arg.Trim()), Offer.PayOff, 0));
+        Autotest.Commands["dip_bluff"] = arg => R().Game.NetManager.EnqueueInput(DiplomacyChoiceDomain.Pick(Target(arg.Trim()), Offer.Bluff, Quotes.BluffUnits(R(), Sim())));
         Autotest.Commands["dip_close"] = _ =>
         {
             foreach (var w in R().Game.Gui.FloatingWindows.Children.OfType<CommWindow>().ToList()) Cosmoteer.Game.Gui.Extensions.Unparent(w);
@@ -173,9 +174,9 @@ static class DiplomacyAutotest
                      $"mercs={s.Mercs.Count} leaving={s.Leaving.Count} asks={s.FeeAsks.Count} tech={Situation.VaultTech(Sim())} fleet={R().State.FleetTech}");
         };
 
-        Autotest.Fields["dip_punishment"] = () => R().State.Diplomacy.Punish is null ? 0 : 1;
-        Autotest.Fields["dip_picks"] = () => R().State.Diplomacy.Punish is { } p ? MultiChoice.MultiChoices.Draft(R(), DiplomacyMultiDomain.Name, p.Serial).Count : 0;
-        Autotest.Fields["dip_punishchance"] = () => R().State.Diplomacy.Punish is { } p ? Quotes.PunishCombined(R(), Sim(), MultiChoice.MultiChoices.Draft(R(), DiplomacyMultiDomain.Name, p.Serial)) : 0;
+        // dip_picks and dip_paychance read the pay-off draft of the first hunter (target "hunter").
+        Autotest.Fields["dip_picks"] = () => HunterSpawner.Hunters(Sim()).Any() ? Deals.PayDraft(R(), Target("hunter")).Count : 0;
+        Autotest.Fields["dip_paychance"] = () => HunterSpawner.Hunters(Sim()).Any() ? Quotes.PayOff(R(), Sim(), Target("hunter"), Deals.PayDraft(R(), Target("hunter"))) : 0;
         Autotest.Fields["dip_crew"] = () => R().Game.HumanPlayersIndexes.Sum(Sim().Crew.CountCrewForPlayer);
         Autotest.Fields["dip_pagetoggles"] = () => _pageToggles;
         Autotest.Fields["dip_used"] = () => R().State.Diplomacy.Used.Count;
@@ -218,9 +219,7 @@ static class DiplomacyAutotest
         int player = Autotest.ActingPlayerIndex;
         return offer switch
         {
-            Offer.HandOver => Quotes.HandOver(run, sim, player, target, amount),
-            Offer.Bluff => Quotes.Bluff(run, sim, player, amount),
-            Offer.Deal => Quotes.Deal(run, sim, target, amount),
+            Offer.Bluff => Quotes.Bluff(run, sim, player),
             Offer.DemandSurrender => Quotes.DemandSurrender(run, sim, player, target),
             Offer.OfferSurrender => Quotes.OfferSurrender(run, sim, player, target),
             Offer.Hold => Quotes.Hold(run, sim, target, amount),
