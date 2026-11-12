@@ -18,8 +18,8 @@
 | `TechShipFractionPerGameHour` | 0.10 | 19 |
 | `TechShipFractionPer100Notoriety` | 0.05 | 19 |
 | `NotorietyStep` | 5 | 19 |
-| `HeatPerGameMinute` | 1.2 | 24 |
-| `HeatPerStandardMission` | 1.5 | 25 |
+| `HeatPerGameMinute` | 1.14 | 24 |
+| `HeatPerStandardMission` | 1.425 | 25 |
 | `HeatMultiplierByUnits` | [0.25, 0.4, 0.52, 0.64, 0.76, 0.88, 1.0, 1.1, 1.2] | 26 |
 | `HeatCarryOverFraction` (a switch without a jump) | 0.25 | 28 |
 | `HeatStages` | see section 10 | 30 |
@@ -53,6 +53,7 @@
 | `KiteRangeFraction` | 0.9 | 44 |
 | `PincerAngleDegrees` | 120° | 45 |
 | `FallBackHealthFraction` | 0.35 | 47 |
+| `Hunters.Stages` Warning `ShipCount`, `EarlyScale` | 2, 0.5 | 190 |
 | `Hunters.Stages` Strike `EarlyScale`, `EarlyTierReduction` | 0.67, 1 | 190 |
 | `Hunters.Stages` Strike `Waves`, `WaveGapSeconds` | 3, 45 s | 191 |
 | `Hunters.MinFuel` | 60 | 192 |

@@ -9,7 +9,7 @@ A balance audit of Hot Cargo against vanilla Cosmoteer 0.30.5a, and the tuning t
 - **Measured.** Two game scripts in `tests/balance/` run headless on the PC:
   - `balance-census.txt` follows the main route for 7 sectors. In each system it loads every station, then logs each offer (money and fame in standard mission units, contract terms), the station fuel stock and the map distances.
   - `balance-hunters.txt` spawns 3 hunters at each tier, logs their mass, value and fuel, destroys them and logs the salvage value.
-- **Model.** The script models one run with the measured mission mix: 6 missions and 17.5 minutes per sector on the main route (tiers 1, 3, 5, 7, 9, 11, 12, 12), 8 tech units held, 3 hunters destroyed per sector. The logs are in `tools/balance/logs/`. To refresh:
+- **Model.** The script models one run with the measured mission mix: 6 missions and 17.5 minutes per sector on the main route (tiers 1, 3, 5, 7, 9, 11, 12, 12), 8 tech units held, 1.5 hunters destroyed per sector (the Warning scouts). The logs are in `tools/balance/logs/`. To refresh:
 
 ```
 HOT_CARGO_SLOTS=8 scripts/autotest.sh tests/balance/balance-census.txt 500 > census.log
@@ -61,17 +61,27 @@ Heat sources and sinks in one sector (8 units held, multiplier 1.2, after the ch
 | Source or sink | Rule | Heat per sector |
 |---|---|---|
 | Carried in | a jump removes 75 % (watched relay), 85 % (clear relay) or 90 % (blind) of the heat (requirement 650) | about +25, +15 or +10 |
-| Missions | 6 × 3.4 std fame × 1.5 × 1.2 | +37 |
-| Time | 17.5 min × 1.2 × 1.2 | +25 |
+| Missions | 6 × 3.4 std fame × 1.425 × 1.2 | +35 |
+| Time | 17.5 min × 1.14 × 1.2 | +24 |
 | Contracts | 6 × (flat heat 1.5 + informant 0.75 × 10 % × 15) | +16 |
 | Trail | open weight above 3 | about 0 (a player keeps 2 to 3 open) |
 | Events | outcomes −50 to +25, chosen by the player | about 0 on average |
 | Convoy cover | −8 per completed Convoy Duty (45 % of systems) | −4 on average |
-| **Total at the end of the sector** | | **about 100: the Strike after about 6 missions in 17 minutes** |
+| **Total at the end of the sector** | | **about 96: the Strike after about 6.4 missions in 18.5 minutes** |
 
-- With no missions, the Strike comes after about 50 minutes (from 25 carried heat). A very fast player who picks low-fame missions (bounties, 2.5 std fame) does about 8.
-- The budget is for a watched relay (25 heat on arrival). A clear relay (15) gives about 0.7 more missions before the Strike (6.5), a blind jump (10) about 1.1 more (6.9). Both are earned (a relay without hunters near it, or 1.5 × fuel, a slower spin-up and a damage risk), and they stay inside "about 6, a fast player more". No retune.
-- **Changes:** `HeatPerStandardMission` 15 → **1.5** (per std fame unit). `HeatPerGameMinute` 2 → **1.2**. `EscortHeatChange` −15 → **−8** (the old value was one old mission; it would now be three).
+Heat stages and missions. One typical mission adds about 11.8 heat: 5.8 from fame, 2.7 from its contract, 4.0 from its 2.9 minutes, −0.7 from convoy cover. Missions before a stage = (stage heat − carried heat) ÷ 11.8. The charts in `docs/balance.html` leave out convoy cover, so they show the Strike after 6.0 missions, not 6.4. The jump kind sets the carried heat (requirement 650): a jump from heat 100 keeps 25, 15 or 10.
+
+| Stage (heat) | Watched relay (75 % cut, 25 kept) | Clear relay (85 % cut, 15 kept) | Blind jump (90 % cut, 10 kept) |
+|---|---|---|---|
+| Warning (40) | 1.3 missions, 4 min | 2.1 missions, 6 min | 2.5 missions, 7 min |
+| Hunt (75) | 4.2 missions, 12 min | 5.1 missions, 15 min | 5.5 missions, 16 min |
+| Strike (100) | 6.4 missions, 18.5 min | 7.2 missions, 21 min | 7.6 missions, 22 min |
+| With no missions: Warning, Hunt, Strike | 11, 37, 55 min | 18, 44, 62 min | 22, 48, 66 min |
+
+- Three stages give three clear steps: scouts (Warning), a real fight (Hunt), then repeat waves until the players jump (Strike). Warning is above the highest carried heat (25), so the scouts always come after the players arrive. Hunt starts with the station markup (75, requirement 655).
+- Before the 5 % cut, the Strike came after 6.1, 6.9 and 7.3 missions. The cut gives about 0.3 more missions in each sector. A very fast player who picks low-fame missions (bounties, 2.5 std fame) does about 8.
+- A clear relay and a blind jump are earned (a relay without hunters near it, or 1.5 × fuel, a slower spin-up and a damage risk), and they stay inside "about 6, a fast player more".
+- **Changes:** `HeatPerStandardMission` 15 → **1.5** (per std fame unit). `HeatPerGameMinute` 2 → **1.2**. `EscortHeatChange` −15 → **−8** (the old value was one old mission; it would now be three). Later: both heat rates −5 % (`HeatPerStandardMission` **1.425**, `HeatPerGameMinute` **1.14**), and 3 heat stages in place of 4 (Patrol removed).
 - **Boards.** Each system offers 20 to 26 missions on its station boards (about 4 per station), plus 50 galaxy "visit" offers in a separate list. Hot Cargo adds 4 to 6 of them; the largest share was story chains (2 to 3 per system, one at every station). With 6 missions per sector, a board of about 3 × 6 = 18 to 24 offers is enough choice. **Change:** chains start at 60 % of stations and at most 2 per system (`Chains.StationChance` 1 → 0.6, new `Chains.MaxNewChainsPerSystem` = 2). Measured after: 0 to 2 chains and 3 to 4 Hot Cargo offers per system, 20 to 25 offers in total. Mechanics missions already average under 1 per system (they need asteroids, storms or a single sun). No other cut.
 
 ### 5. Fuel
@@ -83,7 +93,7 @@ Heat sources and sinks in one sector (8 units held, multiplier 1.2, after the ch
 - Measured after, same map seed, before the floor below: stations hold **19 to 300 fuel per system** (was 180 to 1,940). A tier 12 jump of 7.5 LY costs about 33 fuel at full drive efficiency (more with poor drive coverage). A destroyed hunter drops about 30 fuel, a salvaged wreck 60. So late in the run a station sells 1 to 9 jumps, and each hunter kill pays about one jump.
 - **Fuel floor** (requirement 304, `Balance.StationFuelPerMillion` 100, `StationFuelMinimum` 10): every trade station keeps at least one worst-case relay jump for sale: a fleet of the next tier, 10 LY, 70 % drive efficiency. That is 10 fuel at tier 1, 30 at tier 7 and 100 at tier 12. A system has 2 or 3 trade stations (the start 1), so it always sells enough for the next jump, and the random stock adds more. Trade ships do not take the floor away; players can buy all of it. So a run never gets stuck on fuel, and fuel above the floor (an escape, a blind jump, a spare) still comes from hunters, mining and lucky stations.
 - Money is not the limit (a jump costs about 2 % of a mission); the stock is. Hunters and hyperium asteroids are now the best sources above the floor.
-- Factions (requirements 655 and 657): from heat 75, stations charge up to 2 × for fuel, and from heat 90 each station refuses with chance 0.5. A player who stays until heat 90 can lose the floor of a refusing station. Buy the next jump before the Hunt stage.
+- Factions (requirements 655 and 657): from heat 75, stations charge up to 2 × for fuel, and from heat 90 each station refuses with chance 0.5. A player who stays until heat 90 can lose the floor of a refusing station. Buy the next jump before the Hunt stage (75).
 - Hyperium events cost 20 + 5 per tier fuel (80 at tier 12, about 2.5 jumps). That is now a real price. No change.
 
 ### 6. System scaling
@@ -104,8 +114,9 @@ Heat sources and sinks in one sector (8 units held, multiplier 1.2, after the ch
 |---|---|---|---|
 | `Journey.RewardScale` | 2.0 | 1.0 | 4 |
 | `Journey.TechCostScale` (new) | 1 (vanilla) | 2.5 | 301 |
-| `Heat.HeatPerStandardMission` | 15 | 1.5 | 25 |
-| `Heat.HeatPerGameMinute` | 2 | 1.2 | 24 |
+| `Heat.HeatPerStandardMission` | 15 | 1.425 | 25 |
+| `Heat.HeatPerGameMinute` | 2 | 1.14 | 24 |
+| `Heat.Stages` | Warning 25, Patrol 50, Hunt 75, Strike 100 | Warning 40, Hunt 75, Strike 100 | 30 |
 | Heat for fame above the cap | none | uncapped fame heat | 302 |
 | Peak tier | any system tier | at most start tier + 2 × (sector − 1) | 303 |
 | `Missions.EscortHeatChange` | −15 | −8 | 36 |
