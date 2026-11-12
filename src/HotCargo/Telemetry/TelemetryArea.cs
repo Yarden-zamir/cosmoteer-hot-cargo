@@ -106,6 +106,13 @@ public static class TelemetryArea
             }
             Log.Info($"AUTOTEST damagehostiles {fraction}: {n} ships");
         };
+        // shieldplayers on|off: human ship parts lose no health and human crew do not die (TestShield). Test only, single player.
+        Autotest.Commands["shieldplayers"] = arg =>
+        {
+            if (Autotest.RequireRun().IsMultiplayer) throw new InvalidOperationException("shieldplayers is single player only");
+            TestShield.On = arg != "off";
+            Log.Info($"AUTOTEST shieldplayers {TestShield.On}");
+        };
         // telestats: logs the overhead numbers of the session, for reports.
         Autotest.Commands["telestats"] = _ =>
             Log.Info($"TELEMETRY STATS events={Interlocked.Read(ref Stats.Events)} bytes={Interlocked.Read(ref Stats.Bytes)} dropped={Interlocked.Read(ref Stats.Dropped)} " +
