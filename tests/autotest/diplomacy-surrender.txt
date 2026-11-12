@@ -63,6 +63,7 @@ damagehunters 0.3
 wait 1.5
 expect dip_yieldoffers >= 1
 expect dip_hailing >= 1
+dip_dropfuel 1000
 dip_mark
 dip acceptyield fresh
 wait 1
