@@ -1,6 +1,6 @@
 # Tunables in a running game
 
-The settings menu (Esc, "Hot Cargo settings", spec requirements 500 to 506, `spec/29-settings-menu.md`), a change of `tunables.rules` and `scripts/tune.sh` (spec 850 to 853, skill `hot-cargo-tune`) change any tunable while a run is active. This file says when each change takes effect. The in-game tags come from `src/HotCargo/TunablesMenu/TunableTiming.cs`. Keep the two in step.
+The settings menu (Esc, "Hot Cargo settings", spec requirements 500 to 506, `spec/29-settings-menu.md`), a change of `tunables.rules` and `scripts/tune.sh` (spec 850 to 854, skill `hot-cargo-tune`) change any tunable while a run is active. This file says when each change takes effect. The in-game tags come from `src/HotCargo/TunablesMenu/TunableTiming.cs`. Keep the two in step.
 
 Every change replaces the tunables of the run at once (single player) or at the same sim tick on every machine (multiplayer, host only: the host's window, the host's file or `tune.sh` on the host's PC). "Applies" says when the game reads the new value.
 
@@ -20,11 +20,11 @@ Fields not listed in the "Not now" column apply Now.
 | Heat | (none) | `HeatCarryOverFraction` is read at each switch without a jump. `Stages`: new thresholds re-baseline the started stages (spec 503). A stage below the current heat spawns nothing; a stage above it waits for heat. |
 | Tech | `StartingTechUnits`: new runs only | The tech value fields apply to the next price query. An open event page keeps the tech value of its opening. |
 | Journey | `RunSectorCount`: next new system | Fixed in this change: the Buyer spawns in the first new system with sector index `RunSectorCount` or more, once per run (`RunState.BuyerSpawned`). Before, a value below the current sector meant no Buyer. The galaxy size is a rules value (restart). `RewardScale` applies to payouts at once, but contract fees keep the scale of their offer. |
-| Hunters | `Stages` (all fields), `SpawnDistanceMin`, `SpawnDistanceMax`, `WaveArcDegrees`, `ShipFactions`, `ShipTags`, `ShipNamePrefix`, `MaxLiveHunters`, `MinFuel`, `RouteTierFloor`: next spawned ships | A stage that started keeps the count, tier and timing of its later waves (saved in `PendingWave`). `StrikeWaveIntervalSeconds` and `VaultTargetFactor` apply now. |
+| Hunters | `Stages` (all fields), `SpawnDistanceMin`, `SpawnDistanceMax`, `WaveArcDegrees`, `ShipFactions`, `ShipTags`, `ShipNamePrefix`, `MaxLiveHunters`, `MinFuel`, `RouteTierFloor`: next spawned ships | The waiting groups of a stage that started take the new count and tier at once and keep their arrival times (spec 854). `StrikeWaveIntervalSeconds` and `VaultTargetFactor` apply now. |
 | Missions | `ShadyRewardFactor`, `ShadyTrapSurvivalReward`, `EscortHeatChange`: next mission offers | The rewards are part of the offer. The trap chances roll on arrival, so they apply now, also to accepted offers. |
 | Mechanics | `<Mission>Chance`: next new system. `Siege`/`Guard`/`Scan` ship counts, tiers and tags, `IntensiveExtraShips`, `IntensiveExtraTier`: next spawned ships | The chances go into the spawner rules before a system generates. Mission clocks, radii, `ScanRange`, `DeliveryRadius` and `SurveyScanSeconds` apply now, also to missions in progress. Known limit: a mission HUD line can show an old range until its own counter changes. |
 | Tactics | (none) | Every AI check reads the values. A deadline that a ship set (fall back, call and regroup cooldowns, assist time) keeps its length. Personalities, trait weights, `PersonalitiesOff` and the `Profile` score ends apply at the next AI check (spec 361-363); a ship measures its build again within `ProfileRefreshSeconds`. |
-| Events | `ArrivalEventChance`, `ArrivalDelaySeconds`, `StationEventChance`, `CourierChance`: next new system. `StartDelaySeconds`, `RelicEnabled`, `RelicMinSector`: new runs only. `PauseOnEvent`: next time it shows | `MoneyScale` applies at once, also to an open event page. The chances are read at the roll: the arrival roll comes `ArrivalDelaySeconds` after the entry, the station and courier rolls at the first station that the fleet comes near in a system visit. A system that rolled keeps its result. |
+| Events | `ArrivalDelaySeconds`: next new system. `StartDelaySeconds`, `RelicEnabled`, `RelicMinSector`: new runs only. `PauseOnEvent`: next time it shows | `MoneyScale` applies at once, also to an open event page. The chances are read at the roll: the arrival roll comes `ArrivalDelaySeconds` after the entry, the station and courier rolls at the first station that the fleet comes near in a system visit. A system that rolled keeps its result. |
 | Contracts | `FeeChance`, `FeeMin`, `FeeMax`, `PaidBonusFactor`, `MoneyRoundTo`, `RivalPairChance`, `InformantShare`, `InformantChanceMin`, `InformantChanceMax`, `InformantDelayMin`, `InformantDelayMax`, `ExcludedCategories`, `Metatypes`: next mission offers | The terms of an offer are saved within a second of its first scan (spec 100). Fixed in this change: `RivalsEnabled` off now also stops the rival groups that offers got before the switch. The trail, `InformantHeat` and `InformantShips` apply now. |
 | Chains | `StationChance`, `MaxNewChainsPerSystem`, `LaterDelaySeconds`: next new system. `StoryLines`: next time it shows | `Enabled` and `PageTriggerDistance` apply now. |
 | SharedChoice | (none) | `VoteTimeoutSeconds` applies to open votes at once: the timeout counts from the first vote. |
@@ -39,10 +39,10 @@ Fields not listed in the "Not now" column apply Now.
 
 ## Why some values stay delayed
 
-A value stays delayed only when an earlier change would be wrong or would break co-op. The live pass for spec 850 to 853 kept these:
+A value stays delayed only when an earlier change would be wrong or would break co-op. The live pass for spec 850 to 854 kept these:
 
 - Next spawned ships: ships in space keep their build, tier and fuel. Changing a live ship mid-fight would be a new spawn, not a tuning change.
-- `Hunters.Stages`: a stage that started keeps the plan of its later waves (`PendingWave`). A stage starts once per system, so a new count or tier shows at the next stage start, the next system or the next Strike wave. Replanning queued waves would change a wave that the alert already announced.
+- `Events.ArrivalDelaySeconds`: the arrival roll time is set at the system entry.
 - Next mission offers: an offer keeps its terms, so the price that the offer showed is the price that the players pay.
 - Next new system: the roll for a system happened (missions, events, chains, the arrival line). Rolling again would change a system that the players already see.
 - New runs only: the value sets up the run start (starting vault, start event, relic sector).

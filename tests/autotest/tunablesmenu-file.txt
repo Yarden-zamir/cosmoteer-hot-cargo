@@ -44,4 +44,20 @@ wait 2
 tuneresult has ok
 menu value Hunters.Stages[2].ShipCount == 3
 menu value Heat.HeatPerGameMinute == 1.2
+# Waiting hunter groups follow new stage values (spec 854): 3 Strike groups, one now and two waiting; Waves 2 leaves one waiting.
+godmode on
+tunerequest set Events.Enabled false | set Hunters.Stages[3].WaveGapSeconds 60
+wait 2
+tuneresult has ok
+sectorindex 8
+spawnstage Strike
+wait 1
+expect hunterspending == 2
+tunerequest set Hunters.Stages[3].Waves 2
+wait 2
+tuneresult has ok
+expect hunterspending == 1
+tunerequest set Hunters.Stages[3].Waves 1
+wait 2
+expect hunterspending == 0
 quit
