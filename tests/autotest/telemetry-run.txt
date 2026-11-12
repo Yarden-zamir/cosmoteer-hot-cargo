@@ -73,20 +73,19 @@ wait 20
 damagehostiles 0.05
 wait 20
 log system3
-# System 4: up to Strike, a second sale, and leave while the strike waves run.
+# System 4 (tier 7): a starter ship does not outlast a tier 7 Hunt, so it sells at once and leaves at Patrol.
 jump
 pause off
-wait 15
-heat 70
-wait 20
+wait 5
 damagehostiles 0.05
-wait 20
-damagehostiles 0.05
-wait 20
 tostation
 wait 3
 tech sell 1
-wait 30
+wait 25
+heat 25
+wait 15
+damagehostiles 0.05
+wait 15
 log system4
 # System 5: the Buyer and the win.
 jump
