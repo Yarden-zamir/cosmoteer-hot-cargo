@@ -1,5 +1,5 @@
-# Diplomacy dialogs (spec 560 to 588): the hunter demand page with its slider, a friendly ship's topics, the hold and hire
-# sub-pages with sliders, a mercenary page and a ship marker that shows held tech. Main slot only (needs graphics).
+# Diplomacy dialogs (spec 560 to 597): the hunter demand page with a slider in each option row, the punishment page (multiselect),
+# a friendly ship's rows, a holder and a mercenary page. Main slot only (needs graphics).
 render on
 newgame run
 wait 10
@@ -17,42 +17,50 @@ wait 2
 dip_near hunter
 pause on
 wait 1
-dip_slider hunter units 3
+dip_slider hunter handover 3
+dip_slider hunter bluff 2
+dip_slider hunter deal 1
 dip_open hunter
 wait 2
 screenshot diplomacy-demand
 dip_close
 wait 1
 pause off
+dip_set HandOverChanceMin 5
+dip handover hunter 2
+wait 1
+dip_pick talk
+dip_pick money 12
+dip_pick crew 2
+wait 1
+pause on
+dip_open hunter
+wait 2
+screenshot diplomacy-punish
+dip_close
+wait 1
+pause off
+dip_punish refuse
+wait 1
+killhunter 0
+wait 3
 dip_spawn friend 250
 wait 2
 pause on
+dip_slider friend hold 2
+dip_slider friend hire 12
 dip_open friend
 wait 2
 screenshot diplomacy-friend
 dip_close
 wait 1
-dip_slider friend hold 2
-dip_open friend hold
-wait 2
-screenshot diplomacy-hold
-dip_close
-wait 1
-dip_slider friend hire 12
-dip_open friend hire
-wait 2
-screenshot diplomacy-hire
-dip_close
-wait 1
 pause off
-killhunter 0
-wait 3
 dip_set HoldChanceBase 5
 dip_set FeeChanceBase -5
 dip hold friend 2
 wait 2
 pause on
-dip_open friend main
+dip_open friend
 wait 2
 screenshot diplomacy-held
 dip_close
@@ -65,7 +73,7 @@ dip_spawn friend 250
 wait 3
 pause on
 dip_slider friend merc 4
-dip_open friend merc
+dip_open friend
 wait 2
 screenshot diplomacy-merc
 dip_close

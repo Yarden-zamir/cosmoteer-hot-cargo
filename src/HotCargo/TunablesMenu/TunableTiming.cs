@@ -53,6 +53,7 @@ public static class TunableTiming
         ["HunterTunables.ShipNamePrefix"] = Applies.NextSpawn,
         ["HunterTunables.MaxLiveHunters"] = Applies.NextSpawn,
         ["HunterTunables.MinFuel"] = Applies.NextSpawn,
+        ["DiplomacyTunables.PunishSeconds"] = Applies.NextUse,
         ["MissionTunables.ShadyRewardFactor"] = Applies.NextOffer,
         ["MissionTunables.ShadyTrapSurvivalReward"] = Applies.NextOffer,
         ["MissionTunables.EscortHeatChange"] = Applies.NextOffer,

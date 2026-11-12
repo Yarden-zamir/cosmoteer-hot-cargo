@@ -15,8 +15,8 @@ wait 2
 expect dip_answers == 1
 dip_page friend
 expect dip_pagebuttons >= 2
-dip_page friend hold
-expect dip_pageslider == 1
+# Hold and help each have their own slider in their row (spec 591).
+expect dip_pageslider == 2
 # Hold for free, then the return without betrayal. Held tech counts in the fleet tech.
 dip_set HoldChanceBase 5
 dip_set FeeChanceBase -5
@@ -78,8 +78,8 @@ godmode on
 dip_spawn friend 300
 wait 2
 dip_set HireChanceBase 5
-dip_page friend hire
-expect dip_pageslider == 1
+dip_page friend
+expect dip_pageslider >= 1
 dip hire friend 0
 wait 1
 expect dip_hires == 1
@@ -99,14 +99,31 @@ dip_spawn friend 250
 wait 4
 expect dip_friendmerc == 1
 expect dip_hailing >= 1
-dip_page friend merc
-expect dip_pageslider == 1
+dip_page friend
+expect dip_pageslider >= 1
 dip_mark
 dip merc friend 2
 wait 1
 expect dip_friendhired == 1
 expect dip_moneyspent > 0
 dip_log merc
+# A military ship of the corporation's ally faction never holds tech (spec 574). A friendly military ship answers only while it has
+# a real option: after its help offer is used, it keeps the vanilla behavior (spec 560).
+dip_set MercChance 0
+dip_set HoldChanceBase 5
+dip_spawn ally 300
+wait 2
+expect dip_answers == 1
+dip_page friend
+expect dip_pageslider == 1
+dip hold friend 2
+wait 1
+expect dip_held == 2
+dip_set HireChanceBase -5
+dip hire friend 0
+wait 1
+expect dip_friendhired == 0
+expect dip_answers == 0
 # Wanted: nobody helps.
 wanted
 wait 1
