@@ -12,7 +12,7 @@ Procedures are skills in `.claude/skills/`:
 ## Git
 
 - Feature work goes through a draft pull request: push the feature branch and open a draft PR with a short summary and screenshots of visible changes (`gh-pr-images` skill). CI checks it (build, unit tests, private data). Start PR descriptions and comments with 🤖; keep them short. Small fixes may go straight to `main`. Conventional commits.
-- Feature work happens in a worktree of the bare repo (`../.bare`), one branch for each feature. The integrator merges into `main` with `scripts/integrate.sh <branch>`: merge, build, unit tests, private-data check, affected autotests, push, install. It pushes only when every step passed.
+- Feature work happens in a worktree of the bare repo (`../.bare`), one branch for each feature. The integrator merges into `main` with `scripts/integrate.sh <branch|PR>...` (several branches make one batch): merge, build, unit tests, private-data check, affected autotests, push, install. It pushes only when every step passed.
 - Never credit an AI, model or tool in commits or files.
 - Never commit personal machine data. `scripts/check-private.sh` checks this, and CI runs it.
 
@@ -62,7 +62,7 @@ Procedures are skills in `.claude/skills/`:
   - In the first minutes, commit a short `PLAN.md` (design decisions, steps) to your branch, push it, and open the draft PR with a checklist of the steps. Delete `PLAN.md` before the final commit.
   - Commit and push after each step that builds. Tick the step in the PR checklist.
   - A restarted agent reads the branch, `PLAN.md` and the PR checklist first, and continues from there.
-- PC work (tests, deploys, screenshots) only works while your turn is active: the T3 link refuses PC calls from a thread with no active turn ("no longer owns an active thread run"), and the run then hangs on its slot. Run PC work in the foreground, in chunks under 9 minutes (for example `scripts/autotest-all.sh 400 <a few tests>`), and repeat. Never leave a suite running in the background after your turn ends.
+- PC work (tests, deploys, screenshots) only works while your turn is active: the T3 link refuses PC calls from a thread with no active turn ("no longer owns an active thread run"), and the run then hangs on its slot. Run PC work as normal Bash tool calls (not `run_in_background`), each under 9 minutes (for example `scripts/autotest-all.sh 400 <a few tests>`), and repeat. Never leave a suite running in the background after your turn ends. This is about how you call Bash, not about the player: whether the player's own game runs only changes how many test slots exist (the scripts handle it), never whether you may run tests.
 - Never end a turn while your own tests or builds run in the background. Ending the turn early leaves the work hanging. How to wait:
   - Short runs (under about 9 minutes): run them in the foreground with a long Bash timeout.
   - Long runs: start them with Bash `run_in_background`, then call `t3_background_wait` with the task ID (load it with ToolSearch `select:mcp__t3-code__t3_background_wait`). The turn then stays open until the run finishes.
