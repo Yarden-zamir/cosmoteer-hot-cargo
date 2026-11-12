@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="GameDeps.props" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CosmoteerBin Condition="'$(CosmoteerBin)' == ''">$(MSBuildThisFileDirectory)../../../.game/Bin</CosmoteerBin>
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute"><_Parameter1>CosmoteerBin</_Parameter1><_Parameter2>$([System.IO.Path]::GetFullPath($(CosmoteerBin)))</_Parameter2></AssemblyAttribute>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Not copied: GameAssemblies loads IL-only copies of the win-x64 ReadyToRun images at run time. -->
+    <Reference Include="Cosmoteer"><HintPath>$(CosmoteerBin)/Cosmoteer.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="HalflingCore"><HintPath>$(CosmoteerBin)/HalflingCore.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Lib.Harmony" Version="2.4.3" />
+    <PackageReference Include="Mono.Cecil" Version="0.11.6" />
+    <PackageReference Include="Krafs.Publicizer" Version="2.3.2" PrivateAssets="all" />
+    <Publicize Include="Cosmoteer" IncludeCompilerGeneratedMembers="false" />
+    <Publicize Include="HalflingCore" IncludeCompilerGeneratedMembers="false" />
+  </ItemGroup>
+</Project>
