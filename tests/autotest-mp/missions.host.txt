@@ -1,4 +1,6 @@
 # Co-op missions, host side: offers and sides, escort, the shady trap roll on arrival, a sprung trap that pays both players.
+# Co-op enemy scaling off (factor 1), so the ambush keeps the ship count that the checks below expect.
+enemysetting 1.0
 mphost {PORT}
 mpstart 2
 mp ev_set Enabled false
