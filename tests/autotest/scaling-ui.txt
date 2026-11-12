@@ -1,0 +1,16 @@
+# Enemy scaling setting (spec 330): the single-player new career screen puts the saved slider value into the game,
+# the run state keeps it, the game keeps a vanilla init, and a save and load keep the value.
+enemysetting 2.0
+newgameui
+wait 8
+expect active == 1
+expect enemysetting == 2
+expect vanillainit == 1
+# Solo is always 1x.
+expect enemyfactor == 1
+save scaling_ui
+wait 3
+load scaling_ui
+wait 3
+expect enemysetting == 2
+quit

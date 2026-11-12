@@ -29,6 +29,7 @@ public static class Mod
             Ux.UxArea.Register();
             Worlds.WorldsArea.Register();
             ShipAi.ShipAiArea.Register();
+            Scaling.ScalingArea.Register();
             Log.Info($"harmony patched {harmony.GetPatchedMethods().Count()} methods; mod root {ModRoot}");
         }
         catch (Exception ex)

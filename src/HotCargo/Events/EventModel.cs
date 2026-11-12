@@ -23,6 +23,8 @@ public sealed record Need
     public int MinSectorsLeft { get; init; }
     /// <summary>-1 means no limit.</summary>
     public int MaxSectorsLeft { get; init; } = -1;
+    /// <summary>True: only while a faction in this system wants the players (vanilla wanted status).</summary>
+    public bool Wanted { get; init; }
 }
 
 /// <summary>The fleet as the conditions see it. Built from sim state, or by hand in unit tests.</summary>
@@ -40,10 +42,11 @@ public sealed record Snapshot
     /// <summary>Sector index at which each flag was set.</summary>
     public IReadOnlyDictionary<string, int> FlagSectors { get; init; } = new Dictionary<string, int>();
     public int SectorsLeft { get; init; }
+    public bool Wanted { get; init; }
 }
 
 /// <summary>The first need that the fleet does not meet.</summary>
-public enum UnmetKind { Money, Tech, VaultSpace, Crew, MinHeat, MaxHeat, MinSector, MaxSector, Resource, Part, Flag, NotFlag, FlagAge, MinSectorsLeft, MaxSectorsLeft }
+public enum UnmetKind { Money, Tech, VaultSpace, Crew, MinHeat, MaxHeat, MinSector, MaxSector, Resource, Part, Flag, NotFlag, FlagAge, MinSectorsLeft, MaxSectorsLeft, NotWanted }
 
 public sealed record Unmet(UnmetKind Kind, string Id = "", float Amount = 0);
 
@@ -74,6 +77,7 @@ public static class EventModel
                 return new(UnmetKind.FlagAge, flag, minSectors);
         if (s.SectorsLeft < need.MinSectorsLeft) return new(UnmetKind.MinSectorsLeft, Amount: need.MinSectorsLeft);
         if (need.MaxSectorsLeft >= 0 && s.SectorsLeft > need.MaxSectorsLeft) return new(UnmetKind.MaxSectorsLeft, Amount: need.MaxSectorsLeft);
+        if (need.Wanted && !s.Wanted) return new(UnmetKind.NotWanted);
         return null;
     }
 
@@ -141,6 +145,16 @@ public static class EventModel
     {
         if (factor is <= 0f or > 1f) throw new ArgumentOutOfRangeException(nameof(factor), factor, "must be above 0 and at most 1");
         return Math.Clamp(current * factor, 0f, 1f);
+    }
+
+    /// <summary>
+    /// The wanted-and-hunted warning shows when both are true (spec 470): a faction wants the players, and heat reached the stage.
+    /// It fires on the rising edge only: warnedBefore is the saved state from the last tick.
+    /// </summary>
+    public static (bool Fire, bool WarnedNow) WantedWarning(bool wanted, int stagesStarted, int minStage, bool warnedBefore)
+    {
+        bool both = wanted && stagesStarted >= Math.Max(1, minStage);
+        return (both && !warnedBefore, both);
     }
 
     /// <summary>True when an event is allowed again: it was never seen, or maxPerRun is 0 (no limit), or it was seen less often than maxPerRun.</summary>

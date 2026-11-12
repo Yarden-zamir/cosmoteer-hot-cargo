@@ -270,6 +270,9 @@ public static class EventsArea
             RequireSim().Ships.Remove(towed, dispose: true, handleLostShip: false);
             Autotest.Wait(2);
         };
+        // Wanted (spec 470-472): vanilla wanted status in this system, and the saved warning state.
+        Autotest.Fields["ev_wanted"] = () => ((CareerSimModeManager)RequireSim().Mode).Wanted.IsLocalPlayerWanted ? 1 : 0;
+        Autotest.Fields["ev_wanted_warned"] = () => RequireRun().State.Events.WantedWarned ? 1 : 0;
         Autotest.Fields["ev_buyer_mult"] = () => RequireRun().State.BuyerPriceMultiplier;
         Autotest.Fields["ev_pending"] = () => RequireRun().State.Events.Pending is null ? 0 : 1;
         Autotest.Fields["ev_seen"] = () => RequireRun().State.Events.Seen.Values.Sum();
