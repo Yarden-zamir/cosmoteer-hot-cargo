@@ -611,3 +611,124 @@ TowJob
 		}
 	]
 }
+
+// The run's relic ship (spec 765): a dead ship that holds 1 tech unit. Junk allegiance and the vanilla "abandoned" label, like the
+// vanilla abandoned ships, so the players can also salvage it. 5,000 to 8,000 from the fleet, with an unknown POI.
+Relic
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_relic_ship]
+			Count = 1
+			Distance = [5000, 8000]
+			MinDistanceFromTags = [[sun, 5000], [station, 3000]]
+			MinDistanceFromNebulas = [[ion_storm, 500]]
+			SuppressLocationAssertions = true
+			Allegiance = Junk
+			InitToMax = false
+			SpawnCrew = false
+			RandomHealthRange = [25%, 60%]
+			Labels = ["abandoned"]
+			NameGenerator = { Type = NameList; Names = ["Dead Courier"]; }
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				Tier = -2
+				AllowTierRangeExpansion = true
+				Tags = [civilian]
+			}
+			SubSpawners
+			[
+				{
+					Type = Doodads
+					DoodadType = cosmoteer.poi_unknown
+					Tags = [poi_unknown]
+					AutoRemoveWhenDiscovered = true
+					HideIfUnexplored = true
+				}
+			]
+		}
+	]
+}
+
+// The freighter that carries Dead in Space (spec 767): it hails the players and its comms show the page.
+// It needs an AI to answer comms; the AI stays at its spot (tiny ranges), and a tow moves its spot along (HotCargoTow).
+// Tagged hc_ev_towed too, so the tow choice (TowMission) tows this same ship.
+BrokenFreighter
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_ev_carrier, hc_ev_towed]
+			Distance = [600, 900]
+			Allegiance = FactionCivilian
+			SuppressLocationAssertions = true
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [trade]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 50
+				TargetAcquireRangeFromOrigin = 100
+				TargetUnacquireRangeFromOrigin = 100
+			}
+		}
+	]
+}
+
+// The Tow Job mission for a freighter that already exists (the Dead in Space carrier): the nearest ship tagged hc_ev_towed.
+TowMission
+{
+	Spawners
+	[
+		{
+			Type = Mission
+			Metatype = HotCargoEventTow
+			SpawnAt = Player
+			Faction = OwnerOfTag
+			FactionTag = { Mode=Nearest; Tag=hc_ev_towed; }
+			OkayIfFactionTagNotFound = true
+			Objectives
+			[
+				{
+					Type = HotCargoTow
+					TowedTag = { Mode=Nearest; Tag=hc_ev_towed; }
+					StationTag = trade_station
+					MinStationDistance = 3000
+					ArrivalRadius = 1200
+				}
+			]
+			Rewards
+			[
+				// Added straight to the log, not offered: no contract fee, heat, trail or informant (economy spec 100+).
+				{ Type = HotCargoContract; AcceptFee = 0; FlatHeat = 0; TrailWeight = 0; InformantChance = 0; }
+				{
+					Type = Money
+					MoneyPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMoneyPerTier
+					RoundToMultiple = 500
+				}
+				{
+					Type = Fame
+					FamePerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+					MaxFamePerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+					FamePerTierMultiplier = 0.75
+				}
+				{
+					Type = Reputation
+					ReputationPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardReputationPerTier
+					ReputationPerTierMultiplier = 2
+				}
+			]
+		}
+	]
+}

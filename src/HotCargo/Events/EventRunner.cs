@@ -47,6 +47,7 @@ public static class EventRunner
         var s = State(run);
         if (sim != run.Game.Sim) return;
         CheckWanted(run, sim);
+        CheckCarrier(run, sim);
         if (!t.Enabled || EventLibrary.LoadError is not null || s.Pending is not null) return;
         double now = run.State.GameSeconds;
         if (s.StartDueSeconds >= 0 && now >= s.StartDueSeconds)
@@ -66,6 +67,7 @@ public static class EventRunner
         // Proximity checks run twice a game second. The step comes from game time, so every client checks on the same tick.
         if (Math.Floor(now / ProximityCheckSeconds) == Math.Floor((now - dt) / ProximityCheckSeconds)) return;
         CheckSignals(run, sim);
+        Abandoned.Check(run, sim);
         if (s.Pending is null) CheckStations(run, sim);
     });
 
@@ -85,6 +87,21 @@ public static class EventRunner
         EventText.ShowWantedWarning(run.Game, string.Join(", ", factions));
         var t = run.T.Events;
         if (t.Enabled && EventLibrary.LoadError is null && s.Pending is null) TryTrigger(run, sim, EventTrigger.Wanted, t.WantedEventChance, limited: false);
+    }
+
+    /// <summary>Spec 770: a carried page closes when its ship is gone (destroyed, or left behind in another system).</summary>
+    static void CheckCarrier(Run run, SimRoot sim)
+    {
+        var s = State(run);
+        if (s.Pending is not { Carrier: { } carrier } p) return;
+        if (p.HailDue && EventHail.TryHail(sim, carrier)) p.HailDue = false;
+        bool alive = EventHail.CarrierAlive(sim, carrier);
+        // A station that starts to refuse calls (factions, spec 657) closes its page too, so the page never waits forever.
+        bool refuses = alive && sim.Ships[carrier] is { } ship && Factions.FactionsArea.Refuses(run, null, ship);
+        if (alive && !refuses) return;
+        s.Pending = null;
+        s.LastResult = new EventResult { Serial = p.Serial, Title = EventLibrary.Get(p.EventId).Title, Text = Cosmoteer.Localization.Strings.GetText(refuses ? "HotCargoEvents/CarrierRefuses" : "HotCargoEvents/CarrierGone") };
+        Log.Info($"event {p.EventId}: its carrier is gone, the page closes");
     }
 
     /// <summary>A human ship that reaches a signal POI removes it and opens a Signal event.</summary>
@@ -113,8 +130,10 @@ public static class EventRunner
         if (s.StationRolled.Contains(node) && s.CourierNodes.Contains(node)) return;
         float r = run.T.Events.StationTriggerDistance;
         var ships = sim.Ships.HumanPlayerSignificantShips.ToList();
+        // A station that refuses calls (factions, spec 657) cannot carry a page, so it does not count.
         Ship? station = sim.Ships.FirstOrDefault(st => st.HasTag(TradeStationTag) && !st.HasTag(BuyerTag) && !st.IsJunk
-            && ships.Any(sh => sh.DetWorldBoundingCircle.DistanceTo(st.DetWorldBoundingCircle) <= r));
+            && ships.Any(sh => sh.DetWorldBoundingCircle.DistanceTo(st.DetWorldBoundingCircle) <= r)
+            && !Factions.FactionsArea.Refuses(run, null, st));
         if (station is null) return;
         if (s.CourierNodes.Add(node))
         {
@@ -122,7 +141,8 @@ public static class EventRunner
             if (roll < run.T.Events.CourierChance) OfferCourier(sim, station);
             else Log.Info($"events: courier roll {roll:0.00} >= chance {run.T.Events.CourierChance:0.00}, no offer");
         }
-        if (s.StationRolled.Add(node)) TryTrigger(run, sim, EventTrigger.Station, run.T.Events.StationEventChance, limited: true);
+        // Spec 768: a Station event is carried by that station. It hails the players, and its comms show the page.
+        if (s.StationRolled.Add(node)) TryTrigger(run, sim, EventTrigger.Station, run.T.Events.StationEventChance, limited: true, carrier: station.UniqueID);
     }
 
     /// <summary>
@@ -141,7 +161,7 @@ public static class EventRunner
     /// Rolls the chance, then picks an eligible event of the trigger by weight and opens it.
     /// limited: the cooldown and the per-system cap apply (Arrival and Station).
     /// </summary>
-    static void TryTrigger(Run run, SimRoot sim, EventTrigger trigger, float chance, bool limited)
+    static void TryTrigger(Run run, SimRoot sim, EventTrigger trigger, float chance, bool limited, ObjectID? carrier = null)
     {
         var t = run.T.Events;
         var s = State(run);
@@ -160,14 +180,19 @@ public static class EventRunner
         }
         var snapshot = Snap(run, sim, RichestHumanMoney(run), run.CurrentTier, CurrentTechValue(run));
         var candidates = EventLibrary.InOrder.Where(e => e.Trigger == trigger && Eligible(run, e, snapshot)).ToList();
-        var weights = candidates.Select(e => EventModel.EffectiveWeight(e.Weight, e.WeightPerHeat, e.WeightPerTech, run.State.Heat, run.State.FleetTech)).ToList();
+        var weights = candidates.Select(e => EventModel.EffectiveWeight(e.Weight, e.WeightPerHeat, e.WeightPerTech, run.State.Heat, run.State.FleetTech)
+            * (e.Offer == OfferKind.None ? 1f : Math.Max(0f, t.ResearchWeightScale))).ToList();
         int pick = EventModel.PickWeighted(weights, sim.Rand.Single());
         if (pick < 0) { Log.Info($"events: no eligible {trigger} event"); return; }
         // Every triggered event starts the cooldown, so an Arrival or Station event does not follow right after another dialog.
         s.LastEventSeconds = run.State.GameSeconds;
         if (limited) s.NodeEvents[node] = s.NodeEvents.GetValueOrDefault(node) + 1;
-        Open(run, sim, candidates[pick], lead: "");
+        Open(run, sim, candidates[pick], lead: "", carrier, carrierHails: carrier is not null);
     }
+
+    /// <summary>A trigger without the cooldown and the per-system cap: Abandoned and Relic (the player chose to fly there).</summary>
+    internal static void TriggerUnlimited(Run run, SimRoot sim, EventTrigger trigger, float chance) =>
+        TryTrigger(run, sim, trigger, chance, limited: false);
 
     /// <summary>
     /// True when the event may open now: under its run limit, under its category limit, and its need is met.
@@ -182,11 +207,16 @@ public static class EventRunner
             int seen = EventLibrary.InOrder.Where(x => x.Category == EventCategory.Unavoidable).Sum(x => s.Seen.GetValueOrDefault(x.ID));
             if (seen >= run.T.Events.MaxUnavoidablePerRun) return false;
         }
+        if (!ResearchOffers.Possible(run, e.Offer, run.CurrentTier, CurrentTechValue(run))) return false;
         return EventModel.FirstUnmet(ToNeed(run, e.Need, run.CurrentTier, CurrentTechValue(run)), snapshot) is null;
     }
 
     /// <summary>Opens an event page. Public for the autotest command that forces an event.</summary>
-    public static void Open(Run run, SimRoot sim, EventRules e, string lead)
+    /// <summary>
+    /// carrier: the ship whose comms show the page (spec 767, 768). Without one, an event with a Carrier spawn gets its own ship, which
+    /// hails when CarrierHails is on. carrierHails: the given carrier hails the players (a station event).
+    /// </summary>
+    public static void Open(Run run, SimRoot sim, EventRules e, string lead, ObjectID? carrier = null, bool carrierHails = false)
     {
         var s = State(run);
         s.Seen[e.ID] = s.Seen.GetValueOrDefault(e.ID) + 1;
@@ -200,6 +230,15 @@ public static class EventRunner
             Heat = run.State.Heat,
             Lead = lead,
         };
+        ResearchOffers.Fill(run, s.Pending, e.Offer);
+        if (carrier is null && e.Carrier.Length > 0)
+        {
+            carrier = EventHail.SpawnCarrier(sim, e, s.Pending.Seed);
+            carrierHails = e.CarrierHails;
+        }
+        s.Pending.Carrier = carrier;
+        s.Pending.HailDue = carrier is not null && carrierHails;
+        if (carrier is { } c && carrierHails) EventText.ShowCalling(run.Game, sim.Ships[c]?.Metadata.PlainShipName ?? e.Title);
         Log.Info($"event opened: {e.ID} serial {s.Pending.Serial} tier {s.Pending.Tier} heat {run.State.Heat:0.0} tech {run.State.FleetTech}");
     }
 
@@ -236,11 +275,12 @@ public static class EventRunner
         s.Pending = null;
         ApplyOutcome(run, sim, playerIndex, outcome, p, lines);
         // Tokens fill after the effects, so a text sees the counts that the choice left.
-        string outcomeText = EventText.Fill(outcome.Text, Vaults.CountFleetTech(sim));
+        string outcomeText = EventText.Fill(outcome.Text, Vaults.CountFleetTech(sim), p);
         if (outcome.Next.Length > 0)
         {
             string lead = string.Join("\n", new[] { outcomeText }.Concat(lines).Where(l => l.Length > 0));
-            Open(run, sim, EventLibrary.Get(outcome.Next), lead);
+            // A follow-up page stays on the ship that carried this one.
+            Open(run, sim, EventLibrary.Get(outcome.Next), lead, p.Carrier);
         }
         else
         {
@@ -309,7 +349,7 @@ public static class EventRunner
     {
         var need = ToNeed(run, c.Need, p.Tier, p.TechValue);
         if (c.Cost is not { } cost) return need;
-        return EventModel.Plus(need, CostCredits(run, cost, p), cost.Tech, cost.Crew, cost.Resources.Select(r => (r.ID, r.At(p.Tier))));
+        return EventModel.Plus(need, CostCredits(run, cost, p), cost.Tech + (cost.OfferUnits ? p.OfferUnits : 0), cost.Crew, cost.Resources.Select(r => (r.ID, r.At(p.Tier))));
     }
 
     /// <summary>Credits of a sure money cost, with the heat part from when the page opened.</summary>
@@ -348,7 +388,8 @@ public static class EventRunner
         if (cost is null) return;
         int money = CostCredits(run, cost, p);
         if (money > 0) ChangeMoney(run, playerIndex, -money, lines);
-        if (cost.Tech > 0) ChangeTech(sim, -cost.Tech, lines);
+        int tech = cost.Tech + (cost.OfferUnits ? p.OfferUnits : 0);
+        if (tech > 0) ChangeTech(sim, -tech, lines);
         if (cost.Crew > 0) ChangeCrew(sim, -cost.Crew, p.Seed, lines);
         foreach (var r in cost.Resources) ChangeResource(sim, r.ID, -r.At(p.Tier), lines);
     }
@@ -367,6 +408,8 @@ public static class EventRunner
         if (o.Reputation != 0) ChangeReputation(run, sim, o.Reputation, p.Tier, lines);
         if (o.BuyerPrice > 0) ChangeBuyerPrice(run, o.BuyerPrice, lines);
         if (o.ClearWanted) ClearWanted(sim, lines);
+        if (o.UnlockOffer && ResearchOffers.Unlock(run, p) is { Count: > 0 } techs) lines.Add(EventText.Researched(techs));
+        if (o.OfferPrice && p.OfferPrice > 0) ChangeMoney(run, playerIndex, p.OfferPrice, lines);
         foreach (string f in o.SetFlags)
         {
             State(run).Flags.Add(f);
