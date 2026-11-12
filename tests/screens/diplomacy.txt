@@ -1,4 +1,4 @@
-# Diplomacy dialogs (spec 560 to 597): the hunter demand page with a slider in each option row, the punishment page (multiselect),
+# Diplomacy dialogs (spec 560 to 597): the hunter demand page (pay-off rows ticked, bluff, fight),
 # a friendly ship's rows, a holder and a mercenary page. Main slot only (needs graphics).
 render on
 newgame run
@@ -17,31 +17,15 @@ wait 2
 dip_near hunter
 pause on
 wait 1
-dip_slider hunter handover 3
-dip_slider hunter bluff 2
-dip_slider hunter deal 1
+dip_pick hunter tech 3
+dip_pick hunter money 8
+wait 1
 dip_open hunter
 wait 2
 screenshot diplomacy-demand
 dip_close
 wait 1
 pause off
-dip_set HandOverChanceMin 5
-dip handover hunter 2
-wait 1
-dip_pick talk
-dip_pick money 12
-dip_pick crew 2
-wait 1
-pause on
-dip_open hunter
-wait 2
-screenshot diplomacy-punish
-dip_close
-wait 1
-pause off
-dip_punish refuse
-wait 1
 killhunter 0
 wait 3
 dip_spawn friend 250
