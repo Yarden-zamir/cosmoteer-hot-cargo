@@ -68,7 +68,7 @@ public static class Overlay
         float mult = run.HeatMultiplier(s.FleetTech);
         float open = Contracts.ContractBook.OpenWeight(run);
         float trail = Contracts.ContractBook.TrailPerMinute(run, open);
-        float perMinute = mult * t.Heat.HeatPerGameMinute + trail;
+        float perMinute = run.TimeHeatPerMinute(s.FleetTech) + trail;
         string next = s.StagesStarted < t.Heat.Stages.Length
             ? $"{t.Heat.Stages[s.StagesStarted].Name} at {t.Heat.Stages[s.StagesStarted].Heat:0}"
             : "max";

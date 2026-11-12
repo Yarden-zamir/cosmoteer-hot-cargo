@@ -31,6 +31,12 @@ public sealed class Run
         public static event Action<Run, SimRoot, double>? Tick;
         /// <summary>Runs once when the run is won or lost, after State.Result and State.EndReason are set. Sim logic.</summary>
         public static event Action<Run>? RunEnded;
+        /// <summary>Factor on time heat in the current system (spec 24). Set by the Factions area: shelter and corporate ally space.</summary>
+        public static Func<Run, float> TimeHeatFactor = _ => 1f;
+        /// <summary>Factor on notoriety gains in the current system (spec 19). Set by the Factions area: corporate ally space.</summary>
+        public static Func<Run, float> NotorietyFactor = _ => 1f;
+        /// <summary>Factor on Heat.HeatCarryOverFraction for the system switch that runs now (spec 28). Set by the Factions area: relay or blind jump.</summary>
+        public static Func<Run, float> CarryOverFactor = _ => 1f;
 
         internal static void RaiseRunEnded(Run r) => Each(RunEnded, h => h(r));
         internal static void RaiseStageStarted(Run r, SimRoot s, int i) => Each(StageStarted, h => h(r, s, i));
@@ -129,9 +135,13 @@ public sealed class Run
             State.PeakTier = Math.Max(State.PeakTier, Math.Min(CurrentTier, Journey.TierCapSpawner.PeakTierCap(Mode, State.SectorIndex) ?? int.MaxValue));
         Hooks.RaiseTick(this, sim, dt);
         if (State.Result != RunResult.Running || !State.HeatEnabled) return;
-        AddHeat(HeatModel.TimeHeat(T.Heat.HeatPerGameMinute, HeatMultiplier(State.FleetTech), dt), sim);
+        AddHeat(TimeHeatPerMinute(State.FleetTech) * (float)(dt / 60.0), sim);
         TickStrikeWaves(sim, dt);
     }
+
+    /// <summary>Time heat per game minute with this fleet tech count, in the current system (spec 24 and the Factions factor).</summary>
+    public float TimeHeatPerMinute(int fleetTech) =>
+        HeatModel.TimeHeat(T.Heat.HeatPerGameMinute, HeatMultiplier(fleetTech), 60.0) * Hooks.TimeHeatFactor(this);
 
     void OnFameChanged(object? sender, ValueChangedEventArgs<int> e)
     {
@@ -160,7 +170,7 @@ public sealed class Run
         float before = State.Heat;
         State.Heat = HeatModel.Clamp(State.Heat + amount);
         // Spec 19: notoriety sums every real heat gain. It never goes down, so the tech value only ratchets up.
-        if (State.Heat > before) State.Notoriety += State.Heat - before;
+        if (State.Heat > before) State.Notoriety += (State.Heat - before) * Hooks.NotorietyFactor(this);
         int reached = HeatModel.StagesReached(State.Heat, T.Heat.Thresholds());
         while (State.StagesStarted < reached)
         {
@@ -201,7 +211,8 @@ public sealed class Run
         bool firstVisit = State.VisitedNodes.Add(newNode);
         if (firstVisit) State.SectorIndex++;
         float stored = State.NodeHeat.TryGetValue(newNode, out float h) ? h : 0f;
-        State.Heat = HeatModel.OnEnterSystem(State.Heat, stored, T.Heat.HeatCarryOverFraction);
+        float carry = HeatModel.CarryOverFraction(T.Heat.HeatCarryOverFraction, Hooks.CarryOverFactor(this));
+        State.Heat = HeatModel.OnEnterSystem(State.Heat, stored, carry);
         // Stages below the entry heat do not fire again on arrival. This gives the players a moment after each jump.
         State.StagesStarted = HeatModel.StagesReached(State.Heat, T.Heat.Thresholds());
         State.SecondsSinceStrikeWave = 0;
