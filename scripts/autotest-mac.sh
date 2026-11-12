@@ -39,7 +39,7 @@ take_mac_slot() {
   while :; do
     for ((i = 1; i <= JOBS; i++)); do
       lock="/tmp/hot_cargo_mac_slot_$i.lock"
-      if mkdir "$lock" 2>/dev/null; then echo "$1" > "$lock/pid"; echo "$lock"; return; fi
+      if mkdir "$lock" 2>/dev/null; then echo "$1" > "$lock/pid.tmp" && mv -f "$lock/pid.tmp" "$lock/pid"; echo "$lock"; return; fi
       if lock_is_stale "$lock"; then rm -rf "$lock"; fi
     done
     sleep 2

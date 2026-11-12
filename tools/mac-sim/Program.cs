@@ -29,6 +29,10 @@ static void Run()
     Out.Line($"Hot Cargo loaded: {Boot.HotCargo()}");
     Boot.App();
     Out.Line("GameApp constructed");
+    // GameApp.Main reads --cores; the host skips Main. Without it every run starts one spinning helper thread per core,
+    // and parallel runs (scripts/autotest-mac.sh) starve each other.
+    int cores = Array.IndexOf(argv, "--cores");
+    if (cores >= 0) Halfling.Performance.FastParallel.ThreadCount = int.Parse(argv[cores + 1]) - 1;
     if (at < 0)
     {
         var rules = Boot.Rules();
@@ -37,7 +41,10 @@ static void Run()
     }
     Boot.FixedStepClock();
     var sw = System.Diagnostics.Stopwatch.StartNew();
-    Cosmoteer.GameApp.Instance.ApplicationMain(argv);
+    // The log decides, like on the PC: an exception after AUTOTEST DONE (shutdown, for example a cancelled stasis preload
+    // in StasisDoodadSpawner.CancelPreload) is no failure. An exception during the script leaves no AUTOTEST DONE.
+    try { Cosmoteer.GameApp.Instance.ApplicationMain(argv); }
+    catch (Exception ex) { Out.Line($"game loop threw: {ex}"); }
     Out.Line($"game loop ended after {sw.Elapsed.TotalSeconds:0.0} s wall time, {Halfling.App.Director?.FrameCount} frames");
     // Same rule as scripts/autotest.sh: pass only with AUTOTEST DONE and no AUTOTEST FAIL or ERROR line.
     var log = File.ReadAllLines(Path.Combine(modRoot, "csharp", "hot_cargo_log.txt"));

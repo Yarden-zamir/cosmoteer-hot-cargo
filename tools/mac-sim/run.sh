@@ -5,6 +5,7 @@
 # - MAC_SIM_STAGE=<dir>: use a stage that scripts/stage.sh made, and build nothing (the host must be built already).
 #   scripts/autotest-mac.sh uses it, so parallel runs share one build.
 # - Runs with the game folder as working directory: Paths reads "Data" relative to it.
+# - --cores 2: the same game thread count as a PC test slot (scripts/pc.sh).
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
@@ -28,4 +29,4 @@ if [[ -n "$STAGE" ]]; then
   printf 'GameSettings\n{\n\tEnabledMods ["%s"]\n\tAutoDisableMods = false\n\tShowNewsOnStartup = false\n\tShowTipsOnStartup = false\n\tIsFirstBoot = false\n}\n' "$MOD" > "$SAVE/settings.rules"
 fi
 cd "$GAME"
-exec dotnet "$HERE/bin/Release/net10.0/MacSim.dll" --headless --nosteam --rootsavepath "$SAVE" "$@"
+exec dotnet "$HERE/bin/Release/net10.0/MacSim.dll" --headless --nosteam --cores 2 --rootsavepath "$SAVE" "$@"
