@@ -29,57 +29,8 @@ static class NativeSeams
         // Ship decals (paint) look up that skipped atlas. Decals are cosmetic.
         harmony.Patch(AccessTools.Method(typeof(Cosmoteer.Ships.Paint.DecalsManager), nameof(Cosmoteer.Ships.Paint.DecalsManager.LoadSaveData)),
             prefix: new HarmonyMethod(typeof(NativeSeams), nameof(Skip)));
-        // Not native: scripts/pull-game.sh copies only *.rules and *.txt, so the name generator files (*.markov) are missing.
-        harmony.Patch(AccessTools.Constructor(typeof(Cosmoteer.Generators.Names.MarkovGenerator), [typeof(Halfling.Serialization.Generic.GenericSerialReader)]),
-            prefix: new HarmonyMethod(typeof(NativeSeams), nameof(MarkovWithoutFile)));
-        harmony.Patch(AccessTools.Method(typeof(Cosmoteer.Generators.Names.MarkovGenerator), nameof(Cosmoteer.Generators.Names.MarkovGenerator.GenerateName)),
-            prefix: new HarmonyMethod(typeof(NativeSeams), nameof(NameWithoutChain)));
         harmony.Patch(AccessTools.Method(typeof(Halfling.Audio.SoundStream), nameof(Halfling.Audio.SoundStream.FromFile)),
             prefix: new HarmonyMethod(typeof(NativeSeams), nameof(SilentIfMissing)));
-        // Not native: ship designs are *.ship.png files and exist only on the PC. A missing ship file loads the vanilla
-        // example mod ship instead, under its own name. Every built-in ship then has the same design.
-        harmony.Patch(AccessTools.PropertyGetter(typeof(Cosmoteer.Ships.ShipFile), nameof(Cosmoteer.Ships.ShipFile.FilePath)),
-            postfix: new HarmonyMethod(typeof(NativeSeams), nameof(FallbackShipFile)));
-        harmony.Patch(AccessTools.PropertyGetter(typeof(Cosmoteer.Ships.ShipFile), nameof(Cosmoteer.Ships.ShipFile.ShipName)),
-            prefix: new HarmonyMethod(typeof(NativeSeams), nameof(OriginalShipName)));
-    }
-
-    static readonly Halfling.IO.AbsolutePath FallbackShip = new(Path.GetFullPath("StandardMods/example_mod/ships/Arclight.ship.png"));
-
-    static void FallbackShipFile(ref Halfling.IO.AbsolutePath __result)
-    {
-        if (__result is not null && !File.Exists(__result)) __result = FallbackShip;
-    }
-
-    static bool OriginalShipName(Cosmoteer.Ships.ShipFile __instance, ref string __result)
-    {
-        var original = Traverse.Create(__instance).Field("<FilePath>k__BackingField").GetValue<Halfling.IO.AbsolutePath>();
-        __result = Cosmoteer.Ships.Ship.GetNameFromFilename(original) ?? throw new InvalidOperationException($"no ship name in {original}");
-        return false;
-    }
-
-    static bool MarkovWithoutFile(Cosmoteer.Generators.Names.MarkovGenerator __instance, Halfling.Serialization.Generic.GenericSerialReader reader)
-    {
-        var path = reader.ReadFromPath<Halfling.IO.AbsolutePath>("MarkovFile");
-        if (File.Exists(path)) return true;
-        reader.ReflectiveRead(__instance);
-        FileLessMarkov.Add(__instance);
-        return false;
-    }
-
-    static readonly HashSet<Cosmoteer.Generators.Names.MarkovGenerator> FileLessMarkov = [];
-
-    /// <summary>A generator without its chain makes consonant-vowel names from the sim's Rand, within its length limits.</summary>
-    static bool NameWithoutChain(Cosmoteer.Generators.Names.MarkovGenerator __instance, Halfling.Random.Rand rand, int maxLength, ref string __result)
-    {
-        if (!FileLessMarkov.Contains(__instance)) return true;
-        int length = Math.Clamp(6, __instance.MinLength, Math.Min(__instance.MaxLength, maxLength));
-        var name = new char[length];
-        for (int i = 0; i < length; i++)
-            name[i] = i % 2 == 0 ? "bdfgklmnprstvz"[rand.Int32(0, 13)] : "aeiou"[rand.Int32(0, 4)];
-        name[0] = char.ToUpperInvariant(name[0]);
-        __result = new string(name);
-        return false;
     }
 
     static bool Skip() => false;

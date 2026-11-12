@@ -53,9 +53,10 @@ static class GameAssemblies
             if (marker is not null) module.Assembly.CustomAttributes.Remove(marker);
             module.Architecture = TargetArchitecture.I386;
             module.Attributes = ModuleAttributes.ILOnly;
-            module.Write(target + ".tmp");
+            // A temp name per process: parallel runs (scripts/autotest-mac.sh) can write the same copy at the same time.
+            module.Write($"{target}.{Environment.ProcessId}.tmp");
         }
-        File.Move(target + ".tmp", target, overwrite: true);
+        File.Move($"{target}.{Environment.ProcessId}.tmp", target, overwrite: true);
         return target;
     }
 

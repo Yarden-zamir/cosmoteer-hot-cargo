@@ -42,12 +42,31 @@ static class Boot
     /// Every clock advances one fixed frame per call instead of the real time that passed. The game then runs as fast as
     /// the CPU allows, and two runs with the same input see the same frame times.
     /// </summary>
-    public static void FixedStepClock() =>
+    public static void FixedStepClock()
+    {
         Harmony.Patch(AccessTools.Method(typeof(Halfling.Timing.RealTimeClock), nameof(Halfling.Timing.RealTimeClock.AdvanceRealTime)),
             prefix: new HarmonyMethod(typeof(Boot), nameof(AdvanceFixed)));
+        Harmony.Patch(AccessTools.Method(typeof(Cosmoteer.Game.GameRoot), nameof(Cosmoteer.Game.GameRoot.JumpToNode)),
+            postfix: new HarmonyMethod(typeof(Boot), nameof(TrackJump)));
+    }
+
+    static int s_jumpsRunning;
+
+    /// <summary>
+    /// GameRoot.JumpToNode loads the new system on a background thread, and a test waits for it in game seconds.
+    /// The fixed-step clock runs faster than real time, so a "wait 25" ends before the load does. While a jump runs,
+    /// every frame takes at least one frame of real time, like on the PC. Limit: the number of frames that a jump takes
+    /// varies from run to run. Revisit if a test needs exact sim values across a jump.
+    /// </summary>
+    static void TrackJump(Task __result)
+    {
+        Interlocked.Increment(ref s_jumpsRunning);
+        __result.ContinueWith(_ => Interlocked.Decrement(ref s_jumpsRunning), TaskContinuationOptions.ExecuteSynchronously);
+    }
 
     static bool AdvanceFixed(Halfling.Timing.RealTimeClock __instance)
     {
+        if (Volatile.Read(ref s_jumpsRunning) > 0) Thread.Sleep(TimeSpan.FromSeconds(FrameSeconds));
         __instance.Advance(new Halfling.Timing.Time(FrameSeconds));
         return false;
     }
