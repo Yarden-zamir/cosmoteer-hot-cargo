@@ -12,7 +12,9 @@
 	{
 		Action = Overrides
 		OverrideIn = "<modes/career/sectors/sysgen_military_stations.rules>/BaseMilitaryStation"
-		Overrides { Distance = [0, 14000] } // was [0, 20000]
+		// The station gaps shrink with the radius: with the vanilla 6000 from any station in [0, 14000], military stations and
+		// the Joint Strike stronghold (missions/sysgen_hotcargo.rules inherits this spawner) rarely found a place.
+		Overrides { Distance = [0, 14000]; MinDistanceFromTags = [[sun, 7500], [station, 4500], [ftl_gate, 2500]]; } // was [0, 20000], station 6000, gate 3000
 	}
 	{
 		Action = Overrides

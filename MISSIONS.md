@@ -41,7 +41,7 @@ Three markers sit inside ion storms. Hold a ship with a working sensor array wit
 A civilian mining barge sits in an asteroid field. Raiders one tier below the sector come in small waves. Keep the barge alive for four minutes of guarded time. It works like the drone siege, with fewer and stronger enemies.
 
 ### Listening Post
-A faction listening post hides in a gas cloud, 5,500 to 7,000 from a hostile base. Its scout follows you. Take it anywhere within 3,500 of the base. Then click **Start the scan here** in the mission panel. The base sends four waves, one every 45 s, from its side. Before each wave you can click **Intensive scan**, at most twice. Each click gives the next wave one more ship and one more tier, and gives the pay +25 %. If the scout dies, the mission fails.
+A faction listening post hides in a gas cloud, 4,000 to 5,000 from a hostile base. Its scout follows you. Take it anywhere within 3,500 of the base. Then click **Start the scan here** in the mission panel. The base sends four waves, one every 45 s, from its side. Before each wave you can click **Intensive scan**, at most twice. Each click gives the next wave one more ship and one more tier, and gives the pay +25 %. If the scout dies, the mission fails.
 
 ### Leave early (Drone Siege, Claim Jumpers, Listening Post)
 After the first wave interval, the mission panel shows **Leave now and keep X credits**. One click completes the mission at once. The pay is one share for each whole wave interval you survived, times the intensive-scan factor. For example, 2 of 4 waves pay half. Fame scales the same way, but without the intensive-scan factor. You collect the reward at the station as usual.

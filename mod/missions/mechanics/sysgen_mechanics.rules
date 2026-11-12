@@ -591,8 +591,8 @@ Survey
 			MinDistanceFromSiblings = 1500
 			MaxDistanceFromNebulas = [[ion_storm, 0]]
 			MinDistanceFromTags = [[sun, 5000], [station, 2000]]
-			// Within reach in the smaller systems (spec 105): no marker far past the gates. Limit: a system without a sun gets no survey.
-			MaxDistanceFromTags = [[sun, 15000]]
+			// Within reach in the smaller systems (spec 105): no marker past the gate ring. Limit: a system without a sun gets no survey.
+			MaxDistanceFromTags = [[sun, 16000]]
 			Undiscovered = true
 			HideIfUnexplored = true
 			ShowOnlyInFog = true
@@ -789,10 +789,11 @@ ListeningPost
 		{
 			Type = None
 			Tags = [hc_lp_post_area]
-			Distance = [5500, 7000]
+			// Smaller systems (spec 105): was 5500 to 7000. Still past ScanRange (3500), so the players bring the scout in.
+			Distance = [4000, 5000]
 			MaxDistanceFromNebulas = [[cloudy, 0]]
 			MinDistanceFromTags = [[sun, 5000], [station, 2500]]
-			MaxDistanceFromTags = [[sun, 15000]]
+			MaxDistanceFromTags = [[sun, 16000]]
 			SuppressLocationAssertions = true
 			SynchronizeFactions = true
 

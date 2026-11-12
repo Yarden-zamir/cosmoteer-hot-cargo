@@ -263,20 +263,23 @@ static class WorldsAutotest
         var sim = Sim();
         var objects = MissionArea.ExistingSpawnTags(sim);
         List<Vector2> At(ID<SimObjectSpawner> tag) => objects.TryGetValue(tag, out var list) ? [.. list.Select(so => so.Location.Center)] : [];
+        // The tags of the objects at a point, for the log.
+        string TagsAt(Vector2 p) => string.Join(" ", objects.Where(kv => kv.Value.Any(so => so.Location.Center == p)).Select(kv => kv.Key.ToString()).Order(StringComparer.Ordinal));
         var lairs = At(Lair);
         var fixedPoints = At(Gate).Concat(At(Station).Where(p => !lairs.Contains(p))).ToList();
         if (fixedPoints.Count == 0) throw new InvalidOperationException("no station or gate in this system");
-        float Nearest(Vector2 p, IEnumerable<Vector2> to) => to.Min(q => q.DistanceTo(p));
-        void CheckMin(string what, IReadOnlyList<float> values, float min)
+        // what: object kind; items: each object's center and the radius to subtract (a pass ring's radius, else 0).
+        void CheckMin(string what, IReadOnlyList<Vector2> to, IEnumerable<(Vector2 At, float Radius)> items, float min)
         {
-            if (values.Count == 0) { Log.Info($"AUTOTEST clearance: no {what}"); return; }
-            Autotest.Check(values.Min() >= min, $"{what}: closest {values.Min():0} >= {min} ({values.Count} objects)");
+            var gaps = items.Select(i => (i.At, Near: to.MinBy(q => q.DistanceTo(i.At)), Gap: to.Min(q => q.DistanceTo(i.At)) - i.Radius)).ToList();
+            if (gaps.Count == 0) { Log.Info($"AUTOTEST clearance: no {what}"); return; }
+            var worst = gaps.MinBy(g => g.Gap);
+            Autotest.Check(worst.Gap >= min, $"{what}: closest {worst.Gap:0} >= {min} ({gaps.Count} objects; {worst.At} to [{TagsAt(worst.Near)}] at {worst.Near})");
         }
-        CheckMin("pass ring edge to station or gate center", [.. Doodads(sim, Pass).Select(c => Nearest(c.Center, fixedPoints) - c.Radius)], 300f);
-        CheckMin("belt rock to station or gate center", [.. Tagged(sim, BeltRock).Select(p => Nearest(p, fixedPoints))], 300f);
-        var gates = At(Gate);
-        CheckMin("hub planet to gate center", [.. At(HubPlanet).Select(p => Nearest(p, gates))], 2000f);
-        CheckMin("lair to station or gate center", [.. lairs.Select(p => Nearest(p, fixedPoints))], 3000f);
+        CheckMin("pass ring edge to station or gate center", fixedPoints, Doodads(sim, Pass).Select(c => (c.Center, c.Radius)), 300f);
+        CheckMin("belt rock to station or gate center", fixedPoints, Tagged(sim, BeltRock).Select(p => (p, 0f)), 300f);
+        CheckMin("hub planet to gate center", At(Gate), At(HubPlanet).Select(p => (p, 0f)), 2000f);
+        CheckMin("lair to station or gate center", fixedPoints, lairs.Select(p => (p, 0f)), 3000f);
     }
 
     static int State(CompletionState c) => c switch { CompletionState.Completed => 1, CompletionState.Failed => -1, _ => 0 };

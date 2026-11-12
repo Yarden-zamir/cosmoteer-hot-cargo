@@ -109,7 +109,17 @@ public static class MechanicsArea
         // Prototype (spec 133).
         Autotest.Commands["mech_proto_goto"] = _ => MissionArea.TeleportPlayers(Proto().Holder.Location(RequireSim()) ?? throw new InvalidOperationException("carrier is not in this system"));
         Autotest.Commands["mech_proto_break"] = arg => { var core = Core(out var holder); core.OnHit(core.Health); };
-        Autotest.Commands["mech_proto_wreck"] = arg => { Core(out var holder); Wreck(holder); };
+        // mech_proto_wreck: moves the players out of recover range of the core, then wrecks the carrier. So a wreck alone does not
+        // complete the objective: the players must come alongside again (mech_proto_near). Without the move, the result depends on
+        // whether the carrier's AI flew away from the players in the seconds before.
+        Autotest.Commands["mech_proto_wreck"] = arg =>
+        {
+            var core = Core(out var holder);
+            var sim = RequireSim();
+            var ship = SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("no human ship");
+            MissionArea.TeleportPlayers(Autotest.ClearSpotNear(sim, holder.DetTransformPointToWorld(core.LocalCenter), 3000f, ship.DetWorldBoundingCircle.Radius));
+            Wreck(holder);
+        };
         Autotest.Commands["mech_proto_surrender"] = arg => { Core(out var holder); ((CareerSimModeManager)RequireSim().Mode).SurrenderedAIs.Add(holder.UniqueID); Autotest.Wait(1); };
         Autotest.Commands["mech_proto_near"] = _ => MissionArea.TeleportPlayers(Proto().LastCoreLocation ?? throw new InvalidOperationException("core is not installed"));
         Autotest.Fields["mech_proto_core"] = () => Proto() is { CoreCell: not null } && TryCore() is not null ? 1 : 0;
@@ -212,7 +222,7 @@ public static class MechanicsArea
                     + $"objects (center/gate): {string.Join(" ", parts)}");
             }
         }
-        if (log) Log.Info($"AUTOTEST CENSUS gates at {string.Join(" ", gates.Select(g => $"{g.Length:0}"))}; asteroid fields={Tagged(objects, "asteroid_field_poi").Count}; mission objects past the farthest gate={beyond}");
+        if (log) Log.Info($"AUTOTEST CENSUS gates at {string.Join(" ", gates.Select(g => $"{g.Length:0}"))}; asteroid fields={Tagged(objects, "asteroid_field_poi").Count}; military stations={Tagged(objects, "military_station").Count}; mission objects past the farthest gate={beyond}");
         return beyond;
     }
 
