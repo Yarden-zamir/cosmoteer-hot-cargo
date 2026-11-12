@@ -17,6 +17,7 @@ You stole corporate tech. The corporation wants it back. Get it across about 8 s
 - **New missions.** Convoy escorts, joint strikes with allied fleets, and shady bounties that may be corporate traps.
 - **FTL-style events.** Distress beacons, corporate checkpoints, fences, rival thieves and more: choices with risks, costs and rewards.
 - **Story chains.** Each station has a story in parts: a fence, a defector, a rival crew, a dark station. What you do in one part decides the next, and some choices come back to find you later.
+- **Learn as you go.** Hot Cargo pages join the game's "How to Play" list and codex, ahead of the vanilla tutorials. The career log gets a "Hot Cargo run" tab with the story of your run.
 
 ![Heat stage alert](docs/screenshots/ux-heat-alert.jpg)
 
@@ -25,6 +26,12 @@ You stole corporate tech. The corporation wants it back. Get it across about 8 s
 ![Tech delivered](docs/screenshots/ux-win.jpg)
 
 ![Run lost](docs/screenshots/ux-loss.jpg)
+
+![How to Play list with Hot Cargo pages first](docs/screenshots/onboarding-howtoplay.jpg)
+
+![A Hot Cargo How to Play page](docs/screenshots/onboarding-page.jpg)
+
+![Hot Cargo run tab in the career log](docs/screenshots/onboarding-careerlog.jpg)
 
 It also improves some of the base game's UI. You can switch off each change in `tunables.rules`:
 

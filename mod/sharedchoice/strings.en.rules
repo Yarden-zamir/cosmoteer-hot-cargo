@@ -1,0 +1,22 @@
+HotCargoSharedChoice
+{
+	// Co-op bar of shared choice dialogs (events, chain pages)
+	ModeFirstPick = "Mode: first pick"
+	ModeVote = "Mode: vote"
+	DecideNow = "Decide now"
+	StatusFirstPick = "<gray>The first pick decides.</gray>"
+	StatusVoteFmt = "<gray>Votes {0}/{1}. Click again to take a vote back.</gray>"
+	StatusVoteTimerFmt = "<gray>Votes {0}/{1}. Most votes win in {2:0} s.</gray>"
+	VotesFmt = "<gray>{0} vote(s):</gray> {1}"
+	SomePlayer = "A player"
+
+	// Chat lines
+	VoteOnFmt = "{0} turned on voting for shared choices."
+	VoteOffFmt = "{0} turned off voting. The first pick decides."
+	DecidedFmt = "The crew voted: choice {0} ({1})."
+	ReasonUnanimous = "unanimous"
+	ReasonMajority = "majority"
+	ReasonTimeout = "time ran out, most votes"
+	ReasonForced = "host decided, most votes"
+	NobodyCanPay = "Nobody who voted for that choice can take it. Vote again."
+}

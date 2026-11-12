@@ -47,6 +47,8 @@ public sealed class RunState
     [Serialize(Optional = true)] public Events.EventsState Events = new();
     /// <summary>Chains area state: the chain of each station, its stage, flags and story.</summary>
     [Serialize(Optional = true)] public Chains.ChainsState Chains = new();
+    /// <summary>Co-op shared choices: the vote mode and the votes on open pages (spec 603, 607).</summary>
+    [Serialize(Optional = true)] public SharedChoice.SharedChoiceState SharedChoice = new();
     /// <summary>Hunters area state: hunter groups that wait to arrive in the current system (spec 191).</summary>
     [Serialize(Optional = true)] public Hunters.HunterState Hunters = new();
     /// <summary>True after the Buyer station spawned in this run (spec 1), so that a later RunSectorCount change spawns no second Buyer.</summary>
@@ -57,4 +59,6 @@ public sealed class RunState
     [Serialize(Optional = true)] public Tech.TechState Tech = new();
     /// <summary>Spec 330: the new-game enemy scaling setting, the enemy multiplier with 2 players. Set once at run start.</summary>
     [Serialize(Optional = true)] public float EnemyScale = Scaling.ScalingModel.DefaultSetting;
+    /// <summary>Spec 730: the run log that the career log window shows, oldest first.</summary>
+    [Serialize(Optional = true)] public List<Onboarding.RunLogEntry> Log = new();
 }

@@ -1,17 +1,61 @@
-// Hot Cargo modules for the vanilla combat AIs (spec 193-202). mod/tactics/actions.rules appends them to the end of each
-// StrategyModules list, so they run before the vanilla modules: Flee first, then answering a call, then regroup.
-// Each module does nothing with no active Hot Cargo run, or when its Tactics.<Behavior>OnVanilla switch is off.
-Regroup
-{
-	Type = HcRegroup
-}
-Call
-{
-	Type = HcCall
-}
-Flee
-{
-	Type = HcFlee
-	AvoidableDoodadTags = [sun]
-	AvoidableDoodadBuffer = 100
-}
+// Hot Cargo modules for the vanilla combat AIs (spec 193-202, 360-369). mod/tactics/actions.rules appends them to the end of
+// each module list, so they run before the vanilla modules. Strategy priority, highest first: personality (measures the build,
+// never takes over), flee, call, fall back, bait, cover, regroup, team. Each module does nothing with no active Hot Cargo run,
+// for a ship that is not hostile to the players, or when its switch in Tactics is off or the ship's personality lacks it.
+Strategy
+[
+	{
+		Type = HcTeam
+	}
+	{
+		Type = HcRegroup
+	}
+	{
+		Type = HcCover
+	}
+	{
+		Type = HcBait
+	}
+	{
+		Type = HcFallBack
+		RepairChecksPerTick = 2
+		AvoidableDoodadTags = [sun]
+		AvoidableDoodadBuffer = 100
+	}
+	{
+		Type = HcCall
+	}
+	{
+		Type = HcFlee
+		AvoidableDoodadTags = [sun]
+		AvoidableDoodadBuffer = 100
+	}
+	{
+		Type = HcPersonality
+	}
+]
+
+// Last module first: a team role or brawl, then the pincer angle, then kite range, then the vanilla modules.
+Tactics
+[
+	{
+		Type = HcKite
+		AttackRotationsToCheck = 8
+		AttackRotationSwitchThresholdFactor = 1.25
+	}
+	{
+		Type = HcPincer
+		TurnInterval = [10, 20]
+		TurnDelta = [-30d, 30d]
+	}
+	{
+		Type = HcRole
+	}
+]
+
+Targeting
+[
+	{
+		Type = HcDisable
+	}
+]

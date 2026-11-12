@@ -38,7 +38,7 @@ internal sealed class DisableTargeting : AITargetingModule
     public override void TargetWeapons(Ship ship, ShipAI ai, List<Weapon> weapons)
     {
         var target = (ship.Commands.CurConfirmedCommand as AttackCommand)?.Target;
-        if (TacticGate.Active(Tactic.Disable) is not { } t || target?.Physics.Body is null)
+        if (TacticGate.Active(Tactic.Disable, ship) is not { } t || target?.Physics.Body is null)
         {
             _partTarget = null;
             return;

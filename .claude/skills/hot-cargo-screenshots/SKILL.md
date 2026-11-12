@@ -15,6 +15,8 @@ Headless test slots draw nothing. Screenshots need the player's own game slot (`
 6. Pull: `pc "$PS_PATHS"'tar.exe -cf - -C (Join-Path $modDir "screenshots") .' | tar -xf - -C <local folder>`. Look at the PNGs with the Read tool.
 7. Release the lock: `rm -rf /tmp/hot_cargo_main_slot.lock`, also on failure.
 
+Co-op screenshots: `scripts/screens-mp.sh tests/screens/<name>.host.txt tests/screens/<name>.client.txt <local folder>` does steps 1 to 7. The host runs in the main slot, the client in a headless test slot.
+
 Rules:
 - Keep sessions short. Leave the player's settings and saves as you found them.
 - Images for the repo go to `docs/screenshots/` as JPEG. Crop out anything personal: user names, paths, Steam names.
