@@ -309,7 +309,8 @@ ShadyBounty
 	SpawnChance = 60%
 	Count = 1
 	Distance = [0, 13000]
-	MinDistanceFromTags = [[sun, 6000], [station, 4000], [bounty, 3000], [hc_shady, 6000]]
+	// hc_shady belongs to this None spawner and leaves no object, so a later spawn keeps its gap from the target ship instead.
+	MinDistanceFromTags = [[sun, 6000], [station, 4000], [bounty, 3000], [hc_shady, 6000], [hc_shady_ship, 6000]]
 	MinDistanceFromNebulas = [[ion_storm, 1000]]
 	SuppressLocationAssertions = true
 

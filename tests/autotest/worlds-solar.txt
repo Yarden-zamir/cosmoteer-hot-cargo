@@ -27,6 +27,8 @@ expect worlds_heat_gain_more > 0
 # Sundive: salvage at the wreck, then leave the heat. No godmode: the dive must be survivable for the starting ship.
 worlds goto outside
 worlds cool
+# The exposures above burn some tech after the ship leaves the heat. Refill the vault, so the check below measures the dive alone.
+tech add 8
 worlds generate sundive
 expect worlds_offers_sundive >= 1
 worlds accept sundive
