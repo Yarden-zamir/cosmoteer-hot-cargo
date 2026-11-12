@@ -73,7 +73,7 @@ internal static class StartingVault
         {
             Place(ship, vault, bay.Cells, corridors, count, placed, allowCell);
             // No vault on the bay's tiles: the bay goes back, so the design keeps its storage.
-            if (placed.Count == 0) PutBack(ship, bay.Part);
+            if (placed.Count == 0) PutBack(ship, bay.Part, bay.HadCrewPath);
         }
         var center = Center2(ship);
         var interior = InteriorCells(ship, corridors).OrderBy(c => Distance2(new IntRect(c.X, c.Y, 1, 1), center)).ThenBy(c => c.Y).ThenBy(c => c.X).Distinct().ToList();
@@ -99,14 +99,14 @@ internal static class StartingVault
         }
     }
 
-    /// <summary>Puts a grabbed storage part back on its corridor tiles. The game adds its doors like the build tool.</summary>
-    static void PutBack(Ship ship, PartInfo part)
+    /// <summary>Puts a grabbed storage part back on its corridor tiles. The game adds its doors like the build tool. A part that crew could reach before must stay reachable.</summary>
+    static void PutBack(Ship ship, PartInfo part, bool hadCrewPath)
     {
         using var sui = ShipUpdateInfo.Alloc(ship);
         if (!sui.TryAddBlueprintPart(part.Rules, part.Location, part.Rotation, part.FlipX, mirrorPhysical: true, allowOverwrite: true, addDoors: true, hireCrew: false, out var reasons))
             throw new InvalidOperationException($"cannot put {part.Rules.ID} back at {part.Location}: {reasons}");
         sui.Apply(ConstructionMode.InstantFree, builtByPlayer: true);
-        if (!HasCrewPath(new BlueprintPathfinder(ship), part)) throw new InvalidOperationException($"{part.Rules.ID} at {part.Location} has no crew path after the put-back");
+        if (hadCrewPath && !HasCrewPath(new BlueprintPathfinder(ship), part)) throw new InvalidOperationException($"{part.Rules.ID} at {part.Location} has no crew path after the put-back");
         Log.Info($"vaults: no vault on the tiles of {part.Rules.ID} at {part.Location}; it went back");
     }
 
@@ -156,7 +156,7 @@ internal static class StartingVault
     /// Returns the storage part and its tiles in vault order: tiles with a door of the storage part last (as corridors they keep a walkway through the room),
     /// the others nearest to the ship center first. Null when the ship has no storage part.
     /// </summary>
-    static (PartInfo Part, List<IntVector2> Cells)? GrabStorage(Ship ship)
+    static (PartInfo Part, bool HadCrewPath, List<IntVector2> Cells)? GrabStorage(Ship ship)
     {
         var center = Center2(ship);
         var bay = ship.BlueprintParts
@@ -166,6 +166,7 @@ internal static class StartingVault
         if (bay is null) return null;
         IntRect rect = bay.Rect;
         var part = Info(bay);
+        bool hadCrewPath = HasCrewPath(new BlueprintPathfinder(ship), part);
         var doorTiles = bay.GetBlueprintDoors().Select(d => rect.Contains(d.Location.Cell) ? d.Location.Cell : d.Location.OppositeCell).ToHashSet();
         using (var sui = ShipUpdateInfo.Alloc(ship))
         {
@@ -174,7 +175,7 @@ internal static class StartingVault
             sui.Apply(ConstructionMode.InstantFree, builtByPlayer: true);
         }
         Log.Info($"vaults: {bay.Rules.ID} at {rect.Location} became corridor");
-        return (part, rect.OrderBy(doorTiles.Contains).ThenBy(c => Distance2(new IntRect(c.X, c.Y, 1, 1), center)).ThenBy(c => c.Y).ThenBy(c => c.X).ToList());
+        return (part, hadCrewPath, rect.OrderBy(doorTiles.Contains).ThenBy(c => Distance2(new IntRect(c.X, c.Y, 1, 1), center)).ThenBy(c => c.Y).ThenBy(c => c.X).ToList());
     }
 
     /// <summary>
