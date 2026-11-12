@@ -30,6 +30,7 @@ public static class Mod
             Worlds.WorldsArea.Register();
             Scaling.ScalingArea.Register();
             TunablesMenu.TunablesMenuArea.Register();
+            Diplomacy.DiplomacyArea.Register();
             Log.Info($"harmony patched {harmony.GetPatchedMethods().Count()} methods; mod root {ModRoot}");
         }
         catch (Exception ex)

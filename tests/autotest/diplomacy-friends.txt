@@ -1,0 +1,102 @@
+# Friendly ships (spec 573 to 585): hold tech and its return, the fee, betrayal, held tech against the loss rule,
+# hired help that joins and runs, the wanted rule, mercenaries that hail and take pay by the minute.
+newgame run
+wait 8
+ev_set Enabled false
+aiset FleeEnabled false
+aiset CallEnabled false
+aiset RegroupEnabled false
+dip_set DemandHailChance 0
+dip_set MercChance 0
+expect dip_vaulttech == 8
+# A friendly warship answers calls and shows the topics.
+dip_spawn friend 250
+wait 2
+expect dip_answers == 1
+dip_page friend
+expect dip_pagebuttons >= 2
+dip_page friend hold
+expect dip_pageslider == 1
+# Hold for free, then the return without betrayal. Held tech counts in the fleet tech.
+dip_set HoldChanceBase 5
+dip_set FeeChanceBase -5
+dip_set BetrayChanceBase -5
+dip hold friend 3
+wait 1
+expect dip_held == 3
+expect dip_vaulttech == 5
+expect tech == 8
+dip return friend
+wait 1
+expect dip_held == 0
+expect dip_vaulttech == 8
+# Hold is once per ship.
+dip hold friend 2
+wait 1
+expect dip_held == 0
+# A second ship asks a fee first; paying it starts the hold. Then it betrays at the return.
+dip_spawn friend 250
+wait 2
+dip_set FeeChanceBase 5
+dip_set FeePerUnit 0.01
+dip hold friend 2
+wait 1
+expect dip_asks == 1
+expect dip_held == 0
+dip_mark
+dip payholdfee friend
+wait 1
+expect dip_asks == 0
+expect dip_held == 2
+expect dip_moneyspent > 0
+dip_set BetrayChanceBase 5
+dip return friend
+wait 1
+expect dip_held == 0
+expect dip_vaulttech == 6
+expect tech == 6
+# Held tech keeps the run going: a third ship holds 2, then the players hand all vault tech to a hunter.
+dip_spawn friend 250
+wait 2
+dip_set FeeChanceBase -5
+dip hold friend 2
+wait 1
+expect dip_held == 2
+spawnstage Warning
+wait 2
+dip_near hunter
+wait 1
+dip handover hunter 4
+wait 1
+expect dip_vaulttech == 0
+wait 6
+expect tech == 2
+expect lost == 0
+dip_log held
+# Hired help: a fourth ship joins for pay, attacks an enemy near the player and runs when badly hurt.
+godmode on
+dip_spawn friend 300
+wait 2
+dip_set HireChanceBase 5
+dip_page friend hire
+expect dip_pageslider == 1
+dip hire friend 0
+wait 1
+expect dip_hires == 1
+dip_spawn enemy 400
+wait 4
+expect dip_friendattacking == 1
+dip_damage friend 0.3
+wait 3
+expect dip_hirefleeing == 1
+dip_log fleeing
+# Wanted: nobody helps.
+wanted
+wait 1
+dip_spawn friend 300
+wait 2
+dip hire friend 0
+wait 1
+expect dip_hires <= 1
+expect dip_friendattacking == 0
+quit
