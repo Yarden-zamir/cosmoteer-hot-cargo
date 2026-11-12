@@ -43,7 +43,7 @@
 | `Events.CooldownSeconds`, `MaxEventsPerSystem` | 120 s, 2 | 70 |
 | `Events.MoneyScale`, `FameScale`, `HeatScale` | 1, 1, 1 | 73 |
 | `Contracts.TrailFreeContracts`, `TrailHeatPerContractMinute` | 3, 1 | 101 |
-| `Contracts.FeeChance`, `FeeMin`, `FeeMax`, `PaidBonusFactor` | 0.5, 0.3, 0.8, 2 | 102 |
+| `Contracts.FeeChance`, `FeeMin`, `FeeMax`, `PaidBonusFactor` | 0.5, 0.15, 0.4, 2 | 102 |
 | `Contracts.RivalPairChance` | 0.2 | 103 |
 | `Contracts.InformantShare`, `InformantChanceMin`, `InformantChanceMax` | 0.75, 0.05, 0.15 | 104 |
 | `Contracts.InformantDelayMin`, `InformantDelayMax`, `InformantHeat`, `InformantShips` | 45 s, 150 s, 15, 2 | 104 |
