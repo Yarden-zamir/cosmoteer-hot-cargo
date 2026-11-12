@@ -28,6 +28,9 @@ public static class ContractsArea
     static SimRoot Sim() => R().Game.Sim ?? throw new InvalidOperationException("no sim");
     static Mission Picked() => _picked ?? throw new InvalidOperationException("no contract picked; run contract_pick first");
 
+    /// <summary>Test only: the offer that contract_pick chose, for UI tests and screenshots.</summary>
+    internal static Mission? PickedForTests => _picked;
+
     static void RegisterAutotest()
     {
         // contract_pick <any|paid|free|flatheat|rival|informant|discreet> [metatype]: picks the first station offer that matches,

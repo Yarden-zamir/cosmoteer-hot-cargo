@@ -1,0 +1,36 @@
+# Contract terms in the comms Missions tab. Main slot only (needs graphics).
+render on
+newgame run
+wait 10
+ev_set Enabled false
+closepanel
+contract_pick paid
+wait 3
+comms open
+wait 1
+commsmission
+wait 1
+commsselect
+wait 2
+screenshot contracts-paid
+comms close
+contract_pick rival
+wait 3
+comms open
+wait 1
+commsmission
+wait 1
+commsselect
+wait 2
+screenshot contracts-rival
+comms close
+contract_pick informant
+wait 3
+comms open
+wait 1
+commsmission
+wait 1
+commsselect
+wait 2
+screenshot contracts-informant
+quit

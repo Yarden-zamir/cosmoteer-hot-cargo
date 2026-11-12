@@ -67,6 +67,25 @@ static class UxAutotest
             } ?? throw new InvalidOperationException($"the station has no {arg} tab");
             window._tabs.TabsListBox.SelectedWidget = tab;
         };
+        // commsmission: shows the Missions tab of the open comms window and selects the offer that contract_pick chose
+        // (or the first offer), so a screenshot shows its info panel with the contract terms. Test only.
+        Autotest.Commands["commsmission"] = _ =>
+        {
+            if (!CommWindow.s_openWindows.TryGetValue(TechAutotest.NearestStation(), out var window))
+                throw new InvalidOperationException("no comms window with the nearest station");
+            window._tabs.TabsListBox.SelectedWidget = window._missionsTab ?? throw new InvalidOperationException("the station has no missions tab");
+        };
+        Autotest.Commands["commsselect"] = _ =>
+        {
+            if (!CommWindow.s_openWindows.TryGetValue(TechAutotest.NearestStation(), out var window))
+                throw new InvalidOperationException("no comms window with the nearest station");
+            var panel = Walk(window).OfType<Cosmoteer.Modes.Career.Missions.MissionsPanel>().FirstOrDefault()
+                ?? throw new InvalidOperationException("no missions panel in the comms window; run commsmission first");
+            var picked = Contracts.ContractsArea.PickedForTests;
+            var item = panel.FirstOrDefault(i => i.Mission == picked) ?? panel.FirstOrDefault()
+                ?? throw new InvalidOperationException("the missions panel lists no offers");
+            item.IsSelected = true;
+        };
         Autotest.Commands["tradehint"] = _ => Log.Info($"ux: trade hint\n{TradeText()}");
         Autotest.Commands["wantedline"] = _ => Log.Info($"ux: wanted line: {WantedTimer.Text(Autotest.RequireRun().Mode)}");
 
@@ -120,4 +139,6 @@ static class UxAutotest
 
     static string TradeText() =>
         TradeHints.Last?.TryGetTarget(out var tab) == true ? TradeHints.Text(tab) : throw new InvalidOperationException("no trade tab was opened");
+
+    static IEnumerable<Halfling.Gui.Widget> Walk(Halfling.Gui.Widget w) => w.GetChainedWidgets(recursive: true).Prepend(w);
 }
