@@ -1,0 +1,55 @@
+// Archetype weights of the Hot Cargo run map (spec 220). mod/journey/galaxy.rules uses this spawner instead of the vanilla one.
+// It is the vanilla RandomSectorTypes spawner: each system that has no sector type yet gets one by weight.
+// The starting system stays basic (StartingNodePicker in galaxy.rules sets it first).
+// These are rules values: a change needs a game restart and applies to new careers only, because the map is made once per career.
+// Chance of a type = its weight / the sum of the weights that its tier allows. With the defaults, about 3 of 4 systems are archetypes.
+
+SectorTypes
+{
+	Type = RandomSectorTypes
+	SectorTypes
+	[
+		// Hot Cargo archetypes (worlds/sectors.rules).
+		{
+			Type = hc_trade_hub
+			RandomWeight = 1
+		}
+		{
+			Type = hc_mining_belt
+			RandomWeight = 1
+		}
+		{
+			Type = hc_solar_zone
+			RandomWeight = 0.8
+		}
+		{
+			Type = hc_deep_space
+			RandomWeight = 0.8
+			MinTier = 3
+		}
+
+		// Vanilla sector types, at lower weights than in base_galaxy.rules.
+		{
+			Type = basic
+			RandomWeight = 0.5
+		}
+		{
+			Type = binary
+			RandomWeight = 0.25
+		}
+		{
+			Type = high_density_nebula
+			RandomWeight = 0.2
+			MinTier = 5
+		}
+		{
+			Type = supernova
+			RandomWeight = 0.1
+			MinTier = 5
+		}
+		{
+			Type = electron
+			RandomWeight = 0.15
+		}
+	]
+}

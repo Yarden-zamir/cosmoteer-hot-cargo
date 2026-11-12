@@ -27,6 +27,7 @@ public static class Mod
             Chains.ChainsArea.Register();
             Contracts.ContractsArea.Register();
             Ux.UxArea.Register();
+            Worlds.WorldsArea.Register();
             Log.Info($"harmony patched {harmony.GetPatchedMethods().Count()} methods; mod root {ModRoot}");
         }
         catch (Exception ex)

@@ -1,0 +1,9 @@
+# Co-op current, client side: the client sees the host's ship drift downstream too.
+mpjoin 127.0.0.1:{PORT}
+mpready
+waitfor mpmark >= 1 120
+expect worlds_ship_in_current > 0.5
+expect worlds_flow_speed > 2
+wait 10
+expect desyncs == 0
+quit

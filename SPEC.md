@@ -140,7 +140,7 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 
 ## 13. Tunables, debug and live tuning
 
-50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78, 100 to 104, 130 to 141, 160 to 175 and 190 to 202 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
+50. The C# code reads all numbers in requirements 1, 4, 7, 12, 17, 19, 23 to 48, 65, 67 to 78, 100 to 104, 130 to 141, 160 to 175, 190 to 202 and 221 to 225 from `tunables.rules`. `tunables.rules` holds only changed values. The mod writes all values and defaults to `tunables.defaults.rules` at game start.
 51. The file uses the game's `.rules` format.
 52. The mod watches the file. When the file changes, the mod reloads it on the next frame, without a game restart.
 53. If the file has an error, the mod keeps the last valid values and shows the error in game. Errors include values that break sim logic later, for example a stage name that `Hunters.Stages` or a tactic does not match (`TunablesFile.Validate`).
@@ -222,6 +222,12 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `Mechanics.DeliveryRadius` | 800 | 134 |
 | `Mechanics.SurveyScanSeconds` | 15 s | 136 |
 | `Mechanics.ScanRange`, `IntensivePayBonus`, `MaxIntensivePerWave` | 3500, 0.25, 2 | 140 |
+| Archetype weights | rules values in `mod/worlds/archetypes.rules`, restart needed | 220 |
+| `Worlds.CurrentFlowSpeed`, `CurrentAccel`, `CurrentArrows` | 45, 9, on | 221 |
+| `Worlds.PassHoldSeconds`, `PassLostSeconds`, `PassWaveSeconds`, `PassWaveDistance` | 120 s, 15 s, 35 s, 2500 | 222 |
+| `Worlds.SundiveSalvageSeconds`, `HeatWarnDepth` | 5 s, 0.5 | 223 |
+| `Worlds.LairDiscoverDistance` | 2000 | 224 |
+| `Worlds.ArrivalLine`, `ArrivalLineDelaySeconds` | on, 4 s | 225 |
 
 The defaults are first guesses. Live tuning sets the real values.
 
@@ -241,12 +247,13 @@ mod/                       rules content; scripts/assemble-mod.sh builds mod.rul
   tactics/ai_vanilla.rules enemy AI modules that actions.rules appends to the vanilla combat AIs
   events/                  choice events (events.rules), outcome spawns (spawns.rules), signal POIs
   chains/                  story chains (chains.rules), stage missions (missions.rules), chain pages (pages.rules)
+  worlds/                  system archetypes: sector types, run map weights, archetype spawners, current nebula, wave spawns
 src/HotCargo.Loader/       startup hook entry point, assembly resolve
 src/HotCargo/
   Mod.cs                   Harmony setup, area registration
   Core/                    Run, RunState (save), Tunables, TunablesFile (live reload, validation), HeatModel,
                            CareerPatches (lifecycle), Activation (requirement 63), Errors, SimQueries, DebugKeys
-  Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/ Chains/   one folder for each area: <Area>Area.Register, tunables, patches
+  Tech/ Journey/ Hunters/ Tactics/ Missions/ Ux/ Events/ Chains/ Worlds/   one folder for each area: <Area>Area.Register, tunables, patches
   Ai/                      enemy AI behaviors (flee, call, regroup, focus); TacticsArea registers it, Tactics tunables
   Ui/                      overlay, heat panel, run intro and end panels
   Dev/Autotest.cs          headless test commands
@@ -401,4 +408,19 @@ A contract is a mission offer that a client gives: every offer in the station co
 106. **Contract UI.** The mission info panel (comms missions tab and mission log) has a "Contract terms" section under the rewards. Before the accept it shows the fee (and the player's money when it is too low), the flat heat, the trail ("counts as N; open X → Y; trail +a/min → +b/min"), the rival offer that the accept dismisses, and the informant risk or "Discreet client". After the accept it shows the fee paid, the open count and trail rate, the informant risk, and a sell-out. The accept button reads "Accept (pay N)". Accepting and paying go through the game's own accept input (`MPAcceptMissionInput`), so they are deterministic in multiplayer.
 107. The run state saves the terms, the pending sell-outs and the sold-out contracts. Accepted contracts with a bonus keep a `HotCargoContractBonus` reward, so like other Hot Cargo missions such a save needs the mod.
 108. After a win, the contract economy stops: no fees, no flat heat, no trail and no sell-outs.
+
+## 27. System archetypes
+
+WORLDS.md holds the design. The archetypes give each system an identity, a hazard and a matching mission. They add no jumps.
+
+220. A system of the run map gets a sector type by weight: four Hot Cargo archetypes (Trade Hub `hc_trade_hub`, Mining Belt `hc_mining_belt`, Solar Zone `hc_solar_zone`, Deep Space `hc_deep_space`) and the vanilla types at lower weights. The weights are rules values in `mod/worlds/archetypes.rules` (the vanilla `RandomSectorTypes` spawner, used by `mod/journey/galaxy.rules`). A change needs a game restart and applies to new careers only. The starting system stays basic. Deep Space needs tier 3 or more. Each archetype is the basic sector plus spawn flags (`mod/worlds/sectors.rules`), so every spawner that an area adds to the basic sector runs in it too.
+221. **Trade Hub**: a hub world (1.5 × an inner planet, no other inner planets) next to a trade station, and a current: a straight band of the `hc_current` cloud, 18,000 long and 4,500 wide (rules type `HotCargoCurrent`), along the flow direction of the system. The flow direction is one of 8 directions, picked from the map node seed, so it is the same after a load and on every client. Each sim tick, the nebula effect `HotCargoCurrentPush` pushes every live ship in the band along the flow with an acceleration of `CurrentAccel` × cloud strength × (1 − speed along the flow ÷ `CurrentFlowSpeed`), clamped to 0 to 1. It never brakes a ship. Stations, asteroids and megaroids do not drift. Arrows drift along the flow over the band (`CurrentArrows`); the vanilla nebula tooltip and HUD line name the current.
+222. **Mining Belt**: a dense belt of 1,700 to 1,900 large rocks and some megaroids, 900 wide, 10,000 to 11,500 from the center, instead of the vanilla belt. 3 or 4 passes (ring markers of radius 800) cut through it with no rocks inside. **Hold the Pass** (`HotCargoHoldPass`): first the players defeat the raiders who camp in one pass (vanilla `DefeatShips`). Then the hold clock runs while a human ship is within the ring. After the first entry, the mission fails when the ring stays empty for `PassLostSeconds`. Every `PassWaveSeconds` of holding, a wave (`PassRaiders` in `mod/worlds/spawns.rules`) comes from `PassWaveDistance` away. The objective completes after `PassHoldSeconds`. Away from the system, the clock waits.
+223. **Solar Zone**: a single vanilla sun with its vanilla heat zone (the kill radius is 1,500 and the zone edge is 3,750 for the default sun). Depth = 0 at the zone edge and 1 at the kill radius; the vanilla heat grows with depth. A HUD line shows the deepest own ship in a heat zone and its depth, red from `HeatWarnDepth`, in every system with a sun. **Sundive** (`HotCargoSundive`): a wreck site at depth 0.15 to 0.25. A human ship within 300 of the site salvages; after `SundiveSalvageSeconds` of salvage time that ship carries the recorder, and the objective completes when it is out of every heat zone. It fails when that ship is destroyed. The heat also burns Tech Vaults (requirement 65), so a dive with the tech aboard costs tech. The Sunside Ore seams (requirement 138) sit on the sun too. Other missions can target this archetype with the spawn flag `hc_solar_zone`.
+224. **Deep Space**: the vanilla dense nebula sector plus 2 or 3 more ion storms. A pirate lair (the vanilla pirate base shape, hidden until discovered) sits in a calm eye (radius 1,800) of its own ion storm, 8,000 to 13,000 from the center. **Raid the Lair**: `HotCargoFindLair` shows a search circle of radius 4,500 that holds the lair, with the lair 20 % to 60 % of the radius from its center. It completes when a human ship comes within `LairDiscoverDistance` of the lair, or when the lair is gone. Then the players destroy the lair (vanilla `DefeatShips`).
+225. On the first arrival in a system, after `ArrivalLineDelaySeconds`, a toast and a chat line name the sector type and its hazard (`ArrivalLine`). The galaxy map tooltip shows the same hazard line under the vanilla sector type line. The hazard lines are strings `HotCargoWorlds/Hazard_<sector type ID>`; a type without one shows no line.
+226. Accepted archetype missions save their objective state with the career: the hold time, the empty time and the waves of a pass hold, the salvage time and the carrier of a sundive, the lair and the search circle of a raid. A save with an accepted archetype mission does not load without the mod.
+227. The current push, the objectives and the waves change the sim only from the sim tick (the nebula effect and `EventHub.Tick`). Waves use a random source seeded from the mission. Before a run is active (the first system of a new career), sim code uses the default `Worlds` tunables, not the local file.
+228. Contract terms (`HotCargoContract`, requirement 100 and later): Hold the Pass is free, flat heat 6, trail weight 1, informant chance 10 %. Sundive costs 0.3 standard mission pay, flat heat 2, trail weight 0.5, informant chance 5 %. Raid the Lair is free, flat heat 4, trail weight 1, informant chance 20 %. Pay: Hold the Pass 2 × a standard mission's money and fame, Sundive 3 × money and 1.5 × fame, Raid the Lair 2.5 × money and 2 × fame.
+229. Archetype objects fit the smaller Hot Cargo systems of the economy area (`mod/contracts/actions.rules` on its branch): the belt lies between the stations (up to 9,000) and the FTL gates (13,500 and more).
 

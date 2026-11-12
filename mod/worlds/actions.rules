@@ -1,0 +1,55 @@
+	// Worlds (WORLDS.md): system archetypes. The run map picks them by weight (worlds/archetypes.rules, used by journey/galaxy.rules).
+	{
+		Action = AddMany
+		AddTo = "<modes/career/sectors/sectors.rules>/Sectors"
+		ManyToAdd
+		[
+			&<worlds/sectors.rules>/TradeHub
+			&<worlds/sectors.rules>/MiningBelt
+			&<worlds/sectors.rules>/SolarZone
+			&<worlds/sectors.rules>/DeepSpace
+		]
+	}
+	// One group per archetype, each gated by its spawn flag at the top. So basic and vanilla systems run none of them,
+	// and their generation (and its random sequence) stays as it was.
+	{
+		Action = AddMany
+		AddTo = "<modes/career/sectors/sector_basic/sector_basic.rules>/Sector/SystemGenerator/Spawners"
+		ManyToAdd
+		[
+			&<worlds/sysgen_worlds.rules>/TradeHub
+			&<worlds/sysgen_worlds.rules>/MiningBelt
+			&<worlds/sysgen_worlds.rules>/SolarZone
+			&<worlds/sysgen_worlds.rules>/DeepSpace
+		]
+	}
+	{
+		Action = Add
+		AddTo = "<nebulas/nebulas.rules>/NebulaTypes"
+		ToAdd = &<worlds/current.rules>/Current
+	}
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/mission_metatypes.rules>"
+		Overrides
+		{
+			HotCargoHoldPass
+			{
+				NameKey = "HotCargoWorlds/HoldPass"
+				DescriptionKey = "HotCargoWorlds/HoldPassDesc"
+				CategoryID = faction_wars
+			}
+			HotCargoSundive
+			{
+				NameKey = "HotCargoWorlds/Sundive"
+				DescriptionKey = "HotCargoWorlds/SundiveDesc"
+				CategoryID = exploration
+			}
+			HotCargoLairRaid
+			{
+				NameKey = "HotCargoWorlds/LairRaid"
+				DescriptionKey = "HotCargoWorlds/LairRaidDesc"
+				CategoryID = bounties
+			}
+		}
+	}

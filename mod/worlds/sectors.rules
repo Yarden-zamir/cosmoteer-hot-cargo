@@ -1,0 +1,40 @@
+// Hot Cargo system archetypes (WORLDS.md, spec 220 to 229). Each archetype is a vanilla sector type built on the basic sector.
+// The basic sector holds every vanilla and Hot Cargo spawner. The spawn flags here turn the archetype spawners on
+// (worlds/sysgen_worlds.rules) and turn some vanilla spawners off. The galaxy map tooltip shows NameKey.
+// mod/worlds/actions.rules adds these sectors to the career sector list. A change here needs a game restart.
+
+TradeHub : <./Data/modes/career/sectors/sector_basic/sector_basic.rules>/Sector
+{
+	ID = hc_trade_hub
+	NameKey = "HotCargoWorlds/TradeHub"
+	// The hub world replaces the vanilla inner planets.
+	SpawnFlags = [hc_trade_hub, no_inner_planets]
+	BackgroundStyles = [bg_tan_teal_blue]
+}
+
+MiningBelt : <./Data/modes/career/sectors/sector_basic/sector_basic.rules>/Sector
+{
+	ID = hc_mining_belt
+	NameKey = "HotCargoWorlds/MiningBelt"
+	// The dense belt replaces the vanilla belt.
+	SpawnFlags = [hc_mining_belt, no_asteroid_belt]
+	BackgroundStyles = [bg_tan_pink_silver]
+}
+
+SolarZone : <./Data/modes/career/sectors/sector_basic/sector_basic.rules>/Sector
+{
+	ID = hc_solar_zone
+	NameKey = "HotCargoWorlds/SolarZone"
+	// A single sun (no binary_sun flag), so the vanilla heat zone is one clean circle. No inner planets near it.
+	SpawnFlags = [hc_solar_zone, no_inner_planets]
+	BackgroundStyles = [bg_yellow_orange]
+}
+
+DeepSpace : <./Data/modes/career/sectors/sector_basic/sector_basic.rules>/Sector
+{
+	ID = hc_deep_space
+	NameKey = "HotCargoWorlds/DeepSpace"
+	// The vanilla dense nebula sector, plus the storms and the lair in worlds/sysgen_worlds.rules.
+	SpawnFlags = [hc_deep_space, no_standard_nebulas, high_density_nebulas]
+	BackgroundStyles = [bg_blue, bg_red_blue]
+}

@@ -1,0 +1,17 @@
+# Current (spec 221): a ship at rest in the current drifts along the flow of the system; beside the current it stays at rest.
+newgame run
+wait 8
+worlds jumpto hc_trade_hub
+pause off
+worlds goto nocurrent
+expect worlds_in_current == 0
+wait 4
+expect worlds_flow_speed < 1
+expect worlds_flow_speed > -1
+worlds goto current
+expect worlds_in_current > 0.5
+expect worlds_ship_in_current > 0.5
+# An idle ship brakes against the drift, but it keeps drifting downstream.
+wait 5
+expect worlds_flow_speed > 2
+quit

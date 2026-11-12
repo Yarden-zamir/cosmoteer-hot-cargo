@@ -1,0 +1,45 @@
+// The current (spec 221): a cloud that pushes ships in one direction, like a river. mod/worlds/actions.rules adds it to the nebula types.
+// It is the vanilla cloudy nebula with a teal tint, full sight, and the Hot Cargo active effect HotCargoCurrentPush (Worlds/Current.cs).
+// The flow speed and the push are tunables (Worlds.CurrentFlowSpeed, Worlds.CurrentAccel). The direction comes from the system seed.
+Current : <./Data/nebulas/cloudy/nebula_cloudy.rules>
+{
+	ID = hc_current
+	ToolTipKey = "HotCargoWorlds/CurrentTip"
+	HudTextKey = "HotCargoWorlds/CurrentHudFmt"
+	// A current is thin gas: it does not hide ships like a cloud.
+	SightRangeFactor = 100%
+	RadarRangeFactor = 100%
+	HidesToOutsideObserversThreshold = 200%
+	HidesRadarToOutsideObserversThreshold = 200%
+
+	ActiveEffects
+	[
+		{
+			Type = HotCargoCurrentPush
+			// Like the sun's heat zone: rocks do not drift.
+			IgnoreShipTypes = [cosmoteer.asteroid, cosmoteer.megaroid]
+		}
+	]
+
+	MaterialLow : ^/0/MaterialLow
+	{
+		_color1 = [70, 190, 210, 255]
+		_color2 = [150, 240, 235, 255]
+		_color3 = [60, 110, 190, 255]
+		_midScrollSpeed = 40
+		_microScrollSpeed = 12
+	}
+	DiffuseMaterialLow : ^/0/DiffuseMaterialLow
+	{
+		_color1 = [70, 190, 210, 255]
+		_color2 = [150, 240, 235, 255]
+	}
+	MaterialHigh : ^/0/MaterialHigh
+	{
+		_color1 = [90, 200, 215, 255]
+		_color2 = [160, 240, 230, 255]
+		_color3 = [60, 110, 190, 255]
+		_midScrollSpeed = 40
+		_microScrollSpeed = 12
+	}
+}

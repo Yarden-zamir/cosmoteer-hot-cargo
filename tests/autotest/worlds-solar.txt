@@ -1,0 +1,47 @@
+# Solar zone (spec 223): the heat zone hurts more the deeper a ship goes; the sundive completes when the carrier gets out.
+newgame run
+wait 8
+worlds jumpto hc_solar_zone
+pause off
+worlds type hc_solar_zone
+expect worlds_suns == 1
+worlds goto outside
+expect worlds_heat_depth == 0
+worlds mark
+wait 3
+expect worlds_heat_gain == 0
+# Two exposures of the same length from a cold ship: the deeper one burns more.
+worlds goto sun 0.1
+expect worlds_heat_depth >= 0.09
+worlds cool
+worlds mark
+wait 2
+worlds keep
+expect worlds_heat_gain > 0
+worlds goto sun 0.35
+expect worlds_heat_depth >= 0.34
+worlds cool
+worlds mark
+wait 2
+expect worlds_heat_gain_more > 0
+# Sundive: salvage at the wreck, then leave the heat. No godmode: the dive must be survivable for the starting ship.
+worlds goto outside
+worlds cool
+worlds generate sundive
+expect worlds_offers_sundive >= 1
+worlds accept sundive
+worlds goto sundive
+pause off
+expect worlds_heat_depth > 0.1
+# A quick dive: out as soon as the recorder is aboard. The heat cooks a Tech Vault within seconds.
+wait 4
+expect worlds_sundive_carrier == 1
+expect worlds_state_sundive == 0
+worlds goto outside
+wait 3
+expect worlds_sundive_done == 1
+log after_sundive
+# The quick dive costs about half the tech of an unshielded starting ship (PLAYTEST.md). The run must go on.
+expect lost == 0
+expect tech >= 1
+quit
