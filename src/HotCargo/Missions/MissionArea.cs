@@ -89,7 +89,8 @@ public static class MissionArea
             Ship? escort = RequireEscort().Escort.TargetShip;
             return escort is null ? 0 : TaggedShips(RequireSim(), "hc_escort_raider").Count(t => t.Live?.Commands.CurConfirmedCommand is Cosmoteer.Ships.Commands.AttackCommand a && a.Target == escort);
         };
-        Autotest.Fields["hc_escort_health"] = () => RequireEscort().Escort.TargetShip is { } ship ? 100f * Hunters.HunterOrders.HealthFraction(ship) : -1f;
+        Autotest.Fields["hc_escort_health"] = () =>
+            100f * Hunters.HunterOrders.HealthFraction(RequireEscort().Escort.TargetShip ?? throw new InvalidOperationException("escort is not live; keep a player near it"));
         Autotest.Fields["hc_escort_done"] = () => RequireEscort().Completion == CompletionState.Completed ? 1 : 0;
         Autotest.Fields["hc_trap_done"] = () => RequireTrap().Completion == CompletionState.Completed ? 1 : 0;
         Autotest.Fields["hc_ambushers"] = () => RequireTrap().Ambushers.Count(a => a.IsAlive);
