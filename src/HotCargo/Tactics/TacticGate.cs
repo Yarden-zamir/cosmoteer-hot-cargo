@@ -26,9 +26,17 @@ public static class TacticGate
         bool hunter = AiGate.IsHunterAi(ship);
         if (hunter && !StageReached(run, minStage)) return null;
         if (AiGate.Surrendered(ship) || !AiGate.HostileToPlayers(ship)) return null;
-        if (!t.PersonalitiesEnabled) return hunter ? t : null;
+        if (!t.PersonalitiesEnabled) return hunter && SidesAllow(tactic, PersonalityStrategy.Scores(ship, t)) ? t : null;
         return PersonalityStrategy.Traits(ship, t).Has((Trait)tactic) ? t : null;
     }
+
+    /// <summary>Spec 1032 without personalities: the build fit holds the same rule when personalities are on.</summary>
+    static bool SidesAllow(Tactic tactic, BuildScores b) => tactic switch
+    {
+        Tactic.Kite => !b.WeakBack,
+        Tactic.Bait => !b.NoGuardedSide,
+        _ => true,
+    };
 
     public static (bool Enabled, string MinStage) Settings(TacticsTunables t, Tactic tactic) => tactic switch
     {

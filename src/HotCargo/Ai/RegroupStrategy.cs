@@ -24,7 +24,7 @@ internal sealed class RegroupStrategyRules : AIStrategyModuleRules
 /// <summary>
 /// Spec 201. A ship that is weaker than its target does not charge alone: it flies to its nearest ally that is still far,
 /// until enough allies are close or its time runs out. Then it attacks, and it does not regroup again for the same time.
-/// Tell: the ship turns away from the players toward its friends, and the label shows REGROUPING.
+/// Tell: the ship pulls away from the players toward its friends. No label: the plan stays hidden (spec 368).
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
 internal sealed class RegroupStrategy(RegroupStrategyRules rules) : AIStrategyModule

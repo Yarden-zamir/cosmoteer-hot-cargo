@@ -32,7 +32,7 @@ internal sealed class FleeStrategyRules : AIStrategyModuleRules
 /// Spec 193-195. A badly damaged ship may decide to run (one roll each time it drops below the flee health),
 /// and a ship without offensive weapons always runs. It keeps away from the nearest enemy.
 /// A corporate hunter jumps out of the system after FleeJumpSeconds. Any other ship repairs when clear and fights again once recovered.
-/// Tell: the ship turns its back, the label shows FLEEING and the jump countdown, and the ship jumps out with the FTL effect.
+/// Tell: the ship pulls away, a corporate hunter's label shows the jump countdown, and the ship jumps out with the FTL effect.
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
 internal sealed class FleeStrategy : AIStrategyModule
@@ -100,7 +100,6 @@ internal sealed class FleeStrategy : AIStrategyModule
             {
                 _since = now;
                 TacticsLog.Event(ship, AiArea.Flee, $"starts at health {health:0.00} weapons={hasWeapons}");
-                AiText.Chat(ship, "FleeFmt");
             }
             else TacticsLog.Event(ship, AiArea.FleeEnd, $"fights again at health {health:0.00}");
         }
