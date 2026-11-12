@@ -119,7 +119,7 @@ static class DiplomacyAutotest
         };
         Autotest.Commands["dip_close"] = _ =>
         {
-            foreach (var w in R().Game.Gui.FloatingWindows.Children.OfType<CommWindow>().ToList()) w.SelfActive = false;
+            foreach (var w in R().Game.Gui.FloatingWindows.Children.OfType<CommWindow>().ToList()) Cosmoteer.Game.Gui.Extensions.Unparent(w);
         };
         // dip_damage <target> <fraction>: every part of the target to this fraction of its health.
         Autotest.Commands["dip_damage"] = arg =>

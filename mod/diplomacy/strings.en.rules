@@ -9,7 +9,7 @@ HotCargoDiplomacy
 	MinutesFmt = "{0} min"
 
 	// Hunter demand (spec 561 to 566)
-	DemandFmt = "<b>{0}:</b> <i>\"Hand over the tech. All {1} units. Do it now and we leave.\"</i>"
+	DemandFmt = "<b>{0}:</b> <i>\"Hand over all {1} tech, and we leave.\"</i>"
 	DemandEmptyFmt = "<b>{0}:</b> <i>\"Where is the tech? We will find it.\"</i>"
 	HandOverFmt = "<i>\"Take it and go.\"</i> Hand over {0} tech. {1}"
 	HandOverAllFmt = "<i>\"Take all of it.\"</i> Hand over all {0} tech. <bad>The run ends unless a friendly ship holds tech for you.</bad>"

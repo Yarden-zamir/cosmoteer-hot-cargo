@@ -154,7 +154,7 @@ public sealed class DiplomacyHail : IHailProvider
                     : DipText.Format("HandOverFmt", k, Pct(Quotes.HandOver(run, sim, player, hunter, k))));
                 if (k < stock) Button(run, sim, player, caller, hunter, page, Offer.Bluff, k, DipText.Format("BluffFmt", k, Pct(Quotes.Bluff(run, sim, player, k))));
                 Button(run, sim, player, caller, hunter, page, Offer.Deal, k,
-                    DipText.Format("DealFmt", Events.EventText.Money(-Quotes.DealPrice(run, k)), k, Pct(Quotes.Deal(run, sim, hunter, k))));
+                    DipText.Format("DealFmt", Cosmoteer.Extensions.ToXmlCostString(Quotes.DealPrice(run, k), run.Game), k, Pct(Quotes.Deal(run, sim, hunter, k))));
             }
         }
         if (S(run).Rolled.Contains(DiplomacyState.Key(hunter.UniqueID, "yieldok")))
@@ -171,7 +171,7 @@ public sealed class DiplomacyHail : IHailProvider
         if (page.PrimaryDialogue.Length == 0) page.AddText(DipText.Format("EnemyFmt", ai.Metadata.XmlShipName));
         Button(run, sim, player, caller, ai, page, Offer.DemandSurrender, 0, DipText.Format("DemandSurrenderFmt", Pct(Quotes.DemandSurrender(run, sim, player, ai))));
         Button(run, sim, player, caller, ai, page, Offer.OfferSurrender, 0,
-            DipText.Format("OfferSurrenderFmt", Events.EventText.Money(-Quotes.OfferPrice(run, sim, player, ai)), Pct(Quotes.OfferSurrender(run, sim, player, ai))));
+            DipText.Format("OfferSurrenderFmt", Cosmoteer.Extensions.ToXmlCostString(Quotes.OfferPrice(run, sim, player, ai), run.Game), Pct(Quotes.OfferSurrender(run, sim, player, ai))));
     }
 
     void FriendPage(Run run, SimRoot sim, int player, Ship caller, Ship ship, HailPage page)
@@ -186,7 +186,7 @@ public sealed class DiplomacyHail : IHailProvider
         if (hire is not null) page.AddText(DipText.Format("HiredFmt", (int)Math.Ceiling((hire.Until - run.State.GameSeconds) / 60.0)));
         if (s.FeeAsks.FirstOrDefault(f => f.Ship == ship.UniqueID) is { } ask)
         {
-            Button(run, sim, player, caller, ship, page, Offer.PayHoldFee, 0, DipText.Format("PayFeeFmt", Events.EventText.Money(-ask.Fee), ask.Units));
+            Button(run, sim, player, caller, ship, page, Offer.PayHoldFee, 0, DipText.Format("PayFeeFmt", Cosmoteer.Extensions.ToXmlCostString(ask.Fee, run.Game), ask.Units));
             Button(run, sim, player, caller, ship, page, Offer.DeclineHoldFee, 0, DipText.Text("DeclineFee"));
             return;
         }
@@ -205,13 +205,13 @@ public sealed class DiplomacyHail : IHailProvider
             case "hire" when !merc && hire is null && !Done(run, ship, Offer.Hire):
             {
                 int step = Quotes.HireStep(run);
-                var spec = new SliderSpec("hire", DipText.Text("SliderOffer"), 0, 20, 1, 10, v => Events.EventText.Money(v * step));
+                var spec = new SliderSpec("hire", DipText.Text("SliderOffer"), 0, 20, 1, 10, v => Cosmoteer.Extensions.ToXmlCostString(v * step));
                 page.Slider = spec;
                 int steps = CommsHail.SliderValue(ship, spec);
                 int offer = steps * step;
                 if (Situation.WantedAnywhere(sim, player)) page.AddText(DipText.Text("HireWanted"));
                 Button(run, sim, player, caller, ship, page, Offer.Hire, steps,
-                    DipText.Format("HireFmt", Events.EventText.Money(-offer), (int)Math.Ceiling(run.T.Diplomacy.HireSeconds / 60.0), Pct(Quotes.Hire(run, sim, player, ship, offer))));
+                    DipText.Format("HireFmt", Cosmoteer.Extensions.ToXmlCostString(offer, run.Game), (int)Math.Ceiling(run.T.Diplomacy.HireSeconds / 60.0), Pct(Quotes.Hire(run, sim, player, ship, offer))));
                 break;
             }
             case "merc" when merc:
@@ -220,7 +220,7 @@ public sealed class DiplomacyHail : IHailProvider
                 var spec = new SliderSpec("merc", DipText.Text("SliderMinutes"), 1, max, 1, Math.Min(3, max), v => DipText.Format("MinutesFmt", v));
                 page.Slider = spec;
                 int m = CommsHail.SliderValue(ship, spec);
-                Button(run, sim, player, caller, ship, page, Offer.Merc, m, DipText.Format(hire is null ? "MercFmt" : "MercMoreFmt", m, Events.EventText.Money(-Quotes.MercPrice(run, m))));
+                Button(run, sim, player, caller, ship, page, Offer.Merc, m, DipText.Format(hire is null ? "MercFmt" : "MercMoreFmt", m, Cosmoteer.Extensions.ToXmlCostString(Quotes.MercPrice(run, m), run.Game)));
                 break;
             }
             default:
