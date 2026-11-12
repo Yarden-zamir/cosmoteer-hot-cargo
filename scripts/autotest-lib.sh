@@ -3,7 +3,11 @@
 # Slots t1..tN (N = HOT_CARGO_SLOTS, default 8) are headless test instances on the PC (see pc.sh).
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$LIB_DIR/.." && pwd)"
-SLOTS="${HOT_CARGO_SLOTS:-6}"
+# Shared slot settings for every worktree: <container>/.state/slots.env (for example HOT_CARGO_SLOTS=6), read before each
+# slot is taken, so a change applies to all agents at once without a merge. Environment variables set before the run win.
+SLOTS_ENV="$(cd "$REPO_ROOT/.." && pwd)/.state/slots.env"
+load_slot_settings() { if [[ -f "$SLOTS_ENV" ]]; then set -a; source "$SLOTS_ENV"; set +a; fi; SLOTS="${HOT_CARGO_SLOTS:-6}"; }
+load_slot_settings
 # Full logs of every run stay here, one folder per worktree, so a later run in the same slot cannot overwrite them.
 # Logs, flaky list and pass markers live in <container>/.state (next to .bare and .game), not in /tmp, so they survive a restart.
 STATE_DIR="${HOT_CARGO_STATE:-$(cd "$REPO_ROOT/.." && pwd)/.state}"
@@ -12,7 +16,7 @@ mkdir -p "$LOG_DIR"
 
 slot_lock() { echo "/tmp/hot_cargo_slot_${1#t}.lock"; }
 
-# While the player's own game runs (slot main), tests use at most HOT_CARGO_SLOTS_WHILE_PLAYING slots (default 3), so
+# While the player's own game runs (slot main), tests use at most HOT_CARGO_SLOTS_WHILE_PLAYING slots (default 4), so
 # the player's game keeps its frame rate. The check is cached for 60 s in a shared file, so it costs one PC call a minute.
 PLAYING_CACHE=/tmp/hot_cargo_player_playing
 usable_slots() {
@@ -24,7 +28,8 @@ usable_slots() {
     local out
     if out="$(SLOT=main bash -c 'source "$0/pc.sh"; pc "$PS_PATHS"'"'"'if (Get-SlotProcess) { "running" } else { "closed" }'"'"'' "$LIB_DIR" 2>/dev/null)" && [[ "$out" == *closed* ]]; then echo no > "$PLAYING_CACHE"; else echo yes > "$PLAYING_CACHE"; fi
   fi
-  if [[ "$(cat "$PLAYING_CACHE" 2>/dev/null)" == yes ]]; then echo "${HOT_CARGO_SLOTS_WHILE_PLAYING:-3}"; else echo "$SLOTS"; fi
+  load_slot_settings
+  if [[ "$(cat "$PLAYING_CACHE" 2>/dev/null)" == yes ]]; then echo "${HOT_CARGO_SLOTS_WHILE_PLAYING:-4}"; else echo "$SLOTS"; fi
 }
 
 # Waits for one free test slot, locks it for this shell process and prints its name.
