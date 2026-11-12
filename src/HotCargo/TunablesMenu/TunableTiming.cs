@@ -53,6 +53,7 @@ public static class TunableTiming
         ["HunterTunables.ShipNamePrefix"] = Applies.NextSpawn,
         ["HunterTunables.MaxLiveHunters"] = Applies.NextSpawn,
         ["HunterTunables.MinFuel"] = Applies.NextSpawn,
+        ["HunterTunables.RouteTierFloor"] = Applies.NextSpawn,
         ["DiplomacyTunables.PunishSeconds"] = Applies.NextUse,
         ["MissionTunables.ShadyRewardFactor"] = Applies.NextOffer,
         ["MissionTunables.ShadyTrapSurvivalReward"] = Applies.NextOffer,
@@ -66,6 +67,9 @@ public static class TunableTiming
         ["EventsTunables.RelicEnabled"] = Applies.NewRun,
         ["EventsTunables.RelicMinSector"] = Applies.NewRun,
         ["ChainsTunables.StationChance"] = Applies.NextSystem,
+        ["ChainsTunables.MaxNewChainsPerSystem"] = Applies.NextSystem,
+        ["BalanceTunables.StationFuelPerMillion"] = Applies.NextSpawn,
+        ["BalanceTunables.StationFuelMinimum"] = Applies.NextSpawn,
         ["ChainsTunables.LaterDelaySeconds"] = Applies.NextSystem,
         ["ChainsTunables.StoryLines"] = Applies.NextUse,
         ["ContractsTunables.FeeChance"] = Applies.NextOffer,
@@ -112,8 +116,6 @@ public static class TunableTiming
         ["DifficultyRow.HunterShips"] = Applies.NextSpawn,
         ["DifficultyRow.HunterTiers"] = Applies.NextSpawn,
         ["DifficultyRow.ContractFees"] = Applies.NextOffer,
-        ["RunModesTunables.FameTitleTiers"] = Applies.NextSpawn,
-        ["RunModesTunables.FameTierCap"] = Applies.NextSpawn,
     };
 
     public static Applies Of(FieldInfo field) =>

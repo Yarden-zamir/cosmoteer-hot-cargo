@@ -27,6 +27,7 @@
     <Compile Include="../../src/HotCargo/SharedChoice/VoteModel.cs" />
     <Compile Include="../../src/HotCargo/RunModes/PressureModel.cs" />
     <Compile Include="../../src/HotCargo/Factions/FactionsModel.cs" />
+    <Compile Include="../../src/HotCargo/Balance/BalanceModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="xunit.v3" Version="4.0.3" />

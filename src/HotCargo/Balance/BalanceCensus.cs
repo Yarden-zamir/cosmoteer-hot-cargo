@@ -116,6 +116,11 @@ static class BalanceCensus
             caps.Clear();
             station.MetaShip.GetTotalTradeResources(rules, stock, caps);
             stocks.Add(stock.GetValueOrDefault(fuel));
+            var tags = station.PhysicalShip?.Tags ?? (station.Spawner is { } sp ? SimQueries.StasisTags(sp) : null);
+            HotCargo.Log.Info($"AUTOTEST BALANCE {label} station {station.StationID} live={station.PhysicalShip is not null} fuel={stock.GetValueOrDefault(fuel)} " +
+                              $"fuelCap={caps.GetValueOrDefault(fuel)} untypedCap={caps.GetValueOrDefault(default)} " +
+                              $"stored={station.PhysicalShip?.Resources.GetResourceTotal(fuel, includeCarried: false) ?? -1} all={station.PhysicalShip?.Resources.GetResourceTotal(fuel, includeAnticipatedDeliveries: true, includeAnticipatedPickups: true) ?? -1} " +
+                              $"pickups={station.PhysicalShip?.Resources.GetResourceTotal(fuel, includeStored: false, includeCarried: false, includeAnticipatedPickups: true) ?? -1} tags=[{string.Join(",", tags ?? [])}]");
         }
         int price = sim.Mode.GetResourceBuyCost(fuel, null);
         var ship = SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("no human ship");
