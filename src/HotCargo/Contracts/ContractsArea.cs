@@ -123,7 +123,7 @@ public static class ContractsArea
             ContractBook.Find(run, Picked())!.RivalGroup = group;
             ContractBook.Find(run, other)!.RivalGroup = group;
         };
-        Autotest.Commands["value_mark"] = _ => _markedValue = R().T.Tech.Value(R().State);
+        Autotest.Commands["value_mark"] = _ => _markedValue = R().TechValue();
         // Logs terms statistics of the saved offers in this system.
         Autotest.Commands["contract_stats"] = label =>
         {
@@ -165,8 +165,8 @@ public static class ContractsArea
         Autotest.Fields["contract_panel_lines"] = () => ContractsUi.Lines(R(), Picked()).Count;
         Autotest.Fields["notoriety"] = () => R().State.Notoriety;
         Autotest.Fields["peaktier"] = () => R().State.PeakTier;
-        Autotest.Fields["techvalue_change"] = () => R().T.Tech.Value(R().State) - _markedValue;
+        Autotest.Fields["techvalue_change"] = () => R().TechValue() - _markedValue;
         // Tech value in fractions of the peak tier's ship value (spec 19).
-        Autotest.Fields["techvalue_ship_fraction"] = () => R().T.Tech.Value(R().State) / (double)GameData.TierValueMaximum(R().State.PeakTier);
+        Autotest.Fields["techvalue_ship_fraction"] = () => R().TechValue() / (double)GameData.TierValueMaximum(R().State.PeakTier);
     }
 }

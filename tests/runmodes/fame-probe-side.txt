@@ -1,0 +1,25 @@
+# Fame title probe (spec 687): 6 missions in each sector, main route for 5 sectors, then the lowest-tier neighbor (a side system).
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+maxhunters 0
+aiset CallOnVanilla false
+aiset CallEnabled false
+rm_sector 6
+rm_route
+wait 12
+rm_sector 6
+rm_route
+wait 12
+rm_sector 6
+rm_route
+wait 12
+rm_sector 6
+rm_route
+wait 12
+rm_sector 6
+rm_route low
+wait 12
+rm_sector 6
+quit
