@@ -18,7 +18,7 @@ public static class BalanceArea
         Run.Hooks.NewRunStarted += StationFuelFloor.OnNewRun;
         Run.Hooks.SystemEntered += StationFuelFloor.OnSystemEntered;
         // A new fuel floor tops up the live stations at once (TUNABLES.md). A lower floor takes no fuel away.
-        Run.Hooks.TunablesApplied += StationFuelFloor.OnNewRun;
+        Run.Hooks.TunablesApplied += StationFuelFloor.OnTunablesApplied;
         RegisterContractTests();
         Autotest.Commands["balance_census"] = arg => BalanceCensus.Log(arg.Length > 0 ? arg : "census");
         Autotest.Commands["balance_visit"] = arg => BalanceCensus.Visit(int.Parse(arg, System.Globalization.CultureInfo.InvariantCulture));
