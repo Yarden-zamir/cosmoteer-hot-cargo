@@ -62,5 +62,7 @@ Procedures are skills in `.claude/skills/`:
   - In the first minutes, commit a short `PLAN.md` (design decisions, steps) to your branch, push it, and open the draft PR with a checklist of the steps. Delete `PLAN.md` before the final commit.
   - Commit and push after each step that builds. Tick the step in the PR checklist.
   - A restarted agent reads the branch, `PLAN.md` and the PR checklist first, and continues from there.
-- Never end a turn while your own tests or builds run in the background. Wait for their completion notice first, then continue. Ending the turn early leaves the work hanging.
+- Never end a turn while your own tests or builds run in the background. Ending the turn early leaves the work hanging. How to wait:
+  - Short runs (under about 9 minutes): run them in the foreground with a long Bash timeout.
+  - Long runs: start them with Bash `run_in_background`, then call `t3_background_wait` with the task ID (load it with ToolSearch `select:mcp__t3-code__t3_background_wait`). The turn then stays open until the run finishes.
 - Start only the last message with `FINAL REPORT`: what works with test results, what does not, Core changes, spec changes, commits, merge notes.
