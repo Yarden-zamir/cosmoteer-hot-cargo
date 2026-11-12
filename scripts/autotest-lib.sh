@@ -29,7 +29,11 @@ take_one_slot() {
   local i lock limit busy
   while :; do
     limit="$(usable_slots)"
-    busy="$(ls -d /tmp/hot_cargo_slot_*.lock 2>/dev/null | wc -l | tr -d ' ')"
+    for lock in /tmp/hot_cargo_slot_[0-9]*.lock; do
+      if [[ -f "$lock/pid" ]] && ! kill -0 "$(cat "$lock/pid")" 2>/dev/null; then rm -rf "$lock"; fi
+    done
+    # Only the numbered slot locks count; the co-op pair lock is a queue, not a slot.
+    busy="$(ls -d /tmp/hot_cargo_slot_[0-9]*.lock 2>/dev/null | wc -l | tr -d ' ')"
     if [[ $busy -ge $limit ]]; then sleep 5; continue; fi
     for ((i = 1; i <= SLOTS; i++)); do
       lock="$(slot_lock "t$i")"
