@@ -17,7 +17,7 @@ Fields not listed in the "Not now" column apply Now.
 
 | Section | Not now | Notes |
 |---|---|---|
-| Heat | `HeatCarryOverFraction`: next new system (read on each jump) | `Stages`: new thresholds re-baseline the started stages (spec 503). A stage below the current heat spawns nothing; a stage above it waits for heat. |
+| Heat | `HeatCarryOverFraction`: next new system (read on each switch without a jump) | `Stages`: new thresholds re-baseline the started stages (spec 503). A stage below the current heat spawns nothing; a stage above it waits for heat. |
 | Tech | `StartingTechUnits`: new runs only | The tech value fields apply to the next price query. An open event page keeps the tech value of its opening. |
 | Journey | `RunSectorCount`: next new system | Fixed in this change: the Buyer spawns in the first new system with sector index `RunSectorCount` or more, once per run (`RunState.BuyerSpawned`). Before, a value below the current sector meant no Buyer. The galaxy size is a rules value (restart). `RewardScale` applies to payouts at once, but contract fees keep the scale of their offer. |
 | Hunters | `Stages` (all fields), `SpawnDistanceMin`, `SpawnDistanceMax`, `WaveArcDegrees`, `ShipFactions`, `ShipTags`, `ShipNamePrefix`, `MaxLiveHunters`, `MinFuel`: next spawned ships | A stage that started keeps the count, tier and timing of its later waves (saved in `PendingWave`). `StrikeWaveIntervalSeconds` and `VaultTargetFactor` apply now. |
@@ -29,7 +29,7 @@ Fields not listed in the "Not now" column apply Now.
 | Chains | `StationChance`, `LaterDelaySeconds`: next new system. `StoryLines`: next time it shows | `Enabled` and `PageTriggerDistance` apply now. |
 | SharedChoice | (none) | `VoteTimeoutSeconds` applies to open votes at once: the timeout counts from the first vote. |
 | Worlds | `PassWaveDistance`: next spawned ships. `ArrivalLine`, `ArrivalLineDelaySeconds`: next new system | Before a run is active (the first system of a new career), sim code uses the defaults (spec 227). |
-| Factions | `RelayCarryOverFactor`, `BlindCarryOverFactor`: next new system (read on each jump) | The roles, zone factors, fence premium, price factors and refusal values apply at once, also to offers that exist (their money reward is computed when it shows and when it pays) and to an open comms window. |
+| Factions | `RelayWatchedHeatCut`, `RelayClearHeatCut`, `BlindHeatCut`: next new system (read on each jump) | The roles, zone factors, fence premium, price factors and refusal values apply at once, also to offers that exist (their money reward is computed when it shows and when it pays) and to an open comms window. |
 | Ux | `RunIntro`: new runs only. `StageAlertSeconds`, `CommsStayOnMap`, `PauseOnComms`, `PauseOnCommsMultiplayer`: next time it shows | All other switches apply on the next frame. Known limit: in an open event window, the dialogue key numbers keep their state until the page changes. |
 | Diplomacy | (none) | Chances and prices apply to the next choice and the open dialogue. Hail and mercenary rolls happen once per ship, so a ship that rolled keeps its result; ships that did not roll yet use the new value. A running hire keeps its end time. |
 | Onboarding | (none) | `VanillaTutorialDelaySeconds` counts run time, so a loaded run that is older than the delay does not hold vanilla tutorials. |

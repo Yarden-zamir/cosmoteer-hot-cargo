@@ -26,12 +26,24 @@ public sealed class FactionsTunables
     /// <summary>Spec 644: stations of the rival faction pay this times the tech value (fences). Buy-back there costs the same factor more.</summary>
     [Serialize(Optional = true)] public float RivalFencePremium = 1.5f;
 
-    /// <summary>Spec 650: factor on Heat.HeatCarryOverFraction after a relay jump. The corporation watches the relays.</summary>
-    [Serialize(Optional = true)] public float RelayCarryOverFactor = 1f;
-    /// <summary>Spec 650: factor on Heat.HeatCarryOverFraction after a blind jump.</summary>
-    [Serialize(Optional = true)] public float BlindCarryOverFactor = 0.3f;
+    /// <summary>Spec 650: share of the heat that a relay jump removes when hunters are near that relay at the jump start (0 to 1).</summary>
+    [Serialize(Optional = true)] public float RelayWatchedHeatCut = 0.75f;
+    /// <summary>Spec 650: share of the heat that a relay jump removes when no hunter is near that relay at the jump start (0 to 1).</summary>
+    [Serialize(Optional = true)] public float RelayClearHeatCut = 0.85f;
+    /// <summary>Spec 650: share of the heat that a blind jump removes (0 to 1).</summary>
+    [Serialize(Optional = true)] public float BlindHeatCut = 0.9f;
+    /// <summary>Spec 650: a hunter within this distance of the relay at the jump start makes the relay watched.</summary>
+    [Serialize(Optional = true)] public float RelayWatchRadius = 3500f;
     /// <summary>Spec 651: fuel of a blind jump, times the fuel of a relay jump to the same system.</summary>
     [Serialize(Optional = true)] public float BlindFuelFactor = 1.5f;
+    /// <summary>Spec 651: spin-up time of a blind jump, times the vanilla spin-up time of the ship.</summary>
+    [Serialize(Optional = true)] public float BlindSpinUpFactor = 2f;
+    /// <summary>Spec 651: chance for each jumping ship to take damage when it arrives from a blind jump (0 to 1).</summary>
+    [Serialize(Optional = true)] public float BlindDamageChance = 0.35f;
+    /// <summary>Spec 651: parts that take damage on a ship that the blind jump damages.</summary>
+    [Serialize(Optional = true)] public int BlindDamageParts = 3;
+    /// <summary>Spec 651: damage to each of those parts, as a share of its maximum health. A part keeps at least 1 health.</summary>
+    [Serialize(Optional = true)] public float BlindDamageFraction = 0.4f;
 
     /// <summary>Spec 655: heat from which station goods and services cost more.</summary>
     [Serialize(Optional = true)] public float MarkupStartHeat = 75f;
@@ -53,7 +65,9 @@ public sealed class FactionsTunables
     {
         require(AllyHeatFactor > 0 && AllyMoneyFactor > 0 && AllyNotorietyFactor > 0 && ShelterHeatFactor > 0 && RivalFencePremium > 0,
             "Factions heat, money, notoriety and fence factors must be above 0");
-        require(RelayCarryOverFactor >= 0 && BlindCarryOverFactor >= 0 && BlindFuelFactor > 0, "Factions carry-over factors must not be negative and BlindFuelFactor must be above 0");
+        require(RelayWatchedHeatCut is >= 0 and <= 1 && RelayClearHeatCut is >= 0 and <= 1 && BlindHeatCut is >= 0 and <= 1, "Factions jump heat cuts must be 0 to 1");
+        require(RelayWatchRadius >= 0 && BlindFuelFactor > 0 && BlindSpinUpFactor >= 1, "Factions.RelayWatchRadius must not be negative, BlindFuelFactor above 0, BlindSpinUpFactor 1 or more");
+        require(BlindDamageChance is >= 0 and <= 1 && BlindDamageParts >= 0 && BlindDamageFraction is >= 0 and <= 1, "Factions blind damage: chance and fraction 0 to 1, parts 0 or more");
         require(MarkupStartHeat is >= 0 and < 100 && MarkupMaxFactor >= 1 && CrewPriceAtMaxHeat >= 1, "Factions.MarkupStartHeat must be 0 to below 100, MarkupMaxFactor and CrewPriceAtMaxHeat 1 or more");
         require(PriceHeatStep > 0, "Factions.PriceHeatStep must be above 0");
         require(RefuseChance is >= 0 and <= 1, "Factions.RefuseChance must be 0 to 1");
