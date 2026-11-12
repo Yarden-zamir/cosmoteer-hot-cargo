@@ -6,7 +6,7 @@ godmode on
 tacticlog on
 aiset FleeEnabled false
 aiset RegroupEnabled false
-aiset CallSeconds 5
+# The default call (15 s, spec 197): the window to jam it.
 # A short cooldown from the start: a completed call sets the cooldown with the value at that time, and the storm step
 # below picks a hunter by ID order (random IDs), which can be the first caller.
 aiset CallCooldownSeconds 1

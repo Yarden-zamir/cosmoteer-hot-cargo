@@ -52,6 +52,48 @@ static class PersonalityAutotest
                 Hostile().Count(s => PersonalityStrategy.Group(s) == _group && PersonalityStrategy.Traits(s, T()).Has(trait));
         Autotest.Fields["ai_humanships"] = () => Sim().Ships.HumanPlayerSignificantShips.Count();
 
+        // Weak sides (spec 1030-1033).
+        Autotest.Fields["ai_weak_back"] = () => Hostile().Count(s => PersonalityStrategy.Scores(s, T()).WeakBack);
+        // Ships with a weak back that kite. The contract (spec 1032) says 0.
+        Autotest.Fields["ai_weakback_kiters"] = () => Hostile().Count(s => PersonalityStrategy.Scores(s, T()).WeakBack && TacticGate.Active(Tactic.Kite, s) is not null);
+        // Fleeing ships with a weak side that strafe away (forced rotation, spec 1033).
+        Autotest.Fields["ai_flee_guarded"] = () => FleeingWeak().Count(s => s.Commands.CurConfirmedCommand is MoveCommand { ForceDestinationRotation: true });
+        // Fleeing ships with a weak side, near their threat, whose strong side points more than 60° away from it.
+        Autotest.Fields["ai_flee_off_strong"] = () => FleeingWeak().Count(s =>
+        {
+            var threat = AiGate.NearestEnemy(s);
+            if (threat is null || HunterOrders.EdgeDistance(s, threat) >= T().FleeDistance) return false;
+            float bearing = (float)s.DetWorldCenter.DirectionTo(threat.DetWorldCenter) - (float)s.DetRotation;
+            float off = MathF.Abs(MathF.IEEERemainder(bearing - SideProfile.Angle(PersonalityStrategy.Profile(s, T()).Sides.Strong), MathF.Tau));
+            return off > MathF.PI / 3f;
+        });
+        // Hostile ships whose mouseover names their personality. The contract (spec 368) says 0.
+        Autotest.Fields["ai_mouseover_tells"] = () => Hostile().Count(s => PersonalityStrategy.Pick(s, T()) is { } p
+            && s.IndicatorSource.GetMouseoverText().Contains(p.Name, StringComparison.Ordinal));
+        // aiweakback: destroys every part on the line behind each control room of each hostile AI ship (opposite its flight
+        // direction), so the control room shows at the back. Test only.
+        Autotest.Commands["aiweakback"] = _ =>
+        {
+            var command = new ID<Cosmoteer.Ships.Parts.PartCategory>("command");
+            foreach (var ship in Hostile())
+            {
+                var parts = ship.Parts.ToList();
+                var back = Vector2.FromAngle((float)ship.FlightDirection + MathF.PI);
+                var doomed = new HashSet<Cosmoteer.Ships.Parts.Part>();
+                foreach (var room in parts.Where(p => p.Rules.TypeCategories.Contains(command)))
+                    for (float step = 0.5f; step < 200f; step += 0.5f)
+                    {
+                        var at = room.LocalCenter + back * step;
+                        int x = (int)MathF.Floor(at.X), y = (int)MathF.Floor(at.Y);
+                        foreach (var p in parts)
+                            if (p != room && !p.Rules.TypeCategories.Contains(command) && x >= p.Rect.X && x < p.Rect.X + p.Rect.Width
+                                && y >= p.Rect.Y && y < p.Rect.Y + p.Rect.Height) doomed.Add(p);
+                    }
+                foreach (var p in doomed) p.Health = 0;
+                Log.Info($"AUTOTEST weak back {ship.Metadata.PlainShipName} id={ship.UniqueID}: {doomed.Count} parts removed");
+            }
+        };
+
         // aispawn <group> <count> [tier]: hostile AI ships near the player. group: a faction ID (military ships with the Normal AI; the
         // players become wanted by it) or "pirates" (a unique hostile index). tier: default the sector tier. Test only.
         Autotest.Commands["aispawn"] = arg =>
@@ -139,6 +181,10 @@ static class PersonalityAutotest
             .Where(m => m.Team is { Role: not TeamRole.None } && m.Target is not null)
             .Select(m => (m.Team!, m.Target!)).ToList();
     static TacticsTunables T() => Autotest.RequireRun().T.Tactics;
+
+    /// <summary>Fleeing hostile ships with at least one weak side, measured even with WeakSideEnabled off.</summary>
+    static IEnumerable<Ship> FleeingWeak() => Hostile().Where(s => s.AI?.GetStrategyModule<FleeStrategy>() is { Fleeing: true }
+        && PersonalityStrategy.Profile(s, T()).Sides.Weak != 0);
 
     /// <summary>Hostile AI ships with the personality module, in sim order.</summary>
     static List<Ship> Hostile() =>
