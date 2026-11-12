@@ -57,4 +57,5 @@ Procedures are skills in `.claude/skills/`:
 ## Agents
 
 - An agent works only in its own worktree and branch. At the end it pushes its branch and opens a draft PR. It never pushes to `main` and never merges.
+- Never end a turn while your own tests or builds run in the background. Wait for their completion notice first, then continue. Ending the turn early leaves the work hanging.
 - Start only the last message with `FINAL REPORT`: what works with test results, what does not, Core changes, spec changes, commits, merge notes.
