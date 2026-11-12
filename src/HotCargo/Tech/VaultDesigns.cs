@@ -76,8 +76,11 @@ static class VaultDesigns
     static bool _checkPassed;
     static int _checkVaults;
 
-    /// <summary>Real seconds that a new design runs in the sim before the save, so that its powered parts light up in the picture.</summary>
-    const double PowerUpSeconds = 3;
+    /// <summary>
+    /// Real seconds that a new design runs in the sim before the save: its crew walk to their posts and the manned parts light up in the picture.
+    /// The design file keeps no crew. Revisit if large designs still show dark parts.
+    /// </summary>
+    const double PowerUpSeconds = 20;
 
     sealed record Batch(Cosmoteer.Game.GameRoot Game, string Src, string Dst, int Units, Queue<string> Files, List<string> Report);
 
@@ -153,7 +156,7 @@ static class VaultDesigns
             if (vaults > 0) return (null, $"skipped: has {vaults} vault(s), they hold {NewGameCheck.VaultCapacity(check)} tech");
         }
         var near = Autotest.ActingShip(sim) ?? throw new InvalidOperationException("no player ship to build next to");
-        var ship = Ship.Load(bytes, name, b.Game.LocalPlayerIndex, spawnWithCrew: false, builtByPlayer: true, randSeed: 1UL);
+        var ship = Ship.Load(bytes, name, b.Game.LocalPlayerIndex, spawnWithCrew: true, builtByPlayer: true, randSeed: 1UL);
         ship.WorldCenter = Autotest.ClearSpotNear(sim, near.DetWorldCenter, near.WorldBoundingRadius + ship.WorldBoundingRadius + 500f, ship.WorldBoundingRadius);
         sim.Ships.Add(ship);
         try
@@ -162,7 +165,7 @@ static class VaultDesigns
             var cells = StartingVault.BuildVaults(ship, b.Units);
             if (!ship.BlueprintParts.IsValid || !ship.PhysicalMatchesBlueprints) throw new InvalidOperationException("the design is not valid after the vaults");
             if (!GameApp.Rules.CareerMode.IsShipDesignLegal(ship) || NewGameCheck.VaultCapacity(ship) < b.Units) throw new InvalidOperationException("the career new-game check refuses the design");
-            // Full power and supplies, like a new career ship (CareerGameModeManager.FinishInitNewGame). Vaults start empty (InitToMaxResources = 0).
+            // Crew, full power and supplies, like a new career ship (CareerGameModeManager.FinishInitNewGame). Vaults start empty (InitToMaxResources = 0).
             ship.InitializeToMax();
             return (ship, $"added {cells.Count} vault(s) at {string.Join(" ", cells)}; {storageBefore - StorageParts(ship)} storage part(s) removed");
         }
