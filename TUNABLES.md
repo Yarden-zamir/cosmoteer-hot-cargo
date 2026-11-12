@@ -18,7 +18,7 @@ Fields not listed in the "Not now" column apply Now.
 | Section | Not now | Notes |
 |---|---|---|
 | Heat | `HeatCarryOverFraction`: next new system (read on each switch without a jump) | `Stages`: new thresholds re-baseline the started stages (spec 503). A stage below the current heat spawns nothing; a stage above it waits for heat. |
-| Tech | `StartingTechUnits`: new runs only | The tech value fields apply to the next price query. An open event page keeps the tech value of its opening. |
+| Tech | `StartingTechUnits`, `StartingResearch`: new runs only | The tech value fields apply to the next price query. An open event page keeps the tech value of its opening. |
 | Journey | `RunSectorCount`: next new system | Fixed in this change: the Buyer spawns in the first new system with sector index `RunSectorCount` or more, once per run (`RunState.BuyerSpawned`). Before, a value below the current sector meant no Buyer. The galaxy size is a rules value (restart). `RewardScale` applies to payouts at once, but contract fees keep the scale of their offer. |
 | Hunters | `Stages` (all fields), `SpawnDistanceMin`, `SpawnDistanceMax`, `WaveArcDegrees`, `ShipFactions`, `ShipTags`, `ShipNamePrefix`, `MaxLiveHunters`, `MinFuel`, `RouteTierFloor`: next spawned ships | A stage that started keeps the count, tier and timing of its later waves (saved in `PendingWave`). `StrikeWaveIntervalSeconds` and `VaultTargetFactor` apply now. |
 | Missions | `ShadyRewardFactor`, `ShadyTrapSurvivalReward`, `EscortHeatChange`: next mission offers | The rewards are part of the offer. The trap chances roll on arrival, so they apply now, also to accepted offers. |

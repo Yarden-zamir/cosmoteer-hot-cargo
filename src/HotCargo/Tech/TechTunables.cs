@@ -5,7 +5,10 @@ namespace HotCargo.Tech;
 [ReflectiveSerialization(Explicit = true)]
 public sealed class TechTunables
 {
+    /// <summary>Spec 17: stolen tech units in the vaults of the starting ships of a new run. A starter ship needs vaults for all of them (spec 1010).</summary>
     [Serialize(Optional = true)] public int StartingTechUnits = 8;
+    /// <summary>Spec 1015: research (career tech IDs) that a new run starts with. Default: the small FTL drive.</summary>
+    [Serialize(Optional = true)] public string[] StartingResearch = ["cosmoteer.hyperdrive_small"];
     /// <summary>
     /// Spec 19: tech value in fractions of the highest ship value of the peak tier (vanilla TierValueMaximums).
     /// Defaults: 0.25 of a ship at the start, about 0.5 mid-run (1.2 h, 250 notoriety), so 2 units buy a full ship of the tier.

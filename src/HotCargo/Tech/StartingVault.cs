@@ -12,9 +12,10 @@ using HotCargo.Core;
 namespace HotCargo.Tech;
 
 /// <summary>
-/// Spec 17, 441: a new run starts with StartingTechUnits in 1-tile Tech Vaults on the starting ship.
-/// In co-op each player commands only their own ships, so the first ship of each player gets vaults for a share of the units.
-/// The starter ships have no vault, so this adds vaults to the ship's blueprints and builds them at once, with the build tool's own steps.
+/// Spec 17, 1014: a new run fills the Tech Vaults of the starting ships with StartingTechUnits.
+/// In co-op each player commands only their own ships, so the first ship of each player gets a share of the units.
+/// The ships have vaults by design (spec 1010), so this only fills them.
+/// The placement helpers below build vaults into designs (VaultDesigns, spec 1016) and place parts for other areas.
 /// </summary>
 internal static class StartingVault
 {
@@ -25,11 +26,24 @@ internal static class StartingVault
         var ships = sim.Ships.HumanPlayerShips.GroupBy(s => s.Metadata.PlayerIndex).OrderBy(g => g.Key)
             .Select(g => g.OrderBy(s => s.UniqueID).First()).ToList();
         if (ships.Count == 0) throw new InvalidOperationException("new run has no human player ship");
+        int missing = 0;
         bool unreachable = false;
         for (int i = 0; i < ships.Count; i++)
-            unreachable |= Stock(ships[i], units / ships.Count + (i < units % ships.Count ? 1 : 0));
+        {
+            var ship = ships[i];
+            int share = units / ships.Count + (i < units % ships.Count ? 1 : 0);
+            int added = Vaults.Add(Vaults.OnShip(ship), share);
+            missing += share - added;
+            var finder = new BlueprintPathfinder(ship);
+            int cut = ship.BlueprintParts.Count(p => p.Rules.ID == Vaults.VaultId && !HasCrewPath(finder, new PartInfo(p.Rules, p.Location, p.Rotation, p.FlipX)));
+            unreachable |= cut > 0;
+            Log.Info($"starting tech: {added} of {share} units in the vaults of {ship.Name} (player {ship.Metadata.PlayerIndex}); vaults without crew path: {cut}");
+        }
+        // The new-game check (spec 1010) makes room for all units. Only a career save from before the mod has ships without vaults.
+        string? notice = missing > 0 ? Strings.FormatText("HotCargoTech/NoVaultRoomFmt", missing)
+            : unreachable ? Strings.GetText("HotCargoTech/VaultOutside") : null;
         // A co-op launch runs this on a worker thread, so the notice waits for the next frame.
-        if (unreachable) Run.OnNextFrame(() => Ux.UxKit.CenterText(run.Game, Strings.GetText("HotCargoTech/VaultOutside")));
+        if (notice is not null) Run.OnNextFrame(() => Ux.UxKit.CenterText(run.Game, notice));
     }
 
     /// <summary>Tech units that one vault holds, from its rules.</summary>
@@ -37,24 +51,24 @@ internal static class StartingVault
         vault.Components.OfType<TypedResourceGridRules>().Where(g => g.ResourceType == Vaults.TechId).Sum(g => g.MaxResources) is > 0 and var n
             ? n : throw new InvalidOperationException($"{vault.ID} has no grid for {Vaults.TechId}");
 
-    /// <summary>Places enough vaults on the ship for the units, and fills them. Returns true when crew cannot walk to a new vault.</summary>
-    static bool Stock(Ship ship, int units)
+    /// <summary>
+    /// Builds enough empty vaults into the ship for the units (spec 441): in place of storage bays first, then next to the hull.
+    /// Returns the vault cells and how many of them went outside the hull.
+    /// </summary>
+    internal static (List<IntVector2> Cells, int Outside) BuildVaults(Ship ship, int units)
     {
         PartRules vault = ship.Rules.PartsByID[Vaults.VaultId];
         int perVault = Capacity(vault);
         int count = (units + perVault - 1) / perVault;
         var placed = new List<IntVector2>();
+        int outside = 0;
         while (placed.Count < count)
         {
-            if (ReplaceStorage(ship, vault, count - placed.Count) is { } inside) placed.AddRange(inside);
-            else placed.Add(PlaceOutside(ship, vault, requireCrewPath: true) ?? PlaceOutside(ship, vault, requireCrewPath: false)!.Value);
+            if (ReplaceStorage(ship, vault, count - placed.Count) is { } inside) { placed.AddRange(inside); continue; }
+            placed.Add(PlaceOutside(ship, vault, requireCrewPath: true) ?? PlaceOutside(ship, vault, requireCrewPath: false)!.Value);
+            outside++;
         }
-        int added = Vaults.Add(Vaults.OnShip(ship), units);
-        if (added != units) throw new InvalidOperationException($"starting tech: added {added} of {units} on {ship.Name}");
-        var finder = new BlueprintPathfinder(ship);
-        var unreachable = placed.Where(c => !HasCrewPath(finder, new PartInfo(vault, c, 0, flipX: false))).ToList();
-        Log.Info($"starting tech: {added} units in {placed.Count} vault(s) on {ship.Name} (player {ship.Metadata.PlayerIndex}) at {string.Join(" ", placed)}; no crew path: {unreachable.Count}");
-        return unreachable.Count > 0;
+        return (placed, outside);
     }
 
     /// <summary>True when crew can walk from crew quarters to the part, through doors, like the build tool's path check.</summary>

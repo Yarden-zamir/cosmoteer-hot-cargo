@@ -36,6 +36,7 @@ public static class TunableTiming
         ["FactionsTunables.RelayClearHeatCut"] = Applies.NextSystem,
         ["FactionsTunables.BlindHeatCut"] = Applies.NextSystem,
         ["TechTunables.StartingTechUnits"] = Applies.NewRun,
+        ["TechTunables.StartingResearch"] = Applies.NewRun,
         ["JourneyTunables.RunSectorCount"] = Applies.NextSystem,
         ["HunterTunables.Stages"] = Applies.NextSpawn,
         ["StageResponse.Name"] = Applies.NextSpawn,
