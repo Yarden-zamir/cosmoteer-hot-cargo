@@ -18,6 +18,7 @@ catch (Exception ex)
 [MethodImpl(MethodImplOptions.NoInlining)]
 static void Run()
 {
+    Out.Line($"Hot Cargo loaded: {Boot.HotCargo()}");
     Boot.App();
     Out.Line("GameApp constructed");
     var rules = Boot.Rules();

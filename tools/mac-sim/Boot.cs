@@ -15,6 +15,17 @@ static class Boot
 {
     public static Harmony Harmony { get; } = new("mac-sim.host");
 
+    /// <summary>Does what HotCargo.Loader does in the game: runs the mod's startup hook from the staged mod folder, before GameApp exists.</summary>
+    public static bool HotCargo()
+    {
+        var args = Environment.GetCommandLineArgs();
+        var dll = Path.Combine(args[Array.IndexOf(args, "--rootsavepath") + 1], "Mods", "hot_cargo", "csharp", "HotCargo.dll");
+        if (!File.Exists(dll)) return false;
+        var hook = System.Reflection.Assembly.LoadFrom(dll).GetType("StartupHook") ?? throw new InvalidOperationException($"no StartupHook in {dll}");
+        AccessTools.Method(hook, "Initialize").Invoke(null, null);
+        return true;
+    }
+
     public static void App()
     {
         Harmony.Patch(AccessTools.Method(typeof(Platform), nameof(Platform.Create), Type.EmptyTypes),
