@@ -3,6 +3,7 @@ using Cosmoteer;
 using Cosmoteer.Game.Multiplayer;
 using Cosmoteer.Game.Multiplayer.MPInputs;
 using Cosmoteer.Ships;
+using Cosmoteer.Ships.Blueprints;
 using Cosmoteer.Ships.Crew.Jobs;
 using Cosmoteer.Ships.Parts;
 using Cosmoteer.Ships.Parts.Resources;
@@ -88,6 +89,12 @@ static class TechAutotest
 
     static Halfling.Geometry.IntVector2? _outside;
 
+    /// <summary>The vault that "vault grab" picked up, like the part brush of the vanilla grab tool holds it.</summary>
+    static PartMetadata? _grabbed;
+
+    /// <summary>The flags of a build tool input in live (not blueprint) edit mode (BaseBuildState.TryApplyUpdate).</summary>
+    const UpdateShipFlags BuildFlags = UpdateShipFlags.Build | UpdateShipFlags.DestroyBlocking | UpdateShipFlags.UpdateDestroyed;
+
     static TypedResourceGrid? OutsideVault() => _outside is { } at ? Vaults.OnShip(PlayerShip()).FirstOrDefault(g => g.Part!.Location == at) : null;
 
     static double _moneyAtSell;
@@ -157,6 +164,8 @@ static class TechAutotest
     /// vault outside: builds one more vault outside the hull of the player ship, where crew can walk to it.
     /// vault move: moves the tech of the first full vault into the vault that "vault outside" built, with the input of the vanilla move resources tool.
     /// vault steel N: adds steel to the player ship, for a vault build.
+    /// vault grab full|empty: picks up the first vault with tech (or the first empty vault) with the input of the vanilla grab tool (GrabPartState).
+    /// vault place: puts the grabbed vault down outside the hull with the input of the vanilla part brush, so crew rebuild it there.
     /// vault focus [wide]: points the camera at the player ship and zooms in until the ship fills the view (wide: with the dropped crates).
     /// </summary>
     static void Vault(string arg)
@@ -186,6 +195,33 @@ static class TechAutotest
             var at = StartingVault.PlaceOutside(ship, ship.Rules.PartsByID[Vaults.VaultId], requireCrewPath: true, mode) ?? throw new InvalidOperationException("no outside spot with a crew path");
             _outside = at;
             Log.Info($"AUTOTEST vault build at {at}, construction mode {mode}");
+            return;
+        }
+        if (parts is ["grab", var which and ("full" or "empty")])
+        {
+            var ship = PlayerShip();
+            var grid = Vaults.OnShip(ship).FirstOrDefault(g => which == "full" ? g.Resources > 0 : g.Resources == 0) ?? throw new InvalidOperationException($"no {which} vault");
+            var bp = ship.BlueprintParts[grid.Part!.Location, PartRectType.Normal] ?? throw new InvalidOperationException("vault has no blueprint part");
+            _grabbed = new PartMetadata(ship, bp, p => p == bp, isBlueprintMode: false);
+            using var sui = ShipUpdateInfo.Alloc(ship);
+            if (!sui.TryRemoveBlueprintPart(bp, mirrorPhysical: true, out var reasons, force: false, grabbed: true))
+                throw new InvalidOperationException($"vault grab refused: {reasons}");
+            Active().Game.NetManager.EnqueueInput(new MPUpdateShipInput(sui, BuildFlags));
+            Log.Info($"AUTOTEST vault grab {which} at {bp.Location}, tech in it {grid.Resources}");
+            return;
+        }
+        if (parts is ["place"])
+        {
+            var ship = PlayerShip();
+            var metadata = _grabbed ?? throw new InvalidOperationException("vault place needs vault grab first");
+            _grabbed = null;
+            var rules = ship.Rules.PartsByID[Vaults.VaultId];
+            _outside = StartingVault.PlaceOutside(ship, rules, requireCrewPath: true, apply: sui =>
+            {
+                var added = sui.PartsToAdd.Single(p => p.Rules == rules);
+                Active().Game.NetManager.EnqueueInput(new MPUpdateShipInput(sui, BuildFlags, new() { [new PartSaveData(added)] = metadata }));
+            }) ?? throw new InvalidOperationException("no outside spot with a crew path");
+            Log.Info($"AUTOTEST vault place at {_outside}");
             return;
         }
         if (parts is ["focus"] or ["focus", "wide"])
@@ -339,7 +375,11 @@ static class TechAutotest
             var cm = ship.OptionalConstructionManager;
             Log.Info($"  steel {ship.Resources.GetResourceTotal(new Cosmoteer.Data.ID<Cosmoteer.Resources.ResourceRules>("steel"))}, queued builds {cm?.QueuedPartConstructions.Count}, blocked {cm?.BlockedPartConstructions.Count}, needs resources {cm?.HasSinksNeedingResources}");
             foreach (var v in Vaults.VaultParts(ship))
-                Log.Info($"  vault part at {v.Location}: health {v.Health}, flags {v.Flags}, destroyed={v.IsDestroyed}, tech {Vaults.OnShip(ship).FirstOrDefault(g => g.Part == v)?.Resources}");
+            {
+                Log.Info($"  vault part at {v.Location}: health {v.Health}, salvage {v.SalvageDamage}, flags {v.Flags}, destroyed={v.IsDestroyed}, tech {Vaults.OnShip(ship).FirstOrDefault(g => g.Part == v)?.Resources}");
+                if (v.IsUnderConstruction && v.Components.OfType<Cosmoteer.Ships.Parts.Construction.PartConstructionTracker>().FirstOrDefault() is { } t)
+                    Log.Info($"    building: progress {t.Progress}/{t.MaxProgress}, steel {t.GetStoredResources(new Cosmoteer.Data.ID<Cosmoteer.Resources.ResourceRules>("steel"))}, queued={cm?.IsConstructionQueued(new PartInfo(v.Rules, v.Location, v.Rotation, v.FlipX))}");
+            }
         }
         foreach (var starter in GameApp.Rules.CareerMode.StarterShips)
         {

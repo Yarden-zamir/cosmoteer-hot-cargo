@@ -1,0 +1,33 @@
+# Spec 447: a vault that the player moves with the vanilla grab tool gets rebuilt by crew at the new spot, and holds tech again.
+newgame run
+wait 8
+ev_set Enabled false
+tech_set LossGraceSeconds 600
+vault steel 16
+# An empty vault: crew take it apart and build it again outside the hull.
+tech remove 2
+expect tech == 6
+vault grab empty
+wait 1
+vault place
+wait 5
+tech dump
+waitfor vaultsbuilt >= 4 240
+tech dump
+expect vaults == 4
+expect shipvalid == 1
+tech add 2
+expect tech == 8
+# A vault with tech: the move keeps the ship valid, and the moved vault holds tech again.
+vault grab full
+wait 1
+vault place
+wait 5
+tech dump
+waitfor vaultsbuilt >= 4 240
+tech dump
+expect vaults == 4
+expect shipvalid == 1
+tech add 8
+expect tech == 8
+quit
