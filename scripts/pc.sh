@@ -40,3 +40,15 @@ else { $root = Join-Path $env:USERPROFILE "HotCargoSlots\$slot"; $slotArgs = @("
 $mods = Join-Path $root "Mods"; $modDir = Join-Path $mods "hot_cargo"; $pidFile = Join-Path $root "hot_cargo.pid";
 function Get-SlotProcess { if ($slot -eq "main") { $slotPids = @(Get-ChildItem (Join-Path $env:USERPROFILE "HotCargoSlots") -Filter hot_cargo.pid -Recurse -ErrorAction SilentlyContinue | ForEach-Object { [int](Get-Content $_.FullName) }); $slotPids += @(Get-CimInstance Win32_Process -Filter ("Name = " + [char]39 + "Cosmoteer.exe" + [char]39) | Where-Object { $_.CommandLine -like "*--headless*" } | ForEach-Object { [int]$_.ProcessId }); Get-Process Cosmoteer -ErrorAction SilentlyContinue | Where-Object { $slotPids -notcontains $_.Id } } elseif (Test-Path $pidFile) { Get-Process -Id ([int](Get-Content $pidFile)) -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -eq "Cosmoteer" } } }
 '
+
+# PowerShell snippet that starts the slot's game (needs PS_PATHS before it). run.sh and deploy.sh (autotest mode) use it.
+# main: with a window, minimized, so it does not take focus. Test slots: headless, no window at all.
+PS_START='
+if (Get-SlotProcess) { "already running in slot $slot" } else {
+  $exe = Join-Path $game "Bin\Cosmoteer.exe"; $bin = Join-Path $game "Bin"
+  if ($slot -eq "main") { Start-Process -FilePath $exe -WorkingDirectory $bin -WindowStyle Minimized; "started (main, minimized)" }
+  else {
+    $p = Start-Process -FilePath $exe -WorkingDirectory $bin -ArgumentList $slotArgs -WindowStyle Hidden -PassThru
+    [IO.File]::WriteAllText($pidFile, [string]$p.Id); "started (slot $slot, headless, pid " + $p.Id + ")"
+  }
+}'
