@@ -1,0 +1,18 @@
+# Co-op AI personalities (spec 369), host side: hostile pirates and hunters with personalities, cover rocks and teams
+# fight both players' ships with no desync. The MPSTATE comparison and the integrity hash cover the module state.
+mphost {PORT}
+mpstart 2
+mp ev_set Enabled false
+mp godmode on
+mp tacticlog on
+mp airocks 6 600
+mp aispawn pirates 3 2
+mp spawnstage Strike
+mp aispawn monolith 3 2
+wait 60
+aiprofiles host
+expect ai_personality > 0
+expect desyncs == 0
+mp mpmark 1
+waitfor mpconnected == 0 240
+quit

@@ -5,7 +5,7 @@ Read SPEC.md first. It holds the design, the numbered requirements and the plan.
 ## Layout
 
 - `src/HotCargo/Core`, `Ui`, `Dev`: shared core. Change it only when an area cannot work through the hooks in `Core/Run.cs` (`Run.Hooks`), `Core/DebugKeys.cs` (`DebugKeys.Extra`) and `Dev/Autotest.cs` (`Autotest.Commands`, `Autotest.Fields`).
-- `src/HotCargo/<Area>`: one folder for each area (Tech, Journey, Hunters, Missions, Tactics, Ux, Events, Chains, Contracts). Each area has `<Area>Area.Register()`, its tunables section class and its patches.
+- `src/HotCargo/<Area>`: one folder for each area (Tech, Journey, Hunters, Missions, Tactics, Ux, Events, Chains, Contracts, SharedChoice). Each area has `<Area>Area.Register()`, its tunables section class and its patches.
 - Shared helpers in Core: `Errors.Guard` / `Errors.Report` for any failure in a patch, sim tick or UI frame (log once, show in the overlay, never crash the game), and `SimQueries` for tagged ships, human ships and sim lookups. Use them before you write a new one.
 - `mod/mod.header.rules`: the mod header. `scripts/assemble-mod.sh` builds `mod.rules` from it and from every `mod/<area>/actions.rules`.
 - `mod/<area>/actions.rules`: only Action objects `{ ... }`, without an outer list.
@@ -59,3 +59,5 @@ Run one autotest at a time per worktree: parallel runs from one worktree build i
 
 1. Merge, push, and run `scripts/autotest-all.sh` on a clean tree. A full pass writes a marker for that commit.
 2. Run `scripts/release.sh <version> [--prerelease]`. It builds `hot-cargo-<version>.zip` (mod, loader, `install.bat`, `uninstall.bat`, `INSTALL.md`), tags the commit and publishes a GitHub release.
+
+Every push to `main` also publishes an untested dev prerelease (`v<last tag>-dev.<run>`) through `.github/workflows/dev-release.yml`. It builds, runs the unit tests and the private-data check. A newer push cancels a running build, so only the newest commit gets a release. CI compiles against the game DLLs in the private repo `Yarden-zamir/cosmoteer-hot-cargo-game-refs`, read with the deploy key in the `GAME_REFS_DEPLOY_KEY` secret. After a game update, push the new `Cosmoteer.dll` and `HalflingCore.dll` there.

@@ -32,6 +32,7 @@ public static class EventsArea
         Run.Hooks.NewRunStarted += Abandoned.OnNewRun;
         Ui.CommsHail.Providers.Add(new EventHailProvider());
         Run.Hooks.SystemEntered += Abandoned.OnSystemEntered;
+        SharedChoice.SharedChoices.Register(EventsChoiceDomain.Instance);
         AddAutotest();
     }
 
@@ -59,7 +60,7 @@ public static class EventsArea
             var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             int choice = parts[0] == "last" ? EventLibrary.Get(p.EventId).Choices.Length - 1 : Int(parts[0]) - 1;
             if (parts.Length > 1) EventRunner.Choose(run, RequireSim(), run.Game.LocalPlayerIndex, p.Serial, choice, Int(parts[1]) - 1);
-            else run.Game.NetManager.EnqueueInput(new EventChoiceInput(p.Serial, choice));
+            else run.Game.NetManager.EnqueueInput(EventsChoiceDomain.Pick(p.Serial, choice));
             Autotest.Wait(2);
         };
         Autotest.Commands["expectevent"] = arg =>
@@ -325,7 +326,10 @@ public static class EventsArea
             var button = page.Buttons.FirstOrDefault(b => EventView.Plain(b.Text).Contains(text, StringComparison.Ordinal))
                 ?? throw new InvalidOperationException($"no comms button with '{text}' on the {which} ship; buttons: {string.Join(" | ", page.Buttons.Select(b => EventView.Plain(b.Text)))}");
             if (!button.SelfInputActive) throw new InvalidOperationException($"comms button '{text}' is disabled");
-            button.OnClick?.Invoke(null, EventArgs.Empty);
+            // A shared choice gets its click from the comms tab's shared choice panel; headless, send what the panel sends (first pick).
+            if (button is Ui.HailChoice choice && page.Shared is { } shared)
+                RequireRun().Game.NetManager.EnqueueInput(new SharedChoice.SharedChoiceInput(shared.Domain, shared.Serial, SharedChoice.SharedChoiceAction.Choose, choice.Option));
+            else button.OnClick?.Invoke(null, EventArgs.Empty);
             Autotest.Wait(2);
         };
         // expectcomms <target> <text> 1|0: the target's Hot Cargo comms page has (1) or lacks (0) a button or line with the text.

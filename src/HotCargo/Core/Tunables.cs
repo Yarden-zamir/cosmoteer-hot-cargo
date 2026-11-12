@@ -6,6 +6,8 @@ using HotCargo.Hunters;
 using HotCargo.Journey;
 using HotCargo.Missions;
 using HotCargo.Missions.Mechanics;
+using HotCargo.SharedChoice;
+using HotCargo.ShipAi;
 using HotCargo.Tactics;
 using HotCargo.Tech;
 using HotCargo.Ux;
@@ -30,9 +32,11 @@ public sealed class Tunables
     [Serialize(Optional = true)] public TacticsTunables Tactics = new();
     [Serialize(Optional = true)] public EventsTunables Events = new();
     [Serialize(Optional = true)] public ChainsTunables Chains = new();
+    [Serialize(Optional = true)] public SharedChoiceTunables SharedChoice = new();
     [Serialize(Optional = true)] public ContractsTunables Contracts = new();
     [Serialize(Optional = true)] public UxTunables Ux = new();
     [Serialize(Optional = true)] public WorldsTunables Worlds = new();
+    [Serialize(Optional = true)] public ShipAiTunables ShipAi = new();
     [Serialize(Optional = true)] public DebugTunables Debug = new();
 }
 

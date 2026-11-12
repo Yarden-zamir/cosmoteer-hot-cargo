@@ -101,7 +101,7 @@ public static class EventHail
 
 /// <summary>
 /// The comms side (UI): a ship that carries the pending page shows the page and its choices; a station or faction ship shows its
-/// Hot Cargo lines. Buttons send MP inputs. One page serial for each opened page, so two players on the same ship do not double-apply.
+/// Hot Cargo lines. Page choices are shared choices (HailPage.AddChoice); lines send the hail MP input. One page serial for each opened page, so two players on the same ship do not double-apply.
 /// </summary>
 public sealed class EventHailProvider : IHailProvider
 {
@@ -119,11 +119,9 @@ public sealed class EventHailProvider : IHailProvider
         {
             var view = EventView.Pending(run, sim, p, run.Game.LocalPlayerIndex);
             page.AddText($"<b>{view.Title}</b>\n{view.Body}");
-            foreach (var c in view.Choices)
-            {
-                int serial = p.Serial, index = c.Index;
-                page.AddButton(c.Text, () => run.Game.NetManager.EnqueueInput(new EventChoiceInput(serial, index)), active: c.Enabled);
-            }
+            // Shared choices: the comms tab shows co-op hovers and votes, and sends the shared choice input with this page's serial.
+            page.Shared = (EventsChoiceDomain.Name, p.Serial);
+            foreach (var c in view.Choices) page.AddChoice(c.Text, c.Index, active: c.Enabled);
             return;
         }
         foreach (var e in EventHail.Lines(run, sim, caller, callee))
@@ -132,6 +130,15 @@ public sealed class EventHailProvider : IHailProvider
             var shipId = callee.UniqueID;
             page.AddButton(e.HailLine, () => run.Game.NetManager.EnqueueInput(new EventHailInput(id, shipId)));
         }
+    }
+}
+
+[HarmonyLib.HarmonyPatch(typeof(CareerGameModeManager), nameof(CareerGameModeManager.AllowMPInput))]
+static class AllowEventHailPatch
+{
+    static void Postfix(MPInput mpInput, ref bool __result)
+    {
+        if (mpInput is EventHailInput) __result = true;
     }
 }
 

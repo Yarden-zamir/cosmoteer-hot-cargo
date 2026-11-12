@@ -1,0 +1,101 @@
+# Ship tactics (spec 400 to 411): rows set through the tactics input, evaluation order, conditions and actions
+# on the starting ship against two hunters, the manual order override, and an ally.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+shipai Log on
+aiset FleeEnabled false
+aiset CallEnabled false
+aiset RegroupEnabled false
+tactics_strings
+expect tactics_rows == 0
+# A preset through the tactics input. Auto starts off, so nothing runs.
+tactics Aggressive
+expecttactics Aggressive
+expect tactics_auto == 0
+expect tactics_rows == 4
+# Order and kinds: health row first (not met), then the first target row and the first move row win; HoldFire on all weapons.
+tactics HC1:HealthBelow=40>RetreatRepair;Always>TargetStrongest;Always>TargetNearest;Always>Kite;Always>CloseIn;Always>HoldFire=0
+tacticsauto on
+expect tactics_auto == 1
+# No enemy yet: no target row can run, and Kite needs an enemy. The weapons row still holds fire.
+wait 3
+tactics_log quiet
+expect tactics_target_row == -1
+expect tactics_move_row == -1
+expect tactics_weapons > 0
+expect tactics_held >= 1
+spawnstage Patrol
+waitfor tactics_target_row == 1 60
+tactics_log engaged
+expect tactics_move_row == 3
+# Kite: an attack order that the tactics gave (not a player order), held at weapon range.
+expect tactics_cmd == 1
+expect tactics_follow_radius > 150
+# Every weapon holds fire; then a fire-at-will row first frees them again.
+expect tactics_unheld == 0
+tactics HC1:Always>FireAtWill=0;Always>TargetNearest;Always>HoldFire=0
+wait 3
+expect tactics_unheld > 0
+expect tactics_held == 0
+expect tactics_target_row == 1
+# Weakest and strongest pick different hunters (by health, then by blueprint value).
+damagehunter 0 0.3
+tactics HC1:Always>TargetWeakest;Always>CloseIn
+wait 3
+expect tactics_target == 2
+expect tactics_follow_radius <= 100
+# Aim at weapons: every aimed weapon aims at a weapon part of the target. A weapon aims only while the target is in sight.
+tactics HC1:Always>TargetNearest;Always>CloseIn;Always>TargetWeapons=0
+waitfor tactics_aimed >= 1 60
+expect tactics_aimed_not_weapons == 0
+tactics HC1:Always>TargetNearest;Always>CloseIn;Always>TargetEngines=0
+waitfor tactics_aimed >= 1 30
+expect tactics_aimed_not_engines == 0
+# Fire at will again clears the sim-given part targets.
+tactics HC1:Always>TargetNearest;Always>CloseIn
+wait 3
+expect tactics_aimed == 0
+# Conditions: targeted by an enemy, enemies on radar, health below.
+tactics HC1:TargetedByEnemy>HoldPosition;Always>CloseIn;Always>TargetNearest
+waitfor tactics_move_row == 0 60
+expect tactics_cmd == 2
+tactics HC1:EnemiesAtLeast=9>Kite;EnemiesAtLeast=1>CloseIn;Always>TargetNearest
+wait 3
+expect tactics_move_row == 1
+shipai RetreatDistance 20000
+tactics HC1:HealthBelow=60>RetreatRepair;Always>CloseIn;Always>TargetNearest
+godmode off
+tactics_damage 0.4
+wait 3
+tactics_log damaged
+expect tactics_move_row == 0
+expect tactics_cmd == 2
+godmode on
+# A player order comes first: the tactics wait while it runs and take over after it.
+tactics HC1:Always>TargetNearest;Always>Kite
+wait 3
+tactics_manual
+wait 2
+expect tactics_waiting == 1
+expect tactics_cmd == -2
+waitfor tactics_waiting == 0 60
+waitfor tactics_cmd == 1 10
+# Auto off releases the ship: no tactics command stays, the rows stay.
+tacticsauto off
+wait 3
+expect tactics_target_row == -1
+expect tactics_rows == 2
+expect tactics_held == 0
+expect tactics_cmd <= 0
+# An ally: the second ship follows the first one and turns on the attacker of an ally.
+tactics_ally
+tactics_ship 1
+tactics HC1:AllyUnderAttack>TargetAllyAttacker;Always>FollowLeader
+tacticsauto on
+wait 3
+tactics_log ally
+expect tactics_move_row == 1
+expect tactics_cmd == 3
+quit

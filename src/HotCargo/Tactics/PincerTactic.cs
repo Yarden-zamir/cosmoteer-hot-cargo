@@ -39,7 +39,7 @@ internal sealed class PincerTactic(PincerTacticRules rules) : AITacticsModule
 
     public override bool UpdateAttackAngle(AttackCommand ac, ShipAI ai)
     {
-        if (TacticGate.Active(Tactic.Pincer) is not { } t) return false;
+        if (TacticGate.Active(Tactic.Pincer, ac.Ship) is not { } t) return false;
         var group = Attackers(ac);
         if (group.Count < 2) { _lastSlot = -1; return false; }
         int slot = group.IndexOf(ac.Ship);
@@ -70,11 +70,12 @@ internal sealed class PincerTactic(PincerTacticRules rules) : AITacticsModule
 
     static Direction CurrentSide(AttackCommand ac) => ac.Target.DetWorldCenter.DirectionTo(ac.Ship.DetWorldCenter);
 
-    /// <summary>Allied ships that attack the same target, ordered by ID so that every client agrees on the slots.</summary>
+    /// <summary>Allied ships with the pincer on that attack the same target, ordered by ID so that every client agrees on the slots.</summary>
     static List<Ship> Attackers(AttackCommand ac)
     {
         var group = HunterOrders.Sim(ac.Ship).Ships.GetShipsForPlayer(ac.Ship.Metadata.PlayerIndex)
-            .Where(s => s.Commands.CurConfirmedCommand is AttackCommand other && other.Target == ac.Target && other.IsValid())
+            .Where(s => s.Commands.CurConfirmedCommand is AttackCommand other && other.Target == ac.Target && other.IsValid()
+                        && TacticGate.Active(Tactic.Pincer, s) is not null)
             .ToList();
         group.Sort((a, b) => a.UniqueID.CompareTo(b.UniqueID));
         return group;
