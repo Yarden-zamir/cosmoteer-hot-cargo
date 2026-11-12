@@ -36,6 +36,8 @@ public static class Mod
             Factions.FactionsArea.Register();
             TunablesMenu.TunablesMenuArea.Register();
             MultiChoice.MultiChoiceArea.Register();
+            // Relays registers its comms provider before Diplomacy, so a relay page owns its shared choices (spec 958).
+            Relays.RelaysArea.Register();
             Diplomacy.DiplomacyArea.Register();
             Telemetry.TelemetryArea.Register();
             // Last: its run log hooks run after the hooks of the other areas.

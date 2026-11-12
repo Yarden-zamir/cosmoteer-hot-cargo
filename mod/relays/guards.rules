@@ -1,0 +1,37 @@
+// The pirates that hold the relays of a lockdown (spec 957). C# reads this file (Relays/RelaysArea.cs) on the first tick of the visit.
+// It is not part of the game rules tree, so "&/" references do not work here. Use "&<./Data/...>" paths.
+// The root location is the relay nearest to the fleet. A group (Count above 1, no sub-spawners, unique allegiance), so the co-op
+// scaling (spec 332, Scaling.EnemyScale.Count) sets the count. A rules change here needs a game restart.
+Guards
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_relay_guard]
+			Count = [2, 3]
+			Distance = [600, 1100]
+			Allegiance = Unique
+			SynchronizeAllegiance = true
+			SuppressLocationAssertions = true
+			FamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+			MaxFamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+			}
+			// They hold the relay: they fight what comes near it and do not chase far.
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 700
+				TargetAcquireRangeFromOrigin = 2600
+				TargetUnacquireRangeFromOrigin = 3600
+			}
+		}
+	]
+}
