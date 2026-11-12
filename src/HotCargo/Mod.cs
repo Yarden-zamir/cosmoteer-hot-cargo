@@ -29,6 +29,7 @@ public static class Mod
             Contracts.ContractsArea.Register();
             Ux.UxArea.Register();
             Worlds.WorldsArea.Register();
+            Balance.BalanceArea.Register();
             ShipAi.ShipAiArea.Register();
             Scaling.ScalingArea.Register();
             RunModes.RunModesArea.Register();

@@ -1,0 +1,112 @@
+# Balance: measures sectors 1 to 7 of the main route: the mission board, contract terms, fuel stock and jump costs along the main route (BALANCE.md).
+newgame
+wait 8
+godmode on
+# Workaround: CallStrategy.Assist crashes after a jump (null sim of the assist target).
+aiset CallOnVanilla false
+aiset CallEnabled false
+maptiers
+balance_visit 0
+wait 3
+balance_visit 1
+wait 3
+balance_visit 2
+wait 3
+balance_visit 3
+wait 3
+balance_visit 4
+wait 3
+balance_visit 5
+wait 3
+balance_census s1
+balance_route
+wait 12
+balance_visit 0
+wait 3
+balance_visit 1
+wait 3
+balance_visit 2
+wait 3
+balance_visit 3
+wait 3
+balance_visit 4
+wait 3
+balance_visit 5
+wait 3
+balance_census s2
+balance_route
+wait 12
+balance_visit 0
+wait 3
+balance_visit 1
+wait 3
+balance_visit 2
+wait 3
+balance_visit 3
+wait 3
+balance_visit 4
+wait 3
+balance_visit 5
+wait 3
+balance_census s3
+balance_route
+wait 12
+balance_visit 0
+wait 3
+balance_visit 1
+wait 3
+balance_visit 2
+wait 3
+balance_visit 3
+wait 3
+balance_visit 4
+wait 3
+balance_visit 5
+wait 3
+balance_census s4
+balance_route
+wait 12
+balance_visit 0
+wait 3
+balance_visit 1
+wait 3
+balance_visit 2
+wait 3
+balance_visit 3
+wait 3
+balance_visit 4
+wait 3
+balance_visit 5
+wait 3
+balance_census s5
+balance_route
+wait 12
+balance_visit 0
+wait 3
+balance_visit 1
+wait 3
+balance_visit 2
+wait 3
+balance_visit 3
+wait 3
+balance_visit 4
+wait 3
+balance_visit 5
+wait 3
+balance_census s6
+balance_route
+wait 12
+balance_visit 0
+wait 3
+balance_visit 1
+wait 3
+balance_visit 2
+wait 3
+balance_visit 3
+wait 3
+balance_visit 4
+wait 3
+balance_visit 5
+wait 3
+balance_census s7
+quit
