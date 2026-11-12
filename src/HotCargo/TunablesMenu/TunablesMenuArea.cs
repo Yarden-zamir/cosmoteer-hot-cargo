@@ -25,6 +25,12 @@ public static class TunablesMenuArea
         Autotest.Fields["menu_sections"] = () => Dialog().SectionCount;
         Autotest.Fields["menu_error"] = () => Dialog().Error is null ? 0 : 1;
         Autotest.Fields["menu_readonly"] = () => Dialog().ReadOnly ? 1 : 0;
+        // spawnstageindex N: starts the hunter response at index N of Hunters.Stages, so a test needs no stage name. Test only.
+        Autotest.Commands["spawnstageindex"] = arg =>
+        {
+            var run = Autotest.RequireRun();
+            Hunters.HunterSpawner.StartStage(run, run.Game.Sim, run.T.Hunters.Stages[int.Parse(arg, System.Globalization.CultureInfo.InvariantCulture)].Name);
+        };
         Autotest.Fields["tunables_error"] = () => TunablesFile.LastError is null ? 0 : 1;
         // tunerequest LINE | LINE: writes tune.request like scripts/tune.sh. tuneresult has|lacks TEXT: checks tune.result.
         Autotest.Commands["tunerequest"] = arg => File.WriteAllText(Path.Combine(Mod.ModRoot, "tune.request"), string.Join("\n", arg.Split('|', StringSplitOptions.TrimEntries)));

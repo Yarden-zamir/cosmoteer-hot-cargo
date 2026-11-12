@@ -24,14 +24,15 @@ menu file has StationFuelMinimum = 30
 menu file lacks HeatCarryOverFraction
 menu close
 # tune.sh requests (spec 853): list items and nested paths, all values as one change, and a rejection that changes nothing.
-tunerequest set Hunters.Stages[2].ShipCount 5 | set Mechanics.Siege.Seconds 77 | set Heat.HeatMultiplierByUnits 1, 2, 3
+# Stage 0 only, so the test does not depend on the stage count or names.
+tunerequest set Hunters.Stages[0].ShipCount 5 | set Mechanics.Siege.Seconds 77 | set Heat.HeatMultiplierByUnits 1, 2, 3
 wait 2
 tuneresult has ok
-tuneresult has Hunters.Stages[2].ShipCount: applies NextSpawn
-menu value Hunters.Stages[2].ShipCount == 5
+tuneresult has Hunters.Stages[0].ShipCount: applies NextSpawn
+menu value Hunters.Stages[0].ShipCount == 5
 menu value Mechanics.Siege.Seconds == 77
 menu file has HeatMultiplierByUnits = [1, 2, 3]
-tunerequest set Heat.HeatPerGameMinute 3 | set Hunters.Stages[2].ShipCount 0
+tunerequest set Heat.HeatPerGameMinute 3 | set Hunters.Stages[0].ShipCount 0
 wait 2
 tuneresult has error
 tuneresult has ShipCount must be 1 or more
@@ -39,25 +40,24 @@ menu value Heat.HeatPerGameMinute == 7
 tunerequest set Heat.NoSuchField 1
 wait 2
 tuneresult has has no tunable 'NoSuchField'
-tunerequest reset Hunters.Stages[2].ShipCount | reset Heat.HeatPerGameMinute
+tunerequest reset Hunters.Stages[0].ShipCount | reset Heat.HeatPerGameMinute
 wait 2
 tuneresult has ok
-menu value Hunters.Stages[2].ShipCount == 3
-menu value Heat.HeatPerGameMinute == 1.2
-# Waiting hunter groups follow new stage values (spec 854): 3 Strike groups, one now and two waiting; Waves 2 leaves one waiting.
+menu file lacks ShipCount
+menu file lacks HeatPerGameMinute
+# Waiting hunter groups follow new stage values (spec 854): 3 groups of stage 0, one now and two waiting; Waves 2 leaves one waiting.
 godmode on
-tunerequest set Events.Enabled false | set Hunters.Stages[3].WaveGapSeconds 60
+tunerequest set Events.Enabled false | set Hunters.Stages[0].ShipCount 3 | set Hunters.Stages[0].EarlyScale 1 | set Hunters.Stages[0].Waves 3 | set Hunters.Stages[0].WaveGapSeconds 60
 wait 2
 tuneresult has ok
-sectorindex 8
-spawnstage Strike
+spawnstageindex 0
 wait 1
 expect hunterspending == 2
-tunerequest set Hunters.Stages[3].Waves 2
+tunerequest set Hunters.Stages[0].Waves 2
 wait 2
 tuneresult has ok
 expect hunterspending == 1
-tunerequest set Hunters.Stages[3].Waves 1
+tunerequest set Hunters.Stages[0].Waves 1
 wait 2
 expect hunterspending == 0
 quit

@@ -4,7 +4,7 @@ mphost {PORT}
 mpstart 2
 mp godmode on
 waitfor menu_ready == 1 30
-tunablesfile Events { Enabled = false }; Heat { HeatPerGameMinute = 45 }; Hunters { Stages = [{ Name = "Warning"; ShipCount = 2 }, { Name = "Patrol"; ShipCount = 2 }, { Name = "Hunt"; ShipCount = 3; TierOffset = 1 }, { Name = "Strike"; ShipCount = 3; TierOffset = 2 }] }
+tunablesfile Events { Enabled = false }; Heat { HeatPerGameMinute = 45 }; Hunters { MaxLiveHunters = 7 }
 waitfor heatperminute == 45 30
 menu open
 menu shows Heat.HeatPerGameMinute 45
@@ -18,9 +18,9 @@ expect heatperminute == 45
 waitfor mpmark >= 1 120
 wait 3
 expect heatperminute == 45
-# The file's Warning response spawns 2 hunters on both machines.
+# The next stage spawns hunters on both machines.
 mp stage
-waitfor hunters >= 2 30
+waitfor hunters >= 1 30
 wait 20
 expect desyncs == 0
 log host-end

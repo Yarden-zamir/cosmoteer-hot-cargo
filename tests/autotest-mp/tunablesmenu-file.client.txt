@@ -6,12 +6,12 @@ menu open
 expect menu_readonly == 1
 menu shows Heat.HeatPerGameMinute 45
 menu close
-menu value Hunters.Stages[0].ShipCount == 2
+menu value Hunters.MaxLiveHunters == 7
 tunablesfile Heat { HeatPerGameMinute = 99 }
 wait 3
 expect heatperminute == 45
 mp mpmark 1
-waitfor hunters >= 2 60
+waitfor hunters >= 1 60
 wait 20
 expect desyncs == 0
 log client-end
