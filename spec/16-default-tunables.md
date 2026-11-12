@@ -8,6 +8,7 @@
 | `Journey.TechCostScale` | 2.5 | 301 |
 | `BuyerPriceFactor` | 4 | 7 |
 | `StartingTechUnits` | 8 | 17 |
+| `StartingResearch` | `["cosmoteer.hyperdrive_small"]` | 1015 |
 | `VaultDamagePerUnitLost` | 0.5 | 65, 442 |
 | `LossGraceSeconds` | 180 s | 12, 443 |
 | `TechMarkers` | on | 444 |
