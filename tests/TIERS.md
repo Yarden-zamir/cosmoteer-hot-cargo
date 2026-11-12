@@ -138,3 +138,15 @@ Every co-op test checks determinism (no desync, equal `MPSTATE` lines) and stays
 - Most logic already lives in models: 15 of 20 model files had unit tests for every function. Game tests mostly check that the game calls the model (gap fields). So few game checks can move as a whole.
 - The large cost is the number of game tests that a change runs. Before the tiers, a change in Core or shared UI ran all 100 game tests. A change in one area ran all its tests (Events: 11 single player and 1 co-op).
 - The fixed cost of a game test is about 30 s (deploy, game start) plus about 10 s for a new career. Merging two tests with overlapping checks saves about 40 s of slot time.
+
+## Numbers
+
+Medians from `../.state/logs` (November 2026). A co-op test counts as two slots for about 115 s each. "Ideal" divides slot time by 6 slots; a busy PC takes longer (the full suite on 12 November took 2 h 40 min).
+
+| | Before | After |
+|---|---|---|
+| Game tests (single player + co-op) | 79 + 21 | 77 + 21 |
+| Full suite slot time | 12,257 s (ideal 34 min) | 12,052 s (ideal 33 min) |
+| `autotest-affected.sh` after a Core change | 100 tests, 12,257 s | 23 tests, 2,332 s (ideal 6.5 min) |
+| `autotest-affected.sh` after an Events change | 13 tests, 1,163 s | 3 tests, 408 s |
+| Unit tests | 145 | 149 |
