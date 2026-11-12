@@ -4,29 +4,76 @@
 		Name = HotCargoHunter
 		ToAdd = &<tactics/ai_hunter.rules>
 	}
-	// Smarter vanilla enemies (spec 202): pirates, bounties and ambushes (Normal, Wanderer), station guards, police, Easy.
+	// Smarter vanilla enemies (spec 202, 360): pirates, bounties and ambushes (Normal, Wanderer), station guards, police, Easy.
+	// Every hostile ship with these AIs gets the behaviors, the personality modules and the tactics; friendly ships keep vanilla.
+	// The Easy AI has no targeting list (its weapons aim on their own), so it gets no HcDisable.
 	{
 		Action = AddMany
 		AddTo = "<ai/ai_normal.rules>/StrategyModules"
-		ManyToAdd = [&<tactics/ai_vanilla.rules>/Regroup, &<tactics/ai_vanilla.rules>/Call, &<tactics/ai_vanilla.rules>/Flee]
+		ManyToAdd = &<tactics/ai_vanilla.rules>/Strategy
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_normal.rules>/TacticsModules"
+		ManyToAdd = &<tactics/ai_vanilla.rules>/Tactics
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_normal.rules>/TargetingModules"
+		ManyToAdd = &<tactics/ai_vanilla.rules>/Targeting
 	}
 	{
 		Action = AddMany
 		AddTo = "<ai/ai_easy.rules>/StrategyModules"
-		ManyToAdd = [&<tactics/ai_vanilla.rules>/Regroup, &<tactics/ai_vanilla.rules>/Call, &<tactics/ai_vanilla.rules>/Flee]
+		ManyToAdd = &<tactics/ai_vanilla.rules>/Strategy
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_easy.rules>/TacticsModules"
+		ManyToAdd = &<tactics/ai_vanilla.rules>/Tactics
 	}
 	{
 		Action = AddMany
 		AddTo = "<ai/ai_wanderer.rules>/StrategyModules"
-		ManyToAdd = [&<tactics/ai_vanilla.rules>/Regroup, &<tactics/ai_vanilla.rules>/Call, &<tactics/ai_vanilla.rules>/Flee]
+		ManyToAdd = &<tactics/ai_vanilla.rules>/Strategy
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_wanderer.rules>/TacticsModules"
+		ManyToAdd = &<tactics/ai_vanilla.rules>/Tactics
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_wanderer.rules>/TargetingModules"
+		ManyToAdd = &<tactics/ai_vanilla.rules>/Targeting
 	}
 	{
 		Action = AddMany
 		AddTo = "<ai/ai_station_guard.rules>/StrategyModules"
-		ManyToAdd = [&<tactics/ai_vanilla.rules>/Regroup, &<tactics/ai_vanilla.rules>/Call, &<tactics/ai_vanilla.rules>/Flee]
+		ManyToAdd = &<tactics/ai_vanilla.rules>/Strategy
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_station_guard.rules>/TacticsModules"
+		ManyToAdd = &<tactics/ai_vanilla.rules>/Tactics
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_station_guard.rules>/TargetingModules"
+		ManyToAdd = &<tactics/ai_vanilla.rules>/Targeting
 	}
 	{
 		Action = AddMany
 		AddTo = "<ai/ai_police.rules>/StrategyModules"
-		ManyToAdd = [&<tactics/ai_vanilla.rules>/Regroup, &<tactics/ai_vanilla.rules>/Call, &<tactics/ai_vanilla.rules>/Flee]
+		ManyToAdd = &<tactics/ai_vanilla.rules>/Strategy
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_police.rules>/TacticsModules"
+		ManyToAdd = &<tactics/ai_vanilla.rules>/Tactics
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_police.rules>/TargetingModules"
+		ManyToAdd = &<tactics/ai_vanilla.rules>/Targeting
 	}
