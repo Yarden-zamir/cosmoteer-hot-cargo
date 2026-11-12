@@ -23,7 +23,7 @@ public sealed record SliderSpec(string Key, string Label, int Min, int Max, int 
 /// <summary>
 /// A reusable dialog row: a label, a horizontal slider and its value text, styled like the game's setting sliders.
 /// UI only: it holds a local value and never changes the sim. A dialog reads <see cref="Value"/> and sends the value in its MP input.
-/// Used by the comms dialogue tab (<see cref="CommsHail"/>); any window can add <see cref="Row"/> to its layout.
+/// Option rows (<see cref="OptionRows"/>) hold one each; any window can add <see cref="Row"/> to its layout.
 /// </summary>
 public sealed class SliderRow
 {
@@ -38,18 +38,20 @@ public sealed class SliderRow
 
     public int Value => _spec?.Snap((int)MathF.Round(_slider.Value)) ?? throw new InvalidOperationException("slider has no spec");
 
-    public SliderRow()
+    /// <param name="labelPercent">Width of the label in percent of the row. 0 hides the label (the option text is the label).</param>
+    public SliderRow(float labelPercent = 30f)
     {
         Row = new LayoutBox { Height = 40f, PercentileWidth = 100f };
         Row.NineSlice.Flags = NineSliceFlags.None;
         Row.Children.LayoutAlgorithm = LayoutAlgorithms.StretchLeftToRight;
-        _label = new Label { PercentileWidth = 30f };
+        _label = new Label { PercentileWidth = labelPercent, SelfActive = labelPercent > 0 };
         _label.TextRenderer.XmlFormatting = true;
         _label.TextRenderer.FontSize = 20;
         Row.AddChild(_label);
-        _slider = new ScrollBar(WidgetRules.Instance.HorizontalSlider) { PercentileWidth = 50f };
+        float valuePercent = labelPercent > 0 ? 20f : 30f;
+        _slider = new ScrollBar(WidgetRules.Instance.HorizontalSlider) { PercentileWidth = 100f - labelPercent - valuePercent };
         Row.AddChild(_slider);
-        _value = new Label { PercentileWidth = 20f };
+        _value = new Label { PercentileWidth = valuePercent };
         _value.TextRenderer.XmlFormatting = true;
         _value.TextRenderer.FontSize = 20;
         _value.TextRenderer.HAlignment = HAlignment.Center;
@@ -59,11 +61,18 @@ public sealed class SliderRow
             if (_spec is null || _showing) return;
             int v = Value;
             _value.Text = _spec.Format(v);
+            _localAt = Halfling.App.Clock.Time.Seconds;
             Changed?.Invoke(v);
         };
     }
 
     bool _showing;
+    double _localAt = double.MinValue;
+    /// <summary>Real seconds after a local move in which <see cref="Show"/> keeps the local value: a shared value lags by the MP input delay.</summary>
+    const double LocalHoldSeconds = 0.8;
+
+    /// <summary>False greys the slider out (an option that is not selected).</summary>
+    public bool Enabled { get; set; } = true;
 
     /// <summary>Shows a spec with a value. Safe to call every frame: it changes the widgets only when something differs.</summary>
     public void Show(SliderSpec spec, int value)
@@ -81,8 +90,10 @@ public sealed class SliderRow
                 _slider.IncrementAmount = spec.Step;
                 _slider.PageSize = 0f;
             }
-            if ((int)MathF.Round(_slider.Value) != v) _slider.Value = v;
-            _slider.SelfInputActive = spec.Max > spec.Min;
+            bool held = Halfling.App.Clock.Time.Seconds - _localAt < LocalHoldSeconds;
+            if (!held && (int)MathF.Round(_slider.Value) != v) _slider.Value = v;
+            else if (held) v = spec.Snap((int)MathF.Round(_slider.Value));
+            _slider.SelfInputActive = Enabled && spec.Max > spec.Min;
             _spec = spec;
             _label.Text = spec.Label;
             _value.Text = spec.Format(v);

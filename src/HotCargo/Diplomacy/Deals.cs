@@ -5,6 +5,7 @@ using Halfling.Random;
 using HotCargo.Core;
 using HotCargo.Hunters;
 using HotCargo.Tech;
+using Cosmoteer.Game;
 
 namespace HotCargo.Diplomacy;
 
@@ -44,8 +45,13 @@ public static class Deals
                 float chance = amount >= stock ? 1f : Quotes.HandOver(run, sim, player, callee, amount);
                 if (DiplomacyModel.Succeeds(roll, chance))
                 {
+                    // Spec 594: they take the tech, then want more for their trouble. The wave leaves only after the punishment.
                     int n = Situation.RemoveTech(sim, player, amount);
-                    WaveLeaves(run, sim, caller);
+                    S(run).Punish = new Punishment
+                    {
+                        Serial = int.MinValue + ++S(run).Serial, Hunter = callee.UniqueID, Units = n, Due = run.State.GameSeconds + t.PunishSeconds,
+                    };
+                    foreach (var h in HunterSpawner.Hunters(sim)) MarkHunterTalksUsed(run, h);
                     Result(run, callee, DipText.Format("HandOverYesFmt", name, n));
                 }
                 else
@@ -63,7 +69,9 @@ public static class Deals
                 MarkHunterTalksUsed(run, callee);
                 if (DiplomacyModel.Succeeds(roll, chance))
                 {
+                    // Spec 565: they believe the tech is gone, like after a hand-over.
                     WaveLeaves(run, sim, caller);
+                    DropHeat(run, sim);
                     Result(run, callee, DipText.Format("BluffYesFmt", name, n));
                 }
                 else
@@ -177,6 +185,88 @@ public static class Deals
 
     static int Minutes(double seconds) => (int)Math.Ceiling(seconds / 60.0);
 
+    /// <summary>Spec 593: heat falls by HandOverHeatDrop. Stages below the new heat start again as heat rises (Run.AddHeat).</summary>
+    static void DropHeat(Run run, SimRoot sim)
+    {
+        float before = run.State.Heat;
+        run.AddHeat(-run.T.Diplomacy.HandOverHeatDrop, sim);
+        Log.Info($"diplomacy: heat {before:0.0} -> {run.State.Heat:0.0}");
+    }
+
+    /// <summary>
+    /// The sim check of a punishment submit (spec 595): at least one option, money for money and bribe from the chooser, enough crew.
+    /// The page greys Submit out with the same check.
+    /// </summary>
+    public static bool PunishAllowed(Run run, SimRoot sim, int player, IReadOnlyList<MultiChoice.Pick> picks, out string why)
+    {
+        why = "";
+        if (picks.Count == 0) { why = "select an option"; return false; }
+        int credits = picks.Sum(p => Quotes.PunishCredits(run, (PunishOption)p.Option, p.Value));
+        if (!Situation.CanPay(run, player, credits)) { why = "money"; return false; }
+        int crew = picks.Where(p => p.Option == (int)PunishOption.Crew).Sum(p => p.Value);
+        if (crew > Quotes.PunishCrewAvailable(run, sim)) { why = "crew"; return false; }
+        return true;
+    }
+
+    /// <summary>
+    /// Spec 595 to 597. Submit rolls the combined chance of the draft. Success: the chooser pays the money and the bribe, the crew go to
+    /// cryo jail, the wave leaves and heat drops. Failure, refusal or a timeout: the hunters keep the tech and the wave attacks; the
+    /// players keep their money and crew. Returns false when the sim rejects the submit (the page stays).
+    /// </summary>
+    public static bool Punish(Run run, SimRoot sim, int player, Offer offer)
+    {
+        if (S(run).Punish is not { } punish) return false;
+        var picks = MultiChoice.MultiChoices.Draft(run, DiplomacyMultiDomain.Name, punish.Serial);
+        if (offer == Offer.PunishRefuse) { PunishFails(run, sim, punish, "PunishRefusedFmt"); return true; }
+        if (offer != Offer.Punish) return false;
+        if (!PunishAllowed(run, sim, player, picks, out string why)) { Log.Info($"diplomacy: punishment submit refused: {why}"); return false; }
+        float chance = Quotes.PunishCombined(run, sim, picks);
+        float roll = new FastRand(((ulong)(uint)punish.Serial << 32) | (uint)player, (ulong)(uint)sim.Tick).Single();
+        Log.Info($"diplomacy: punishment [{string.Join(", ", picks.Select(p => $"{(PunishOption)p.Option}={p.Value}"))}] roll {roll:0.00} chance {chance:0.00}");
+        if (!DiplomacyModel.Succeeds(roll, chance)) { PunishFails(run, sim, punish, "PunishNoFmt"); return true; }
+        var lines = new List<string>();
+        int credits = picks.Sum(p => Quotes.PunishCredits(run, (PunishOption)p.Option, p.Value));
+        if (credits > 0) { Pay(run, player, credits); lines.Add(Events.EventText.Money(-credits)); }
+        int crew = picks.Where(p => p.Option == (int)PunishOption.Crew).Sum(p => p.Value);
+        if (crew > 0) lines.Add(DipText.Format("CryoFmt", Cryo(sim, player, crew)));
+        S(run).Punish = null;
+        MultiChoice.MultiChoices.Clear(run, DiplomacyMultiDomain.Name, punish.Serial);
+        var anyShip = Vaults.HumanShips(sim).OrderBy(sh => sh.UniqueID).FirstOrDefault();
+        if (anyShip is not null) WaveLeaves(run, sim, anyShip);
+        DropHeat(run, sim);
+        Result(run, punish.Hunter, DipText.Text("PunishYes") + (lines.Count > 0 ? "\n" + string.Join("\n", lines) : ""));
+        return true;
+    }
+
+    /// <summary>The punishment fails: the tech stays with the hunters, and they fight on.</summary>
+    internal static void PunishFails(Run run, SimRoot sim, Punishment punish, string key)
+    {
+        S(run).Punish = null;
+        MultiChoice.MultiChoices.Clear(run, DiplomacyMultiDomain.Name, punish.Serial);
+        foreach (var h in HunterSpawner.Hunters(sim)) MarkHunterTalksUsed(run, h);
+        Result(run, punish.Hunter, DipText.Format(key, punish.Units));
+        Log.Info($"diplomacy: punishment failed ({key}); {punish.Units} tech lost");
+    }
+
+    /// <summary>Sends crew to cryo jail: crew that carry nothing leave, the chooser's ships first. Returns the crew that left.</summary>
+    static int Cryo(SimRoot sim, int player, int count)
+    {
+        var ships = Vaults.HumanShips(sim).OrderBy(sh => sh.Commands.CanExecuteCrewCommandsFrom(player) ? 0 : 1).ThenBy(sh => sh.UniqueID).ToList();
+        int left = 0;
+        foreach (var ship in ships)
+        {
+            var pool = ship.Crew.Assigned.Where(c => c.CarriedResource.Quantity == 0).OrderBy(c => c.UniqueID).ToList();
+            // Each ship keeps one crew member, like PunishCrewAvailable counts.
+            foreach (var soul in pool.Take(Math.Max(0, Math.Min(pool.Count, ship.Crew.Assigned.Count() - 1))))
+            {
+                if (left == count) return left;
+                soul.Delete(killed: false);
+                left++;
+            }
+        }
+        return left;
+    }
+
     /// <summary>A refused or failed talk with a hunter ends that hunter's demand page: no second try of any kind with it.</summary>
     static void MarkHunterTalksUsed(Run run, Ship hunter)
     {
@@ -284,16 +374,18 @@ public static class Deals
     }
 
     /// <summary>Stores the result of a ship's hail for its dialogue and writes it to the chat of every player.</summary>
-    public static void Result(Run run, Ship ship, string xml)
+    public static void Result(Run run, Ship ship, string xml) => Result(run, ship.UniqueID, xml);
+
+    public static void Result(Run run, ObjectID ship, string xml)
     {
         if (xml.Length == 0) return;
         var s = S(run);
         s.Serial++;
-        s.Results.RemoveAll(r => r.Ship == ship.UniqueID);
-        s.Results.Add(new HailResult { Ship = ship.UniqueID, Serial = s.Serial, Text = xml });
+        s.Results.RemoveAll(r => r.Ship == ship);
+        s.Results.Add(new HailResult { Ship = ship, Serial = s.Serial, Text = xml });
         // Keeps the saved list short: results of ships that are long gone do not matter.
         if (s.Results.Count > 40) s.Results.RemoveAt(0);
         Ux.UxKit.ChatLine(run.Game, xml);
-        Ui.CommsHail.Unlock(DiplomacyChoiceDomain.Name, DiplomacyChoiceDomain.Serial(ship));
+        Ui.CommsHail.Unlock(DiplomacyChoiceDomain.Name, unchecked((int)(uint)ship));
     }
 }

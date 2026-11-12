@@ -17,9 +17,6 @@ public sealed class DiplomacyHail : IHailProvider
 
     DiplomacyHail() { }
 
-    /// <summary>Which friendly sub-page each callee shows. Local UI state.</summary>
-    static readonly Dictionary<ObjectID, string> Topics = new();
-
     static DiplomacyState S(Run run) => run.State.Diplomacy;
 
     static bool Done(Run run, Ship ship, Offer o) => S(run).WasUsed(ship.UniqueID, o);
@@ -37,7 +34,7 @@ public sealed class DiplomacyHail : IHailProvider
             return Situation.IsHunter(callee) || (callee.AI.GetCommsModule<AIDialogueModule>() is not null
                 && (!Done(run, callee, Offer.DemandSurrender) || !Done(run, callee, Offer.OfferSurrender)));
         if (!Situation.IsFriendlyShip(caller, callee)) return false;
-        return Situation.VaultTech(sim) > 0 && !Done(run, callee, Offer.Hold)
+        return Situation.VaultTech(sim) > 0 && !Done(run, callee, Offer.Hold) && Situation.MayHold(run, callee)
             || S(run).Held.Any(h => h.Ship == callee.UniqueID)
             || S(run).FeeAsks.Any(f => f.Ship == callee.UniqueID)
             || Situation.Hireable(callee) && (!Done(run, callee, Offer.Hire) || S(run).Mercs.Contains(callee.UniqueID))
@@ -78,6 +75,7 @@ public sealed class DiplomacyHail : IHailProvider
                 return true;
             case Offer.Hold:
                 if (!Situation.IsFriendlyShip(caller, callee)) { why = "not friendly"; return false; }
+                if (!Situation.MayHold(run, callee)) { why = "they work with the corporation"; return false; }
                 if (amount < 1 || amount > stock) { why = $"amount {amount} of {stock}"; return false; }
                 if (S(run).FeeAsks.Any(f => f.Ship == callee.UniqueID)) { why = "a fee question waits"; return false; }
                 return true;
@@ -134,10 +132,22 @@ public sealed class DiplomacyHail : IHailProvider
         page.AddChoice(xml, DiplomacyChoiceDomain.Option(offer, amount), ok, ok ? null : DipText.Format("WhyNotFmt", why), close);
     }
 
+    /// <summary>An option row of a shared choice with its own slider (spec 591). The text is built for the slider value.</summary>
+    void Row(Run run, SimRoot sim, int player, Ship caller, Ship callee, HailPage page, Offer offer, SliderSpec spec, Func<int, string> text)
+    {
+        if (S(run).WasUsed(callee.UniqueID, offer)) return;
+        int value = CommsHail.SliderValue(callee, spec);
+        bool ok = Allowed(run, sim, player, caller, callee, offer, value, out string why);
+        page.AddRow(new HailRow(offer.ToString(), text(value), DiplomacyChoiceDomain.Option(offer, value), spec, ok, ok ? null : DipText.Format("WhyNotFmt", why)));
+    }
+
     static string Pct(float chance) => DipText.Format("ChanceFmt", (int)MathF.Round(chance * 100f));
+
+    static string Cost(Run run, int credits) => Cosmoteer.Extensions.ToXmlCostString(credits, run.Game);
 
     void HunterPage(Run run, SimRoot sim, int player, Ship caller, Ship hunter, HailPage page)
     {
+        if (S(run).Punish is { } punish) { PunishPage(run, sim, player, hunter, page, punish); return; }
         int stock = Situation.VaultTech(sim);
         string name = hunter.Metadata.XmlShipName;
         bool talked = Done(run, hunter, Offer.Refuse);
@@ -146,24 +156,56 @@ public sealed class DiplomacyHail : IHailProvider
             page.AddText(stock > 0 ? DipText.Format("DemandFmt", name, stock) : DipText.Format("DemandEmptyFmt", name));
             if (stock > 0)
             {
-                var spec = new SliderSpec("units", DipText.Text("SliderUnits"), 1, stock, 1, Math.Max(1, stock / 2), v => DipText.Format("UnitsFmt", v, stock));
-                page.Slider = spec;
-                int k = CommsHail.SliderValue(hunter, spec);
-                Button(run, sim, player, caller, hunter, page, Offer.HandOver, k, k >= stock
+                SliderSpec Units(string key) => new(key, DipText.Text("SliderUnits"), 1, stock, 1, Math.Max(1, stock / 2), v => DipText.Format("UnitsFmt", v, stock));
+                Row(run, sim, player, caller, hunter, page, Offer.HandOver, Units("handover"), k => k >= stock
                     ? DipText.Format("HandOverAllFmt", stock)
                     : DipText.Format("HandOverFmt", k, Pct(Quotes.HandOver(run, sim, player, hunter, k))));
-                if (k < stock) Button(run, sim, player, caller, hunter, page, Offer.Bluff, k, DipText.Format("BluffFmt", k, Pct(Quotes.Bluff(run, sim, player, k))));
-                Button(run, sim, player, caller, hunter, page, Offer.Deal, k,
-                    DipText.Format("DealFmt", Cosmoteer.Extensions.ToXmlCostString(Quotes.DealPrice(run, k), run.Game), k, Pct(Quotes.Deal(run, sim, hunter, k))));
+                if (stock > 1)
+                {
+                    var bluff = new SliderSpec("bluff", DipText.Text("SliderUnits"), 1, stock - 1, 1, Math.Max(1, stock / 2), v => DipText.Format("UnitsFmt", v, stock));
+                    Row(run, sim, player, caller, hunter, page, Offer.Bluff, bluff, k => DipText.Format("BluffFmt", k, Pct(Quotes.Bluff(run, sim, player, k))));
+                }
+                Row(run, sim, player, caller, hunter, page, Offer.Deal, Units("deal"),
+                    k => DipText.Format("DealFmt", Cost(run, Quotes.DealPrice(run, k)), k, Pct(Quotes.Deal(run, sim, hunter, k))));
             }
         }
         if (S(run).Rolled.Contains(DiplomacyState.Key(hunter.UniqueID, "yieldok")))
         {
             page.AddText(DipText.Format("YieldFmt", name));
-            Button(run, sim, player, caller, hunter, page, Offer.AcceptYield, 0, DipText.Format("AcceptYieldFmt", Events.EventText.Money(Quotes.SurrenderPayout(run, sim, hunter))));
+            int payout = Quotes.SurrenderPayout(run, sim, hunter);
+            Button(run, sim, player, caller, hunter, page, Offer.AcceptYield, 0,
+                payout > 0 ? DipText.Format("AcceptYieldFmt", Events.EventText.Money(payout)) : DipText.Text("AcceptYieldFuel"));
         }
         Button(run, sim, player, caller, hunter, page, Offer.DemandSurrender, 0, DipText.Format("DemandSurrenderFmt", Pct(Quotes.DemandSurrender(run, sim, player, hunter))));
         if (!talked) Button(run, sim, player, caller, hunter, page, Offer.Refuse, 0, DipText.Text("Refuse"), close: true);
+    }
+
+    /// <summary>
+    /// Spec 594 to 597: after an accepted hand-over the hunters want more. A multiselect page: each option adds its chance, the
+    /// sliders set the amounts, and Submit decides for the whole draft. Every hunter shows the same page.
+    /// </summary>
+    void PunishPage(Run run, SimRoot sim, int player, Ship hunter, HailPage page, Punishment punish)
+    {
+        page.Shared = (DiplomacyChoiceDomain.Name, punish.Serial);
+        page.Multi = (DiplomacyMultiDomain.Name, punish.Serial);
+        int left = (int)Math.Ceiling(Math.Max(0, punish.Due - run.State.GameSeconds));
+        page.AddText(DipText.Format("PunishFmt", hunter.Metadata.XmlShipName, left));
+        var picks = MultiChoice.MultiChoices.Draft(run, DiplomacyMultiDomain.Name, punish.Serial);
+        foreach (var option in Quotes.PunishOptions(run, sim))
+        {
+            var kind = (PunishOption)option.Id;
+            var pick = picks.FirstOrDefault(p => p.Option == option.Id);
+            SliderSpec? spec = option.HasSlider
+                ? new SliderSpec("punish" + kind, "", option.Min, option.Max, option.Step, option.Min, v => Quotes.PunishValueText(run, kind, v))
+                : null;
+            int value = pick?.Value ?? (spec is null ? 0 : CommsHail.SliderValue(hunter, spec));
+            string text = DipText.Format("Punish" + kind + "Fmt", Pct(Quotes.PunishChance(run, sim, kind, value)));
+            page.AddRow(new HailRow("punish" + kind, text, option.Id, spec, Active: true, Toggle: true, Selected: pick is not null, Value: value));
+        }
+        page.AddText(DipText.Format("PunishCombinedFmt", Pct(Quotes.PunishCombined(run, sim, picks))));
+        bool ok = Deals.PunishAllowed(run, sim, player, picks, out string why);
+        page.AddChoice(DipText.Text("PunishSubmit"), DiplomacyChoiceDomain.Option(Offer.Punish, 0), ok, ok ? null : DipText.Format("WhyNotFmt", why));
+        page.AddChoice(DipText.Text("PunishRefuse"), DiplomacyChoiceDomain.Option(Offer.PunishRefuse, 0));
     }
 
     void EnemyPage(Run run, SimRoot sim, int player, Ship caller, Ship ai, HailPage page)
@@ -171,7 +213,7 @@ public sealed class DiplomacyHail : IHailProvider
         if (page.PrimaryDialogue.Length == 0) page.AddText(DipText.Format("EnemyFmt", ai.Metadata.XmlShipName));
         Button(run, sim, player, caller, ai, page, Offer.DemandSurrender, 0, DipText.Format("DemandSurrenderFmt", Pct(Quotes.DemandSurrender(run, sim, player, ai))));
         Button(run, sim, player, caller, ai, page, Offer.OfferSurrender, 0,
-            DipText.Format("OfferSurrenderFmt", Cosmoteer.Extensions.ToXmlCostString(Quotes.OfferPrice(run, sim, player, ai), run.Game), Pct(Quotes.OfferSurrender(run, sim, player, ai))));
+            DipText.Format("OfferSurrenderFmt", Cost(run, Quotes.OfferPrice(run, sim, player, ai)), Pct(Quotes.OfferSurrender(run, sim, player, ai))));
     }
 
     void FriendPage(Run run, SimRoot sim, int player, Ship caller, Ship ship, HailPage page)
@@ -186,53 +228,31 @@ public sealed class DiplomacyHail : IHailProvider
         if (hire is not null) page.AddText(DipText.Format("HiredFmt", (int)Math.Ceiling((hire.Until - run.State.GameSeconds) / 60.0)));
         if (s.FeeAsks.FirstOrDefault(f => f.Ship == ship.UniqueID) is { } ask)
         {
-            Button(run, sim, player, caller, ship, page, Offer.PayHoldFee, 0, DipText.Format("PayFeeFmt", Cosmoteer.Extensions.ToXmlCostString(ask.Fee, run.Game), ask.Units));
+            Button(run, sim, player, caller, ship, page, Offer.PayHoldFee, 0, DipText.Format("PayFeeFmt", Cost(run, ask.Fee), ask.Units));
             Button(run, sim, player, caller, ship, page, Offer.DeclineHoldFee, 0, DipText.Text("DeclineFee"));
             return;
         }
-        string topic = Topics.GetValueOrDefault(ship.UniqueID, "");
         int stock = Situation.VaultTech(sim);
-        switch (topic)
+        if (stock > 0 && Situation.MayHold(run, ship))
         {
-            case "hold" when stock > 0 && !Done(run, ship, Offer.Hold):
-            {
-                var spec = new SliderSpec("hold", DipText.Text("SliderUnits"), 1, stock, 1, 1, v => DipText.Format("UnitsFmt", v, stock));
-                page.Slider = spec;
-                int k = CommsHail.SliderValue(ship, spec);
-                Button(run, sim, player, caller, ship, page, Offer.Hold, k, DipText.Format("HoldFmt", k, Pct(Quotes.Hold(run, sim, ship, k))));
-                break;
-            }
-            case "hire" when !merc && hire is null && !Done(run, ship, Offer.Hire):
-            {
-                int step = Quotes.HireStep(run);
-                var spec = new SliderSpec("hire", DipText.Text("SliderOffer"), 0, 20, 1, 10, v => Cosmoteer.Extensions.ToXmlCostString(v * step));
-                page.Slider = spec;
-                int steps = CommsHail.SliderValue(ship, spec);
-                int offer = steps * step;
-                if (Situation.WantedAnywhere(sim, player)) page.AddText(DipText.Text("HireWanted"));
-                Button(run, sim, player, caller, ship, page, Offer.Hire, steps,
-                    DipText.Format("HireFmt", Cosmoteer.Extensions.ToXmlCostString(offer, run.Game), (int)Math.Ceiling(run.T.Diplomacy.HireSeconds / 60.0), Pct(Quotes.Hire(run, sim, player, ship, offer))));
-                break;
-            }
-            case "merc" when merc:
-            {
-                int max = Math.Max(1, run.T.Diplomacy.MercMaxMinutes);
-                var spec = new SliderSpec("merc", DipText.Text("SliderMinutes"), 1, max, 1, Math.Min(3, max), v => DipText.Format("MinutesFmt", v));
-                page.Slider = spec;
-                int m = CommsHail.SliderValue(ship, spec);
-                Button(run, sim, player, caller, ship, page, Offer.Merc, m, DipText.Format(hire is null ? "MercFmt" : "MercMoreFmt", m, Cosmoteer.Extensions.ToXmlCostString(Quotes.MercPrice(run, m), run.Game)));
-                break;
-            }
-            default:
-                if (stock > 0 && !Done(run, ship, Offer.Hold)) page.AddButton(DipText.Text("TopicHold"), () => Topics[ship.UniqueID] = "hold");
-                if (held > 0) Button(run, sim, player, caller, ship, page, Offer.Return, 0, DipText.Format("ReturnAskFmt", held));
-                if (merc) page.AddButton(DipText.Text("TopicMerc"), () => Topics[ship.UniqueID] = "merc");
-                else if (Situation.Hireable(ship) && hire is null && !Done(run, ship, Offer.Hire)) page.AddButton(DipText.Text("TopicHire"), () => Topics[ship.UniqueID] = "hire");
-                return;
+            var spec = new SliderSpec("hold", DipText.Text("SliderUnits"), 1, stock, 1, 1, v => DipText.Format("UnitsFmt", v, stock));
+            Row(run, sim, player, caller, ship, page, Offer.Hold, spec, k => DipText.Format("HoldFmt", k, Pct(Quotes.Hold(run, sim, ship, k))));
         }
-        page.AddButton(DipText.Text("Back"), () => Topics.Remove(ship.UniqueID));
+        if (held > 0) Button(run, sim, player, caller, ship, page, Offer.Return, 0, DipText.Format("ReturnAskFmt", held));
+        if (merc)
+        {
+            int max = Math.Max(1, run.T.Diplomacy.MercMaxMinutes);
+            var spec = new SliderSpec("merc", DipText.Text("SliderMinutes"), 1, max, 1, Math.Min(3, max), v => DipText.Format("MinutesFmt", v));
+            Row(run, sim, player, caller, ship, page, Offer.Merc, spec,
+                m => DipText.Format(hire is null ? "MercFmt" : "MercMoreFmt", m, Cost(run, Quotes.MercPrice(run, m))));
+        }
+        else if (Situation.Hireable(ship) && hire is null)
+        {
+            int step = Quotes.HireStep(run);
+            var spec = new SliderSpec("hire", DipText.Text("SliderOffer"), 0, 20, 1, 10, v => Cosmoteer.Extensions.ToXmlCostString(v * step));
+            if (Situation.WantedAnywhere(sim, player) && !Done(run, ship, Offer.Hire)) page.AddText(DipText.Text("HireWanted"));
+            Row(run, sim, player, caller, ship, page, Offer.Hire, spec, steps =>
+                DipText.Format("HireFmt", Cost(run, steps * step), (int)Math.Ceiling(run.T.Diplomacy.HireSeconds / 60.0), Pct(Quotes.Hire(run, sim, player, ship, steps * step))));
+        }
     }
-
-    /// <summary>Opens a friendly sub-page as the topic button does. For autotests and screenshots.</summary>
-    internal static void SetTopic(Ship ship, string topic) => Topics[ship.UniqueID] = topic;
 }
