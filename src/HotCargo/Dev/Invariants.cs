@@ -186,9 +186,7 @@ public static class Invariants
             if (lost == 0 && newHealth >= oldHealth) return;
             int max = __instance.Rules.MaxHealth;
             float step = Run.Current!.T.Tech.VaultDamagePerUnitLost * max;
-            int crossed = 0;
-            for (int k = 1; max - k * step > 0f; k++)
-                if (max - k * step >= newHealth && max - k * step < oldHealth) crossed++;
+            int crossed = InvariantsModel.StepsCrossed(max, oldHealth, newHealth, step);
             int expected = Math.Min(crossed, __state);
             if (lost == expected) return;
             Fail("vault_step", $"{__instance.Ship?.UniqueID}/{__instance.Location}/{oldHealth}/{newHealth}",
@@ -237,37 +235,9 @@ public static class Invariants
         {
             if (Pending.Count == 0) return;
             foreach (var r in Pending)
-                if (Problem(r.Text, r.XmlFormatting) is { } problem)
+                if (InvariantsModel.TextProblem(r.Text, r.XmlFormatting) is { } problem)
                     Fail("shown_text", r.Text, $"{problem}: \"{(r.Text.Length > 160 ? r.Text[..160] + "..." : r.Text)}\"");
             Pending.Clear();
-        }
-
-        /// <summary>Markup that shows as text: a tag in a plain renderer, an escaped tag in an XML renderer, or a {placeholder}.</summary>
-        internal static string? Problem(string text, bool xml)
-        {
-            if (!xml && HasTag(text, "<")) return "raw markup in a plain text";
-            if (xml && HasTag(text, "&lt;")) return "escaped markup in an XML text";
-            int open = text.IndexOf('{');
-            while (open >= 0)
-            {
-                int close = text.IndexOf('}', open + 1);
-                if (close < 0) break;
-                string inside = text[(open + 1)..close];
-                if (inside.Length > 0 && inside.All(c => char.IsLetterOrDigit(c) || c == '_')) return "unfilled placeholder";
-                open = text.IndexOf('{', open + 1);
-            }
-            return null;
-        }
-
-        /// <summary>A tag start (a letter or '/' right after the opener) with a '&gt;' after it.</summary>
-        static bool HasTag(string text, string opener)
-        {
-            for (int i = text.IndexOf(opener, StringComparison.Ordinal); i >= 0; i = text.IndexOf(opener, i + 1, StringComparison.Ordinal))
-            {
-                int next = i + opener.Length;
-                if (next < text.Length && (char.IsLetter(text[next]) || text[next] == '/') && text.IndexOf('>', next) > 0) return true;
-            }
-            return false;
         }
     }
 

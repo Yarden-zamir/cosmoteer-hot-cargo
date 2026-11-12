@@ -21,6 +21,8 @@ description: Build Hot Cargo, run unit tests, headless game tests and co-op test
 - Long runs: start them with Bash `run_in_background` and wait for the completion notice. Do not poll in a tight loop.
 - Game log of a slot: `SLOT=tN scripts/logs.sh`. A rules error usually shows there at load. Failed runs also save the vanilla log in their log file.
 - Script commands live in `src/HotCargo/Dev/Autotest.cs` (base) and each area's `Register()`. Useful: `newgame run`, `wait s`, `waitfor field op value seconds`, `heat n`, `expect field op value`, `save name`, `load name`, `godmode on`, `ev_set Enabled false` (turns random events off).
+- Invariants (spec 44) run in every test: a broken rule logs `ERROR invariant <name>: <details>` and fails the test. Read the rule in `src/HotCargo/Dev/Invariants.cs` before you change it. A rule that a correct game breaks is a wrong rule; otherwise the bug needs a fix. The `Invariants.Enabled` tunable turns them off.
+- `core-playthrough` plays to sector 2 without cheats (only `pt_*` commands that stand in for one click). It runs in the full suite only. A script asks for a longer timeout with a `# timeout: <seconds>` line.
 - A test reads what the game shows, not our own value source. For UI, check the vanilla widget's text or state (for example the tooltip text the game stores), and take a screenshot when the result is visual.
 
 ## Co-op tests
