@@ -40,6 +40,8 @@ wait 25
 log system1
 # System 2: a mission's worth of fame, Patrol, a vault hit and an event.
 jump
+# A jump out of a fight waits until the ships may leave (factions), so wait for the arrival.
+waitfor sector >= 2 120
 pause off
 wait 15
 fame 15
@@ -57,6 +59,8 @@ wait 5
 log system2
 # System 3: Hunt, a save and a load in the middle of the visit.
 jump
+# A jump out of a fight waits until the ships may leave (factions), so wait for the arrival.
+waitfor sector >= 3 120
 pause off
 wait 15
 heat 45
@@ -75,6 +79,8 @@ wait 20
 log system3
 # System 4 (tier 7): a starter ship does not outlast a tier 7 Hunt, so it sells at once and leaves at Patrol.
 jump
+# A jump out of a fight waits until the ships may leave (factions), so wait for the arrival.
+waitfor sector >= 4 120
 pause off
 wait 5
 damagehostiles 0.05
@@ -89,6 +95,8 @@ wait 15
 log system4
 # System 5: the Buyer and the win.
 jump
+# A jump out of a fight waits until the ships may leave (factions), so wait for the arrival.
+waitfor sector >= 5 120
 pause off
 wait 20
 buyer spawn
