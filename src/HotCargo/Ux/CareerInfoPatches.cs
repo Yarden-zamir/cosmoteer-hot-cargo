@@ -26,8 +26,6 @@ static class CareerInfoPatches
     [HarmonyPatch(typeof(MissionsHud.MissionWidget), nameof(MissionsHud.MissionWidget.Distance), MethodType.Setter)]
     static class MissionHudDistance
     {
-        static (MapNode From, MapNode To, int Jumps)? _cache;
-
         static void Postfix(MissionsHud.MissionWidget __instance, (float Dist1, float Dist2) value)
         {
             if (!float.IsInfinity(value.Dist1) || float.IsInfinity(value.Dist2) || !UxKit.On(s => s.MissionDistance)) return;
@@ -36,20 +34,9 @@ static class CareerInfoPatches
                 var game = __instance._game;
                 var node = __instance._mission.GetClosestObjectiveMapNode(out _);
                 string ly = Strings.FormatText("MissionLog/DistanceLYFmt", value.Dist2);
-                int jumps = node is null ? -1 : Jumps(game, node);
+                int jumps = node is null ? -1 : UxKit.Jumps(game, node);
                 __instance._distance.Text = "  (" + (jumps > 0 ? UxKit.Format(jumps == 1 ? "DistanceJumpFmt" : "DistanceJumpsFmt", ly, jumps) : ly) + ")";
             });
-        }
-
-        static int Jumps(GameRoot game, MapNode to)
-        {
-            var from = game.CurrentMapNode;
-            if (_cache is { } c && c.From == from && c.To == to) return c.Jumps;
-            using var path = TempList<MapNode>.Alloc();
-            float dist = game.Map.Nodes.FindPathTo(to, path, requireJumpable: true);
-            int jumps = float.IsInfinity(dist) ? -1 : path.Count - 1;
-            _cache = (from, to, jumps);
-            return jumps;
         }
     }
 

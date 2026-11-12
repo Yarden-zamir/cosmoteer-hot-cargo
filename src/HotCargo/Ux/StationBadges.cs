@@ -32,8 +32,11 @@ static class StationBadges
         if (ai.WillProvideTechs(caller)) parts.Add(UxKit.Text("BadgeTechs"));
         if (ai.WillProvideMissions(caller))
         {
-            int missions = ai.GetProvidedMissions(caller)?.Count(m => m.CanAccept(ship.Sim)) ?? 0;
-            if (missions > 0) parts.Add(UxKit.Format("BadgeMissionsFmt", missions));
+            var offers = ai.GetProvidedMissions(caller)?.Where(m => m.CanAccept(ship.Sim)).ToList() ?? [];
+            // Spec 804: a station with a story chain offer says so, so the first station of a run shows its chain at once.
+            if (UxKit.On(s => s.MissionSelect) && offers.Any(m => MissionSelect.KindOf(m) == MissionKind.Chain))
+                parts.Add(MissionSelect.ChainColor.FormatWithXml(UxKit.Text("BadgeChain")));
+            if (offers.Count > 0) parts.Add(UxKit.Format("BadgeMissionsFmt", offers.Count));
             // GetPendingMissionRewards throws when no module provides missions, so it stays inside this check.
             int rewards = ai.GetPendingMissionRewards(caller).Count;
             if (rewards > 0) parts.Add(UxKit.Format("BadgeRewardsFmt", rewards));

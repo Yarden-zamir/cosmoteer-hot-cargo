@@ -61,7 +61,7 @@ internal sealed class TacticsEditor : WindowBox
         {
             if (IsOpen) Close();
             else if (DefaultShip(run) is { } ship) Open(run, ship);
-            else run.Game.Gui.ShowAreaName(Text("NoShip"));
+            else Ux.UxKit.CenterText(run.Game, Text("NoShip"));
         }
         if (_open is null) return;
         if (_open.Parent is null || _open._run != run || !_open._ship.ExistsInSim(run.Game.Sim, falseIfNoParts: false)) { Close(); return; }
