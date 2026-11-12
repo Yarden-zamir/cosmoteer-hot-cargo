@@ -332,6 +332,29 @@ public static class EventsArea
             else button.OnClick?.Invoke(null, EventArgs.Empty);
             Autotest.Wait(2);
         };
+        // ev_open <target>: opens the real comms window to the target. ev_click <target> <text>: runs one frame of its dialogue tab,
+        // then clicks the tab button whose plain text contains the text, like a player (spec 769: the tab wires shared choices).
+        Autotest.Commands["ev_open"] = arg =>
+        {
+            var game = RequireRun().Game;
+            var caller = SimQueries.FirstHumanShip(RequireSim()) ?? throw new InvalidOperationException("no player ship");
+            game.Gui.FloatingWindows.AddChild(new Cosmoteer.Modes.Career.Comms.CommWindow(game, caller, CommsTarget(arg.Trim())));
+            Autotest.Wait(1);
+        };
+        Autotest.Commands["ev_click"] = arg =>
+        {
+            int space = arg.IndexOf(' ');
+            if (space < 0) throw new InvalidOperationException("ev_click needs: target text");
+            string which = arg[..space], text = arg[(space + 1)..];
+            var tab = Ui.CommsHail.OpenTab(CommsTarget(which)) ?? throw new InvalidOperationException($"no open comms tab with the {which} ship (ev_open first)");
+            tab.OnUpdatingUIState(null, EventArgs.Empty);
+            var buttons = tab._currentDialogue?.Buttons ?? throw new InvalidOperationException($"the {which} comms tab shows no page");
+            int index = buttons.FindIndex(b => EventView.Plain(b.Text).Contains(text, StringComparison.Ordinal));
+            if (index < 0) throw new InvalidOperationException($"no comms button with '{text}' on the {which} tab; buttons: {string.Join(" | ", buttons.Select(b => EventView.Plain(b.Text)))}");
+            if (!tab._dialogueButtonsBox.Children[index].SelfInputActive) throw new InvalidOperationException($"comms button '{text}' is disabled");
+            tab.ButtonPressed(index);
+            Autotest.Wait(2);
+        };
         // expectcomms <target> <text> 1|0: the target's Hot Cargo comms page has (1) or lacks (0) a button or line with the text.
         Autotest.Commands["expectcomms"] = arg =>
         {
