@@ -24,12 +24,15 @@ tostation
 wait 3
 tech sell 1
 wait 30
+damagehostiles 0.05
 fame 15
 heat 10
-wait 60
+wait 30
+damagehostiles 0.05
+wait 30
 log system1_warning
 wait 20
-damagehunters 0.05
+damagehostiles 0.05
 wait 25
 log system1
 # System 2: a mission's worth of fame, Patrol, a vault hit and an event.
@@ -39,7 +42,7 @@ wait 15
 fame 15
 heat 25
 wait 45
-damagehunters 0.05
+damagehostiles 0.05
 wait 25
 vault damage 0.12
 wait 3
@@ -53,14 +56,14 @@ pause off
 wait 15
 heat 45
 wait 40
-damagehunters 0.05
+damagehostiles 0.05
 wait 20
 save telerun
 wait 3
 load telerun
 pause off
 wait 20
-damagehunters 0.05
+damagehostiles 0.05
 wait 20
 log system3
 # System 4: up to Strike, a second sale, and leave while the strike waves run.
@@ -69,7 +72,7 @@ pause off
 wait 15
 heat 70
 wait 40
-damagehunters 0.05
+damagehostiles 0.05
 wait 20
 tostation
 wait 3

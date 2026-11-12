@@ -88,6 +88,24 @@ public static class TelemetryArea
             bool ok = parts[1] switch { ">=" => count >= n, "<=" => count <= n, "==" => count == n, ">" => count > n, "<" => count < n, _ => throw new InvalidOperationException($"unknown op {parts[1]}") };
             Autotest.Check(ok, $"telemetry {parts[0]} count {parts[1]} {parts[2]} (actual {count})");
         };
+        // damagehostiles <fraction>: sets every part of each hunter and hostile ship within 6000 of the fleet to this fraction of its health,
+        // so the player's guns finish them. Test only, single player: it changes the sim from a GUI frame. It stands in for a won fight.
+        Autotest.Commands["damagehostiles"] = arg =>
+        {
+            var run = Autotest.RequireRun();
+            if (run.IsMultiplayer) throw new InvalidOperationException("damagehostiles is single player only");
+            float fraction = float.Parse(arg, CultureInfo.InvariantCulture);
+            var sim = run.Game.Sim;
+            var center = SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no player ship");
+            int n = 0;
+            foreach (var ship in sim.Ships.ToList())
+            {
+                if (Session.Side(ship) is not ("hunter" or "hostile") || ship.DetWorldCenter.DistanceTo(center) > 6000) continue;
+                foreach (var part in ship.Parts.ToList()) part.Health = Math.Max(1, (int)(part.Rules.MaxHealth * fraction));
+                n++;
+            }
+            Log.Info($"AUTOTEST damagehostiles {fraction}: {n} ships");
+        };
         // telestats: logs the overhead numbers of the session, for reports.
         Autotest.Commands["telestats"] = _ =>
             Log.Info($"TELEMETRY STATS events={Interlocked.Read(ref Stats.Events)} bytes={Interlocked.Read(ref Stats.Bytes)} dropped={Interlocked.Read(ref Stats.Dropped)} " +

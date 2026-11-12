@@ -178,7 +178,7 @@ def sector_section(rep: RunReport) -> None:
                 per[i]["missions_done"] += 1
             case "mission.accepted":
                 per[i]["missions_accepted"] += 1
-            case "econ.trade" if e.get("tech"):
+            case "econ.trade" if e.get("is_tech"):
                 per[i]["tech_sold"] += e["amount"]
     rows = []
     for i, v in enumerate(visits):
@@ -257,7 +257,7 @@ def tech_section(rep: RunReport) -> None:
               [[c, lost[c], gained[c]] for c in sorted(set(lost) | set(gained))],
               "Cause is the newest hint within 5 game seconds of the change: a sale, a Buyer delivery, vault damage, an event, a lost ship.")
     )
-    sales = [e for e in ev if e["e"] == "econ.trade" and e.get("tech")]
+    sales = [e for e in ev if e["e"] == "econ.trade" and e.get("is_tech")]
     rep.tables.append(
         Table("Tech trades", ["game time", "sector", "tier", "trade", "units", "unit price", "total", "buyer", "heat"],
               [[mmss(e["gs"]), e["sec"], e["tier"], e["trade"], e["amount"], fmt(e.get("unit_price")), fmt(e.get("total")), e.get("buyer"), fmt(e["heat"])] for e in sales])
@@ -464,7 +464,7 @@ def overview(reports: list[RunReport]) -> Table:
         rows.append([r.run.id, r.run.header.get("wall_utc", "")[:16], r.run.header.get("label") or ("autotest" if r.run.header.get("autotest") else "play"), result, reason[:50],
                      mmss(max(e["gs"] for e in ev)), max(e["sec"] for e in ev), max(e["tier"] for e in ev),
                      sum(1 for e in ev if e["e"] == "heat.stage"), sum(1 for e in ev if e["e"] == "mission.ended" and e.get("result") == "success"),
-                     sum(e["amount"] for e in ev if e["e"] == "econ.trade" and e.get("tech")), len(ev)])
+                     sum(e["amount"] for e in ev if e["e"] == "econ.trade" and e.get("is_tech")), len(ev)])
     return Table("Runs", ["run", "started (UTC)", "label", "result", "reason", "game time", "sectors", "peak tier", "stages", "missions done",
                           "tech traded", "events"], rows)
 

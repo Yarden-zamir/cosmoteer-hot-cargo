@@ -52,11 +52,11 @@ Category switches are in the `Telemetry` tunables section. The table names the s
 | `heat.strike_wave` | Heat | `live_hunters` |
 | `tech.count` | Tech | `from` (null for the first count of a session), `to`, `delta`, `cause`, `hints` |
 | `tech.value` | Tech | `from`, `to`, `buyer_unit`, `buyback`, `notoriety`, `peak_tier` |
-| `tech.vault_hit` | Tech | `ship`, `player`, `damage`, `health`, `max_health`, `tech_before`, `tech_after`, `destroyed` |
+| `tech.vault_hit` | Tech | Only hits that cost tech or destroy the vault. `ship`, `player`, `damage`, `health`, `max_health`, `tech_before`, `tech_after`, `destroyed` |
 | `econ.money` | Economy | `player`, `amount`, `before`, `after`, `src`, `caller` |
 | `econ.fame` | Economy | `amount`, `after`, `src`, `caller`, `std_mission_fame` |
 | `econ.reputation` | Economy | `faction`, `from`, `to` |
-| `econ.trade`, `econ.trade_pickup` | Economy | `trade` (Buy, Sell, SellBack, ...), `resource`, `amount`, `unit_price`, `total`, `tech`, `buyer`, `crew_player`, `from`, `from_side`, `to`, `to_side`, `tech_value`. Pickups only for tech. |
+| `econ.trade`, `econ.trade_pickup` | Economy | `trade` (Buy, Sell, SellBack, ...), `resource`, `amount`, `unit_price`, `total`, `price_src` (`order`: the price of the crew job; `current`: the station price at delivery), `is_tech`, `buyer`, `crew_player`, `from`, `from_side`, `to`, `to_side`, `tech_value`. Pickups only for tech. |
 | `mission.offered` | Missions | mission fields, `list` (station, system, galaxy), `terms` |
 | `mission.accepted` | Missions | mission fields, `terms`, `open_contracts` |
 | `mission.ended` | Missions | mission fields, `result` (success, timeout, lost, fail, abandoned), `duration_s`, `terms`, `sold_out` |
@@ -69,7 +69,7 @@ Category switches are in the `Telemetry` tunables section. The table names the s
 | `combat.destroyed` | Combat | `ship`, `name`, `player`, `side`, `faction`, `hunter`, `value`, `tags`. A ship that became a derelict. |
 | `combat.removed` | Combat | ship fields, `src`, `caller`. A ship that left for good: a hunter that jumps out (`flee_jump`), a trader that exits. |
 | `combat.crew_died` | Combat | `player`, `cause`, `carried_tech` |
-| `combat.damage` | Combat | per side of the damaged ship: `damage`, `repaired`, `parts_lost`. Summed over `AccrualSeconds`. |
+| `combat.damage` | Combat | per side of the damaged ship: `damage`, `repaired`, `parts_lost`. Summed over `AccrualSeconds`. Side `vault` holds the Tech Vault part of the player damage again. |
 | `ai.switch` | Ai | `ship`, `name`, `side`, `ai`, `from`, `to` (module types), `integrity`, `dist` |
 | `snap` | Snapshots | `why` (timer, jump, result, test), `result`, `stages`, `notoriety`, `peak_tier`, `tech_value`, `buyer_mult`, `heat_mult`, `fame`, `money`, `score`, `delivered`, `open_contracts`, `trail_per_min`, `mission_log`, `pending_informants`, `waiting_hunter_groups`, `events_seen`, `chains`, `crew`, `ships` (value, blueprint, integrity, parts, firepower, vaults, crew of each player ship), `fleet_value`, `fleet_blueprint`, `fleet_firepower`, `fleet_parts`, `vaults`, `live` (ships by side), `stasis`, `ai` (sums, see below) |
 | `perf` | Perf | `window_ms`, `frames`, `fps`, `frame_mean_ms`, `frame_p50_ms`, `frame_p95_ms`, `frame_p99_ms`, `frame_max_ms`, `frames_over_33ms`, `ticks`, `tick_mean_ms`, `tick_max_ms`, `tick_total_ms`, `tele_ms`, `tele_pct_wall`, `tele_pct_tick`, `tele_writer_ms`, `tele_events`, `tele_bytes`, `tele_pending`, `tele_dropped`, `gc0`, `gc1`, `gc2`, `gc_pause_ms`, `heap_mb`, `working_set_mb` |
@@ -140,7 +140,7 @@ For your own analysis, each line is one JSON object: for example `jq -c 'select(
 
 `scripts/autotest.sh` and `scripts/autotest-mp.sh` send `telename <script name>` first, so `session.start` has the test name in `label`.
 
-- Commands: `telename <name>`, `teleflush` (wait until the writer wrote every queued event), `telesnap [why]`, `telecount <event> <op> <n>` (counts events of the current run in its files), `telestats` (logs the overhead numbers).
+- Commands: `telename <name>`, `damagehostiles <fraction>` (test only: weakens nearby hostile ships so the player wins the fight), `teleflush` (wait until the writer wrote every queued event), `telesnap [why]`, `telecount <event> <op> <n>` (counts events of the current run in its files), `telestats` (logs the overhead numbers).
 - Fields: `tele_active`, `tele_events`, `tele_dropped`, `tele_nested_dropped`, `tele_overhead_ms`, `tele_overhead_pct` (telemetry time in percent of the session's real time), `tele_trace_missing`, `tele_trace_patched`.
 - Tests: `tests/autotest/telemetry-basic.txt` (every category and a save and load), `tests/autotest/telemetry-run.txt` (a scripted run over five systems that ends with a win; it makes data for a report).
 

@@ -195,7 +195,10 @@ static class TelemetryPatches
         }
     }
 
-    /// <summary>Hits on a Tech Vault: damage, health and the tech it cost. Runs after the Tech area's damage patch.</summary>
+    /// <summary>
+    /// Hits on a Tech Vault that cost tech or destroyed it: damage, health and the tech it cost. Runs after the Tech area's damage patch.
+    /// Hits that cost nothing only add to the vault damage sums (combat.damage, side "vault"), because fire and repair loops make many of them.
+    /// </summary>
     [HarmonyPatch(typeof(Part), "OnHealthChanged")]
     static class VaultHitPatch
     {
@@ -213,8 +216,10 @@ static class TelemetryPatches
         static void Postfix(Part __instance, int oldHealth, int newHealth, int __state)
         {
             if (__state < 0 || newHealth == oldHealth || Session.Current is not { } s || !Tele.On(Cat.Tech)) return;
-            int after = Grid(__instance)?.Resources ?? 0;
             if (newHealth > oldHealth) return;
+            int after = newHealth == 0 ? 0 : Grid(__instance)?.Resources ?? 0;
+            AddDamage("vault", oldHealth - newHealth, newHealth == 0);
+            if (after == __state && newHealth > 0) return;
             string cause = newHealth == 0 ? "vault_destroyed" : "vault_damage";
             s.AddTechHint(cause);
             Tele.Emit(Cat.Tech, "tech.vault_hit", w =>
@@ -225,7 +230,7 @@ static class TelemetryPatches
                 w.WriteNumber("health", newHealth);
                 w.WriteNumber("max_health", __instance.Rules.MaxHealth);
                 w.WriteNumber("tech_before", __state);
-                w.WriteNumber("tech_after", newHealth == 0 ? 0 : after);
+                w.WriteNumber("tech_after", after);
                 w.WriteBoolean("destroyed", newHealth == 0);
             });
         }
@@ -250,14 +255,22 @@ static class TelemetryPatches
             bool buyer = e.SinkShip is { } sink && Buyer.IsBuyer(sink);
             if (tech && name == "econ.trade")
                 s.AddTechHint(buyer ? "buyer" : e.TradeType switch { TradeType.Sell => "sale", TradeType.Buy => "buyback", _ => "trade" });
-            int? price = e.Crew.Job is ResourceTransferJob job ? job.PricePerResource : null;
+            // The job's price is the price of the order. Without the job (it can end with the delivery) the mode's current price stands in.
+            var mode = s.Game.Sim.Mode;
+            (int? price, string priceSrc) = (e.Crew.Job, e.TradeType) switch
+            {
+                (ResourceTransferJob job, _) => (job.PricePerResource, "order"),
+                (_, TradeType.Sell) => (mode.GetResourceSellRefund(e.ResourceType, e.SinkShip?.Metadata.PlayerIndex), "current"),
+                (_, TradeType.Buy) => (mode.GetResourceBuyCost(e.ResourceType, e.SourceShip?.Metadata.PlayerIndex), "current"),
+                _ => ((int?)null, ""),
+            };
             Tele.Emit(Cat.Economy, name, w =>
             {
                 w.WriteString("trade", e.TradeType.ToString());
                 w.WriteString("resource", e.ResourceType.ToString());
                 w.WriteNumber("amount", e.Amount);
-                if (price is { } pp) { w.WriteNumber("unit_price", pp); w.WriteNumber("total", (long)pp * e.Amount); }
-                w.WriteBoolean("tech", tech);
+                if (price is { } pp) { w.WriteNumber("unit_price", pp); w.WriteNumber("total", (long)pp * e.Amount); w.WriteString("price_src", priceSrc); }
+                w.WriteBoolean("is_tech", tech);
                 w.WriteBoolean("buyer", buyer);
                 w.WriteNumber("crew_player", e.Crew.PlayerIndex);
                 if (e.SourceShip is { } src) { w.WriteString("from", src.Metadata.PlainShipName); w.WriteString("from_side", Session.Side(src)); }
@@ -366,15 +379,21 @@ static class TelemetryPatches
             try
             {
                 string side = ship.IsHumanPlayerShip ? "player" : ship.HasTag(HunterSpawner.HunterTag) ? "hunter" : IsHostile(s, ship.Metadata.PlayerIndex) ? "hostile" : "neutral";
-                lock (DamageGate)
-                {
-                    var d = Damage.GetValueOrDefault(side);
-                    if (newHealth < oldHealth) { d.Damage += oldHealth - newHealth; if (newHealth == 0) d.PartsLost++; }
-                    else d.Repaired += newHealth - oldHealth;
-                    Damage[side] = d;
-                }
+                AddDamage(side, oldHealth - newHealth, newHealth == 0);
             }
             finally { Stats.Exit(t0); }
+        }
+    }
+
+    /// <summary>Adds a health change to the sums of a side. Negative damage is a repair.</summary>
+    static void AddDamage(string side, int damage, bool partLost)
+    {
+        lock (DamageGate)
+        {
+            var d = Damage.GetValueOrDefault(side);
+            if (damage > 0) { d.Damage += damage; if (partLost) d.PartsLost++; }
+            else d.Repaired -= damage;
+            Damage[side] = d;
         }
     }
 
