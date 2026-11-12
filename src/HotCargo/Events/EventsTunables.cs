@@ -23,6 +23,10 @@ public sealed class EventsTunables
     [Serialize(Optional = true)] public float CooldownSeconds = 120f;
     /// <summary>Arrival and Station events in one system, all visits together. Signal events do not count, because the player chose to go there.</summary>
     [Serialize(Optional = true)] public int MaxEventsPerSystem = 2;
+    /// <summary>The wanted-and-hunted warning shows when the players are wanted and heat reached this stage (1 = the first stage).</summary>
+    [Serialize(Optional = true)] public int WantedWarningMinStage = 1;
+    /// <summary>Chance that the wanted-and-hunted warning also brings a Wanted event (a way to clear wanted).</summary>
+    [Serialize(Optional = true)] public float WantedEventChance = 0.7f;
     /// <summary>Events of the Unavoidable category (every choice costs something) per run.</summary>
     [Serialize(Optional = true)] public int MaxUnavoidablePerRun = 1;
     /// <summary>Global scales on event outcomes, on top of the per-event amounts.</summary>
