@@ -88,7 +88,7 @@ internal sealed class CoverStrategy(CoverStrategyRules rules) : AIStrategyModule
         _noRockLogged = false;
         if (rock != _rock) TacticsLog.Event(ship, Tactic.Cover, $"hides behind a rock (radius {rock.WorldBoundingRadius:0}) from {target.Metadata.PlainShipName}");
         _rock = rock;
-        HunterOrders.MoveTo(ship, Spot(ship, target, rock, t), rules.MoveTolerance);
+        PersonalityStrategy.MoveGuarded(ship, Spot(ship, target, rock, t), rules.MoveTolerance, target, t);
         return true;
     }
 

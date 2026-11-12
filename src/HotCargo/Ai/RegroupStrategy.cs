@@ -67,7 +67,7 @@ internal sealed class RegroupStrategy(RegroupStrategyRules rules) : AIStrategyMo
         }
         var join = allies.Where(a => a.DetWorldCenter.DistanceTo(ship.DetWorldCenter) > t.RegroupRadius)
             .MinBy(a => a.DetWorldCenter.DistanceSquaredTo(ship.DetWorldCenter))!;
-        HunterOrders.MoveTo(ship, join.DetWorldCenter, t.RegroupRadius * 0.5f);
+        PersonalityStrategy.MoveGuarded(ship, join.DetWorldCenter, t.RegroupRadius * 0.5f, target, t);
         return true;
     }
 

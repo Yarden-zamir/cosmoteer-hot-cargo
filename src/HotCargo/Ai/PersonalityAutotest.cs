@@ -121,7 +121,7 @@ static class PersonalityAutotest
                 Log.Info($"AUTOTEST AI {arg}: {s.Metadata.PlainShipName} id={s.UniqueID} group={PersonalityStrategy.Group(s)} " +
                          $"personality={PersonalityStrategy.Pick(s, T())?.Name} traits=[{PersonalityStrategy.Traits(s, T())}] " +
                          $"agility={b.Agility:0.00} turn={b.Turn:0.00} range={b.Range:0.00} protection={b.Protection:0.00} size={b.Size:0.00} " +
-                         $"role={s.AI?.GetStrategyModule<TeamStrategy>()?.Role} cmd={s.Commands.CurConfirmedCommand?.GetType().Name} {PersonalityStrategy.Profile(s)}");
+                         $"role={s.AI?.GetStrategyModule<TeamStrategy>()?.Role} cmd={s.Commands.CurConfirmedCommand?.GetType().Name} {PersonalityStrategy.Profile(s, T())}");
             }
         };
         // aicensus <ships per faction and tier band>: spawns built-in combat ships far away, logs their build profile, removes them.
@@ -205,7 +205,7 @@ static class PersonalityAutotest
                     var spawner = new StasisShipSpawner(sim, pick.ID, far, SpawnedShipFeatures.None, sim.Rand.UInt64()) { ObjectAllegiance = -1 };
                     spawner.Spawn(sim);
                     var ship = sim.Ships[spawner.ReservedObjectID] ?? throw new InvalidOperationException($"{pick.ID} did not spawn");
-                    var p = PersonalityStrategy.Measure(ship);
+                    var p = PersonalityStrategy.Measure(ship, t);
                     var b = PersonalityModel.Scores(p, t.Scale);
                     Log.Info($"AUTOTEST CENSUS {faction.ID} tier {pick.Tier} {pick.File.ShipName}: accel={p.Acceleration:0.00} turn={p.Turn:0.000} " +
                              $"range={p.Range:0} armor={p.Armor:0.00} shields={p.Shields} radius={p.Radius:0} -> agility={b.Agility:0.00} " +

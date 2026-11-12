@@ -120,7 +120,7 @@ internal sealed class FleeStrategy : AIStrategyModule
         if (threat is not null && HunterOrders.EdgeDistance(ship, threat) < t.FleeDistance)
         {
             Vector2 away = Vector2.FromAngle(threat.DetWorldCenter.DirectionTo(ship.DetWorldCenter));
-            HunterOrders.MoveTo(ship, threat.DetWorldCenter + away * (t.FleeDistance * 1.25f + threat.WorldBoundingRadius), t.FleeDistance * 0.25f);
+            PersonalityStrategy.MoveGuarded(ship, threat.DetWorldCenter + away * (t.FleeDistance * 1.25f + threat.WorldBoundingRadius), t.FleeDistance * 0.25f, threat, t);
             return true;
         }
         // Clear of enemies. AI crews cannot build near enemies that fire, so a vanilla ship repairs only here.

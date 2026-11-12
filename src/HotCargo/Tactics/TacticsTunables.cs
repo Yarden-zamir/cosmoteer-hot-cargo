@@ -86,6 +86,19 @@ public sealed class TacticsTunables
     [Serialize(Optional = true)] public ProfileScaleTunables Profile = new();
     [Serialize(Optional = true)] public Personality[] Personalities = DefaultPersonalities();
 
+    // Weak sides (spec 1030-1034).
+
+    /// <summary>On: ships keep their strong side to the threat when they fly away or reposition, and a weak back or no guarded side blocks kite and bait.</summary>
+    [Serialize(Optional = true)] public bool WeakSideEnabled = true;
+    /// <summary>Part categories that a ship protects: its control rooms, reactors and the tech vault. Part IDs count as categories.</summary>
+    [Serialize(Optional = true)] public string[] VulnerableParts = ["command", "reactor", "yarden_zamir.tech_vault"];
+    /// <summary>A side is weak when a protected part has less cover than this toward it. One part cell gives 1, one armor cell ArmorCoverWeight.</summary>
+    [Serialize(Optional = true)] public float WeakSideCover = 4f;
+    /// <summary>Cover of one armor cell between a protected part and the hull edge. Other part cells give 1. Damage lowers both.</summary>
+    [Serialize(Optional = true)] public float ArmorCoverWeight = 3f;
+    /// <summary>Score of each weapon that can fire toward a side, when the ship picks the side to turn toward a threat.</summary>
+    [Serialize(Optional = true)] public float WeaponSideWeight = 1f;
+
     // Enemy AI behaviors (spec 193-202). "Enabled" switches the behavior for hunters (HotCargoHunter AI),
     // "OnVanilla" for the vanilla combat AIs (Normal, Easy, Wanderer, StationGuard, Police: pirates, bounties, faction ships).
 
@@ -103,8 +116,11 @@ public sealed class TacticsTunables
 
     [Serialize(Optional = true)] public bool CallEnabled = true;
     [Serialize(Optional = true)] public bool CallOnVanilla = true;
-    /// <summary>A call for help takes this long. One disruptor, EMP or ion beam hit stops it.</summary>
-    [Serialize(Optional = true)] public float CallSeconds = 6f;
+    /// <summary>
+    /// A call for help takes this long before allies answer. One disruptor, EMP or ion beam hit stops it. Long enough that the
+    /// players can jam the caller or kill it.
+    /// </summary>
+    [Serialize(Optional = true)] public float CallSeconds = 15f;
     /// <summary>Allies within this distance of the caller hear the call.</summary>
     [Serialize(Optional = true)] public float CallRange = 6000f;
     /// <summary>A ship that called, was stopped or answered a call does not call again for this long.</summary>
@@ -149,6 +165,8 @@ public sealed class TacticsTunables
             "Tactics.TeamRadius, CoverSearchRange, CoverPeekSeconds and CoverHideSeconds must be above 0");
         require(BrawlRangeFraction is > 0 and <= 1, "Tactics.BrawlRangeFraction must be above 0 and at most 1");
         require(ProfileRefreshSeconds > 0, "Tactics.ProfileRefreshSeconds must be above 0");
+        require(WeakSideCover > 0 && ArmorCoverWeight >= 0 && WeaponSideWeight >= 0,
+            "Tactics.WeakSideCover must be above 0, ArmorCoverWeight and WeaponSideWeight 0 or more");
         var p = Profile;
         require(p.AccelAgile > p.AccelHeavy && p.TurnFast > p.TurnSlow && p.RangeLong > p.RangeShort && p.RadiusLarge > p.RadiusSmall
                 && p.ArmorHeavy > p.ArmorLight && p.ShieldsPerRadiusFull > 0, "Tactics.Profile: each high value must be above its low value, ShieldsPerRadiusFull above 0");
