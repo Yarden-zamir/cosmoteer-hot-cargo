@@ -35,8 +35,8 @@ public sealed class Run
         public static Func<Run, float> TimeHeatFactor = _ => 1f;
         /// <summary>Factor on notoriety gains in the current system (spec 19). Set by the Factions area: corporate ally space.</summary>
         public static Func<Run, float> NotorietyFactor = _ => 1f;
-        /// <summary>Factor on Heat.HeatCarryOverFraction for the system switch that runs now (spec 28). Set by the Factions area: relay or blind jump.</summary>
-        public static Func<Run, float> CarryOverFactor = _ => 1f;
+        /// <summary>Share of the heat that stays after the system switch that runs now (spec 28). The Factions area sets it per jump kind (spec 650).</summary>
+        public static Func<Run, float> JumpHeatKept = run => run.T.Heat.HeatCarryOverFraction;
 
         internal static void RaiseRunEnded(Run r) => Each(RunEnded, h => h(r));
         internal static void RaiseStageStarted(Run r, SimRoot s, int i) => Each(StageStarted, h => h(r, s, i));
@@ -211,7 +211,7 @@ public sealed class Run
         bool firstVisit = State.VisitedNodes.Add(newNode);
         if (firstVisit) State.SectorIndex++;
         float stored = State.NodeHeat.TryGetValue(newNode, out float h) ? h : 0f;
-        float carry = HeatModel.CarryOverFraction(T.Heat.HeatCarryOverFraction, Hooks.CarryOverFactor(this));
+        float carry = Math.Clamp(Hooks.JumpHeatKept(this), 0f, 1f);
         State.Heat = HeatModel.OnEnterSystem(State.Heat, stored, carry);
         // Stages below the entry heat do not fire again on arrival. This gives the players a moment after each jump.
         State.StagesStarted = HeatModel.StagesReached(State.Heat, T.Heat.Thresholds());

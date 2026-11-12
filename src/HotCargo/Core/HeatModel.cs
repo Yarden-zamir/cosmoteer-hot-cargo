@@ -24,9 +24,6 @@ public static class HeatModel
     public static float OnEnterSystem(float previousHeat, float storedHeatOfNewSystem, float carryOverFraction) =>
         Clamp(Math.Max(storedHeatOfNewSystem, previousHeat * carryOverFraction));
 
-    /// <summary>The share of heat that a jump keeps: the base share times the factor of the jump kind (Factions, spec 650), in 0 to 1.</summary>
-    public static float CarryOverFraction(float baseFraction, float factor) => Math.Clamp(baseFraction * factor, 0f, 1f);
-
     /// <summary>Number of stage thresholds (ordered ascending) at or below the heat.</summary>
     public static int StagesReached(float heat, IReadOnlyList<float> thresholds)
     {
