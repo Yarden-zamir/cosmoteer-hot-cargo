@@ -13,10 +13,13 @@ MaxStackSize = 2
 // "Supply Stolen Tech" job out of every storage part's job list.
 FlexGridPriorityKey = "flex_grid_processor"
 FlexGridDefaultPriority = 1
-// Destroyed vaults and killed crew lose their tech (spec 9, 65). Salvage (deconstruction) drops it as nuggets.
+// A destroyed vault drops its tech as crates (spec 65, 445; VaultDropPatch burns it with a small chance). Salvage drops it too.
+// Killed crew lose the tech they carry (spec 9): CrewKilled would fall back to StorageDestroyed without its own value.
 DropRates
 {
+	StorageDestroyed = 100%
 	StorageSalvaged = 100%
+	CrewKilled = 0%
 }
 Rarity = Unique
 

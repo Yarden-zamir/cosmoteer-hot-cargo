@@ -500,7 +500,8 @@
    "StationFuelUntyped": 0.05,
    "JumpCostScale": 1.0,
    "HunterFuel": 40,
-   "ChainsPerSystem": null
+   "ChainsPerSystem": null,
+   "StationFuelPerMillion": 0
   },
   "sectors": [
    {
@@ -526,6 +527,8 @@
     "techValueShipFraction": 0.33,
     "techUnitInMissions": 0.6,
     "jumpFuel": 0.5,
+    "worstJumpFuel": 3.0,
+    "stationFuelFloor": 0,
     "jumpFuelMoney": 27,
     "jumpFuelInMissions": 0.001
    },
@@ -552,6 +555,8 @@
     "techValueShipFraction": 0.4,
     "techUnitInMissions": 0.6,
     "jumpFuel": 1.5,
+    "worstJumpFuel": 3.5,
+    "stationFuelFloor": 0,
     "jumpFuelMoney": 77,
     "jumpFuelInMissions": 0.001
    },
@@ -578,6 +583,8 @@
     "techValueShipFraction": 0.46,
     "techUnitInMissions": 0.7,
     "jumpFuel": 1.8,
+    "worstJumpFuel": 6.5,
+    "stationFuelFloor": 0,
     "jumpFuelMoney": 92,
     "jumpFuelInMissions": 0.001
    },
@@ -604,6 +611,8 @@
     "techValueShipFraction": 0.53,
     "techUnitInMissions": 0.8,
     "jumpFuel": 3.4,
+    "worstJumpFuel": 11.6,
+    "stationFuelFloor": 0,
     "jumpFuelMoney": 170,
     "jumpFuelInMissions": 0.001
    },
@@ -630,6 +639,8 @@
     "techValueShipFraction": 0.6,
     "techUnitInMissions": 1.0,
     "jumpFuel": 6.0,
+    "worstJumpFuel": 29.3,
+    "stationFuelFloor": 0,
     "jumpFuelMoney": 301,
     "jumpFuelInMissions": 0.001
    },
@@ -656,6 +667,8 @@
     "techValueShipFraction": 0.66,
     "techUnitInMissions": 1.0,
     "jumpFuel": 15.3,
+    "worstJumpFuel": 31.8,
+    "stationFuelFloor": 0,
     "jumpFuelMoney": 764,
     "jumpFuelInMissions": 0.002
    },
@@ -682,6 +695,8 @@
     "techValueShipFraction": 0.73,
     "techUnitInMissions": 1.1,
     "jumpFuel": 16.6,
+    "worstJumpFuel": 53.2,
+    "stationFuelFloor": 0,
     "jumpFuelMoney": 829,
     "jumpFuelInMissions": 0.002
    },
@@ -708,6 +723,8 @@
     "techValueShipFraction": 0.79,
     "techUnitInMissions": 1.2,
     "jumpFuel": 16.6,
+    "worstJumpFuel": 53.2,
+    "stationFuelFloor": 0,
     "jumpFuelMoney": 829,
     "jumpFuelInMissions": 0.002
    }
@@ -733,7 +750,8 @@
    "StationFuelUntyped": 0.01,
    "JumpCostScale": 2.0,
    "HunterFuel": 60,
-   "ChainsPerSystem": 2
+   "ChainsPerSystem": 2,
+   "StationFuelPerMillion": 100
   },
   "sectors": [
    {
@@ -759,6 +777,8 @@
     "techValueShipFraction": 0.32,
     "techUnitInMissions": 1.1,
     "jumpFuel": 1.1,
+    "worstJumpFuel": 5.9,
+    "stationFuelFloor": 10,
     "jumpFuelMoney": 161,
     "jumpFuelInMissions": 0.009
    },
@@ -785,6 +805,8 @@
     "techValueShipFraction": 0.39,
     "techUnitInMissions": 1.2,
     "jumpFuel": 3.1,
+    "worstJumpFuel": 7.1,
+    "stationFuelFloor": 11,
     "jumpFuelMoney": 464,
     "jumpFuelInMissions": 0.016
    },
@@ -811,6 +833,8 @@
     "techValueShipFraction": 0.45,
     "techUnitInMissions": 1.4,
     "jumpFuel": 3.7,
+    "worstJumpFuel": 13.1,
+    "stationFuelFloor": 18,
     "jumpFuelMoney": 551,
     "jumpFuelInMissions": 0.012
    },
@@ -837,6 +861,8 @@
     "techValueShipFraction": 0.52,
     "techUnitInMissions": 1.6,
     "jumpFuel": 6.8,
+    "worstJumpFuel": 23.1,
+    "stationFuelFloor": 30,
     "jumpFuelMoney": 1022,
     "jumpFuelInMissions": 0.014
    },
@@ -863,6 +889,8 @@
     "techValueShipFraction": 0.59,
     "techUnitInMissions": 1.9,
     "jumpFuel": 12.1,
+    "worstJumpFuel": 58.7,
+    "stationFuelFloor": 50,
     "jumpFuelMoney": 1808,
     "jumpFuelInMissions": 0.014
    },
@@ -889,6 +917,8 @@
     "techValueShipFraction": 0.65,
     "techUnitInMissions": 2.1,
     "jumpFuel": 30.5,
+    "worstJumpFuel": 63.7,
+    "stationFuelFloor": 80,
     "jumpFuelMoney": 4582,
     "jumpFuelInMissions": 0.022
    },
@@ -915,6 +945,8 @@
     "techValueShipFraction": 0.72,
     "techUnitInMissions": 2.2,
     "jumpFuel": 33.2,
+    "worstJumpFuel": 106.4,
+    "stationFuelFloor": 100,
     "jumpFuelMoney": 4975,
     "jumpFuelInMissions": 0.019
    },
@@ -941,6 +973,8 @@
     "techValueShipFraction": 0.79,
     "techUnitInMissions": 2.4,
     "jumpFuel": 33.2,
+    "worstJumpFuel": 106.4,
+    "stationFuelFloor": 100,
     "jumpFuelMoney": 4975,
     "jumpFuelInMissions": 0.019
    }

@@ -11,6 +11,9 @@
 | `VaultDamagePerUnitLost` | 0.5 | 65, 442 |
 | `LossGraceSeconds` | 180 s | 12, 443 |
 | `TechMarkers` | on | 444 |
+| `VaultTechLossChance` | 0.1 | 445 |
+| `HunterGrabChance`, `HunterGrabRange`, `HunterGrabReach` | 0.8, 3,000, 40 | 446 |
+| `VaultSunHeatFactor` | 0.25 | 448 |
 | `TechShipFraction` | 0.25 | 19 |
 | `TechShipFractionPerGameHour` | 0.10 | 19 |
 | `TechShipFractionPer100Notoriety` | 0.05 | 19 |
@@ -82,7 +85,7 @@
 | `ShipAi.Enabled`, `TickSeconds` | on, 1 s | 403 |
 | `ShipAi.KiteRangeFraction`, `CloseInDistance`, `RetreatDistance`, `HoldTolerance` | 0.9, 100, 2000, 150 | 402 |
 | `RunModes.Combat`, `Economy`, `Crew` | see section 34 | 680 |
-| `RunModes.FameTitleTiers`, `FameTierCap` | off, 2 | 686 |
+| `Hunters.RouteTierFloor` | on | 305 |
 | `RunModes.StrikeMusic` | on | 688 |
 | `Factions.AllyFaction`, `RivalFaction` | picked from the galaxy seed | 640 |
 | `Factions.AllyHeatFactor`, `AllyMoneyFactor`, `AllyNotorietyFactor` | 1.5, 1.3, 1.5 | 641, 642 |

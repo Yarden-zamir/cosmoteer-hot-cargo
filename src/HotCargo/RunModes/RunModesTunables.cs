@@ -2,7 +2,7 @@ using Halfling.Serialization;
 
 namespace HotCargo.RunModes;
 
-/// <summary>Run modes: difficulty pressure (spec 680 to 684), the fame title prototype (686) and the Strike music (688).</summary>
+/// <summary>Run modes: difficulty pressure (spec 680 to 684) and the Strike music (688).</summary>
 [ReflectiveSerialization(Explicit = true)]
 public sealed class RunModesTunables
 {
@@ -36,13 +36,6 @@ public sealed class RunModesTunables
         new() { Level = "scarce", HeatRate = 1.1f },
     ];
 
-    /// <summary>
-    /// Spec 686, prototype: hunters get one more tier for each vanilla fame title tier above the system tier, up to FameTierCap.
-    /// Off by default. spec/34-run-modes.md has the measured effect.
-    /// </summary>
-    [Serialize(Optional = true)] public bool FameTitleTiers;
-    /// <summary>Spec 686: most extra hunter tiers that the fame title gives.</summary>
-    [Serialize(Optional = true)] public int FameTierCap = 2;
     /// <summary>Spec 688: during the last heat stage (Strike), the music plays its battle layers. Off: vanilla music.</summary>
     [Serialize(Optional = true)] public bool StrikeMusic = true;
 
@@ -70,7 +63,6 @@ public sealed class RunModesTunables
             }
             require(rows.Select(r => r.Level).Distinct().Count() == rows.Length, $"RunModes.{setting} has a level twice");
         }
-        require(FameTierCap >= 0, "RunModes.FameTierCap must not be negative");
     }
 }
 

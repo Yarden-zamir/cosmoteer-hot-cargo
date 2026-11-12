@@ -16,7 +16,7 @@ The content files are the source of truth: `mod/chains/chains.rules` (chains, st
 
 ### Assignment
 
-- When the players first enter a system, each trade or military station of a faction gets one chain (chance `Chains.StationChance`, default 0.6), until `Chains.MaxNewChainsPerSystem` (default 2) stations of the system have one. The Buyer and hostile stations get none.
+- When the players first enter a system, each trade or military station of a faction gets one chain (chance `Chains.StationChance`, default 0.6), until `Chains.MaxNewChainsPerSystem` (default 2) stations of the system have one. In sector 1 the station nearest to the fleet always gets one first, so the first station of a run offers a story chain. The Buyer and hostile stations get none.
 - The pick is weighted (`Weight` in chains.rules) among chains whose `MinSector`, `MaxSector` and `Stations` fit. Only the chains that the run used least often take part, so no chain repeats while an unused one fits.
 - The first stage of every chain is a mission offer in the station's comms. The players choose to start the chain.
 

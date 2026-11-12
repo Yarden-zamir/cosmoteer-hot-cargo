@@ -14,13 +14,8 @@ public static class Difficulty
     /// <summary>The combined factors of the career's current combat, economy and crew levels.</summary>
     public static Pressure Pressure(this Run run) => For(run.T.RunModes, Levels(run.Mode));
 
-    /// <summary>Spec 682 and 686: tiers added to each hunter stage response: the difficulty tiers, plus the fame title tiers when that prototype is on.</summary>
-    public static int ExtraHunterTiers(Run run) =>
-        run.Pressure().HunterTiers + (run.T.RunModes.FameTitleTiers ? FameTierBonus(run) : 0);
-
-    /// <summary>Spec 686: the tier of the current vanilla fame title (its WantedPoliceTier) above the system tier, up to FameTierCap.</summary>
-    public static int FameTierBonus(Run run) =>
-        PressureModel.FameTierBonus(run.Mode.GetCurrentFameTitle().WantedPoliceTier, run.CurrentTier, run.T.RunModes.FameTierCap);
+    /// <summary>Spec 682: tiers that the difficulty adds to each hunter stage response.</summary>
+    public static int ExtraHunterTiers(Run run) => run.Pressure().HunterTiers;
 
     /// <summary>The vanilla level ID of each setting, in setting order.</summary>
     public static (DifficultySetting Setting, string Level)[] Levels(CareerGameModeManager mode) =>

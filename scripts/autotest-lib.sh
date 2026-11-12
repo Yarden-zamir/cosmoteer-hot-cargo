@@ -10,24 +10,34 @@ mkdir -p "$LOG_DIR"
 
 slot_lock() { echo "/tmp/hot_cargo_slot_${1#t}.lock"; }
 
-# Waits until it holds N free test slots at once, locks them for this shell process and prints their names.
-# It never holds some slots while it waits for more, so parallel co-op tests (2 slots each) cannot deadlock.
+# Waits for one free test slot, locks it for this shell process and prints its name.
 # A lock whose owner process is gone is stale and is taken over.
-take_slots() {
-  local want="${1:-1}" i lock s
-  local got=()
+take_one_slot() {
+  local i lock
   while :; do
-    got=()
-    for ((i = 1; i <= SLOTS && ${#got[@]} < want; i++)); do
+    for ((i = 1; i <= SLOTS; i++)); do
       lock="$(slot_lock "t$i")"
-      if mkdir "$lock" 2>/dev/null; then echo $$ > "$lock/pid"; echo "$REPO_ROOT" > "$lock/owner"; got+=("t$i"); continue; fi
+      if mkdir "$lock" 2>/dev/null; then echo $$ > "$lock/pid"; echo "$REPO_ROOT" > "$lock/owner"; echo "t$i"; return; fi
       if [[ -f "$lock/pid" ]] && ! kill -0 "$(cat "$lock/pid")" 2>/dev/null; then rm -rf "$lock"; fi
     done
-    if [[ ${#got[@]} -eq "$want" ]]; then echo "${got[*]}"; return; fi
-    for s in ${got[@]+"${got[@]}"}; do rm -rf "$(slot_lock "$s")"; done
-    echo "waiting for $want free test slots" >&2
-    sleep 15
+    sleep 5
   done
+}
+
+# Takes N slots and prints their names. Two-slot takers (co-op tests) queue on one global lock and then hold each slot
+# as it frees up. Only one taker at a time holds some slots while it waits for more, so they cannot deadlock, and
+# single-slot tests that grab every freed slot cannot starve a co-op test.
+take_slots() {
+  local want="${1:-1}" got=() pair=/tmp/hot_cargo_slot_pair.lock
+  if [[ "$want" -eq 1 ]]; then take_one_slot; return; fi
+  until mkdir "$pair" 2>/dev/null; do
+    if [[ -f "$pair/pid" ]] && ! kill -0 "$(cat "$pair/pid")" 2>/dev/null; then rm -rf "$pair"; continue; fi
+    sleep 5
+  done
+  echo $$ > "$pair/pid"
+  while [[ ${#got[@]} -lt "$want" ]]; do got+=("$(take_one_slot)"); done
+  rm -rf "$pair"
+  echo "${got[*]}"
 }
 take_slot() { take_slots 1; }
 

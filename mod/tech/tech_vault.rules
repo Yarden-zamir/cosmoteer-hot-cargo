@@ -11,7 +11,8 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 	SelectionTypeID = "yarden_zamir.tech_vault"
 	Resources
 	[
-		[steel, 24]
+		// Spec 447: as cheap as 1x1 armor (8 steel, 4,000 health), so an empty vault is easy to rebuild but is no cheaper armor.
+		[steel, 8]
 	]
 	Size = [1, 1]
 	IsRotateable = false

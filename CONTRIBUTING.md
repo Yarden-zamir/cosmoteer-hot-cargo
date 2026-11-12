@@ -22,7 +22,7 @@ Each player-facing mechanic gets a How to Play page (spec 720 to 726) and writes
 3. Put the page strings in the area's own strings section. Keep each entry to one or two short sentences. Name no numbers that a tunable sets.
 4. In `<Area>Area.Register`, add the trigger: `Onboarding.Hints.Add("hc_<name>", run => <condition>)`. The condition runs in UI frames and only reads state. Pick the moment the player first meets the mechanic.
 5. Write run log lines from sim logic with `Onboarding.RunLog.Add(run, kind, xml)`. Escape names with `StringTools.EscapeForXml`. Add a `RunLogKind` value only when no kind fits.
-6. Test: add the trigger to `tests/autotest/onboarding-hints.txt` (`expect hint_hc_<name> == 1`) and the line to `tests/autotest/onboarding-log.txt`. Add the row to the page table in SPEC.md requirement 721.
+6. Test: add the trigger to `tests/autotest/onboarding-hints.txt` (`expect hint_hc_<name> == 1`) and the line to `tests/autotest/onboarding-log.txt`. Add the row to the page table in spec requirement 721 (`spec/33-how-to-play-and-the-run-log.md`).
 
 The mod checks at the first frame of a run that each trigger has a page and each `hc_` page has a trigger, and shows a mismatch in the overlay.
 

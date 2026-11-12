@@ -43,15 +43,4 @@ public class PressureModelTests
         Assert.Equal(12_000, (Pressure.Neutral with { TechValue = 0.8f }).Tech(15_000));
         Assert.Equal(103_100, (Pressure.Neutral with { TechValue = 0.9f }).Tech(114_600)); // 103,140
     }
-
-    [Fact]
-    public void Fame_tier_bonus_is_the_gap_above_the_system_capped_and_never_negative()
-    {
-        Assert.Equal(0, PressureModel.FameTierBonus(fameTier: 4, sectorTier: 5, cap: 2));
-        Assert.Equal(0, PressureModel.FameTierBonus(5, 5, 2));
-        Assert.Equal(1, PressureModel.FameTierBonus(6, 5, 2));
-        Assert.Equal(2, PressureModel.FameTierBonus(10, 5, 2));
-        Assert.Equal(0, PressureModel.FameTierBonus(10, 5, 0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => PressureModel.FameTierBonus(6, 5, -1));
-    }
 }
