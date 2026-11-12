@@ -5,9 +5,12 @@ wait 8
 expectevent getaway
 choose 3 1
 ev_set Enabled false
-# Every chain loads and validates. At most MaxNewChainsPerSystem (2) stations of the first system got a chain (StationChance 0.6 each).
+# Every chain loads and validates. At most MaxNewChainsPerSystem (2) stations of the first system got a chain (StationChance 0.6 each),
+# and the station nearest to the fleet always has one in sector 1.
 expect chains_loaded >= 6
+expect chain_here >= 1
 expect chain_here <= 2
+expect chain_nearest == 1
 chain_force fence_ledger
 expectstage courier
 expect chain_mission == 1

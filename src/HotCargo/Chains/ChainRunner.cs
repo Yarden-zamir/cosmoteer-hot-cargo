@@ -127,7 +127,19 @@ public static class ChainRunner
         if (s.AssignedNodes.Contains(node)) return;
         s.AssignedNodes.Add(node);
         int started = 0;
-        foreach (var station in Stations(sim).OrderBy(st => st.StationID))
+        var stations = Stations(sim).OrderBy(st => st.StationID).ToList();
+        // Spec 160: in sector 1 the station nearest to the fleet (the first one the players meet) always offers a chain.
+        // If no chain fits it, the next nearest takes its place.
+        if (run.State.SectorIndex == 1 && SimQueries.FleetCenter(sim) is { } at && run.T.Chains.MaxNewChainsPerSystem > 0)
+            foreach (var station in stations.OrderBy(st => st.DetWorldCenter.DistanceSquaredTo(at)).ThenBy(st => st.StationID))
+                if (PickChain(run, sim, station) is { } first)
+                {
+                    Start(run, sim, first, station);
+                    stations.Remove(station);
+                    started++;
+                    break;
+                }
+        foreach (var station in stations)
         {
             if (started >= run.T.Chains.MaxNewChainsPerSystem) break;
             if (sim.Rand.Single() >= run.T.Chains.StationChance) continue;

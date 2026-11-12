@@ -11,7 +11,7 @@ HotCargoMechanics
 	Capture = "Repossession"
 	CaptureDesc = "The freighter <b>{target_ship}</b> in the {mission_location} system missed its payments, and its crew ran off with it, escorts and all. The bank pays {money} for the ship, not for scrap. Beat the crew until they hail to surrender and accept, or knock out the crew and send your people aboard. If the freighter is destroyed, the deal is off."
 	Survey = "Storm Survey"
-	SurveyDesc = "The {faction_name} wants fresh readings from inside the ion storms of the {mission_location} system. Hold a ship with a working sensor array at each of the {marker_count} markers for {scan_seconds} seconds. Lightning hits hard: send a cheap scout or bring shields. Pays {money}."
+	SurveyDesc = "The {faction_name} wants fresh readings from inside the clouds and storms of the {mission_location} system. Hold a ship with a working sensor array at each of the {marker_count} markers for {scan_seconds} seconds. Storms and electron clouds hit hard: send a cheap scout or bring shields. Pays {money}."
 	ClaimJumpers = "Claim Jumpers"
 	ClaimJumpersDesc = "Raiders want the rich claim of the mining barge <b>{target_ship}</b> in the {mission_location} system. Keep the barge alive for {hold_minutes} minutes and the {faction_name} pays {money}. The clock runs only while one of your ships is near the barge, so a gun platform can stand watch for you. You can leave early and keep the pay for the waves you held off."
 	ListeningPost = "Listening Post"

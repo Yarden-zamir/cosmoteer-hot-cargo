@@ -81,6 +81,7 @@ sealed class HeatPanel : LayoutBox
         AddChild(_debug);
 
         BeforeFrameDraw += (_, _) => Refresh();
+        RunModes.RunModesArea.AttachHeatPanelTip(this, mode);
     }
 
     static Label NewLabel(int size, string text)

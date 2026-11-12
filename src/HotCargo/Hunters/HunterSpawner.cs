@@ -78,6 +78,16 @@ public static class HunterSpawner
         ?? throw new InvalidOperationException($"Hunters.Stages has no response for heat stage '{stageName}'");
 
     /// <summary>
+    /// Spec 305: the tier that a stage response starts from: the system tier, but never below the main route tier of the sector index
+    /// (`HotCargoTierCap`, capped at its MaxChangeableLowTier) while `RouteTierFloor` is on. So a low side system late in the run
+    /// does not make the hunters weak. A faction home system keeps its higher tier.
+    /// </summary>
+    public static int BaseTier(Run run) =>
+        run.T.Hunters.RouteTierFloor && Journey.TierCapSpawner.RouteTier(run.Mode, run.State.SectorIndex) is { } route
+            ? Math.Max(run.CurrentTier, route)
+            : run.CurrentTier;
+
+    /// <summary>
     /// Spec 190-191. Scales the stage response to the run progress, spawns the first group now and queues the others.
     /// </summary>
     internal static void StartStage(Run run, SimRoot sim, string stageName)
@@ -85,9 +95,9 @@ public static class HunterSpawner
         if (sim != run.Game.Sim) return;
         var r = Response(run, stageName);
         float progress = WaveModel.Progress(run.State.SectorIndex, run.T.Journey.RunSectorCount);
-        // Spec 682 and 686: the difficulty factors and the fame title prototype change ships and tier on top of the stage scaling.
+        // Spec 682: the difficulty factors change ships and tier on top of the stage scaling. Spec 305: the route tier floor.
         int ships = run.Pressure().Ships(WaveModel.ShipCount(r.ShipCount, r.EarlyScale, progress));
-        int tier = run.CurrentTier + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + RunModes.Difficulty.ExtraHunterTiers(run);
+        int tier = BaseTier(run) + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + RunModes.Difficulty.ExtraHunterTiers(run);
         int[] groups = WaveModel.SplitWaves(ships, r.Waves);
         var later = Enumerable.Range(1, groups.Length - 1).Select(i => new PendingWave
         {

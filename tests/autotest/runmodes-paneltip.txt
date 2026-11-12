@@ -1,0 +1,18 @@
+# Run modes, heat panel tooltip (spec 684). The tooltip names the three levels and lists exactly the factors that are not 1:
+# at the default levels, after a level change mid-run, and in a loaded run (which shows no intro). The game's tooltip box opens with it.
+newgame run
+wait 8
+ev_set Enabled false
+expect ux_panel == 1
+rm_check_paneltip
+rm_difficulty very_hard slow scarce
+wait 1
+rm_check_paneltip
+save paneltip
+load paneltip
+wait 3
+ev_set Enabled false
+rm_check_paneltip
+rm_showpaneltip
+expect rm_tipshown == 1
+quit

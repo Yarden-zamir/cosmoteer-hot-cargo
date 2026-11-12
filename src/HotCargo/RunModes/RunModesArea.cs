@@ -28,6 +28,18 @@ public static class RunModesArea
         return run.Mode.IsIronmanModeEnabled ? $"{lines}\n\n<bad>{Difficulty.Text("IronmanIntro")}</bad>" : lines;
     }
 
+    /// <summary>
+    /// Spec 684: the difficulty tooltip on the heat panel, for new and loaded runs, live after a level change.
+    /// The panel takes hover input for it (Auto); its labels and bar let input pass to it. The game reads a tooltip's TextProvider
+    /// once and then waits for change events, and it opens a tooltip only when that text is not empty. So the text is set each frame.
+    /// </summary>
+    internal static void AttachHeatPanelTip(Halfling.Gui.Widget panel, CareerGameModeManager mode)
+    {
+        panel.InputBlockMode = Halfling.Gui.InputBlockMode.Auto;
+        panel.BeforeFrameDraw += (_, _) => Errors.Guard("heat panel tooltip", () =>
+            panel.ToolTips.Text = Run.Current is { } run && run.Mode == mode ? Difficulty.Tooltip(run) : "");
+    }
+
     /// <summary>Lines for the win screen (spec 685).</summary>
     public static string WinLines(Run run)
     {
@@ -67,8 +79,6 @@ public static class RunModesArea
         };
         // Vanilla difficulty levels without a row in the tables. 0 means the tables cover every vanilla level.
         Autotest.Fields["rm_levels_without_row"] = () => LevelsWithoutRow(R().T.RunModes);
-        Autotest.Fields["rm_fametier"] = () => R().Mode.GetCurrentFameTitle().WantedPoliceTier;
-        Autotest.Fields["rm_famebonus"] = () => Difficulty.FameTierBonus(R());
         Autotest.Fields["ironman"] = () => R().Mode.IsIronmanModeEnabled ? 1 : 0;
         Autotest.Fields["ironmansave"] = () => File.Exists(R().Mode.IronmanSavePath) ? 1 : 0;
         Autotest.Fields["lastsave"] = () => R().Game.LastSaveFile is { } f && File.Exists(f) ? 1 : 0;
@@ -120,6 +130,24 @@ public static class RunModesArea
                      $"ships={p.HunterShips:0.###} tiers={p.HunterTiers} fees={p.ContractFees:0.###} tech={p.TechValue:0.###} heatMult={run.HeatMultiplier(run.State.FleetTech):0.###} " +
                      $"techValue={run.TechValue()} baseTech={BaseTechValue(run)} intro=\"{Difficulty.IntroLine(run)}\"");
         };
+        // rm_check_paneltip: the heat panel tooltip names the three current levels and lists exactly the factors that are not 1 (spec 684).
+        Autotest.Commands["rm_check_paneltip"] = _ => CheckPanelTip(R());
+        // rm_showpaneltip: shows the heat panel tooltip as if the mouse were over the panel. For screenshots.
+        Autotest.Commands["rm_showpaneltip"] = _ =>
+        {
+            var panel = HeatPanelOf(R());
+            (panel.GetToolTipDisplay() ?? throw new InvalidOperationException("the heat panel has no tooltip display")).SetToolTipSource(panel.ToolTips);
+            Autotest.Wait(1.5);
+        };
+        // 1 when the game's tooltip box is open on the heat panel and its label holds the difficulty text.
+        Autotest.Fields["rm_tipshown"] = () =>
+        {
+            var box = R().Game.Gui.ToolTipRight;
+            return box.ToolTipDisplayController.CurrentSource == HeatPanelOf(R()).ToolTips && box.IsActive
+                && box.PrimaryToolTip.TooltipLabel.Text == Difficulty.Tooltip(R()) ? 1 : 0;
+        };
+        // rm_tipshot <name>: a screenshot that keeps the open tooltips (the screenshot command hides them).
+        Autotest.Commands["rm_tipshot"] = arg => { Ux.Screenshot.Capture(arg, keepToolTips: true); Autotest.Wait(1.5); };
         // rm_ironman_newgame <name>: a new Ironman career on the run map with the save HotCargoTest_<name>. Test only.
         Autotest.Commands["rm_ironman_newgame"] = arg =>
         {
@@ -137,7 +165,7 @@ public static class RunModesArea
         };
         // rm_ironman_save: saves the career to its Ironman save, like an Ironman autosave. Test only.
         Autotest.Commands["rm_ironman_save"] = _ => { var run = R(); run.Game.SaveAs(run.Mode.IronmanSavePath); Autotest.Wait(2); };
-        RegisterFameProbe();
+        RegisterRoute();
     }
 
     static long BaseTechValue(Run run)
@@ -159,8 +187,7 @@ public static class RunModesArea
         float progress = WaveModel.Progress(run.State.SectorIndex, run.T.Journey.RunSectorCount);
         float shipFactor = rows.Aggregate(1f, (f, row) => f * row.HunterShips);
         int ships = Math.Max(1, (int)MathF.Round(WaveModel.ShipCount(r.ShipCount, r.EarlyScale, progress) * shipFactor, MidpointRounding.AwayFromZero));
-        int fame = run.T.RunModes.FameTitleTiers ? Difficulty.FameTierBonus(run) : 0;
-        int tier = run.CurrentTier + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + rows.Sum(row => row.HunterTiers) + fame;
+        int tier = Hunters.HunterSpawner.BaseTier(run) + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + rows.Sum(row => row.HunterTiers);
         return (ships, tier);
     }
 
@@ -198,11 +225,34 @@ public static class RunModesArea
             var r = s;
             float progress = WaveModel.Progress(run.State.SectorIndex, run.T.Journey.RunSectorCount);
             int actualShips = run.Pressure().Ships(WaveModel.ShipCount(r.ShipCount, r.EarlyScale, progress));
-            int actualTier = run.CurrentTier + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + Difficulty.ExtraHunterTiers(run);
+            int actualTier = Hunters.HunterSpawner.BaseTier(run) + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + Difficulty.ExtraHunterTiers(run);
             Autotest.Check(actualShips == ships && actualTier == tier, $"{label}: {s.Name} {ships} ships of tier {tier} (actual {actualShips} of tier {actualTier})");
             return $"{s.Name} {ships}xt{tier}";
         });
         Log.Info($"AUTOTEST RUNMODES level {label}: heat x{heatRate:0.###}, fees x{fees:0.###}, tech x{techFactor:0.###} ({tech}), {string.Join(", ", stages)}");
+    }
+
+    static Ui.HeatPanel HeatPanelOf(Run run) =>
+        run.Game.Gui.TopLeftHudBox.Children.OfType<Ui.HeatPanel>().SingleOrDefault() ?? throw new InvalidOperationException("no heat panel in the HUD");
+
+    static void CheckPanelTip(Run run)
+    {
+        // The text that the game's tooltip box shows, not our own source.
+        string tip = ((Halfling.Gui.Components.ToolTips.IToolTipSource)HeatPanelOf(run).ToolTips).TextProvider.Text;
+        Log.Info($"AUTOTEST RUNMODES panel tip: {tip.Replace("\n", " | ")}");
+        var m = run.Mode;
+        foreach (string level in new[] { m.CombatDifficulty.NameKey.Text, m.EconDifficulty.NameKey.Text, m.CrewScarcity.NameKey.Text })
+            Autotest.Check(tip.Contains(level), $"panel tip names the level {level}");
+        var p = run.Pressure();
+        var factors = new (string Key, bool Changed, object Value)[]
+        {
+            ("HeatFmt", p.HeatRate != 1f, p.HeatRate), ("ShipsFmt", p.HunterShips != 1f, p.HunterShips),
+            ("TiersFmt", p.HunterTiers != 0, p.HunterTiers.ToString("+0;-0", CultureInfo.InvariantCulture)),
+            ("FeesFmt", p.ContractFees != 1f, p.ContractFees), ("TechFmt", p.TechValue != 1f, p.TechValue),
+        };
+        foreach (var (key, changed, value) in factors)
+            Autotest.Check(tip.Contains(Difficulty.Fmt(key, value)) == changed, $"panel tip {(changed ? "lists" : "leaves out")} {key} {value}");
+        Autotest.Check(tip.Contains(Difficulty.Text("TipNeutral")) == factors.All(f => !f.Changed), "panel tip says 'no change' only when every factor is 1");
     }
 
     static int LevelsWithoutRow(RunModesTunables t)
@@ -237,49 +287,9 @@ public static class RunModesArea
         Log.Info($"AUTOTEST RUNMODES fees: {offers} paid offers, stored {before}, re-rolled {after}, ratio {_feeRatio:0.###}");
     }
 
-    /// <summary>
-    /// Spec 687: the fame title probe. rm_missions gives the fame of typical missions with the vanilla fame cap of the system tier;
-    /// rm_fame logs the fame title tier and the Strike tier with the prototype off and on. rm_route jumps along the main route.
-    /// </summary>
-    static void RegisterFameProbe()
+    /// <summary>rm_route jumps along the main route, or to the lowest tier neighbor (side systems), for tests of hunter tiers.</summary>
+    static void RegisterRoute()
     {
-        // rm_missions <count> [std fame per mission, default 3.4 (BALANCE.md median)]: one vanilla FameReward per mission, with the cap
-        // of the system tier. The cap of tier T is the fame of fame title T (FameTitles[T].Fame = TIER_TABLES MaxFame of tier T).
-        Autotest.Commands["rm_missions"] = arg =>
-        {
-            var run = R();
-            var a = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            int count = int.Parse(a[0], CultureInfo.InvariantCulture);
-            float perMission = a.Length > 1 ? float.Parse(a[1], CultureInfo.InvariantCulture) : 3.4f;
-            int tier = run.CurrentTier;
-            var titles = run.Mode.Rules.FameTitles;
-            int cap = titles[Math.Clamp(tier, 0, titles.Length - 1)].Fame;
-            int fame = (int)MathF.Round(perMission * GameData.StandardMissionFame(tier));
-            for (int i = 0; i < count; i++) new FameReward(fame, cap).GiveReward(run.Game);
-        };
-        // rm_sector <missions>: logs the FAME line on arrival and after each of the missions (3.4 standard mission fame each).
-        Autotest.Commands["rm_sector"] = arg =>
-        {
-            int missions = int.Parse(arg, CultureInfo.InvariantCulture);
-            int sector = R().State.SectorIndex;
-            Autotest.Commands["rm_fame"]($"s{sector} m0");
-            for (int i = 1; i <= missions; i++)
-            {
-                Autotest.Commands["rm_missions"]("1");
-                Autotest.Commands["rm_fame"]($"s{sector} m{i}");
-            }
-        };
-        Autotest.Commands["rm_fame"] = arg =>
-        {
-            var run = R();
-            var strike = run.T.Hunters.Stages[^1];
-            float progress = WaveModel.Progress(run.State.SectorIndex, run.T.Journey.RunSectorCount);
-            int baseOffset = WaveModel.TierOffset(strike.TierOffset, strike.EarlyTierReduction, progress);
-            int bonus = Difficulty.FameTierBonus(run);
-            Log.Info($"AUTOTEST FAME {arg}: sector={run.State.SectorIndex} tier={run.CurrentTier} fame={run.Mode.PlayerFame} " +
-                     $"titleTier={run.Mode.GetCurrentFameTitle().WantedPoliceTier} bonus={bonus} strikeTierOff={run.CurrentTier + baseOffset} " +
-                     $"strikeTierOn={run.CurrentTier + baseOffset + bonus}");
-        };
         // rm_route [low]: jumps to the unvisited neighbor with the highest low tier (the main route), or the lowest with "low". No fuel.
         Autotest.Commands["rm_route"] = arg =>
         {

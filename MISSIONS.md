@@ -35,7 +35,7 @@ A crewless freighter drifts 3,000 to 4,500 from a station. Bring its hull within
 A stolen freighter flies with one or two escorts. Take it intact. Beat it until it offers surrender and accept, or kill its crew and move your own crew aboard to claim it. If the freighter is destroyed, the mission fails. A wreck that nobody claims yet does not fail the mission.
 
 ### Storm Survey
-Three markers sit inside ion storms. Hold a ship with a working sensor array within 400 of each marker for 15 s. Lightning is the danger. A system without ion storms offers no survey.
+Three markers sit inside clouds or storms (gas clouds, electron clouds or ion storms). Hold a ship with a working sensor array within 400 of each marker for 15 s. Ion storms and electron clouds are the danger. A system without any of them offers no survey.
 
 ### Claim Jumpers
 A civilian mining barge sits in an asteroid field. Raiders one tier below the sector come in small waves. Keep the barge alive for four minutes of guarded time. It works like the drone siege, with fewer and stronger enemies.

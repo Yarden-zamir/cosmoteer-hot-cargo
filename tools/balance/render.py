@@ -112,8 +112,11 @@ charts = [
     ("fuel", "Fuel", [
         bars("Fuel that the stations of each system hold (measured, same map seed)", sys_labels, [
             ("before", "--c3", fuel_before, "b"), ("after", "--c1", fuel_after, "a")]),
-        bars("Fuel for one 7.5 LY hyperdrive jump (ship mass of the tier, full efficiency)", SECTORS, [
-            ("before", "--c3", col(B, "jumpFuel"), "b"), ("after", "--c1", col(A, "jumpFuel"), "a")],
+        bars("Fuel for one relay jump, and the fuel that every trade station keeps (after)", SECTORS, [
+            ("typical jump, before", "--c3", col(B, "jumpFuel"), "b"), ("typical jump, after", "--c1", col(A, "jumpFuel"), "a"),
+            ("worst jump, after", "--c2", col(A, "worstJumpFuel"), "w"), ("station floor, after", "--c4", col(A, "stationFuelFloor"), "f")],
+            note="Typical: 7.5 LY, a ship of the tier, full drive efficiency. Worst: 10 LY, a fleet of the next tier, 70 % efficiency. "
+                 "Every trade station keeps the floor for sale, so a run never gets stuck on fuel.",
             lines=[(30, "one hunter wreck (after)")]),
     ]),
     ("ships", "Ships and boards", [
@@ -138,7 +141,9 @@ summary = [
     ("EscortHeatChange", "−15", "−8", "About 1.5 typical missions of heat."),
     ("Chains per system", "every station", "60 %, at most 2", "Chains were the biggest Hot Cargo share of the boards."),
     ("Hunters.MinFuel", "40", "60", "Hunters are the best fuel source."),
-    ("Fuel price, stack, stock, jump cost", "50, 20, 85 %, ×1", "150, 10, 33 %, ×2", "Stations hold about a fifth of the vanilla fuel."),
+    ("Hunters.RouteTierFloor (new)", "system tier", "at least the route tier", "A low side system late in the run made the hunters weak."),
+    ("Fuel price, stack, stock, jump cost", "50, 20, 85 %, ×1", "150, 10, 33 %, ×2", "Stations hold about a fifth of the vanilla fuel. Relay jumps cost fuel."),
+    ("Station fuel floor (new)", "none", "one worst-case jump per trade station", "A run never gets stuck on fuel."),
 ]
 
 page = f"""<!doctype html>
@@ -176,7 +181,7 @@ th, td {{ text-align:left; padding:6px 8px; border-bottom:1px solid var(--line);
 </table></div>
 {"".join(f'<h2 id="{cid}">{html.escape(name)}</h2><div class="grid2">{"".join(figs)}</div>' for cid, name, figs in charts)}
 <h2>Open questions</h2>
-<ol><li>Hunter tier at the Buyer: the system tier (now), or a floor of the main route tier for the sector index?</li>
+<ol><li>Resolved: hunters use at least the main route tier of the sector index (requirement 305).</li>
 <li>Co-op: rewards split between players, heat and hunters do not. Check a co-op RewardScale with telemetry.</li>
 <li>Check the 6 missions in 17.5 minutes and the base attack share against real telemetry.</li></ol>
 </main></body></html>

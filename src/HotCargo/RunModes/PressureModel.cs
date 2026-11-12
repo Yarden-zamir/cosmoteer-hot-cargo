@@ -28,15 +28,4 @@ public static class PressureModel
 {
     /// <summary>Product of the rows. No rows gives Neutral.</summary>
     public static Pressure Combine(IEnumerable<Pressure> rows) => rows.Aggregate(Pressure.Neutral, (a, b) => a.Combine(b));
-
-    /// <summary>
-    /// Spec 686 (prototype): extra hunter tiers when the fame title is ahead of the system.
-    /// fameTier is the vanilla tier of the current fame title (FameTitleRules.WantedPoliceTier). The bonus is the gap above the
-    /// sector tier, from 0 to cap. A fame title behind the system gives no bonus, so a fast player never gets weaker hunters.
-    /// </summary>
-    public static int FameTierBonus(int fameTier, int sectorTier, int cap)
-    {
-        if (cap < 0) throw new ArgumentOutOfRangeException(nameof(cap), cap, "must not be negative");
-        return Math.Clamp(fameTier - sectorTier, 0, cap);
-    }
 }

@@ -23,7 +23,7 @@ using HotCargo.Core;
 namespace HotCargo.Missions.Mechanics;
 
 /// <summary>
-/// Rules type "HotCargoSurvey" (spec 136): scan markers inside ion storms. A marker counts scan time while a human ship
+/// Rules type "HotCargoSurvey" (spec 136): scan markers inside clouds or storms. A marker counts scan time while a human ship
 /// with a working sensor part is within ScanRadius of it. Each marker needs Mechanics.SurveyScanSeconds.
 /// Completes when every marker is scanned. Lightning in the storm is the danger; the objective itself never fails.
 /// </summary>
@@ -45,7 +45,7 @@ internal sealed class SurveyObjective : Objective
         public override Objective? CreateObjectiveImpl(SimRoot sim, Mission mission, Rand rand, SpawnedObjectCollection objects, Vector2 loc, out bool invalid)
         {
             var markers = objects.FindObjects(MarkersTag, loc, rand).Where(m => m.UniqueID is not null).ToList();
-            // Systems without ion storms place no markers. The offer is then dropped.
+            // Systems without nebulas place no markers. The offer is then dropped.
             invalid = markers.Count < MinMarkers;
             if (invalid) return null;
             var mode = (CareerSimModeManager)sim.Mode;

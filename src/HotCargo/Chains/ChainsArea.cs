@@ -226,6 +226,14 @@ public static class ChainsArea
         Autotest.Fields["chain_awaiting"] = () => Test().AwaitingSerial > 0 ? 1 : 0;
         Autotest.Fields["chain_count"] = () => RequireRun().State.Chains.Instances.Count;
         Autotest.Fields["chain_here"] = () => RequireRun().State.Chains.Instances.Count(i => i.NodeId == RequireSim().NodeId());
+        // 1 when the eligible station nearest to the fleet has a chain in this system (spec 160: always in sector 1).
+        Autotest.Fields["chain_nearest"] = () =>
+        {
+            var sim = RequireSim();
+            var at = SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no player ships");
+            var nearest = ChainRunner.Stations(sim).OrderBy(st => st.DetWorldCenter.DistanceSquaredTo(at)).ThenBy(st => st.StationID).First();
+            return RequireRun().State.Chains.Instances.Any(i => i.NodeId == sim.NodeId() && i.StationId == nearest.StationID) ? 1 : 0;
+        };
         Autotest.Fields["chain_stations"] = () => ChainRunner.Stations(RequireSim()).Count();
         Autotest.Fields["chain_kinds"] = () => RequireRun().State.Chains.Instances.Select(i => i.ChainId).Distinct().Count();
         Autotest.Fields["chain_offers"] = () => ChainRunner.Stations(RequireSim()).Sum(st => st.GetProvidedMissions()?.Count(m => m.MetatypeID == ChainLibrary.Metatype) ?? 0);
