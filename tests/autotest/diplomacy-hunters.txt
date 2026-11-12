@@ -18,7 +18,8 @@ expect hunters == 1
 dip_near hunter 250
 wait 1
 dip_page hunter
-expect dip_pageslider == 1
+# Hand over, bluff and deal each have their own slider in their row (spec 591).
+expect dip_pageslider == 3
 expect dip_pagebuttons >= 5
 # More units, higher chance (no penalty for visible tech here).
 dip_expect handover hunter 1 == 0.15
@@ -37,8 +38,9 @@ dip handover hunter 3
 wait 1
 expect dip_vaulttech == 8
 dip_log refused
-# An accepted hand-over: tech goes, the wave leaves (jump-out after HunterLeaveSeconds).
+# An accepted hand-over: the tech goes and the punishment page opens. The wave waits for the answer (spec 594).
 dip_set HunterLeaveSeconds 2
+dip_set HandOverHeatDrop 100
 spawnstage Warning
 wait 2
 dip_near fresh 250
@@ -46,20 +48,49 @@ wait 1
 dip handover fresh 3
 wait 1
 expect dip_vaulttech == 5
+expect dip_punishment == 1
+expect dip_leaving == 0
+dip_page hunter
+expect dip_pagetoggles >= 3
+# Combos (spec 595): talk alone is low, money and the bribe add, and the sum stops at PunishChanceCap (0.9).
+dip_pick talk
+wait 1
+expect dip_picks == 1
+expect dip_punishchance == 0.05
+dip_pick money 20
+wait 1
+expect dip_punishchance == 0.65
+dip_pick bribe 20
+wait 1
+expect dip_punishchance == 0.9
+dip_unpick bribe
+dip_unpick money
+wait 1
+expect dip_picks == 1
+expect dip_punishchance == 0.05
+# Success: the whole wave leaves and heat drops (spec 593).
+heat 20
+dip_set PunishChanceCap 1
+dip_set PunishTalkChance 5
+dip_punish submit
+wait 1
+expect dip_punishment == 0
 expect dip_leaving >= 1
+expect heat < 1
 wait 8
 expect hunters == 0
-expect dip_leaving == 0
-# Bluff that works: tech goes, the wave leaves.
+# Bluff that works: tech goes, the wave leaves, heat drops.
 dip_set BluffChanceBase 1
 dip_set BluffVisiblePenalty 0
 spawnstage Warning
 wait 2
 dip_near hunter 250
 wait 1
+heat 20
 dip bluff hunter 1
 wait 1
 expect dip_vaulttech == 4
+expect heat < 1
 wait 8
 expect hunters == 0
 # Bluff that fails: tech goes, heat rises, the hunter stays.
@@ -118,4 +149,53 @@ wait 2
 dip_near hunter 250
 wait 3
 expect dip_hailing >= 1
+# Punishment paid with money and crew: the chooser pays, one crew member leaves, the wave leaves (spec 595).
+dip_set PunishTalkChance 0
+dip_set PunishMoneyChance 5
+dip handover fresh 1
+wait 1
+expect dip_vaulttech == 2
+expect dip_punishment == 1
+dip_mark
+dip_pick money 10
+dip_pick crew 1
+wait 1
+log beforecrew
+dip_log beforecrew
+dip_punish submit
+wait 1
+expect dip_punishment == 0
+expect dip_moneyspent > 0
+expect dip_leaving >= 1
+wait 8
+expect hunters == 0
+# A failed punishment: the hunters keep the tech and stay (spec 596).
+dip_set PunishMoneyChance 0
+spawnstage Warning
+wait 2
+dip_near fresh 250
+wait 1
+dip handover fresh 1
+wait 1
+expect dip_vaulttech == 1
+dip_pick talk
+wait 1
+dip_punish submit
+wait 1
+expect dip_punishment == 0
+expect dip_vaulttech == 1
+expect hunters == 1
+expect dip_leaving == 0
+# The offer runs out: it counts as refused (spec 596).
+dip_set PunishSeconds 2
+spawnstage Warning
+wait 2
+dip_near fresh 250
+wait 1
+dip handover fresh 1
+wait 1
+expect dip_punishment == 1
+wait 4
+expect dip_punishment == 0
+expect dip_leaving == 0
 quit

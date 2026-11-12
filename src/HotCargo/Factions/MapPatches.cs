@@ -51,9 +51,9 @@ static class MapPatches
         if (node != run.Game.CurrentMapNode && run.Game.Map.Nodes.CanJumpTo(node))
         {
             float stored = run.State.NodeHeat.TryGetValue(node.UniqueID, out float h) ? h : 0f;
-            float relay = HeatModel.OnEnterSystem(run.State.Heat, stored, FactionsArea.CarryOver(run, JumpKind.Relay));
-            float blind = HeatModel.OnEnterSystem(run.State.Heat, stored, FactionsArea.CarryOver(run, JumpKind.Blind));
-            sb.Append('\n').Append(FactionsArea.Format("TipJumpFmt", relay, blind, t.BlindFuelFactor));
+            float Arrive(JumpKind k) => HeatModel.OnEnterSystem(run.State.Heat, stored, FactionsArea.HeatKept(run, k));
+            sb.Append('\n').Append(FactionsArea.Format("TipJumpFmt", Arrive(JumpKind.RelayClear), Arrive(JumpKind.RelayWatched), Arrive(JumpKind.Blind), t.BlindFuelFactor));
+            if (Jumps.HuntersNearRelay(run, run.Game.Sim, node) > 0) sb.Append('\n').Append(FactionsArea.Text("TipRelayWatched"));
         }
         if (t.MapMarkers)
             foreach (var (n, label) in Markers.Targets(run))

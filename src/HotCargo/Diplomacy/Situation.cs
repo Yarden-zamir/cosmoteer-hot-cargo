@@ -121,6 +121,13 @@ public static class Situation
     public static bool IsFriendlyShip(Ship caller, Ship ship) =>
         ship.AI is not null && !ship.IsHumanPlayerShip && ship.IsSignificant && !ship.IsJunk && !IsStation(ship) && !IsHunter(ship) && !caller.IsEnemiesWith(ship);
 
+    /// <summary>
+    /// Spec 574: a friendly ship that may hold tech. Military ships of the corporation's ally faction (Factions area) never do:
+    /// they work with the corporation.
+    /// </summary>
+    public static bool MayHold(Run run, Ship ship) =>
+        !(Cosmoteer.PlayerIndexes.IsFactionMilitary(ship.Metadata.PlayerIndex) && Factions.FactionsArea.IsAlly(run, Faction(ship)));
+
     /// <summary>A ship that can fight for the players: it has offensive weapons and an AI with the HcHired module (not a platform or station).</summary>
     public static bool Hireable(Ship ship) => AiGate.HasOffensiveWeapons(ship) && ship.AI?.GetStrategyModule<HiredStrategy>() is not null;
 

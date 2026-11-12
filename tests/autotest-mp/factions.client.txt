@@ -16,6 +16,10 @@ expect fa_buyratio == 1.2
 fa_buy 5
 waitfor fa_spent > 0 60
 expect fa_buygap == 0
+fa_blind on
+waitfor fa_blind == 1 30
+fa_blind off
+waitfor fa_blind == 0 30
 mp mpmark 5
 waitfor mpmark >= 5 30
 wait 3

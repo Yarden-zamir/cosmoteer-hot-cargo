@@ -1,0 +1,19 @@
+# Heat panel difficulty tooltip (spec 684). Main slot only (needs graphics).
+render on
+newgame run
+wait 10
+pause off
+closepanel
+wait 1
+uxpick 3
+wait 2
+uxpick 1
+wait 2
+ev_set Enabled false
+rm_difficulty very_hard slow scarce
+wait 2
+rm_showpaneltip
+wait 1
+expect rm_tipshown == 1
+rm_tipshot runmodes-paneltip
+quit

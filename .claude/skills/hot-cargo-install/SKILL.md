@@ -7,11 +7,6 @@ description: Install the newest pushed Hot Cargo main into the player's own Cosm
 
 The player wants the newest pushed main installed at all times. Never touch a running game.
 
-1. Take the slot lock (see `hot-cargo-screenshots`, step 1).
-2. Check the game is closed (`Get-SlotProcess` prints nothing). If it runs, release the lock and install later.
-3. In the detached `../play` worktree: `git fetch -q origin && git checkout -q --detach origin/main`.
-4. `SLOT=main scripts/deploy.sh`, then `SLOT=main scripts/mod-toggle.sh on`.
-5. Record the commit: `git rev-parse HEAD > /tmp/hot_cargo_installed_sha`.
-6. Release the lock.
+Run `scripts/install-player.sh`. It takes the main-slot lock, checks that the game is closed, installs `origin/main` from the detached `../play` worktree, turns the mod on and records the commit in `/tmp/hot_cargo_installed_sha`. When the game runs, it prints "game running" and installs nothing; try again later.
 
 `scripts/keep-installed.sh ../play 115` does steps 2–5 in a loop. It only works while the calling session's turn is active, because background commands lose the link to the PC when the turn ends.

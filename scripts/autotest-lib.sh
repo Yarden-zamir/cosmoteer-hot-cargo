@@ -4,23 +4,32 @@
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$LIB_DIR/.." && pwd)"
 SLOTS="${HOT_CARGO_SLOTS:-8}"
+# Full logs of every run stay here, one folder per worktree, so a later run in the same slot cannot overwrite them.
+LOG_DIR="${HOT_CARGO_LOG_DIR:-/tmp/hot_cargo_logs/$(basename "$REPO_ROOT")}"
+mkdir -p "$LOG_DIR"
 
 slot_lock() { echo "/tmp/hot_cargo_slot_${1#t}.lock"; }
 
-# Waits for a free test slot, locks it for this shell process and prints its name.
+# Waits until it holds N free test slots at once, locks them for this shell process and prints their names.
+# It never holds some slots while it waits for more, so parallel co-op tests (2 slots each) cannot deadlock.
 # A lock whose owner process is gone is stale and is taken over.
-take_slot() {
-  local i lock
+take_slots() {
+  local want="${1:-1}" i lock s
+  local got=()
   while :; do
-    for ((i = 1; i <= SLOTS; i++)); do
+    got=()
+    for ((i = 1; i <= SLOTS && ${#got[@]} < want; i++)); do
       lock="$(slot_lock "t$i")"
-      if mkdir "$lock" 2>/dev/null; then echo $$ > "$lock/pid"; echo "$REPO_ROOT" > "$lock/owner"; echo "t$i"; return; fi
+      if mkdir "$lock" 2>/dev/null; then echo $$ > "$lock/pid"; echo "$REPO_ROOT" > "$lock/owner"; got+=("t$i"); continue; fi
       if [[ -f "$lock/pid" ]] && ! kill -0 "$(cat "$lock/pid")" 2>/dev/null; then rm -rf "$lock"; fi
     done
-    echo "all $SLOTS test slots busy; waiting" >&2
+    if [[ ${#got[@]} -eq "$want" ]]; then echo "${got[*]}"; return; fi
+    for s in ${got[@]+"${got[@]}"}; do rm -rf "$(slot_lock "$s")"; done
+    echo "waiting for $want free test slots" >&2
     sleep 15
   done
 }
+take_slot() { take_slots 1; }
 
 # Stops the slot's game and frees the slot.
 release_slot() {
@@ -52,9 +61,24 @@ slot_log() {
   )
 }
 
+# Prints the tail of the slot's newest vanilla Cosmoteer log (rules errors and crashes show there).
+slot_game_log() {
+  (
+    export SLOT="$1"
+    source "$LIB_DIR/pc.sh"
+    pc "$PS_PATHS"'$cl = Get-ChildItem (Join-Path $root "Logs") -Filter "*.txt" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if ($cl) { "=== " + $cl.Name; Get-Content $cl.FullName -Tail 150 }'
+  ) 2>&1 || true
+}
+
 # True when a log (stdin) passed: it has AUTOTEST DONE and no AUTOTEST FAIL or ERROR line.
 log_passed() {
   local log
   log="$(cat)"
   grep -q 'AUTOTEST DONE' <<<"$log" && ! grep -qE 'AUTOTEST FAIL| ERROR ' <<<"$log"
+}
+
+# Prints the lines of a log file that explain a failure, with a little context.
+failure_lines() {
+  grep -n -B2 -A4 -E 'AUTOTEST FAIL| ERROR |Exception|MP DESYNC|MPSTATE MISMATCH' "$1" | head -60 || true
+  grep -q 'AUTOTEST DONE' "$1" || echo "(no AUTOTEST DONE: the game exited early, timed out, or the PC link failed)"
 }

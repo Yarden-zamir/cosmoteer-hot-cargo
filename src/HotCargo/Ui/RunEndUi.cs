@@ -51,7 +51,8 @@ public static class RunEndUi
         _introFor = run;
         if (!run.T.Ux.RunIntro) return;
         var t = run.T;
-        string body = UxKit.Format("IntroBodyFmt", t.Journey.RunSectorCount, t.Heat.Stages.Length, t.Heat.HeatCarryOverFraction) + RunModes.RunModesArea.IntroLines(run);
+        string body = UxKit.Format("IntroBodyFmt", t.Journey.RunSectorCount, t.Heat.Stages.Length,
+            t.Factions.RelayWatchedHeatCut, t.Factions.RelayClearHeatCut, t.Factions.BlindHeatCut) + RunModes.RunModesArea.IntroLines(run);
         CenterPanel.Show(run.Game, UxKit.Text("IntroTitle"), WidgetRules.Instance.FameTextColor, body, UxKit.Text("IntroButton"));
     }
 

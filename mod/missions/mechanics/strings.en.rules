@@ -24,9 +24,9 @@ HotCargoMechanics
 	              "The bank pays {money} for the ship, not for scrap. Beat the crew until they hail you to surrender and accept, "\
 	              "or knock out the crew and send your own people aboard to claim the hull. If the freighter is destroyed, the deal is off."
 	Survey = "Storm Survey"
-	SurveyDesc = "The {faction_name} wants fresh readings from inside the ion storms of the {mission_location} system. "\
+	SurveyDesc = "The {faction_name} wants fresh readings from inside the clouds and storms of the {mission_location} system. "\
 	             "Hold a ship with a working sensor array at each of the {marker_count} markers for {scan_seconds} seconds. "\
-	             "Lightning hits hard in there: send a cheap scout or bring shields, and do not linger. Pays {money}."
+	             "Storms and electron clouds hit hard: send a cheap scout or bring shields, and do not linger. Pays {money}."
 	ClaimJumpers = "Claim Jumpers"
 	ClaimJumpersDesc = "The mining barge <b>{target_ship}</b> works a rich claim in the {mission_location} system, and raiders want it. "\
 	                   "Keep the barge alive for {hold_minutes} minutes and the {faction_name} pays {money}. "\

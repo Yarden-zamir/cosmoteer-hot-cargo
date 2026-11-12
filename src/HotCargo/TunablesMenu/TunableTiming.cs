@@ -32,8 +32,9 @@ public static class TunableTiming
     static readonly Dictionary<string, Applies> Exceptions = new()
     {
         ["HeatTunables.HeatCarryOverFraction"] = Applies.NextSystem,
-        ["FactionsTunables.RelayCarryOverFactor"] = Applies.NextSystem,
-        ["FactionsTunables.BlindCarryOverFactor"] = Applies.NextSystem,
+        ["FactionsTunables.RelayWatchedHeatCut"] = Applies.NextSystem,
+        ["FactionsTunables.RelayClearHeatCut"] = Applies.NextSystem,
+        ["FactionsTunables.BlindHeatCut"] = Applies.NextSystem,
         ["TechTunables.StartingTechUnits"] = Applies.NewRun,
         ["JourneyTunables.RunSectorCount"] = Applies.NextSystem,
         ["HunterTunables.Stages"] = Applies.NextSpawn,
@@ -52,6 +53,8 @@ public static class TunableTiming
         ["HunterTunables.ShipNamePrefix"] = Applies.NextSpawn,
         ["HunterTunables.MaxLiveHunters"] = Applies.NextSpawn,
         ["HunterTunables.MinFuel"] = Applies.NextSpawn,
+        ["HunterTunables.RouteTierFloor"] = Applies.NextSpawn,
+        ["DiplomacyTunables.PunishSeconds"] = Applies.NextUse,
         ["MissionTunables.ShadyRewardFactor"] = Applies.NextOffer,
         ["MissionTunables.ShadyTrapSurvivalReward"] = Applies.NextOffer,
         ["MissionTunables.EscortHeatChange"] = Applies.NextOffer,
@@ -64,6 +67,9 @@ public static class TunableTiming
         ["EventsTunables.RelicEnabled"] = Applies.NewRun,
         ["EventsTunables.RelicMinSector"] = Applies.NewRun,
         ["ChainsTunables.StationChance"] = Applies.NextSystem,
+        ["ChainsTunables.MaxNewChainsPerSystem"] = Applies.NextSystem,
+        ["BalanceTunables.StationFuelPerMillion"] = Applies.NextSpawn,
+        ["BalanceTunables.StationFuelMinimum"] = Applies.NextSpawn,
         ["ChainsTunables.LaterDelaySeconds"] = Applies.NextSystem,
         ["ChainsTunables.StoryLines"] = Applies.NextUse,
         ["ContractsTunables.FeeChance"] = Applies.NextOffer,
@@ -110,8 +116,6 @@ public static class TunableTiming
         ["DifficultyRow.HunterShips"] = Applies.NextSpawn,
         ["DifficultyRow.HunterTiers"] = Applies.NextSpawn,
         ["DifficultyRow.ContractFees"] = Applies.NextOffer,
-        ["RunModesTunables.FameTitleTiers"] = Applies.NextSpawn,
-        ["RunModesTunables.FameTierCap"] = Applies.NextSpawn,
     };
 
     public static Applies Of(FieldInfo field) =>

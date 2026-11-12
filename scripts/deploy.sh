@@ -7,13 +7,21 @@
 # - Test slots get their own settings.rules that turns the mod on.
 source "$(dirname "$0")/pc.sh"
 
+# Parallel autotests from one worktree build into the same output folder. A per-worktree lock covers the build and the
+# copy into the stage, so no deploy copies a half-written DLL. A lock whose owner process is gone is stale.
+BUILD_LOCK="/tmp/hot_cargo_build_$(printf %s "$REPO_ROOT" | shasum | cut -c1-12).lock"
+STAGE="$(mktemp -d)"
+trap 'rm -rf "$STAGE"; if [[ "$(cat "$BUILD_LOCK/pid" 2>/dev/null)" == "$$" ]]; then rm -rf "$BUILD_LOCK"; fi' EXIT
+until mkdir "$BUILD_LOCK" 2>/dev/null; do
+  if [[ -f "$BUILD_LOCK/pid" ]] && ! kill -0 "$(cat "$BUILD_LOCK/pid")" 2>/dev/null; then rm -rf "$BUILD_LOCK"; continue; fi
+  sleep 1
+done
+echo $$ > "$BUILD_LOCK/pid"
+
 dotnet build "$REPO_ROOT/src/HotCargo/HotCargo.csproj" -c Release -nologo -v quiet
 dotnet build "$REPO_ROOT/src/HotCargo.Loader/HotCargo.Loader.csproj" -c Release -nologo -v quiet
 BUILD="$REPO_ROOT/src/HotCargo/bin/Release/net10.0-windows"
 LOADER="$REPO_ROOT/src/HotCargo.Loader/bin/Release/net10.0/HotCargo.Loader.dll"
-
-STAGE="$(mktemp -d)"
-trap 'rm -rf "$STAGE"' EXIT
 "$REPO_ROOT/scripts/assemble-mod.sh" "$STAGE/hot_cargo"
 # A dev build carries its git version (for example 0.4.0-3-g1a2b3c4), so the title screen shows which build runs.
 # package.sh sets the release version the same way.
@@ -24,6 +32,7 @@ cp "$BUILD/HotCargo.dll" "$BUILD/HotCargo.pdb" "$BUILD/HotCargo.xml" "$BUILD/0Ha
 cp "$LOADER" "$REPO_ROOT/src/HotCargo.Loader/VERSION" "$STAGE/loader/"
 # The tunables file is staged under a temporary name. The PC side decides if it overwrites the live copy.
 if [[ -f "$STAGE/hot_cargo/tunables.rules" ]]; then mv "$STAGE/hot_cargo/tunables.rules" "$STAGE/hot_cargo/tunables.rules.deploy"; fi
+rm -rf "$BUILD_LOCK"
 
 COPYFILE_DISABLE=1 tar -cf - -C "$STAGE" hot_cargo loader | pc "$PS_PATHS"'
 $ErrorActionPreference = "Stop"

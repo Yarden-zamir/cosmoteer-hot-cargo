@@ -1,4 +1,4 @@
-# Balance (spec 300 to 303, BALANCE.md): fuel rules, blueprint price scale, heat for fame above the cap, peak tier cap.
+# Balance (spec 300 to 304, BALANCE.md): fuel rules, blueprint price scale, heat for fame above the cap, peak tier cap, station fuel floor.
 newgame run
 wait 8
 # Spec 300: scarce FTL fuel.
@@ -13,6 +13,17 @@ tostation
 wait 3
 expect balance_techcost_scale >= 2.4
 expect balance_techcost_scale <= 2.6
+# Spec 303: the peak tier counts at most start tier + 2 per sector after the first.
+expect balance_peak_tier_cap == 1
+expect peaktier == 1
+# Spec 304: every trade station keeps the fuel floor (tier 1: 10 fuel), the stations near the start too.
+expect balance_station_fuel_floor == 10
+expect balance_station_fuel_gap >= 0
+balance_visit 1
+wait 3
+balance_visit 2
+wait 3
+expect balance_station_fuel_gap >= 0
 # Spec 302: a fame reward above the fame cap gives no fame, but it adds the heat of its uncapped fame.
 # 10 fame x 1.5 (Fast) x 1 (RewardScale) = 15 fame = 2 standard units at tier 1: 2 x 1.5 x 1.2 = 3.6 heat.
 heat_mark
@@ -20,7 +31,20 @@ balance_fame_over_cap 10
 expect heat_change >= 3
 expect balance_fame_heat_gap >= -0.05
 expect balance_fame_heat_gap <= 0.2
-# Spec 303: the peak tier counts at most start tier + 2 per sector after the first.
-expect balance_peak_tier_cap == 1
-expect peaktier == 1
+# A high floor in the next system: every trade station there loads with at least the floor (tier 2 or 3: 2000 x 0.09 to 0.11 = 180 to 220 fuel).
+balance_set StationFuelPerMillion 2000
+balance_route
+wait 12
+expect balance_station_fuel_floor >= 180
+balance_visit 0
+wait 3
+balance_visit 1
+wait 3
+balance_visit 2
+wait 3
+balance_visit 3
+wait 3
+expect balance_station_fuel_gap >= 0
+# Spec 303: two sectors in, the cap is start tier + 2.
+expect balance_peak_tier_cap == 3
 quit
