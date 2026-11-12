@@ -31,12 +31,12 @@ Mission checks are in [tests/playtest/missions.md](tests/playtest/missions.md).
 
 To see sell-outs fast, put `Contracts { InformantShare = 1  InformantChanceMin = 1  InformantChanceMax = 1  InformantDelayMin = 10  InformantDelayMax = 10 }` in `tunables.rules`.
 
-1. Hail a station and open the missions tab. Select offers. Each one shows a "Contract terms" section under the rewards: fee or "No fee", flat heat, trail, rival, informant risk or "Discreet client". Is it readable at a glance? Does it look like the rest of the window?
+1. Hail a station and open the missions tab. Select offers. Each one shows a "CONTRACT" section under the rewards: fee or "No fee", flat heat, trail, rival, informant risk or "Discreet client". Is it readable at a glance? Does it look like the rest of the window?
 2. Select a paid offer. The accept button reads "Accept (pay N)", and the rewards show an extra "(paid contract)" money line. Accept it. Check that the money drops by the fee.
 3. With less money than a fee, the button reads "Fee N: not enough money" and does nothing.
-4. Find an offer with "Rival offer: accepting dismisses ...". Accept it. Check that the named offer is gone and that a chat line says why.
-5. Accept 4 or more contracts. Check that the heat panel shows "N contracts open, trail +X/min" and that the heat rate in the status line rises.
-6. Wait for a sell-out (see the tunables above). Check that the banner names the client and the contract, that hunters jump in, and that the mission log shows "... sold you out on this contract".
+4. Find an offer with "Rival: taking this cancels ...". Accept it. Check that the named offer is gone and that a chat line says so.
+5. Accept 4 or more contracts. Check that the heat panel shows "N open contracts   trail +X/min" and that the heat rate in the status line rises.
+6. Wait for a sell-out (see the tunables above). Check that the banner names the client, that the chat line names the contract, that hunters jump in, and that the mission log shows "... sold you out on this contract".
 7. Balance: are fees worth paying? Does a 4th contract feel like a real choice? Is the informant risk scary but not run-ending?
 8. Tech value: watch the heat panel price over a sector. It goes up with time and heat and never down, also when convoy cover lowers heat. Mid-run, do 2 units buy roughly a ship of the current tier?
 9. Systems are smaller: is the travel between stations, bounties and gates noticeably shorter? Do systems look too crowded or too empty?
