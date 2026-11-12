@@ -50,7 +50,7 @@ expect heat >= 35
 # Reset buttons write the defaults back and drop the values from the file.
 menu open
 menu reset Heat.HeatPerGameMinute
-menu value Heat.HeatPerGameMinute == 2
+menu value Heat.HeatPerGameMinute == 1.2
 menu file lacks HeatPerGameMinute
 menu resetsection Hunters
 menu file lacks ShipCount
