@@ -45,7 +45,9 @@ public static class EventRunner
     {
         var t = run.T.Events;
         var s = State(run);
-        if (!t.Enabled || EventLibrary.LoadError is not null || s.Pending is not null || sim != run.Game.Sim) return;
+        if (sim != run.Game.Sim) return;
+        CheckWanted(run, sim);
+        if (!t.Enabled || EventLibrary.LoadError is not null || s.Pending is not null) return;
         double now = run.State.GameSeconds;
         if (s.StartDueSeconds >= 0 && now >= s.StartDueSeconds)
         {
@@ -66,6 +68,24 @@ public static class EventRunner
         CheckSignals(run, sim);
         if (s.Pending is null) CheckStations(run, sim);
     });
+
+    /// <summary>
+    /// Spec 470, 471: when the players are wanted (vanilla) and heat reached WantedWarningMinStage, a warning names the ways out,
+    /// and a Wanted event (a way to clear wanted) may open. Runs in the sim tick; the warning itself is UI only.
+    /// </summary>
+    static void CheckWanted(Run run, SimRoot sim)
+    {
+        var s = State(run);
+        var wanted = ((Cosmoteer.Modes.Career.CareerSimModeManager)sim.Mode).Wanted;
+        var (fire, warnedNow) = EventModel.WantedWarning(wanted.IsLocalPlayerWanted, run.State.StagesStarted, run.T.Events.WantedWarningMinStage, s.WantedWarned);
+        s.WantedWarned = warnedNow;
+        if (!fire) return;
+        var factions = wanted._wantedShips.Keys.Select(f => GameApp.Rules.GetFactionRules(f).NameKey.Text).ToList();
+        Log.Info($"events: wanted by {string.Join(", ", factions)} at heat stage {run.State.StagesStarted}");
+        EventText.ShowWantedWarning(run.Game, string.Join(", ", factions));
+        var t = run.T.Events;
+        if (t.Enabled && EventLibrary.LoadError is null && s.Pending is null) TryTrigger(run, sim, EventTrigger.Wanted, t.WantedEventChance, limited: false);
+    }
 
     /// <summary>A human ship that reaches a signal POI removes it and opens a Signal event.</summary>
     static void CheckSignals(Run run, SimRoot sim)
@@ -281,6 +301,7 @@ public static class EventRunner
         FlagAges = n.FlagAges.Select(f => (f.Flag, f.MinSectors)).ToList(),
         MinSectorsLeft = n.MinSectorsLeft,
         MaxSectorsLeft = n.MaxSectorsLeft,
+        Wanted = n.Wanted,
     };
 
     /// <summary>The need of a choice plus its sure cost.</summary>
@@ -316,6 +337,7 @@ public static class EventRunner
             Flags = State(run).Flags,
             FlagSectors = State(run).FlagSectors,
             SectorsLeft = run.T.Journey.RunSectorCount - run.State.SectorIndex,
+            Wanted = ((Cosmoteer.Modes.Career.CareerSimModeManager)sim.Mode).Wanted.IsLocalPlayerWanted,
         };
     }
 
@@ -344,6 +366,7 @@ public static class EventRunner
         if (o.HullDamage > 0) DamageHull(sim, o.HullDamage, p.Seed, lines);
         if (o.Reputation != 0) ChangeReputation(run, sim, o.Reputation, p.Tier, lines);
         if (o.BuyerPrice > 0) ChangeBuyerPrice(run, o.BuyerPrice, lines);
+        if (o.ClearWanted) ClearWanted(sim, lines);
         foreach (string f in o.SetFlags)
         {
             State(run).Flags.Add(f);
@@ -387,6 +410,16 @@ public static class EventRunner
         if (amount == 0) return;
         run.Mode.AddFactionReputation(faction, amount);
         lines.Add(EventText.Reputation(faction, amount));
+    }
+
+    /// <summary>Spec 472: like a paid bounty, every faction stops wanting the players (WantedManager.RemoveFactionFromWanting).</summary>
+    static void ClearWanted(SimRoot sim, List<string> lines)
+    {
+        var wanted = ((Cosmoteer.Modes.Career.CareerSimModeManager)sim.Mode).Wanted;
+        var factions = wanted._wantedShips.Keys.ToList();
+        foreach (var f in factions) wanted.RemoveFactionFromWanting(f);
+        if (factions.Count > 0) lines.Add(EventText.WantedCleared());
+        Log.Info($"events: wanted cleared ({factions.Count} factions)");
     }
 
     static void ChangeBuyerPrice(Run run, float factor, List<string> lines)

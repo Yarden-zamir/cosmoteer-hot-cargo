@@ -573,6 +573,71 @@ Events
 		]
 	}
 
+	// ---- Wanted (spec 471): offered when the players become wanted while the corporation hunts them. Both clear vanilla wanted.
+
+	{
+		ID = clean_record
+		Trigger = Wanted
+		Need { Wanted = true }
+		Title = "A Clean Record"
+		Text = "A private channel opens. \"The local police want you, and the corporation is right behind them. I can fix the first problem. Records are only numbers.\""
+		Choices
+		[
+			{
+				Text = "Pay for a clean record."
+				Cost { Money = 0.4; MoneyPerHeat = 0.01 }
+				Outcomes
+				[
+					{ Weight = 80; Text = "Your file goes quiet. The police stop looking."; ClearWanted = true }
+					{ Weight = 20; WeightPerHeat = 0.2; Text = "The forger takes your money, then sells your new record to the corporation."; Heat = 15 }
+				]
+			}
+			{
+				Text = "Pay with a crate instead."
+				Need { Tech = 1 }
+				Cost { Tech = 1 }
+				Outcomes [ { Text = "A crate buys a lot of silence. The police forget you, and the forger forgets the corporation's number."; ClearWanted = true; Heat = -5 } ]
+			}
+			{
+				Text = "Handle it yourself."
+				Outcomes [ { Text = "\"Your call. The offer stands while you last.\"" } ]
+			}
+		]
+	}
+
+	{
+		ID = decoy_run
+		Trigger = Wanted
+		Need { Wanted = true }
+		Title = "Decoy Run"
+		Text = "A freighter captain hails on a tight beam. \"I can fly a copy of your transponder out the far side of the system. The police chase me, you slip away. Hunters might chase me too, if they are good.\""
+		Choices
+		[
+			{
+				Text = "Hire the decoy."
+				Cost { Money = 0.5 }
+				Outcomes
+				[
+					{ Weight = 70; Text = "The police take the bait and follow the freighter out of the system."; ClearWanted = true; Heat = -10 }
+					{ Weight = 30; WeightPerHeat = 0.3; Text = "The police see through it. The captain keeps your money anyway." }
+				]
+			}
+			{
+				Text = "Fly the decoy yourself: a sensor ghost on the far side."
+				Need { Parts = ["cosmoteer.sensor_array"] }
+				Outcomes
+				[
+					{ Weight = 60; Text = "Your sensors paint a second ship far away. The police chase the ghost."; ClearWanted = true }
+					{ Weight = 40; WeightPerHeat = 0.2; Text = "The ghost fools nobody. Worse, the corporation saw the broadcast."; Heat = 5 }
+				]
+			}
+			{
+				Text = "No thanks."
+				Outcomes [ { Text = "\"Good luck out there.\"" } ]
+			}
+		]
+	}
+
 	// ---- Station
 
 	{
