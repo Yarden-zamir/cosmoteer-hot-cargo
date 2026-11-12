@@ -59,6 +59,24 @@ public static class StashArea
             foreach (var a in Objective().Ambushers)
                 if (a.TargetShip is { } ship) Sim().Ships.Remove(ship, dispose: true, handleLostShip: false);
         };
+        // st_tostation: single player. Moves the player ship next to the station that offers a stash.
+        Autotest.Commands["st_tostation"] = _ =>
+        {
+            var station = Cosmoteer.Ships.Special.SpaceStation.GetStations(Sim(), onlyOperating: false)
+                .Where(s => s.GetProvidedMissions()?.Any(m => m.MetatypeID.Equals(id)) == true).Select(s => s.PhysicalShip).FirstOrDefault(s => s is not null)
+                ?? throw new InvalidOperationException("no station offers a stash");
+            var ship = TechAutotest.PlayerShip();
+            Autotest.Teleport(ship, station.WorldCenter + new Halfling.Geometry.Vector2(station.WorldBoundingRadius + ship.WorldBoundingRadius + 2f, 0f));
+        };
+        // st_select: selects the stash offer in the open comms Missions tab (run "comms open" and "commsmission" first).
+        Autotest.Commands["st_select"] = _ =>
+        {
+            var item = Autotest.RequireRun().Game.Gui.FloatingWindows.Children.OfType<Cosmoteer.Modes.Career.Comms.CommWindow>()
+                .SelectMany(w => w.GetChainedWidgets(recursive: true)).OfType<Cosmoteer.Modes.Career.Missions.MissionsPanel>()
+                .SelectMany(p => p).FirstOrDefault(i => i.Mission.MetatypeID.Equals(id))
+                ?? throw new InvalidOperationException("no stash offer in an open missions panel");
+            item.IsSelected = true;
+        };
         // st_line: logs the objective line of the offer (the first stash offer) and of the accepted stash, if any.
         Autotest.Commands["st_line"] = _ =>
         {

@@ -82,6 +82,8 @@ static class RelaysAutotest
             };
             run.Game.NetManager.EnqueueInput(new MultiChoiceInput(RelayMultiDomain.Name, RelayChoiceDomain.Serial(guard), option, true, value));
         };
+        // rl_open: opens the comms window with the first guard (screenshots).
+        Autotest.Commands["rl_open"] = _ => R().Game.Gui.FloatingWindows.AddChild(new Cosmoteer.Modes.Career.Comms.CommWindow(R().Game, TechAutotest.PlayerShip(), FirstGuard()));
         // rl_bribe | rl_refuse: the shared choices of the first guard's page.
         Autotest.Commands["rl_bribe"] = _ => Choose(RelayOption.Bribe);
         Autotest.Commands["rl_refuse"] = _ => Choose(RelayOption.Refuse);
