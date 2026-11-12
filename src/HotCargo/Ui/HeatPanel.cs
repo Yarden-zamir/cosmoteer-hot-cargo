@@ -22,7 +22,8 @@ sealed class HeatPanel : LayoutBox
 {
     const float BarHeight = 14f;
     static readonly Color Calm = new(0.35f, 0.75f, 0.95f);
-    static readonly Color Warm = new(1f, 0.8f, 0.2f);
+    /// <summary>Heat orange: the game's limited text color, the same as the stage name and the title accent.</summary>
+    static Color Warm => WidgetRules.Instance.LimitedTextColor;
     static readonly Color Hot = new(0.96f, 0.19f, 0.17f);
 
     readonly CareerGameModeManager _mode;

@@ -1,0 +1,34 @@
+# Factions: the blind spin-up and a jump in a fight (spec 651, 653).
+# The player ship gets a small hyperdrive and spins up at a relay like a real jump. A blind spin-up takes BlindSpinUpFactor (2) x the
+# vanilla time. Then hunters arrive, a save block (like a multi-step explosion) is held, and ENGAGE is pressed: vanilla would drop
+# the jump; here it waits for the block and then starts.
+newgame
+wait 8
+ev_set Enabled false
+godmode on
+pause off
+fa_drive
+wait 1
+fa_torelay
+wait 2
+fa_blind on
+wait 1
+fa_gatejump
+waitfor fa_preparing == 1 60
+# The drives are full after the vanilla spin-up (about 22 s for this ship), but the blind jump needs twice that.
+waitfor fa_fullat > 0 120
+expect fa_ready == 0
+waitfor fa_ready == 1 120
+expect fa_spinratio >= 1.99
+expect fa_spinratio <= 2.2
+heat 80
+waitfor fa_combat >= 1 30
+fa_saveblock 15
+wait 1
+expect fa_saveblocked == 1
+fa_engage
+wait 5
+expect fa_jumpstarts == 0
+waitfor fa_jumpstarts == 1 60
+log jump started after the save block
+quit
