@@ -46,9 +46,12 @@ static class WantedTimer
     [HarmonyPatch(typeof(WantedLabel), nameof(WantedLabel.OnBeforeDraw))]
     static class Refresh
     {
+        static double _next;
+
         static void Postfix(WantedLabel __instance)
         {
-            if (!Lines.TryGetValue(__instance, out var line)) return;
+            // Spec 872: refreshes every HudRefreshSeconds, not in every frame. The line is a child of the label, so it hides with it.
+            if (!Lines.TryGetValue(__instance, out var line) || !UxKit.HudDue(ref _next)) return;
             UxKit.Guard("wanted timer", () =>
             {
                 // A hail shows its "HAILED BY" widget right under the WANTED label, so the line steps aside while one is up.

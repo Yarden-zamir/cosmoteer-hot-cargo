@@ -74,4 +74,9 @@ public sealed class UxTunables
     [Serialize(Optional = true)] public bool PauseOnComms = true;
     /// <summary>The same in multiplayer. Off by default, because one player's comms window pauses every player.</summary>
     [Serialize(Optional = true)] public bool PauseOnCommsMultiplayer;
+    /// <summary>
+    /// Seconds between refreshes of HUD texts that change all the time: heat panel, status overlay, wanted timer.
+    /// Higher costs less on a slow machine; in co-op every machine runs the HUD, and the game runs at the speed of the slowest.
+    /// </summary>
+    [Serialize(Optional = true)] public float HudRefreshSeconds = 0.25f;
 }
