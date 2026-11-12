@@ -37,7 +37,7 @@ static class CareerInfoPatches
                 var node = __instance._mission.GetClosestObjectiveMapNode(out _);
                 string ly = Strings.FormatText("MissionLog/DistanceLYFmt", value.Dist2);
                 int jumps = node is null ? -1 : Jumps(game, node);
-                __instance._distance.Text = "  (" + (jumps > 0 ? UxKit.Format("DistanceJumpsFmt", ly, jumps) : ly) + ")";
+                __instance._distance.Text = "  (" + (jumps > 0 ? UxKit.Format(jumps == 1 ? "DistanceJumpFmt" : "DistanceJumpsFmt", ly, jumps) : ly) + ")";
             });
         }
 
@@ -77,7 +77,7 @@ static class CareerInfoPatches
                 float dist = game.Map.Nodes.FindPathTo(node, path, requireJumpable: true);
                 sb.Append('\n').Append(float.IsInfinity(dist)
                     ? $"<gray>{UxKit.Text("MapNoRoute")}</gray>"
-                    : UxKit.Format("MapJumpsFmt", path.Count - 1, Strings.FormatText("MissionLog/DistanceLYFmt", dist)));
+                    : UxKit.Format(path.Count == 2 ? "MapJumpFmt" : "MapJumpsFmt", path.Count - 1, Strings.FormatText("MissionLog/DistanceLYFmt", dist)));
             }
             if (!visited) sb.Append('\n').Append($"<gray>{UxKit.Text("MapUnvisited")}</gray>");
             int missions = mode.Missions.Count(m => m.IsMapNodeAssociated(node));

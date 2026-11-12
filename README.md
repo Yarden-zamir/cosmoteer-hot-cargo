@@ -6,26 +6,32 @@ You stole corporate tech. The corporation wants it back. Get it across about 8 s
 
 ![Main menu](docs/screenshots/title.jpg)
 
-![Run intro](docs/screenshots/ux-intro.jpg)
+![Run intro](docs/screenshots/intro.jpg)
 
 ## How it plays
 
-- **Hold or sell.** You start with 8 units of Stolen Tech in four Tech Vaults. Each unit you hold makes the corporation hunt you harder. Each unit you sell at a station gives you money now, and the price only rises as the run goes on: one or two units pay for a new ship of your stage. The Buyer pays 4× the price, and unsold units count the same in the score.
-- **Move on or burn.** Heat grows over time and with every mission you finish. Heat stages send corporate hunter waves that kite, flank, bait and go for your guns. A jump to a new system cools you down.
-- **Protect the cargo.** Hits on a vault destroy tech. Each vault is one tile that holds 2 units: build more, spread them out, and armor and shield them. If your tech reaches 0, the run is over.
+- **Hold or sell.** You start with 8 Stolen Tech in four Tech Vaults. The more you hold, the harder the corporation hunts you. Stations pay for tech now, and the price rises as the run goes on: one or two units buy a new ship of your stage. The Buyer pays 4× the price, and unsold units count the same in the score.
+- **Move on or burn.** Heat rises over time and with every mission. Each heat stage sends corporate hunters that kite, flank, bait and go for your guns. A jump to a new system cools you down.
+- **Protect the cargo.** Hits on a vault destroy tech. Each vault is one tile that holds 2 units: build more, spread them out, armor and shield them. If your tech reaches 0, the run is over.
 - **Deliver.** The Buyer waits in the last sector. Sell it your tech to win.
-- **New missions.** Convoy escorts, joint strikes with allied fleets, and shady bounties that may be corporate traps.
-- **FTL-style events.** Distress beacons, corporate checkpoints, fences, rival thieves and more: choices with risks, costs and rewards.
-- **Story chains.** Each station has a story in parts: a fence, a defector, a rival crew, a dark station. What you do in one part decides the next, and some choices come back to find you later.
-- **Learn as you go.** Hot Cargo pages join the game's "How to Play" list and codex, ahead of the vanilla tutorials. The career log gets a "Hot Cargo run" tab with the story of your run.
+- **New missions.** Convoy escorts, joint strikes, shady bounties that may be traps, sieges, salvage, sundives and more.
+- **Contracts.** Some clients charge a fee, some are rivals, and some sell you out to the corporation.
+- **Sector types.** Trade hubs with currents, mining belts, solar zones and ion storms, each with its own hazard.
+- **FTL-style events.** Distress beacons, checkpoints, fences, rival thieves: choices with risks, costs and rewards.
+- **Story chains.** Each station has a story in parts. What you do in one part decides the next, and some choices come back later.
+- **Learn as you go.** Hot Cargo pages join the game's "How to Play" list and codex. The career log gets a "Hot Cargo run" tab with the story of your run.
 
-![Heat stage alert](docs/screenshots/ux-heat-alert.jpg)
+![Heat stage alert](docs/screenshots/heat-alert.jpg)
 
-![Choice event](docs/screenshots/ux-event-keys.jpg)
+![Choice event](docs/screenshots/event.jpg)
 
-![Tech delivered](docs/screenshots/ux-win.jpg)
+![Contract terms](docs/screenshots/contract.jpg)
 
-![Run lost](docs/screenshots/ux-loss.jpg)
+![Sector arrival](docs/screenshots/arrival.jpg)
+
+![Tech delivered](docs/screenshots/win.jpg)
+
+![Run lost](docs/screenshots/loss.jpg)
 
 ![How to Play list with Hot Cargo pages first](docs/screenshots/onboarding-howtoplay.jpg)
 
@@ -35,15 +41,14 @@ You stole corporate tech. The corporation wants it back. Get it across about 8 s
 
 It also improves some of the base game's UI. You can switch off each change in `tunables.rules`:
 
-- Hull % on ships.
-- Alerts when you lose a ship.
+- Hull % on ships, and alerts when you lose a ship or run low on supplies.
 - Fixed mission distances for other systems.
-- Richer galaxy map tooltips.
-- A clearer fame tooltip.
+- Richer galaxy map, fame and station tooltips.
+- Number keys for dialogue options.
 
-![Galaxy map tooltip](docs/screenshots/ux-map.jpg)
+![Galaxy map tooltip](docs/screenshots/map.jpg)
 
-![Trade tab with sale effects](docs/screenshots/ux-trade.jpg)
+![Trade tab with sale effects](docs/screenshots/trade.jpg)
 
 ## Install
 
@@ -58,7 +63,11 @@ In co-op, every player needs the same version. Run `install.bat` again after a C
 
 ## Tuning
 
-All numbers live in `Mods\hot_cargo\tunables.rules`. The game reloads the file while it runs. `tunables.defaults.rules` lists every value with its default.
+Change any number in game: open the escape menu and click **Hot Cargo settings**. Changes apply at once and are saved to `Mods\hot_cargo\tunables.rules`, which you can also edit by hand while the game runs. `tunables.defaults.rules` lists every value with its default.
+
+In co-op, the new career screen has an **Enemy ships per extra player** slider.
+
+![Hot Cargo settings](docs/screenshots/settings.jpg)
 
 ## Develop
 

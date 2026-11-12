@@ -29,7 +29,7 @@ static class AcceptPatch
             Log.Info($"contracts: player {playerIndex} cannot pay the fee of {m.MetatypeID} {m.MissionID}");
             // UI only, for the player who clicked.
             if (playerIndex == game.LocalPlayerIndex)
-                game.Gui.ShowAreaName(Strings.FormatText("HotCargoContracts/CannotPayFmt", ContractBook.Preview(run, m)?.Fee ?? 0));
+                Ux.UxKit.CenterText(game, Strings.FormatText("HotCargoContracts/CannotPayFmt", ContractBook.Preview(run, m)?.Fee ?? 0));
         });
         __state = allow ? m : null;
         return allow;

@@ -33,16 +33,17 @@ public static class WorldsArea
         if (!firstVisit || !run.T.Worlds.ArrivalLine) return;
         var sector = SectorOf(run.Mode, run.Game.CurrentMapNode);
         if (Hazard(sector) is not { } hazard) return;
-        ShowArrivalAsync(run, Strings.FormatText("HotCargoWorlds/ArrivalFmt", sector.NameKey.Text, hazard));
+        ShowArrivalAsync(run, Strings.FormatText("HotCargoWorlds/ArrivalCenterFmt", sector.NameKey.Text, hazard),
+            Strings.FormatText("HotCargoWorlds/ArrivalFmt", sector.NameKey.Text, hazard));
     }
 
-    static async void ShowArrivalAsync(Run run, string line)
+    static async void ShowArrivalAsync(Run run, string center, string line)
     {
         await App.Clock.UntilElapsed(run.T.Worlds.ArrivalLineDelaySeconds);
         if (Run.Current != run) return;
         UxKit.Guard("arrival line", () =>
         {
-            run.Game.Gui.ShowAreaName(line);
+            UxKit.CenterText(run.Game, center);
             UxKit.ChatLine(run.Game, line);
         });
         Log.Info($"arrival line: {line}");

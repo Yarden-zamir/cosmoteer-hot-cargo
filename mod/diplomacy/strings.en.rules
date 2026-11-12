@@ -34,7 +34,7 @@ HotCargoDiplomacy
 	PunishBribeFmt = "A personal bribe for the captain. {0}"
 	PunishCrewFmt = "Hand crew over to cryo jail. {0}"
 	CrewFmt = "{0} crew"
-	PunishCombinedFmt = "<fame>Chance they let it go: {0}</fame>"
+	PunishCombinedFmt = "<fame_color>Chance they let it go: {0}</fame_color>"
 	PunishSubmit = "<i>\"Here's our offer.\"</i>"
 	PunishRefuse = "<i>\"You got the tech. That's all.\"</i>"
 	PunishYes = "<i>\"Fine. You never saw us.\"</i> The hunters leave. Heat drops."
@@ -56,8 +56,8 @@ HotCargoDiplomacy
 	// Friendly ships (spec 574 to 583)
 	FriendHelloFmt = "<b>{0}:</b> <i>\"What do you need?\"</i>"
 	MercHelloFmt = "<b>{0}:</b> <i>\"Guns for hire. We fight, you pay by the minute.\"</i>"
-	HoldsFmt = "<fame>They hold {0} of your tech.</fame>"
-	HiredFmt = "<fame>Fighting for you: {0} min left.</fame>"
+	HoldsFmt = "<fame_color>They hold {0} of your tech.</fame_color>"
+	HiredFmt = "<fame_color>Fighting for you: {0} min left.</fame_color>"
 	TopicHold = "<i>\"Can you hold some cargo for us?\"</i>"
 	TopicHire = "<i>\"Help us fight.\"</i>"
 	TopicMerc = "<i>\"We need guns.\"</i>"
@@ -88,8 +88,8 @@ HotCargoDiplomacy
 	HireFleeFmt = "<b>{0}:</b> <i>\"Too hot for us! We're out.\"</i>"
 
 	// Ship marker labels
-	LabelHoldsFmt = "<fame>HOLDS {0} TECH</fame>"
-	LabelHiredFmt = "<fame>HIRED {0}</fame>"
+	LabelHoldsFmt = "<fame_color>HOLDS {0} TECH</fame_color>"
+	LabelHiredFmt = "<fame_color>HIRED {0}</fame_color>"
 	LabelQuitting = "<limited_color>QUITTING</limited_color>"
 	LabelMerc = "<gray>MERCENARY</gray>"
 }

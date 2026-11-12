@@ -78,7 +78,7 @@ public static class Buyer
         // The jump shows the system name for about 4 s after the switch. Wait so the two texts do not overlap.
         await App.Clock.UntilElapsed(6f);
         if (Run.Current != run) return;
-        run.Game.Gui.ShowAreaName(Strings.GetText("HotCargoJourney/BuyerHere"));
+        Ux.UxKit.CenterText(run.Game, Strings.GetText("HotCargoJourney/BuyerHere"));
         var missions = run.Mode.Missions;
         var mission = missions.FirstOrDefault(m => m.MetatypeID == MissionType);
         if (mission is not null && !missions.IsTracked(mission)

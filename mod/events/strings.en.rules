@@ -1,23 +1,22 @@
 HotCargoEventMissions
 {
 	Rivals = "Rival Crew"
-	RivalsDesc = "Another crew of thieves wants your cargo. Their own bounty is posted on every station in the {mission_location} system. Take them apart and collect {money}."
+	RivalsDesc = "Rival thieves want your cargo. Every station in the {mission_location} system posts a bounty on them. Take them apart and collect {money}."
 	Siege = "Freighter Under Fire"
 	Bounty = "Bounty Hunters"
-	BountyDesc = "Local bounty hunters want the reward on your hull. Every one you put down has a price of its own in the {mission_location} system: {money}."
+	BountyDesc = "Local bounty hunters want the price on your hull. Each one you put down pays its own bounty in the {mission_location} system: {money}."
 	Tow = "Tow Job"
-	TowDesc = "A freighter with a dead drive needs a tow to the nearest station in the {mission_location} system. Pull it in with a tractor beam and keep it in one piece. The crew pays {money} when it arrives."
+	TowDesc = "A freighter with a dead drive needs a tow to the nearest station in the {mission_location} system. Pull it in with a tractor beam and keep it in one piece. The crew pays {money} on arrival."
 	TowFmt = "Tow {0} to the nearest station"
 	Courier = "Courier Job"
-	CourierDesc = "A sealed case, no questions. Fly it to the contact on the far side of the {mission_location} system within {time_limit_minutes} minutes, then come back to collect {money}. "\
-	              "The pay is good and the job is quiet: little fame, little attention."
-	SiegeDesc = "Raiders have a freighter pinned in the {mission_location} system. Its shields will not hold for long. Drive them off before time runs out, and the crew pays {money}."
+	CourierDesc = "A sealed case, no questions. Fly it to the contact on the far side of the {mission_location} system within {time_limit_minutes} minutes, then come back for {money}. Good pay, quiet job: little fame, little attention."
+	SiegeDesc = "Raiders have a freighter pinned in the {mission_location} system, and its shields are failing. Drive them off before time runs out, and the crew pays {money}."
 }
 
 HotCargoEvents
 {
-	WantedWarning = "Wanted and hunted: police and the corporation"
-	WantedHintFmt = "Wanted by {0} while the corporation hunts you. Ways out: pay the bounty (hail one of their police ships), leave the system, outlast the search timer, or find a smuggler who fixes records."
+	WantedWarning = "Wanted and hunted"
+	WantedHintFmt = "Wanted by {0}, and the corporation hunts you. Ways out: pay the bounty (hail their police), leave the system, outlast the search, or find a smuggler who fixes records."
 	WantedCleared = "Wanted cleared"
 	CarrierCallingFmt = "{0} is calling. Fly within comms range to answer, or hail it."
 	CarrierGone = "The ship is gone, and so is the offer."

@@ -21,7 +21,7 @@ With the defaults, about 3 of 4 systems are archetypes. The start system stays b
 - **Sector types** (`mod/worlds/sectors.rules`): each archetype is the vanilla basic sector with spawn flags. The basic sector holds every vanilla and Hot Cargo spawner, so missions, events, chains and contracts of the other areas also appear in archetype systems.
 - **Weights** (`mod/worlds/archetypes.rules`): the vanilla `RandomSectorTypes` spawner. `mod/journey/galaxy.rules` points to it. The weights are rules values, not live tunables: the map is made once per career.
 - **Spawners** (`mod/worlds/sysgen_worlds.rules`): one group per archetype, each gated by its spawn flag. The file runs at the end of the basic sector generator.
-- **Galaxy map and arrival**: the vanilla tooltip shows the sector type name. The mod adds the hazard line under it, and on the first arrival a toast and a chat line show "Trade Hub. A current runs through the system. Ships in it drift downstream."
+- **Galaxy map and arrival**: the vanilla tooltip shows the sector type name. The mod adds the hazard line under it, and on the first arrival a center text ("Trade Hub", the hazard below it) and a chat line ("Trade Hub. A current runs through the system. Ships in it drift downstream.") show it.
 
 ## Mechanics
 

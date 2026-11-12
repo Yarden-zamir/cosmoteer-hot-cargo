@@ -248,7 +248,7 @@ public static class HunterSpawner
     /// <summary>UI and audio only. It changes no sim state, so it is safe in the sim tick on every client.</summary>
     static void ShowAlert(Run run, string text)
     {
-        run.Game.Gui.ShowAreaName(text);
+        if (run.T.Ux.HunterCenterText) Ux.UxKit.CenterText(run.Game, text);
         App.Audio.Play(GameApp.Rules.CareerMode.Wanted.WantedAlertSound, AudioGroups.Interface);
     }
 }
