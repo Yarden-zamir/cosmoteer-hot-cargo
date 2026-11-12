@@ -27,6 +27,31 @@ public sealed class EventsTunables
     [Serialize(Optional = true)] public int WantedWarningMinStage = 1;
     /// <summary>Chance that the wanted-and-hunted warning also brings a Wanted event (a way to clear wanted).</summary>
     [Serialize(Optional = true)] public float WantedEventChance = 0.7f;
+    /// <summary>Research trade: one tech unit buys up to this many times its tech value in research.</summary>
+    [Serialize(Optional = true)] public float ResearchRate = 1.5f;
+    /// <summary>Research trade: the research must be worth at least this many times the tech value of the units. Above 1, so it beats buying.</summary>
+    [Serialize(Optional = true)] public float ResearchMinRate = 1.2f;
+    /// <summary>Research trade: the most tech units one offer asks for.</summary>
+    [Serialize(Optional = true)] public int ResearchMaxUnits = 2;
+    /// <summary>Research offers: the most techs in one offer.</summary>
+    [Serialize(Optional = true)] public int ResearchMaxTechs = 3;
+    /// <summary>Research sale: the buyer pays this many times the research cost of the techs.</summary>
+    [Serialize(Optional = true)] public float ResearchSalePremium = 1.3f;
+    /// <summary>Research sale: the highest price, in event money units (standard mission pay at the tier).</summary>
+    [Serialize(Optional = true)] public float ResearchSaleCap = 1.5f;
+    /// <summary>Multiplies the trigger weight of research events: 0 turns them off, 2 doubles them.</summary>
+    [Serialize(Optional = true)] public float ResearchWeightScale = 1f;
+    /// <summary>Chance that coming near a vanilla abandoned ship opens an Abandoned event (once per ship).</summary>
+    [Serialize(Optional = true)] public float AbandonedEventChance = 0.6f;
+    [Serialize(Optional = true)] public float AbandonedTriggerDistance = 800f;
+    /// <summary>One relic ship per run holds 1 tech unit. Off: new runs get none.</summary>
+    [Serialize(Optional = true)] public bool RelicEnabled = true;
+    /// <summary>The relic ship appears in a random sector from this one up to the sector before the Buyer.</summary>
+    [Serialize(Optional = true)] public int RelicMinSector = 2;
+    /// <summary>Distance at which the vault senses the relic ship and the special message shows.</summary>
+    [Serialize(Optional = true)] public float RelicMessageDistance = 3000f;
+    /// <summary>Distance at which the relic event opens.</summary>
+    [Serialize(Optional = true)] public float RelicBoardDistance = 900f;
     /// <summary>Events of the Unavoidable category (every choice costs something) per run.</summary>
     [Serialize(Optional = true)] public int MaxUnavoidablePerRun = 1;
     /// <summary>Global scales on event outcomes, on top of the per-event amounts.</summary>

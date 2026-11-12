@@ -195,6 +195,10 @@ Note: accepted Hot Cargo missions store the custom objectives in the save. A sav
 | `Events.CourierChance` | 0.5 | 85 |
 | `Events.MaxUnavoidablePerRun` | 1 | 87 |
 | `Events.WantedWarningMinStage`, `WantedEventChance` | 1, 0.7 | 470, 471 |
+| `Events.ResearchRate`, `ResearchMinRate`, `ResearchMaxUnits`, `ResearchMaxTechs` | 1.5, 1.2, 2, 3 | 760 |
+| `Events.ResearchSalePremium`, `ResearchSaleCap`, `ResearchWeightScale` | 1.3, 1.5, 1 | 761, 762 |
+| `Events.AbandonedEventChance`, `AbandonedTriggerDistance` | 0.6, 800 | 764 |
+| `Events.RelicEnabled`, `RelicMinSector`, `RelicMessageDistance`, `RelicBoardDistance` | true, 2, 3000, 900 | 765 |
 | `Events.CooldownSeconds`, `MaxEventsPerSystem` | 120 s, 2 | 70 |
 | `Events.MoneyScale`, `FameScale`, `HeatScale` | 1, 1, 1 | 73 |
 | `Contracts.TrailFreeContracts`, `TrailHeatPerContractMinute` | 3, 1 | 101 |
@@ -459,3 +463,14 @@ TUNABLES.md lists when each tunable takes effect. Code: `src/HotCargo/TunablesMe
 504. Multiplayer: only the host can change values. The host's change goes to every machine as the `HotCargoTunables` input (requirement 60), so every machine applies it at the same sim tick. Clients see the window read-only. Live reload of the file stays single player only.
 505. Each row with a delayed effect has a tag: next time it shows, next spawned ships, next mission offers, next new system, or new runs only. TUNABLES.md has the full list. The list lives in `TunablesMenu/TunableTiming.cs`, and the mod checks at startup that each entry names a field.
 506. The autotests `menu-live` (single player) and `menu` (co-op) change tunables through the window rows and check the effect in the sim, the file, the rejections, the read-only client and that no desync happens.
+
+### Research and abandoned ships
+
+760. Research trade: an event page can carry a research trade, built from the vanilla tech tree (`CareerModeRules.Techs`) when the page opens. Candidates: techs not researched, prerequisites met. Research value of a tech = its vanilla price here: `Cost` × the players' `TechBuyCostFactor` with the faction that controls the system (1 without one). The trade asks for `ceil(value of the first tech ÷ (tech value × ResearchRate))` tech units, at most `ResearchMaxUnits`, and adds more techs (at most `ResearchMaxTechs`) while the total stays within units × tech value × `ResearchRate`. It is valid only when the total research value is at least units × tech value × `ResearchMinRate` (above 1), so it always beats buying. The order of candidates is shuffled with the page seed; when that order yields no trade, the ID order is used. An event with an offer opens only when an offer can be built.
+761. Research events: The Archive (Station trigger: trade or keep) and A Lab That Won't Take No (Arrival, extortion: trade, pay 0.6 money units, or refuse for heat +20). `ResearchWeightScale` multiplies the trigger weight of research events.
+762. Research sale (Data Broker, Arrival): the buyer pays `ResearchSalePremium` × the research value of researched techs for copies, at most `ResearchSaleCap` money units; the players keep the research. A heat-weighted outcome adds heat +15 (a tracker in the transfer).
+763. The page's offer shows through text tokens: `{offer_techs}`, `{offer_units}`, `{offer_worth}` (the tech value of those units), `{offer_value}` (the research value), `{offer_price}`. A choice cost `OfferUnits` pays the trade's units (the chooser's fleet vaults). Outcome effects: `UnlockOffer` unlocks the techs (TechManager.UnlockTech), `OfferPrice` pays the sale price (split like a mission reward).
+764. Abandoned ships: when a human ship comes within `AbandonedTriggerDistance` of a vanilla abandoned ship (label `abandoned`), it rolls `AbandonedEventChance` once per ship (the Abandoned trigger, no cooldown or system cap). Events: Abandoned Ship (board: loot, fuel, nothing, or a corporate trap that grows with heat) and Cold Hulk (drain the tanks: fuel, sometimes hull damage).
+765. Relic ship: each run picks one sector from `RelicMinSector` to the sector before the Buyer (`RelicEnabled`). On the first arrival there, a dead ship with 1 tech unit spawns 5,000 to 8,000 away (junk allegiance, label `abandoned`, tag `hc_relic_ship`). Within `RelicMessageDistance` the vault senses it once (top message and chat line). Within `RelicBoardDistance` the Relic event opens; leaving and coming back opens it again until the crate is taken (flag `relic_taken`). Recovering it needs 1 vault slot; a heat-weighted outcome also spawns a corporate patrol.
+766. All research and abandoned-ship choices go through the choice MP input (requirement 74), costs come from the chooser, and their hostile spawns are rules spawners (scaled by requirement 332).
+

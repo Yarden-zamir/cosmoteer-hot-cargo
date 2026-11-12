@@ -611,3 +611,45 @@ TowJob
 		}
 	]
 }
+
+// The run's relic ship (spec 765): a dead ship that holds 1 tech unit. Junk allegiance and the vanilla "abandoned" label, like the
+// vanilla abandoned ships, so the players can also salvage it. 5,000 to 8,000 from the fleet, with an unknown POI.
+Relic
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_relic_ship]
+			Count = 1
+			Distance = [5000, 8000]
+			MinDistanceFromTags = [[sun, 5000], [station, 3000]]
+			MinDistanceFromNebulas = [[ion_storm, 500]]
+			SuppressLocationAssertions = true
+			Allegiance = Junk
+			InitToMax = false
+			SpawnCrew = false
+			RandomHealthRange = [25%, 60%]
+			Labels = ["abandoned"]
+			NameGenerator = { Type = NameList; Names = ["Dead Courier"]; }
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				Tier = -2
+				AllowTierRangeExpansion = true
+				Tags = [civilian]
+			}
+			SubSpawners
+			[
+				{
+					Type = Doodads
+					DoodadType = cosmoteer.poi_unknown
+					Tags = [poi_unknown]
+					AutoRemoveWhenDiscovered = true
+					HideIfUnexplored = true
+				}
+			]
+		}
+	]
+}

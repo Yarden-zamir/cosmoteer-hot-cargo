@@ -202,3 +202,11 @@ The autotests cover the archetype mix on the map, the hazard tooltip, the curren
 2. Try the vanilla payoff: hail one of the police ships. Does the "pay the bounty" option show, as the hint says?
 3. A Clean Record and Decoy Run: is the price fair against the vanilla bounty? Does the heat risk feel fair?
 4. Does the warning come back too often (it shows again each time you become both wanted and hunted)?
+
+## Research and abandoned ships (spec 760-766)
+
+1. The Archive at a station: is "Trade 1 crate (worth 15,000) for research worth 21,000" clear? Do the new parts show as buildable at once?
+2. A Lab That Won't Take No: does refusing feel like a real threat (heat +20)?
+3. Data Broker: is the sale price tempting without being free money late in the run?
+4. Fly to an abandoned ship ("?" POI). Does the event open when you are close? Is a corporate trap at high heat a fair surprise?
+5. Find the relic ship (one per run, sector 2 or later). Does the vault message make you want to look for it? Is the "?" easy to spot?

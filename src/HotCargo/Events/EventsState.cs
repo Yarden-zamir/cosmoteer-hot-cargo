@@ -15,6 +15,14 @@ public sealed class EventsState
     [Serialize(Optional = true)] public Dictionary<string, int> FlagSectors = new();
     /// <summary>True while the wanted-and-hunted warning is up; it fires again only after the players stop being both.</summary>
     [Serialize(Optional = true)] public bool WantedWarned;
+    /// <summary>Vanilla abandoned ships that already rolled an Abandoned event (spec 764).</summary>
+    [Serialize(Optional = true)] public HashSet<ObjectID> AbandonedSeen = new();
+    /// <summary>The sector of the run's relic ship (spec 765), or -1 when the run has none.</summary>
+    [Serialize(Optional = true)] public int RelicSector = -1;
+    [Serialize(Optional = true)] public bool RelicSpawned;
+    [Serialize(Optional = true)] public bool RelicMessaged;
+    /// <summary>True while a human ship is within boarding distance of the relic. The relic event opens on the way in.</summary>
+    [Serialize(Optional = true)] public bool RelicInside;
     /// <summary>Systems where the Courier Job roll already ran. Once per system for the whole run.</summary>
     [Serialize(Optional = true)] public HashSet<ObjectID> CourierNodes = new();
     /// <summary>Game seconds of the last triggered event, or -1.</summary>
@@ -47,6 +55,11 @@ public sealed class PendingEvent
     [Serialize] public long TechValue;
     /// <summary>Heat when the page opened, for costs that grow with heat (Cost.MoneyPerHeat).</summary>
     [Serialize(Optional = true)] public float Heat;
+    /// <summary>The page's computed offer (spec 760-762): tech IDs, the tech units it asks for, its research value, the sale price.</summary>
+    [Serialize(Optional = true)] public string[] OfferTechs = [];
+    [Serialize(Optional = true)] public int OfferUnits;
+    [Serialize(Optional = true)] public long OfferValue;
+    [Serialize(Optional = true)] public int OfferPrice;
     /// <summary>Outcome text and result lines of the choice that led to this page, or empty.</summary>
     [Serialize(Optional = true)] public string Lead = "";
 }

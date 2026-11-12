@@ -39,7 +39,7 @@ public static class EventView
             if (unmet is not null && c.HideIfUnmet) continue;
             choices.Add(new ChoiceView(i, ChoiceText(run, c, p, unmet), unmet is null));
         }
-        string body = EventText.Fill(p.Lead.Length > 0 ? $"{p.Lead}\n\n{e.Text}" : e.Text, run.State.FleetTech);
+        string body = EventText.Fill(p.Lead.Length > 0 ? $"{p.Lead}\n\n{e.Text}" : e.Text, run.State.FleetTech, p);
         return new EventPage($"event {p.Serial}", p.Serial, e.Title, body, choices);
     }
 
@@ -50,10 +50,10 @@ public static class EventView
         string tag = RequirementTag(c.Need);
         string cost = CostText(run, c.Cost, p);
         if (unmet is not null)
-            return $"<gray>{(tag.Length > 0 ? $"[{tag}] " : "")}{EventText.Fill(c.Text, run.State.FleetTech)}{(cost.Length > 0 ? $" ({cost})" : "")}  - {EventText.Reason(unmet)}</gray>";
+            return $"<gray>{(tag.Length > 0 ? $"[{tag}] " : "")}{EventText.Fill(c.Text, run.State.FleetTech, p)}{(cost.Length > 0 ? $" ({cost})" : "")}  - {EventText.Reason(unmet)}</gray>";
         string tagXml = tag.Length > 0 ? EventText.Unlocked.FormatWithXml($"[{tag}]") + " " : "";
         string costXml = cost.Length > 0 ? $" <gray>({cost})</gray>" : "";
-        return $"{tagXml}{EventText.Fill(c.Text, run.State.FleetTech)}{costXml}";
+        return $"{tagXml}{EventText.Fill(c.Text, run.State.FleetTech, p)}{costXml}";
     }
 
     /// <summary>
@@ -77,7 +77,8 @@ public static class EventView
         var parts = new List<string>();
         int money = EventRunner.CostCredits(run, cost, p);
         if (money > 0) parts.Add($"-{money:n0} credits");
-        if (cost.Tech > 0) parts.Add($"-{cost.Tech} Stolen Tech");
+        int tech = cost.Tech + (cost.OfferUnits ? p.OfferUnits : 0);
+        if (tech > 0) parts.Add($"-{tech} Stolen Tech");
         if (cost.Crew > 0) parts.Add($"-{cost.Crew} crew");
         parts.AddRange(cost.Resources.Select(r => $"-{EventText.ResourceName(r.ID, r.At(p.Tier))}"));
         return string.Join(", ", parts);

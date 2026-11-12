@@ -59,6 +59,8 @@ public static class TunableTiming
         ["EventsTunables.StationEventChance"] = Applies.NextSystem,
         ["EventsTunables.CourierChance"] = Applies.NextSystem,
         ["EventsTunables.PauseOnEvent"] = Applies.NextUse,
+        ["EventsTunables.RelicEnabled"] = Applies.NewRun,
+        ["EventsTunables.RelicMinSector"] = Applies.NewRun,
         ["ChainsTunables.StationChance"] = Applies.NextSystem,
         ["ChainsTunables.LaterDelaySeconds"] = Applies.NextSystem,
         ["ChainsTunables.StoryLines"] = Applies.NextUse,

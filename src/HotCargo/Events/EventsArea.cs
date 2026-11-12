@@ -29,6 +29,8 @@ public static class EventsArea
         Run.Hooks.NewRunStarted += EventRunner.OnNewRun;
         Run.Hooks.SystemEntered += EventRunner.OnSystemEntered;
         Run.Hooks.Tick += EventRunner.OnTick;
+        Run.Hooks.NewRunStarted += Abandoned.OnNewRun;
+        Run.Hooks.SystemEntered += Abandoned.OnSystemEntered;
         AddAutotest();
     }
 
@@ -273,12 +275,82 @@ public static class EventsArea
         // Wanted (spec 470-472): vanilla wanted status in this system, and the saved warning state.
         Autotest.Fields["ev_wanted"] = () => ((CareerSimModeManager)RequireSim().Mode).Wanted.IsLocalPlayerWanted ? 1 : 0;
         Autotest.Fields["ev_wanted_warned"] = () => RequireRun().State.Events.WantedWarned ? 1 : 0;
+        // Research offers (spec 760-763): the pending page's offer, and the researched tech count.
+        Autotest.Fields["ev_offer_units"] = () => RequirePending().OfferUnits;
+        Autotest.Fields["ev_offer_techs"] = () => RequirePending().OfferTechs.Length;
+        Autotest.Fields["ev_offer_value"] = () => RequirePending().OfferValue;
+        Autotest.Fields["ev_offer_price"] = () => RequirePending().OfferPrice;
+        // Research value per tech value of the units asked: must be at least Events.ResearchMinRate.
+        Autotest.Fields["ev_offer_rate"] = () => RequirePending() is var p && p.OfferUnits > 0 ? p.OfferValue / (double)(p.OfferUnits * p.TechValue) : 0;
+        Autotest.Commands["ev_researched_mark"] = _ => { double at = Autotest.Fields["ev_researched"](); Autotest.Fields["ev_researched_gain"] = () => Autotest.Fields["ev_researched"]() - at; };
+        // Sale price per research worth: must be above 1 (Events.ResearchSalePremium).
+        Autotest.Fields["ev_offer_premium"] = () => RequirePending() is var p && p.OfferValue > 0 ? p.OfferPrice / (double)p.OfferValue : 0;
+        Autotest.Fields["ev_researched"] = () => GameApp.Rules.CareerMode.Techs.Count(t => RequireRun().Mode.Techs.IsTechUnlocked(t.ID));
+        // Relic ship (spec 765).
+        Autotest.Fields["ev_relic_sector"] = () => RequireRun().State.Events.RelicSector;
+        Autotest.Fields["ev_relic_dist"] = () =>
+        {
+            var sim = RequireSim();
+            var found = Abandoned.RelicLocations(sim);
+            if (found.Count == 0) return -2;
+            return sim.Ships.HumanPlayerSignificantShips.Min(h => h.DetWorldCenter.DistanceTo(found[0].Location) - h.WorldBoundingRadius) - found[0].Radius;
+        };
+        Autotest.Fields["ev_relic_messaged"] = () => RequireRun().State.Events.RelicMessaged ? 1 : 0;
+        Autotest.Commands["ev_relic_spawn"] = _ => { Abandoned.SpawnRelic(RequireRun(), RequireSim()); Autotest.Wait(2); };
+        // ev_relic_goto <distance>: puts the player ships this far from the relic's hull (two calls: the first loads it out of stasis).
+        Autotest.Commands["ev_relic_goto"] = arg =>
+        {
+            var sim = RequireSim();
+            var found = Abandoned.RelicLocations(sim);
+            if (found.Count == 0) throw new InvalidOperationException("no relic ship in this system");
+            MoveNextTo(sim, found[0].Location, found[0].Radius + float.Parse(arg, CultureInfo.InvariantCulture));
+        };
+        // ev_abandoned: spawns a vanilla abandoned ship (the sector generator's own spawner) 1,500 from the fleet; ev_abandoned_goto flies next to it.
+        Autotest.Commands["ev_abandoned"] = _ => SpawnVanillaAbandoned();
+        Autotest.Commands["ev_abandoned_goto"] = _ =>
+        {
+            var sim = RequireSim();
+            var wreck = sim.Ships.Where(s => s.HasLabel(Abandoned.Label) && !s.HasTag(Abandoned.RelicTag)).OrderBy(s => s.UniqueID).FirstOrDefault()
+                ?? throw new InvalidOperationException("no live abandoned ship in this system");
+            MoveNextTo(sim, wreck.WorldCenter, wreck.WorldBoundingRadius + 150f);
+        };
         Autotest.Fields["ev_buyer_mult"] = () => RequireRun().State.BuyerPriceMultiplier;
         Autotest.Fields["ev_pending"] = () => RequireRun().State.Events.Pending is null ? 0 : 1;
         Autotest.Fields["ev_seen"] = () => RequireRun().State.Events.Seen.Values.Sum();
         Autotest.Fields["ev_result"] = () => RequireRun().State.Events.LastResult?.Serial ?? 0;
         Autotest.Fields["ev_signals"] = () => RequireSim().Doodads.Count(d => d.Tags?.Contains(EventRunner.SignalTag) == true);
         Autotest.Fields["ev_stdmoney"] = () => EventRunner.Credits(RequireRun(), 1f, 0f, RequireRun().CurrentTier, 0);
+    }
+
+    static PendingEvent RequirePending() => RequireRun().State.Events.Pending ?? throw new InvalidOperationException("no pending event");
+
+    static void MoveNextTo(SimRoot sim, Vector2 center, float offset)
+    {
+        foreach (var s in sim.Ships.HumanPlayerSignificantShips.ToList())
+        {
+            Autotest.Teleport(s, center + new Vector2(offset + s.WorldBoundingRadius, 0));
+            offset += 2 * s.WorldBoundingRadius + 100f;
+        }
+        Autotest.Wait(2);
+    }
+
+    static void SpawnVanillaAbandoned()
+    {
+        var sim = RequireSim();
+        var mode = (CareerSimModeManager)sim.Mode;
+        var spawner = All(mode.SectorType.SystemGenerator.Spawners).OfType<ShipSpawner>().FirstOrDefault(s => s.Labels?.Contains(Abandoned.Label) == true)
+            ?? throw new InvalidOperationException("no vanilla abandoned-ship spawner in the sector generator");
+        var at = SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no player ships");
+        // Test distance, restored after, like SpawnSignal.
+        var saved = spawner.Distance;
+        try
+        {
+            spawner.Distance = new Halfling.Range<float>(1500f, 1500f);
+            new SimulationGenerator { Spawners = [spawner] }.Generate(sim, new Halfling.Random.FastRand(99UL), loadInstantly: true, rootLoc: at);
+        }
+        finally { spawner.Distance = saved; }
+        Log.Info($"AUTOTEST vanilla abandoned ship spawned; abandoned ships: {sim.Ships.Count(s => s.HasLabel(Abandoned.Label))}");
+        Autotest.Wait(2);
     }
 
     static readonly ID<SimObjectSpawner> CourierContactTag = new("hc_courier_contact");

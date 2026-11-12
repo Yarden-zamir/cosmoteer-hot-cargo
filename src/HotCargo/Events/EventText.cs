@@ -86,9 +86,33 @@ public static class EventText
         return id;
     }
 
-    /// <summary>Fills text tokens: {crates} becomes the fleet tech count, for example "1 crate" or "7 crates".</summary>
-    public static string Fill(string text, int fleetTech) =>
-        text.Replace("{crates}", fleetTech == 1 ? "1 crate" : $"{fleetTech} crates", StringComparison.Ordinal);
+    static string Crates(int n) => n == 1 ? "1 crate" : $"{n} crates";
+
+    /// <summary>
+    /// Fills text tokens. {crates}: the fleet tech count ("7 crates"). From the page's offer (spec 763): {offer_techs} (names),
+    /// {offer_units} ("2 crates"), {offer_worth} (the tech value of those units), {offer_value} (the research value),
+    /// {offer_price} (a research sale's price).
+    /// </summary>
+    public static string Fill(string text, int fleetTech, PendingEvent? p = null)
+    {
+        text = text.Replace("{crates}", Crates(fleetTech), StringComparison.Ordinal);
+        if (p is null || !text.Contains("{offer_", StringComparison.Ordinal)) return text;
+        return text
+            .Replace("{offer_techs}", ResearchOffers.Names(p), StringComparison.Ordinal)
+            .Replace("{offer_units}", Crates(p.OfferUnits), StringComparison.Ordinal)
+            .Replace("{offer_worth}", $"{p.OfferUnits * p.TechValue:n0}", StringComparison.Ordinal)
+            .Replace("{offer_value}", $"{p.OfferValue:n0}", StringComparison.Ordinal)
+            .Replace("{offer_price}", $"{p.OfferPrice:n0}", StringComparison.Ordinal);
+    }
+
+    public static string Researched(IEnumerable<string> techs) => W.GoodTextColor.FormatWithXml($"Researched: {string.Join(", ", techs)}");
+
+    /// <summary>Spec 765: the vault senses the relic ship. UI only and local.</summary>
+    public static void ShowRelicMessage(GameRoot game)
+    {
+        game.Gui.ShowAreaName(Strings.GetText("HotCargoEvents/RelicSensed"));
+        Ux.UxKit.ChatLine(game, Unlocked.FormatWithXml(Strings.GetText("HotCargoEvents/RelicSensedChat")));
+    }
 
     /// <summary>Short reason text for a need that is not met. Shown on a greyed choice.</summary>
     public static string Reason(Unmet u) => u.Kind switch

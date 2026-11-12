@@ -638,6 +638,165 @@ Events
 		]
 	}
 
+	// ---- Research (spec 760-763): offers built from the vanilla tech tree. Tokens: {offer_techs}, {offer_units}, {offer_worth},
+	// {offer_value}, {offer_price}. A trade is always worth more research than buying it (Events.ResearchMinRate).
+
+	{
+		ID = research_trade
+		Trigger = Station
+		Offer = ResearchTrade
+		Weight = 8
+		Need { Tech = 2 }
+		Title = "The Archive"
+		Text = "The station's research office has seen your manifest. \"Our archive for your cargo: {offer_techs}. You would pay {offer_value} for that research anywhere else.\""
+		Choices
+		[
+			{
+				Text = "Trade {offer_units} (worth {offer_worth}) for research worth {offer_value}."
+				Need { Tech = 1 }
+				Cost { OfferUnits = true }
+				Outcomes [ { Text = "The archive loads into your shipyard computers. New parts are ready to build."; UnlockOffer = true } ]
+			}
+			{
+				Text = "Keep the crates."
+				Outcomes [ { Text = "\"The archive will be here.\"" } ]
+			}
+		]
+	}
+
+	{
+		ID = research_shakedown
+		Trigger = Arrival
+		Offer = ResearchTrade
+		Weight = 6
+		WeightPerHeat = 0.1
+		Need { MinSector = 2; Tech = 2 }
+		Title = "A Lab That Won't Take No"
+		Text = "A rival lab's science ship hails. \"We want samples of what you stole. {offer_units} for our research: {offer_techs}. Refuse, and the corporation hears where you are.\""
+		Choices
+		[
+			{
+				Text = "Trade {offer_units} (worth {offer_worth}) for research worth {offer_value}."
+				Need { Tech = 1 }
+				Cost { OfferUnits = true }
+				Outcomes [ { Text = "The samples go over. The research comes back, and the lab keeps its mouth shut."; UnlockOffer = true } ]
+			}
+			{
+				Text = "Pay them to forget you."
+				Cost { Money = 0.6 }
+				Outcomes [ { Text = "\"Credits work too.\" The channel closes." } ]
+			}
+			{
+				Text = "Refuse."
+				Outcomes [ { Text = "They keep their word. Your position goes out on a corporate band."; Heat = 20 } ]
+			}
+		]
+	}
+
+	{
+		ID = research_buyer
+		Trigger = Arrival
+		Offer = ResearchSale
+		Weight = 6
+		Need { MinSector = 2 }
+		Title = "Data Broker"
+		Text = "A sleek research ship hails. \"Your shipyard data on {offer_techs} is worth {offer_price} to my clients. A copy, nothing more. You keep the originals.\""
+		Choices
+		[
+			{
+				Text = "Sell copies for {offer_price}."
+				Outcomes
+				[
+					{ Weight = 80; Text = "The transfer takes a minute. The payment takes less."; OfferPrice = true }
+					{ Weight = 20; WeightPerHeat = 0.2; Text = "The broker pays, but the transfer carried a corporate tracker."; OfferPrice = true; Heat = 15 }
+				]
+			}
+			{
+				Text = "Keep your data."
+				Outcomes [ { Text = "\"Another time, perhaps.\"" } ]
+			}
+		]
+	}
+
+	// ---- Abandoned ships (spec 764): vanilla abandoned ships roll these once each when a player ship comes near.
+
+	{
+		ID = abandoned_ship
+		Trigger = Abandoned
+		MaxPerRun = 0
+		Title = "Abandoned Ship"
+		Text = "A ship drifts with its lights out and its hatches open. No life signs. Whatever happened here, it happened fast."
+		Choices
+		[
+			{
+				Text = "Board it."
+				Need { Crew = 2 }
+				Outcomes
+				[
+					{ Weight = 40; Text = "The hold is still full."; Resources = [{ ID = steel; Amount = 30; PerTier = 6 }, { ID = processor; Amount = 5; PerTier = 1 }] }
+					{ Weight = 30; Text = "The fuel tanks are still full."; Resources = [{ ID = hyperium; Amount = 25; PerTier = 5 }] }
+					{ Weight = 15; Text = "Someone got here first. Nothing left but scratches on the deck." }
+					{ Weight = 15; WeightPerHeat = 0.25; Text = "Corporate beacons light up across the hull. It was bait."; Heat = 10; Spawn = CorporatePatrol }
+				]
+			}
+			{
+				Text = "Leave it."
+				Outcomes [ { Text = "You leave it to drift. The hull is still there to salvage." } ]
+			}
+		]
+	}
+
+	{
+		ID = abandoned_tanks
+		Trigger = Abandoned
+		MaxPerRun = 2
+		Weight = 5
+		Title = "Cold Hulk"
+		Text = "An abandoned hauler, its fuel tanks still pressurized. Draining them is slow work next to a reactor that is not quite dead."
+		Choices
+		[
+			{
+				Text = "Drain the tanks."
+				Need { Crew = 1 }
+				Outcomes
+				[
+					{ Weight = 70; Text = "The fuel transfers without a hitch."; Resources = [{ ID = hyperium; Amount = 40; PerTier = 8 }] }
+					{ Weight = 30; Text = "The reactor coughs while you work. You get some fuel, and some damage."; Resources = [{ ID = hyperium; Amount = 15; PerTier = 3 }]; HullDamage = 0.2 }
+				]
+			}
+			{
+				Text = "Leave it."
+				Outcomes [ { Text = "Not worth the risk." } ]
+			}
+		]
+	}
+
+	// The run's one relic ship (spec 765). It opens when a ship comes close, and again on each return until the crate is taken.
+	{
+		ID = relic_ship
+		Trigger = Relic
+		MaxPerRun = 0
+		Need { NotFlags = [relic_taken] }
+		Title = "Dead Courier"
+		Text = "The hull is cold, but your vault is sure: a crate like yours is aboard. Another crew stole from the corporation and never made it out."
+		Choices
+		[
+			{
+				Text = "Recover the crate."
+				Need { VaultSpace = 1 }
+				Outcomes
+				[
+					{ Weight = 85; Text = "You carry the crate home. Your vault takes it like it was always yours."; Tech = 1; SetFlags = [relic_taken] }
+					{ Weight = 15; WeightPerHeat = 0.1; Text = "You get the crate, but the corporation left a watcher on the wreck. It wakes as you leave."; Tech = 1; SetFlags = [relic_taken]; Spawn = CorporatePatrol }
+				]
+			}
+			{
+				Text = "Leave it for now."
+				Outcomes [ { Text = "The crate will wait. Its owners are not coming back." } ]
+			}
+		]
+	}
+
 	// ---- Station
 
 	{

@@ -66,6 +66,7 @@ public static class EventRunner
         // Proximity checks run twice a game second. The step comes from game time, so every client checks on the same tick.
         if (Math.Floor(now / ProximityCheckSeconds) == Math.Floor((now - dt) / ProximityCheckSeconds)) return;
         CheckSignals(run, sim);
+        Abandoned.Check(run, sim);
         if (s.Pending is null) CheckStations(run, sim);
     });
 
@@ -160,7 +161,8 @@ public static class EventRunner
         }
         var snapshot = Snap(run, sim, RichestHumanMoney(run), run.CurrentTier, CurrentTechValue(run));
         var candidates = EventLibrary.InOrder.Where(e => e.Trigger == trigger && Eligible(run, e, snapshot)).ToList();
-        var weights = candidates.Select(e => EventModel.EffectiveWeight(e.Weight, e.WeightPerHeat, e.WeightPerTech, run.State.Heat, run.State.FleetTech)).ToList();
+        var weights = candidates.Select(e => EventModel.EffectiveWeight(e.Weight, e.WeightPerHeat, e.WeightPerTech, run.State.Heat, run.State.FleetTech)
+            * (e.Offer == OfferKind.None ? 1f : Math.Max(0f, t.ResearchWeightScale))).ToList();
         int pick = EventModel.PickWeighted(weights, sim.Rand.Single());
         if (pick < 0) { Log.Info($"events: no eligible {trigger} event"); return; }
         // Every triggered event starts the cooldown, so an Arrival or Station event does not follow right after another dialog.
@@ -168,6 +170,10 @@ public static class EventRunner
         if (limited) s.NodeEvents[node] = s.NodeEvents.GetValueOrDefault(node) + 1;
         Open(run, sim, candidates[pick], lead: "");
     }
+
+    /// <summary>A trigger without the cooldown and the per-system cap: Abandoned and Relic (the player chose to fly there).</summary>
+    internal static void TriggerUnlimited(Run run, SimRoot sim, EventTrigger trigger, float chance) =>
+        TryTrigger(run, sim, trigger, chance, limited: false);
 
     /// <summary>
     /// True when the event may open now: under its run limit, under its category limit, and its need is met.
@@ -182,6 +188,7 @@ public static class EventRunner
             int seen = EventLibrary.InOrder.Where(x => x.Category == EventCategory.Unavoidable).Sum(x => s.Seen.GetValueOrDefault(x.ID));
             if (seen >= run.T.Events.MaxUnavoidablePerRun) return false;
         }
+        if (!ResearchOffers.Possible(run, e.Offer, run.CurrentTier, CurrentTechValue(run))) return false;
         return EventModel.FirstUnmet(ToNeed(run, e.Need, run.CurrentTier, CurrentTechValue(run)), snapshot) is null;
     }
 
@@ -200,6 +207,7 @@ public static class EventRunner
             Heat = run.State.Heat,
             Lead = lead,
         };
+        ResearchOffers.Fill(run, s.Pending, e.Offer);
         Log.Info($"event opened: {e.ID} serial {s.Pending.Serial} tier {s.Pending.Tier} heat {run.State.Heat:0.0} tech {run.State.FleetTech}");
     }
 
@@ -236,7 +244,7 @@ public static class EventRunner
         s.Pending = null;
         ApplyOutcome(run, sim, playerIndex, outcome, p, lines);
         // Tokens fill after the effects, so a text sees the counts that the choice left.
-        string outcomeText = EventText.Fill(outcome.Text, Vaults.CountFleetTech(sim));
+        string outcomeText = EventText.Fill(outcome.Text, Vaults.CountFleetTech(sim), p);
         if (outcome.Next.Length > 0)
         {
             string lead = string.Join("\n", new[] { outcomeText }.Concat(lines).Where(l => l.Length > 0));
@@ -309,7 +317,7 @@ public static class EventRunner
     {
         var need = ToNeed(run, c.Need, p.Tier, p.TechValue);
         if (c.Cost is not { } cost) return need;
-        return EventModel.Plus(need, CostCredits(run, cost, p), cost.Tech, cost.Crew, cost.Resources.Select(r => (r.ID, r.At(p.Tier))));
+        return EventModel.Plus(need, CostCredits(run, cost, p), cost.Tech + (cost.OfferUnits ? p.OfferUnits : 0), cost.Crew, cost.Resources.Select(r => (r.ID, r.At(p.Tier))));
     }
 
     /// <summary>Credits of a sure money cost, with the heat part from when the page opened.</summary>
@@ -348,7 +356,8 @@ public static class EventRunner
         if (cost is null) return;
         int money = CostCredits(run, cost, p);
         if (money > 0) ChangeMoney(run, playerIndex, -money, lines);
-        if (cost.Tech > 0) ChangeTech(sim, -cost.Tech, lines);
+        int tech = cost.Tech + (cost.OfferUnits ? p.OfferUnits : 0);
+        if (tech > 0) ChangeTech(sim, -tech, lines);
         if (cost.Crew > 0) ChangeCrew(sim, -cost.Crew, p.Seed, lines);
         foreach (var r in cost.Resources) ChangeResource(sim, r.ID, -r.At(p.Tier), lines);
     }
@@ -367,6 +376,8 @@ public static class EventRunner
         if (o.Reputation != 0) ChangeReputation(run, sim, o.Reputation, p.Tier, lines);
         if (o.BuyerPrice > 0) ChangeBuyerPrice(run, o.BuyerPrice, lines);
         if (o.ClearWanted) ClearWanted(sim, lines);
+        if (o.UnlockOffer && ResearchOffers.Unlock(run, p) is { Count: > 0 } techs) lines.Add(EventText.Researched(techs));
+        if (o.OfferPrice && p.OfferPrice > 0) ChangeMoney(run, playerIndex, p.OfferPrice, lines);
         foreach (string f in o.SetFlags)
         {
             State(run).Flags.Add(f);
