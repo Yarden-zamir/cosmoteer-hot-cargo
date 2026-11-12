@@ -62,8 +62,7 @@ static class RelaysAutotest
         Autotest.Commands["rl_pay"] = _ =>
         {
             var run = R();
-            var station = run.Game.Sim.Ships.AllShips.Where(s => RelaysArea.IsFeeStation(run, s))
-                .OrderBy(s => s.DetWorldCenter.DistanceSquaredTo(TechAutotest.PlayerShip().DetWorldCenter)).First();
+            var station = run.Game.Sim.Ships.AllShips.Where(s => RelaysArea.IsFeeStation(run, s)).OrderBy(s => s.UniqueID).First();
             run.Game.NetManager.EnqueueInput(new SharedChoiceInput(RelayChoiceDomain.Name, RelayChoiceDomain.Serial(station), SharedChoiceAction.Choose, (int)RelayOption.PayFee));
         };
         // rl_pick money <credits|price|max> | res <amount|max>: selects a bribe option on the first guard's page (res: the first resource option).
@@ -102,6 +101,11 @@ static class RelaysAutotest
                 : run.Game.Sim.Ships.AllShips.Where(s => RelaysArea.IsFeeStation(run, s)).OrderBy(s => s.UniqueID).First();
             var page = Ui.CommsHail.Page(TechAutotest.PlayerShip(), callee, null) ?? throw new InvalidOperationException("no relay page");
             Log.Info($"AUTOTEST relays page: {page.PrimaryDialogue} | rows: {string.Join("; ", page.Rows.Select(r => r.Text))} | buttons: {string.Join("; ", page.Buttons.Select(b => b.Text))}");
+            var sim = run.Game.Sim;
+            var me = TechAutotest.PlayerShip();
+            var career = (Cosmoteer.Modes.Career.CareerSimModeManager)sim.Mode;
+            int serial = RelayChoiceDomain.Serial(callee);
+            Log.Info($"AUTOTEST relays page checks: serial={serial} lookup={RelayChoiceDomain.Callee(sim, serial)?.Name} call={career.CanShipCallShip(me, callee)} answers={RelayHail.Instance.Answers(me, callee)} human={me.IsHumanPlayerShip} options={RelayChoiceDomain.Instance.OptionCount(run, serial)}");
         };
         Autotest.Commands["rl_mark_money"] = _ => _markMoney = R().Game.LocalPlayerState.Money;
         // rl_tooltip: logs the map tag and tooltip line of the marked node.

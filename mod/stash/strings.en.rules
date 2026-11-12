@@ -13,7 +13,7 @@ HotCargoStash
 	// Toasts and chat lines.
 	Looted = "The stash is still here."
 	TechFmt = "+{0} tech in the vaults."
-	TechNoRoomFmt = "+{0} tech in the vaults. No vault room for {1}."
+	TechNoRoomFmt = "+{0} tech in the vaults. No vault room for {1}: it floats next to you."
 	Empty = "Empty. Someone got here first."
 	Ambush = "The corporation got here first. It's a trap!"
 }

@@ -29,7 +29,10 @@ expect st_done == 1
 expect hc_money_gain > 0
 expect tech == 8
 
-# Loot with tech: one more unit in the vaults.
+# Loot with tech: one more unit in the vaults (one slot freed first).
+tech remove 1
+wait 1
+expect tech == 7
 st_set LootTechChance 1
 st_generate
 st_accept
@@ -37,7 +40,17 @@ st_force looted
 st_goto
 wait 3
 expect st_state == 1
-expect tech == 9
+expect tech == 8
+
+# Loot with tech and full vaults: the unit floats next to the ship as a loose crate.
+expect techcrates == 0
+st_generate
+st_accept
+st_force looted
+st_goto
+wait 3
+expect st_state == 1
+expect techcrates >= 1
 
 # Empty: done, no loot.
 st_generate

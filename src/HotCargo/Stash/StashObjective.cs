@@ -183,6 +183,7 @@ internal sealed class StashObjective : Objective
                 if (techRoll < t.LootTechChance && t.LootTechUnits > 0)
                 {
                     int added = Vaults.Add(sim, t.LootTechUnits);
+                    if (added < t.LootTechUnits) Tech.HunterGrab.Drop(sim, near, t.LootTechUnits - added);
                     line += " " + (added == t.LootTechUnits ? StashArea.Format("TechFmt", added) : StashArea.Format("TechNoRoomFmt", added, t.LootTechUnits - added));
                 }
                 Say(game, line);
