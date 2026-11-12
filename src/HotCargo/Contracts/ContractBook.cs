@@ -105,10 +105,14 @@ public static class ContractBook
     {
         string group = run.T.Contracts.RivalsEnabled ? Preview(run, m)?.RivalGroup ?? "" : "";
         if (group.Length == 0) return [];
+        // One offer can sit in several lists as separate copies with the same MissionID, so offers compare by MissionID.
         var offers = Offers(sim);
-        var mine = offers.FirstOrDefault(o => o.Mission == m).List;
-        return offers.Where(o => o.Mission != m && Find(run, o.Mission)?.RivalGroup == group)
-            .Select(o => (o.Mission, o.List == mine ? null : StationName(sim, o.List))).ToList();
+        var mine = offers.FirstOrDefault(o => o.Mission.MissionID == m.MissionID).List;
+        return offers.Where(o => o.Mission.MissionID != m.MissionID && Find(run, o.Mission)?.RivalGroup == group)
+            .GroupBy(o => o.Mission.MissionID)
+            .Select(copies => copies.FirstOrDefault(o => o.List == mine) is { Mission: not null } own ? (own.Mission, (string?)null)
+                : (copies.First().Mission, StationName(sim, copies.First().List)))
+            .ToList();
     }
 
     /// <summary>The name of the station that offers the missions of a list, or null for the system and galaxy lists.</summary>
@@ -210,14 +214,14 @@ public static class ContractBook
             bonus.PayerIndex = playerIndex;
         }
         if (terms.FlatHeat != 0) run.AddHeat(terms.FlatHeat, sim);
-        var dismissed = new List<string>();
+        var dismissed = new Dictionary<ObjectID, string>(); // by MissionID: the copies of one offer count once
         // RivalsEnabled off also stops the rival groups that offers saved before the switch.
         if (run.T.Contracts.RivalsEnabled && terms.RivalGroup.Length > 0)
             foreach (var (o, list) in Offers(sim))
-                if (o != m && Find(run, o)?.RivalGroup == terms.RivalGroup)
+                if (o.MissionID != m.MissionID && Find(run, o)?.RivalGroup == terms.RivalGroup)
                 {
                     list.RemoveMission(o);
-                    dismissed.Add(o.Name.Text);
+                    dismissed[o.MissionID] = o.Name.Text;
                 }
         bool informant = terms.InformantChance > 0 && sim.Rand.Single() < terms.InformantChance;
         if (informant)
@@ -229,7 +233,7 @@ public static class ContractBook
                  $"trail={terms.TrailWeight} rival='{terms.RivalGroup}' dismissed={dismissed.Count} informant={terms.InformantChance:0.00} sellout={informant}");
         Onboarding.RunLog.ContractAccepted(run, m.Name.Text, terms.Fee, dismissed.Count);
         // UI only: a line in the chat log for each dismissed rival, so the players see why an offer vanished. Mission names are XML already.
-        foreach (string name in dismissed)
+        foreach (string name in dismissed.Values)
             Ux.UxKit.ChatLine(run.Game, Strings.FormatText("HotCargoContracts/RivalDismissedChatFmt", name, m.Name.Text));
     }
 
