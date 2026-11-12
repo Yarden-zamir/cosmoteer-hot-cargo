@@ -44,6 +44,7 @@ internal sealed class DiplomacyChoiceDomain : ISharedChoiceDomain
     /// <summary>Open while some human ship can talk with the ship and gets Hot Cargo options.</summary>
     public int OptionCount(Run run, int serial)
     {
+        if (run.State.Diplomacy.Punish?.Serial == serial) return Offers * Span;
         if (Callee(run, serial) is not { } callee || callee.Sim is not { } sim) return 0;
         var career = Situation.Career(sim);
         bool open = sim.Ships.HumanPlayerShips.Any(h => career.CanShipCallShip(h, callee) && DiplomacyHail.Instance.Answers(h, callee));
@@ -52,6 +53,8 @@ internal sealed class DiplomacyChoiceDomain : ISharedChoiceDomain
 
     public bool Apply(Run run, SimRoot sim, int playerIndex, int serial, int option)
     {
+        if (run.State.Diplomacy.Punish is { } punish && punish.Serial == serial)
+            return Deals.Punish(run, sim, playerIndex, Decode(option).Offer);
         if (Callee(run, serial) is not { } callee) return false;
         if (Caller(sim, playerIndex, callee) is not { } caller) { Log.Info($"diplomacy: player {playerIndex} has no ship in comms range of {callee.Metadata.PlainShipName}"); return false; }
         var (offer, amount) = Decode(option);
@@ -60,4 +63,16 @@ internal sealed class DiplomacyChoiceDomain : ISharedChoiceDomain
 
     /// <summary>The input that a test command sends for a pick.</summary>
     public static SharedChoiceInput Pick(Ship callee, Offer offer, int amount) => new(Name, Serial(callee), SharedChoiceAction.Choose, Option(offer, amount));
+}
+
+/// <summary>The punishment page as a multiselect domain (spec 594): its options while the punishment waits, else closed.</summary>
+internal sealed class DiplomacyMultiDomain : MultiChoice.IMultiChoiceDomain
+{
+    public const string Name = "diplomacy";
+    public static readonly DiplomacyMultiDomain Instance = new();
+
+    string MultiChoice.IMultiChoiceDomain.Name => Name;
+
+    public IReadOnlyList<MultiChoice.MultiOption>? Options(Run run, int serial) =>
+        run.State.Diplomacy.Punish is { } p && p.Serial == serial && run.Game.Sim is { } sim ? Quotes.PunishOptions(run, sim) : null;
 }

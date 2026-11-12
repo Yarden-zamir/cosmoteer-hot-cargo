@@ -5,6 +5,7 @@ using HotCargo.Core;
 using HotCargo.Events;
 using HotCargo.Hunters;
 using HotCargo.Tech;
+using HotCargo.MultiChoice;
 
 namespace HotCargo.Diplomacy;
 
@@ -50,13 +51,14 @@ public static class Quotes
             t.SurrenderPerReputation, t.SurrenderPerAlly, t.SurrenderWantedPenalty, t.HunterSurrenderPerHeat);
     }
 
-    /// <summary>What a surrendering ship pays: the vanilla payout (ship value × AISurrenderPayoutMultiple) × the scale, more with leverage.</summary>
+    /// <summary>What a surrendering ship pays: the vanilla payout (ship value × AISurrenderPayoutMultiple) × the scale, more with leverage. A hunter pays HunterSurrenderMoneyShare of it.</summary>
     public static int SurrenderPayout(Run run, SimRoot sim, Ship ai)
     {
         var module = ai.AI?.GetCommsModule<AIDialogueModule>() ?? throw new InvalidOperationException($"{ai.Metadata.PlainShipName} has no dialogue module");
         var t = T(run);
         float lev = Math.Max(0f, Situation.Leverage(run, sim, ai));
         float pay = ai.BasePhysicalValue * module.Rules.AISurrenderPayoutMultiple * t.SurrenderPayoutScale * (1f + t.SurrenderPayoutPerLeverage * lev);
+        if (Situation.IsHunter(ai)) pay *= t.HunterSurrenderMoneyShare;
         int round = Math.Max(1, Situation.Career(sim).Rules.Dialogue.SurrenderPayoutRoundToMultiple);
         return Math.Max(0, (int)Math.Round(pay / round) * round);
     }
@@ -118,4 +120,70 @@ public static class Quotes
     }
 
     public static int MercPrice(Run run, int minutes) => Money(run, T(run).MercRateUnits * minutes);
+
+    // ---- Punishment (spec 594 to 597)
+
+    /// <summary>Steps of the money and bribe sliders: 0 to this, each step a twentieth of the most money.</summary>
+    public const int PunishMoneySteps = 20;
+
+    /// <summary>Crew the players can send to cryo jail now: every human ship keeps one, at most PunishCrewMax.</summary>
+    public static int PunishCrewAvailable(Run run, SimRoot sim)
+    {
+        int crew = run.Game.HumanPlayersIndexes.Sum(sim.Crew.CountCrewForPlayer);
+        int ships = Vaults.HumanShips(sim).Count();
+        return Math.Clamp(crew - ships, 0, Math.Max(0, T(run).PunishCrewMax));
+    }
+
+    /// <summary>The options of the punishment page. Crew shows only when a crew member can go.</summary>
+    public static IReadOnlyList<MultiOption> PunishOptions(Run run, SimRoot sim)
+    {
+        var options = new List<MultiOption>
+        {
+            new((int)PunishOption.Talk, 0, 0, 1),
+            new((int)PunishOption.Money, 0, PunishMoneySteps, 1),
+            new((int)PunishOption.Bribe, 0, PunishMoneySteps, 1),
+        };
+        int crew = PunishCrewAvailable(run, sim);
+        if (crew >= 1) options.Add(new((int)PunishOption.Crew, 1, crew, 1));
+        return options;
+    }
+
+    /// <summary>Credits that the money or bribe option costs at a slider value. Other options cost no money.</summary>
+    public static int PunishCredits(Run run, PunishOption option, int value) => option switch
+    {
+        PunishOption.Money => Money(run, T(run).PunishMoneyMaxUnits * value / PunishMoneySteps),
+        PunishOption.Bribe => Money(run, T(run).PunishBribeMaxUnits * value / PunishMoneySteps),
+        _ => 0,
+    };
+
+    /// <summary>The chance that one option adds at a slider value.</summary>
+    public static float PunishChance(Run run, SimRoot sim, PunishOption option, int value)
+    {
+        var t = T(run);
+        switch (option)
+        {
+            case PunishOption.Talk: return t.PunishTalkChance;
+            case PunishOption.Money: return MultiChoiceModel.Scaled(value, 0, PunishMoneySteps, t.PunishMoneyChance);
+            case PunishOption.Bribe:
+            {
+                int others = Math.Max(0, HunterSpawner.Hunters(sim).Count() - 1);
+                int max = Scaling.EnemyScale.Cap(t.PunishBribeMaxOtherHunters, sim);
+                float crowd = others > max ? 0f : 1f - others / (float)(max + 1);
+                return MultiChoiceModel.Scaled(value, 0, PunishMoneySteps, t.PunishBribeChance) * crowd;
+            }
+            case PunishOption.Crew: return Math.Max(0, value) * t.PunishCrewChancePer;
+            default: throw new ArgumentOutOfRangeException(nameof(option), option, null);
+        }
+    }
+
+    /// <summary>The combined chance of a draft: the sum of its options, capped at PunishChanceCap.</summary>
+    public static float PunishCombined(Run run, SimRoot sim, IReadOnlyList<Pick> picks) =>
+        MultiChoiceModel.Combine(picks.Select(p => PunishChance(run, sim, (PunishOption)p.Option, p.Value)), T(run).PunishChanceCap);
+
+    /// <summary>The value text right of an option slider: credits for money and bribe, a count for crew.</summary>
+    public static string PunishValueText(Run run, PunishOption option, int value) => option switch
+    {
+        PunishOption.Crew => DipText.Format("CrewFmt", value),
+        _ => Cosmoteer.Extensions.ToXmlCostString(PunishCredits(run, option, value)),
+    };
 }
