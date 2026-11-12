@@ -7,8 +7,8 @@
 # - A changed file under src/HotCargo/<A>/<B>/... or mod/<a>/<b>/... touches the areas a, b (lowercase).
 # - An area runs the single-player tests named "<area>-*.txt" and the co-op tests whose name starts with "<area>".
 # - A changed test script runs itself.
-# - Docs (*.md, docs/) and unit tests (tests/HotCargo.Tests) run no autotest.
-# - Anything else (Core, shared UI, scripts, root files, a folder with no tests of its own) runs the full suite.
+# - Docs (*.md, docs/), CI (.github/), scripts and unit tests (tests/HotCargo.Tests) add no autotest beyond core.
+# - Anything else (Core, shared UI, root files, a folder with no tests of its own) runs the full suite.
 #   Core is shared: every area builds on it, so its own "core" test alone is not enough.
 # The "core" smoke test always runs.
 set -euo pipefail
@@ -35,7 +35,9 @@ add_area() {
 while IFS= read -r path; do
   [[ -z "$path" ]] && continue
   case "$path" in
-    *.md|docs/*|tests/HotCargo.Tests/*|tests/screens/*|tests/balance/*|tests/runmodes/*|tools/*|.claude/*) ;;
+    *.md|docs/*|tests/HotCargo.Tests/*|tests/screens/*|tests/balance/*|tests/runmodes/*|tools/*|.claude/*|.github/*) ;;
+    # Test and tool scripts do not change the game; the core smoke test (always in the list) runs them.
+    scripts/*) ;;
     tests/autotest/*.txt) [[ -f "$path" ]] && add "$(basename "$path" .txt)" ;;
     tests/autotest-mp/*.txt) n="$(basename "$path" .txt)"; n="${n%.host}"; n="${n%.client}"; [[ -f "tests/autotest-mp/$n.host.txt" ]] && add "mp:$n" ;;
     src/HotCargo/Core/*) FULL=yes ;;

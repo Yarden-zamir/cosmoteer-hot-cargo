@@ -61,7 +61,7 @@ The game runs on a Windows PC that a person also uses. `autotest.sh` runs headle
 
 ## Git
 
-- Push straight to `main`. Do not open pull requests in this repo.
+- Feature work: push a feature branch and open a draft pull request. CI builds it and runs the unit tests and the private-data check. The game tests run on the PC: `scripts/integrate.sh <branch>` merges into `main` after they pass, so the PR shows as merged. Small fixes may go straight to `main`.
 - Use conventional commits (`feat:`, `fix:`, `docs:`, `chore:`).
 - Feature branches are local only. Merge them into `main`, build, run the tests, then push.
 
