@@ -1,0 +1,25 @@
+# Co-op Pursuit, host side (spec 912, 934): a scout report raises heat on both machines; the client pays the hacker through the shared
+# choice input, and both machines start the same outage with no desync.
+mphost {PORT}
+mpstart 2
+mp godmode on
+mp ev_set Enabled false
+mp aiset FleeEnabled false
+mp aiset CallEnabled false
+mp aiset RegroupEnabled false
+mp dip_set DemandHailChance 0
+mp pu_set ScoutChance 1
+mp pu_set BlockadeChance 0
+mp mpmark 1
+waitfor pu_scouts == 1 120
+waitfor pu_scouts == 0 120
+expect heat >= 39.5
+waitfor pu_hacker == 1 120
+waitfor pu_outage >= 200 120
+expect pu_count_outage == 0
+expect pu_hacker_done == 1
+wait 10
+expect desyncs == 0
+log host-end
+waitfor mpconnected == 0 240
+quit
