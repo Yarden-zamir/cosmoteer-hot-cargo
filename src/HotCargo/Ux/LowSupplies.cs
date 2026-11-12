@@ -21,6 +21,8 @@ namespace HotCargo.Ux;
 /// on a part without a "provides_*" type category (factories have one), toggled component sets included.
 /// In 0.30.5a this gives battery, bullet, hyperium (FTL drives), mine_part and the four missile parts.
 /// Carbon is out: only the diamond factory consumes it.
+/// A ship watches only the supplies that one of its own built parts consumes, so a hyperium tank without an FTL drive, or
+/// ammo storage without a gun, does not alert.
 /// Fractions are of typed capacity only, because cargo holds also count as capacity for any resource.
 /// A watched supply shows orange below LowSupplyFraction and red below CriticalSupplyFraction in the resources box.
 /// When one of your ships goes below the critical fraction, a yellow banner and a chat line name it, once until it recovers.
@@ -65,6 +67,27 @@ static class LowSupplies
         }
     }
 
+    sealed class ShipUse { public int PartCount = -1; public HashSet<ID<ResourceRules>> Used = []; }
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Ship, ShipUse> Use = new();
+
+    /// <summary>The watched supplies that a part of this ship consumes. Rebuilt when the part count changes.</summary>
+    static HashSet<ID<ResourceRules>> UsedBy(Ship ship)
+    {
+        var u = Use.GetOrCreateValue(ship);
+        if (u.PartCount == ship.Parts.Count) return u.Used;
+        var watched = Watched(ship.Rules);
+        var used = new HashSet<ID<ResourceRules>>();
+        foreach (var part in ship.Parts)
+        {
+            if (part.Rules.TypeCategories?.Any(c => c.ToString().StartsWith("provides_", StringComparison.Ordinal)) == true) continue;
+            AddConsumed(part.Rules.Components, used);
+        }
+        used.IntersectWith(watched);
+        u.PartCount = ship.Parts.Count;
+        u.Used = used;
+        return used;
+    }
+
     static float? Fraction(Ship ship, ID<ResourceRules> id)
     {
         int cap = ship.Resources.GetCapacityTotal(id, includeImplicit: true, includeUntyped: false);
@@ -89,7 +112,7 @@ static class LowSupplies
         if (fresh) { Alerted.Clear(); _sim = sim; }
         foreach (var ship in sim.Ships.LocalPlayerShips)
         {
-            foreach (var id in Watched(ship.Rules))
+            foreach (var id in UsedBy(ship))
             {
                 if (Fraction(ship, id) is not { } f) continue;
                 var key = (ship, id);
@@ -126,7 +149,7 @@ static class LowSupplies
             bool watched = false;
             foreach (var ship in __instance.Sim.PlayerInput.SelectedCommandableShips)
             {
-                if (!Watched(ship.Rules).Contains(rr.ID)) continue;
+                if (!UsedBy(ship).Contains(rr.ID)) continue;
                 watched = true;
                 cap += ship.Resources.GetCapacityTotal(rr.ID, includeImplicit: true, includeUntyped: false);
             }
