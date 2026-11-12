@@ -8,7 +8,7 @@ expect tele_trace_patched >= 10
 heat 12
 fame 300
 contract_money 25000
-vault damage 0.5
+vault destroy
 wait 3
 tech add 1
 wait 2

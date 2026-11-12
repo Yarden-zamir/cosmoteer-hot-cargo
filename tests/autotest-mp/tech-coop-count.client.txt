@@ -8,6 +8,7 @@ mp mpmark 1
 waitfor mpmark >= 2 120
 expect tech == 6
 expect vaultunits == 6
+expect techcrates == 1
 expect mytech == 4
 mp tech derelict
 wait 2

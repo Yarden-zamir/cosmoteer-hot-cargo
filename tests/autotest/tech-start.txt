@@ -18,18 +18,16 @@ expect stationsinks > 0
 expect sellprice == 15000
 expect buyprice == 22500
 save tech
-# Spec 65, 442: one vault holds 2 units and loses one at half health. 40% damage loses none, 60% loses one.
-vault damage 0.4
+# Spec 65, 442: damage that leaves the vault standing costs no tech. A destroyed vault drops its 2 units as crates.
+vault damage 0.9
 expect vaulttech == 8
-vault damage 0.2
-expect vaulttech == 7
-# livetech counts now; tech is the count from the last sim tick.
-expect livetech == 7
-# Spec 66: repair does not bring tech back. Damage after the repair crosses the step again.
-vault repair
-expect vaulttech == 7
-vault damage 0.6
+tech_set VaultTechLossChance 0
+vault destroy
+wait 1
 expect vaulttech == 6
+expect techcrates == 2
+# livetech counts now; tech is the count from the last sim tick.
+expect livetech == 6
 # Save and load keep tech.
 load tech
 log loaded

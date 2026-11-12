@@ -60,7 +60,7 @@ static class TechAutotest
         Autotest.Fields["outsidetech"] = () => OutsideVault()?.Resources ?? throw new InvalidOperationException("no vault from vault outside");
         // Vault parts on human ships that are done building.
         Autotest.Fields["vaultsbuilt"] = () => Vaults.HumanShips(Active().Game.Sim).Sum(s => Vaults.VaultParts(s).Count(p => !p.IsUnderConstruction));
-        // Health lost by vault parts, and by all other parts, of the player ship (spec 448).
+        // Health lost by vault parts, and by all other parts, of the player ship.
         Autotest.Fields["vaultdamage"] = () => PlayerShip().Parts.Where(p => p.Rules.ID == Vaults.VaultId).Sum(p => p.Rules.MaxHealth - p.Health);
         Autotest.Fields["partdamage"] = () => PlayerShip().Parts.Where(p => p.Rules.ID != Vaults.VaultId).Sum(p => p.Rules.MaxHealth - p.Health);
         Autotest.Fields["vaultburned"] = () => VaultDropPatch.LostMessages;

@@ -1,4 +1,4 @@
-# Co-op tech count, host side (spec 65, 442, 449). Each player holds a different amount, a vault takes damage, the client's ship
+# Co-op tech count, host side (spec 65, 442, 449). Each player holds a different amount, a vault is destroyed, the client's ship
 # becomes a derelict. Both machines show the same total, equal to the units in the vault storage.
 tunablesfile Tech { LossGraceSeconds = 600 }  Events { Enabled = false }
 mphost {PORT}
@@ -14,15 +14,18 @@ wait 1
 expect tech == 7
 expect vaultunits == 7
 expect mytech == 3
-# A small hit (120 of 3,000 health) costs no tech. Damage past half health costs one unit, in the count and in the storage.
-mp vault damage 0.04
+# Damage costs no tech while the vault stands. A destroyed vault drops its units as crates, in every machine's count.
+mp tech_set VaultTechLossChance 0
+mp vault damage 0.6
 wait 1
 expect tech == 7
 expect vaultunits == 7
-mp vault damage 0.47
+# The host's first vault holds 1 unit after the removal.
+mp vault destroy
 wait 1
 expect tech == 6
 expect vaultunits == 6
+expect techcrates == 1
 expect mytech == 2
 mp mpmark 2
 # The client's ship becomes a derelict. Its 4 units still count, the loss timer stays off, and its blip shows them.

@@ -18,8 +18,8 @@ tostation
 heat 30
 wait 2
 expect runlog_stage == 1
-# Vault damage that destroys tech: 60 % passes the half-health step (spec 442).
-vault damage 0.6
+# A destroyed vault (spec 65, 731): its tech drops as crates or burns, and the run log says so.
+vault destroy
 wait 1
 expect runlog_loss >= 1
 # A tech sale at a station.

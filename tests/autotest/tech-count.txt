@@ -1,29 +1,33 @@
-# Tech count, single player (spec 65, 442, 449): full-health starting vaults, the damage step, and tech in a derelict ship.
+# Tech count, single player (spec 65, 442, 449): damage costs no tech, a destroyed vault drops crates, tech in a derelict ship counts.
 newgame run
 wait 8
 ev_set Enabled false
 tech_set LossGraceSeconds 600
+tech_set VaultTechLossChance 0
 expect vaultminhealth == 3000
 expect tech == 8
 expect vaultunits == 8
-# A small hit costs no tech. Damage past half health costs one unit, in the count and in the storage.
-vault damage 0.04
+# Damage that leaves the vault standing costs no tech, also a tiny hit near half health.
+vault damage 0.4
+vault damage 0.0997
+vault damage 0.0027
 wait 1
 expect tech == 8
 expect vaultunits == 8
-vault damage 0.47
+# A destroyed vault drops its 2 units as crates: 1 unit per crate.
+vault destroy
 wait 1
-expect tech == 7
-expect vaultunits == 7
+expect tech == 6
+expect vaultunits == 6
+expect techcrates == 2
 expect paneltotal == 1
 # The ship becomes a derelict: the tech still counts, the loss timer stays off, the panel and the blip say where it is.
 tech derelict
 wait 2
-expect livetech == 7
-expect lost == 0
-expect tech == 7
-expect derelicttech == 7
-expect derelicttag == 7
+expect livetech == 6
+expect tech == 6
+expect derelicttech == 6
+expect derelicttag == 6
 expect panelderelict == 1
 expect losstimer == 0
 quit
