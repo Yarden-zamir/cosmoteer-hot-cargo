@@ -56,7 +56,11 @@ In co-op, every player needs the same version. Run `install.bat` again after a C
 
 ## Tuning
 
-All numbers live in `Mods\hot_cargo\tunables.rules`. The game reloads the file while it runs. `tunables.defaults.rules` lists every value with its default.
+Change any number in game: open the escape menu and click **Hot Cargo settings**. Changes apply at once and are saved to `Mods\hot_cargo\tunables.rules`, which you can also edit by hand while the game runs. `tunables.defaults.rules` lists every value with its default.
+
+In co-op, the new career screen has an **Enemy ships per extra player** slider.
+
+![Hot Cargo settings](docs/screenshots/settings.jpg)
 
 ## Develop
 

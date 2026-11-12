@@ -38,5 +38,5 @@ Close Cosmoteer and double-click `uninstall.bat`.
 
 ## Tuning
 
-Edit `Mods\hot_cargo\tunables.rules` while the game runs. `tunables.defaults.rules` next to it lists every value.
+Open the escape menu and click **Hot Cargo settings**, or edit `Mods\hot_cargo\tunables.rules` while the game runs. `tunables.defaults.rules` next to it lists every value.
 In single player, a comms window pauses the game. To turn that off, add `Ux { PauseOnComms = false }`.
