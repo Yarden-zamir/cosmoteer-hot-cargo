@@ -18,7 +18,7 @@ namespace HotCargo.Events;
 
 /// <summary>
 /// Event simulation logic: triggers, conditions, outcome rolls and effects.
-/// Everything here runs from deterministic sources only: Run.Hooks (sim tick, system switch) and the choice MP input.
+/// Everything here runs from deterministic sources only: Run.Hooks (sim tick, system switch, new run) and the choice MP input.
 /// </summary>
 public static class EventRunner
 {
@@ -28,6 +28,9 @@ public static class EventRunner
     const float ProximityCheckSeconds = 0.5f;
 
     static EventsState State(Run run) => run.State.Events;
+
+    /// <summary>Spec 70: a new run starts the cooldown, so no Arrival or Station event opens right at the start.</summary>
+    internal static void OnNewRun(Run run) => State(run).LastEventSeconds = run.State.GameSeconds;
 
     internal static void OnSystemEntered(Run run, bool firstVisit)
     {
