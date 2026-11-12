@@ -43,5 +43,6 @@ expect ev_carrier == 1
 ev_kill_carrier
 wait 1
 expect ev_pending == 0
-expect ev_result >= 5
+# The result serial: this is the fourth page of the run.
+expect ev_result >= 4
 quit
