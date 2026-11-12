@@ -46,7 +46,7 @@ echo "== first run failed:"
 failure_lines "$FIRST_LOG"
 if [[ "$RETRY" -ge 1 ]] && run_once; then
   echo "== AUTOTEST FLAKY $NAME (failed once, passed on retry; first log $FIRST_LOG)"
-  echo "$(date +%F\ %T) $NAME $FIRST_LOG" >> "/tmp/hot_cargo_flaky.log"
+  echo "$(date +%F\ %T) $NAME $FIRST_LOG" >> "$STATE_DIR/flaky.log"
   exit 0
 fi
 [[ "$RUN_LOG" != "$FIRST_LOG" ]] && { echo "== retry failed:"; failure_lines "$RUN_LOG"; }
