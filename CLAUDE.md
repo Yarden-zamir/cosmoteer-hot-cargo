@@ -55,6 +55,7 @@ Procedures are skills in `.claude/skills/`:
 - A change is done when the spec lines it touches are true. Patch stale lines in place. Never renumber requirements. A new feature gets a new file in `spec/` with the next free section number and a new requirement number range.
 
 ## Agents
+- Never start, stop or restart the game in slot main (the player's game): no `screens.sh`, `vault-saved-ships.sh`, `run.sh`, `stop.sh` or deploy with `SLOT=main`. While `.state/player-hold` exists, the scripts refuse it (exit 3). Do not remove that file and do not work around it. Ask the coordinator for main-slot work; the coordinator runs it when the player says the PC is free.
 
 - An agent works only in its own worktree and branch. At the end it pushes its branch and opens a draft PR. It never pushes to `main` and never merges.
 - Tests: run the tests your change needs (your area's tests, `core`, and any test you changed). The integrator runs the full suite for each merge batch.

@@ -9,6 +9,8 @@
 # game first, installs the file as autotest.txt and starts the game. It never stops the main slot: it fails if that game runs.
 # Before a test slot's game starts, the PC waits up to 120 s for HOT_CARGO_MIN_FREE_GB (default 3) of free memory.
 source "$(dirname "$0")/pc.sh"
+# Autotest mode starts a game; a plain install (install-player.sh) only copies files and checks that the game is closed.
+if [[ -n "${AUTOTEST_SCRIPT:-}" ]]; then refuse_if_player_hold; fi
 
 STAGE="${HOT_CARGO_STAGE:-}"
 OWN_STAGE=""
