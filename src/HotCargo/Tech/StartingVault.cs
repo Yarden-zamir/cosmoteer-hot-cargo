@@ -29,7 +29,7 @@ internal static class StartingVault
         for (int i = 0; i < ships.Count; i++)
             unreachable |= Stock(ships[i], units / ships.Count + (i < units % ships.Count ? 1 : 0));
         // A co-op launch runs this on a worker thread, so the notice waits for the next frame.
-        if (unreachable) Run.OnNextFrame(() => run.Game.Gui.ShowAreaName(Strings.GetText("HotCargoTech/VaultOutside")));
+        if (unreachable) Run.OnNextFrame(() => Ux.UxKit.CenterText(run.Game, Strings.GetText("HotCargoTech/VaultOutside")));
     }
 
     /// <summary>Tech units that one vault holds, from its rules.</summary>

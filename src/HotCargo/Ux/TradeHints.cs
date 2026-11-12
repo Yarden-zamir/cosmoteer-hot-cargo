@@ -45,7 +45,7 @@ static class TradeHints
         box.NineSlice.Flags = NineSliceFlags.Bottom | NineSliceFlags.Center;
         box.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
         box.Children.LayoutAlgorithm = LayoutAlgorithms.StretchTopToBottom;
-        box.Children.BorderPadding = new Borders(75f, 8f, 75f, 8f);
+        box.Children.BorderPadding = new Borders(24f, 8f, 24f, 8f);
         var label = new Label { InputBlockMode = InputBlockMode.Never };
         label.TextRenderer.FontSize = 16;
         label.TextRenderer.XmlFormatting = true;

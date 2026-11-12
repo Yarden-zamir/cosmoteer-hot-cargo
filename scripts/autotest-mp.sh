@@ -61,7 +61,7 @@ if [[ "$RETRY" -ge 1 ]]; then
   release_slot "$HOST"; release_slot "$CLIENT"; trap - EXIT
   if AUTOTEST_RETRY=0 "$0" "$HOST_SCRIPT" "$CLIENT_SCRIPT" "$TIMEOUT" > "$RUN_LOG.retry" 2>&1; then
     echo "== MP AUTOTEST FLAKY $NAME (failed once, passed on retry; first log $RUN_LOG)"
-    echo "$(date +%F\ %T) mp-$NAME $RUN_LOG" >> "/tmp/hot_cargo_flaky.log"
+    echo "$(date +%F\ %T) mp-$NAME $RUN_LOG" >> "$STATE_DIR/flaky.log"
     exit 0
   fi
   tail -20 "$RUN_LOG.retry"

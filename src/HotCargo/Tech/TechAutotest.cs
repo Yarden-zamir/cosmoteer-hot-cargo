@@ -93,7 +93,7 @@ static class TechAutotest
         // Lowest health of a built vault on a human ship (spec 65: a vault starts at full health, so the first hits cost no tech).
         Autotest.Fields["vaultminhealth"] = () => Vaults.HumanShips(Active().Game.Sim).SelectMany(Vaults.VaultParts).Where(p => !p.IsUnderConstruction).Min(p => (int?)p.Health) ?? -1;
         // The heat panel tech line shows the fleet total (1), and the derelict part (spec 449).
-        Autotest.Fields["paneltotal"] = () => Ui.HeatPanel.TechText.Contains($"<fame>{Active().State.FleetTech}</fame>") ? 1 : 0;
+        Autotest.Fields["paneltotal"] = () => Ui.HeatPanel.TechText.StartsWith(Ux.UxKit.Format("TechFmt", Active().State.FleetTech, Active().TechValue().ToString("N0"))) ? 1 : 0;
         Autotest.Fields["panelderelict"] = () => Ui.HeatPanel.TechText.Contains(string.Format(Ux.UxKit.Format("TechDerelictFmt", "{0}"), Vaults.Split(Active().Game.Sim, Active().Game.LocalPlayerIndex).Derelict)) ? 1 : 0;
         // The blip of the first derelict ship with tech shows "TECH n" (spec 444, 449).
         Autotest.Fields["derelicttag"] = () =>

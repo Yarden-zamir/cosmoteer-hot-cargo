@@ -5,7 +5,9 @@ LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$LIB_DIR/.." && pwd)"
 SLOTS="${HOT_CARGO_SLOTS:-8}"
 # Full logs of every run stay here, one folder per worktree, so a later run in the same slot cannot overwrite them.
-LOG_DIR="${HOT_CARGO_LOG_DIR:-/tmp/hot_cargo_logs/$(basename "$REPO_ROOT")}"
+# Logs, flaky list and pass markers live in <container>/.state (next to .bare and .game), not in /tmp, so they survive a restart.
+STATE_DIR="${HOT_CARGO_STATE:-$(cd "$REPO_ROOT/.." && pwd)/.state}"
+LOG_DIR="${HOT_CARGO_LOG_DIR:-$STATE_DIR/logs/$(basename "$REPO_ROOT")}"
 mkdir -p "$LOG_DIR"
 
 slot_lock() { echo "/tmp/hot_cargo_slot_${1#t}.lock"; }

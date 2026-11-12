@@ -1,6 +1,7 @@
 using Cosmoteer.Game;
 using Cosmoteer.Game.Multiplayer;
 using Cosmoteer.Gui;
+using Cosmoteer.Localization;
 using Cosmoteer.Modes.Career.Missions.Rewards;
 using Halfling.Gui.Components.Text;
 using Halfling.Serialization;
@@ -37,7 +38,7 @@ internal sealed class ChainStageReward : Reward
     ChainStageReward() { }
 
     /// <summary>"[Chain]" in the event heading color: the mark that sets chain stages apart from other offers.</summary>
-    public static string Tag => EventText.Heading.FormatWithXml("[Chain]");
+    public static string Tag => EventText.Heading.FormatWithXml(Strings.GetText("HotCargoChains/Tag"));
 
     public override void GetStringArgs(Dictionary<string, object?> args, GameRoot game)
     {
@@ -45,7 +46,7 @@ internal sealed class ChainStageReward : Reward
         args["chain_name"] = ChainTitle;
         args["chain_stage"] = StageTitle;
         args["chain_brief"] = Brief;
-        args["chain_story"] = Story.Length > 0 ? $"<gray>So far: {Story}</gray>\n\n" : "";
+        args["chain_story"] = Story.Length > 0 ? $"<gray>{Strings.FormatText("HotCargoChains/SoFarFmt", Story)}</gray>\n\n" : "";
     }
 
     public override void GiveReward(GameRoot game) { }
@@ -55,8 +56,8 @@ internal sealed class ChainStageReward : Reward
     public override int GetRewardSortValue(SortValueType valueType, GameRoot game, int implicitFame = 0) => 0;
 
     public override void GetDisplayLines(List<(ITextProvider Text, ITextProvider? Tooltip)> lines, GameRoot game, Dictionary<int, int>? implicitFame = null) =>
-        lines.Add((new SimpleTextProvider(EventText.Heading.FormatWithXml($"Story chain, part {Part}. What comes next depends on how this ends."), null),
-            new SimpleTextProvider(Story.Length > 0 ? $"So far: {Story}" : "The first part of this station's story.", null)));
+        lines.Add((new SimpleTextProvider(EventText.Heading.FormatWithXml(Strings.FormatText("HotCargoChains/PartFmt", Part)), null),
+            new SimpleTextProvider(Story.Length > 0 ? Strings.FormatText("HotCargoChains/SoFarFmt", Story) : Strings.GetText("HotCargoChains/FirstPart"), null)));
 
     public override void GetIntegrityHash(IntegrityHash iHash)
     {
