@@ -238,5 +238,14 @@ public static class ChainsArea
             return RequireRun().Mode.GetFactionReputation(f.ID);
         };
         Autotest.Fields["chains_loaded"] = () => ChainLibrary.InOrder.Count;
+        // Distance from the fleet center to the nearest rival ship (hc_ch_rival), live or in stasis.
+        Autotest.Fields["chain_rival_dist"] = () =>
+        {
+            var sim = RequireSim();
+            var at = SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no player ships");
+            var rivals = SimQueries.TaggedShips(sim, new("hc_ch_rival"));
+            if (rivals.Count == 0) throw new InvalidOperationException("no ships tagged hc_ch_rival");
+            return rivals.Min(t => t.Location.DistanceTo(at));
+        };
     }
 }
