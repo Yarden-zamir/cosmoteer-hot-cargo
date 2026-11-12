@@ -27,14 +27,16 @@ run_once() {
   RUN_LOG="$LOG_DIR/$NAME.$(date +%Y%m%d-%H%M%S).$SLOT.log"
   echo "== $NAME: slot $SLOT, log $RUN_LOG"
   # telename labels the telemetry of this test with the script name (TELEMETRY.md).
-  # A failed deploy started no game: nothing to wait for.
+  # A failed deploy started no game, and the slot can still hold the log of an older run: never read it.
+  out=""
   if { echo "telename $NAME"; cat "$SCRIPT"; } | start_slot "$SLOT" > "$RUN_LOG.deploy" 2>&1; then
     t2=$SECONDS; wait_slot_end "$SLOT" "$TIMEOUT"
+    # A failed PC call leaves an empty log, which never passes.
+    if out="$(slot_finish "$SLOT" 2>&1)"; then rm -rf "$(slot_lock "$SLOT")"; else out=""; release_slot "$SLOT"; fi
   else
     t2=$SECONDS; STARTED_AT="" ENDED_AT=$SECONDS
+    release_slot "$SLOT"
   fi
-  # A failed PC call leaves an empty log, which never passes.
-  if out="$(slot_finish "$SLOT" 2>&1)"; then rm -rf "$(slot_lock "$SLOT")"; else release_slot "$SLOT"; fi
   SLOT=""
   log="${out%%<<<VANILLA LOG>>>*}"
   { cat "$RUN_LOG.deploy"; echo "$log"; } > "$RUN_LOG"
