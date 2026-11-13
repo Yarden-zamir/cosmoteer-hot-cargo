@@ -12,7 +12,7 @@ You stole corporate tech. The corporation wants it back. Get it across about 8 s
 
 - **Hold or sell.** You start with 8 Stolen Tech in four Tech Vaults. The more you hold, the harder the corporation hunts you. Stations pay for tech now, and the price rises as the run goes on: one or two units buy a new ship of your stage. The Buyer pays 4× the price, and unsold units count the same in the score.
 - **Move on or burn.** Heat rises over time and with every mission. Each heat stage sends corporate hunters that kite, flank, bait and go for your guns. A jump to a new system cools you down.
-- **Protect the cargo.** Hits on a vault destroy tech. Each vault is one tile that holds 2 units: build more, spread them out, armor and shield them. If your tech reaches 0, the run is over.
+- **Protect the cargo.** A destroyed vault spills its tech as crates, and some of it can burn. Hunters grab loose crates. Each vault is one tile that holds 2 units: build more, spread them out, armor and shield them. If you hold no tech for 3 minutes, the run is over.
 - **Deliver.** The Buyer waits in the last sector. Sell it your tech to win.
 - **New missions.** Convoy escorts, joint strikes, shady bounties that may be traps, sieges, salvage, sundives and more.
 - **Contracts.** Some clients charge a fee, some are rivals, and some sell you out to the corporation.
