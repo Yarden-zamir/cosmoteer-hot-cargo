@@ -223,3 +223,43 @@ public class EventModelResearchTests
         Assert.Equal([1, 2, 3, 4, 5], a.Order());
     }
 }
+
+public class EventModelOptionTests
+{
+    [Fact]
+    public void A_unit_grows_with_tier_and_heat_like_the_old_costs()
+    {
+        Assert.Equal(25f, EventModel.UnitSize(25f, 5f, 0f, tier: 1, heat: 50f), 4);
+        Assert.Equal(35f, EventModel.UnitSize(25f, 5f, 0f, tier: 3, heat: 50f), 4);
+        Assert.Equal(0.8f, EventModel.UnitSize(0.3f, 0f, 0.01f, tier: 1, heat: 50f), 4);
+        Assert.Equal(0f, EventModel.UnitSize(-1f, 0f, 0f, tier: 1, heat: 0f));
+    }
+
+    [Fact]
+    public void Whole_items_round_half_away_from_zero_and_reject_negative_amounts()
+    {
+        Assert.Equal(10, EventModel.Whole(0.5f, 20f));
+        Assert.Equal(3, EventModel.Whole(0.5f, 5f));
+        Assert.Equal(2, EventModel.Whole(2f, 1f));
+        Assert.Throws<ArgumentOutOfRangeException>(() => EventModel.Whole(-1f, 1f));
+    }
+
+    [Fact]
+    public void Ten_steps_of_a_tenth_reach_a_need_of_one_and_less_does_not()
+    {
+        float points = 0f;
+        for (int i = 0; i < 10; i++) points += 0.1f;
+        Assert.True(EventModel.Enough(points, 1f));
+        Assert.False(EventModel.Enough(0.9f, 1f));
+        Assert.Equal(1.5f, EventModel.NeedPoints(1f, 0.01f, 50f), 4);
+    }
+
+    [Fact]
+    public void Risk_and_offer_percent_stay_in_range()
+    {
+        Assert.Equal(0.4f, EventModel.RiskChance(0.2f, 2f), 4);
+        Assert.Equal(1f, EventModel.RiskChance(0.6f, 2f), 4);
+        Assert.Equal(50, EventModel.OfferPercent(0.5f, 1f));
+        Assert.Equal(100, EventModel.OfferPercent(0f, 0f));
+    }
+}

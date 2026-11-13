@@ -24,6 +24,19 @@ namespace HotCargo.Events;
 /// </summary>
 public static class EventsArea
 {
+    static void SendPick(string arg, bool select)
+    {
+        var run = RequireRun();
+        var p = run.State.Events.Pending ?? throw new InvalidOperationException("no pending event");
+        var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        int index = Int(parts[0]) - 1;
+        var options = EventLibrary.Get(p.EventId).Options;
+        if (index < 0 || index >= options.Length) throw new InvalidOperationException($"event {p.EventId} has no option {index + 1}");
+        int steps = parts.Length > 1 ? Int(parts[1]) : options[index].MinSteps;
+        MultiChoice.DraftSender.Toggle(run, EventsMultiDomain.Name, p.Serial, index, select, steps);
+        Autotest.Wait(1);
+    }
+
     public static void Register()
     {
         Run.Hooks.NewRunStarted += EventRunner.OnNewRun;
@@ -33,6 +46,7 @@ public static class EventsArea
         Ui.CommsHail.Providers.Add(new EventHailProvider());
         Run.Hooks.SystemEntered += Abandoned.OnSystemEntered;
         SharedChoice.SharedChoices.Register(EventsChoiceDomain.Instance);
+        MultiChoice.MultiChoices.Register(EventsMultiDomain.Instance);
         AddAutotest();
     }
 
@@ -66,6 +80,19 @@ public static class EventsArea
             else run.Game.NetManager.EnqueueInput(EventsChoiceDomain.Pick(p.Serial, choice));
             Autotest.Wait(2);
         };
+        // answer: answers a page that the test did not pick (a random trigger), as a player does. A plain last choice is taken.
+        // A last choice that submits options (spec 811, Vault Coolant Leak) first gets the first option the player can select, at
+        // its full amount. A page with no option to select fails: in play it could not be closed.
+        Autotest.Commands["answer"] = _ =>
+        {
+            var page = CurrentView() ?? throw new InvalidOperationException("no event page");
+            var last = page.Choices[^1];
+            if (!last.Submit) { Autotest.Inject([$"choose {last.Index + 1}"]); return; }
+            var option = page.Options.FirstOrDefault(o => o.Active)
+                ?? throw new InvalidOperationException($"CHECK FAILED: {EventView.Plain(page.Title)} has no option to select, so its submit cannot close it");
+            string steps = option.Slider is { } slider ? $" {slider.Max}" : "";
+            Autotest.Inject([$"pick {option.Id + 1}{steps}", $"choose {last.Index + 1}"]);
+        };
         Autotest.Commands["expectevent"] = arg =>
         {
             string actual = RequireRun().State.Events.Pending?.EventId ?? "none";
@@ -80,6 +107,20 @@ public static class EventsArea
             var c = page.Choices.FirstOrDefault(v => v.Index == index);
             string actual = c is null ? "hidden" : c.Enabled ? "enabled" : "disabled";
             Autotest.Check(actual == parts[1], $"choice {index + 1} is {parts[1]} (actual {actual}: {EventView.Plain(c?.Text ?? "")})");
+        };
+        // pick <option number> [steps] / unpick <option number>: selects or clears a page option in the shared draft, as a row click
+        // does (the multiselect MP input, spec 810). Steps default to the option's minimum. A real player action: no "mp" in co-op.
+        Autotest.Commands["pick"] = arg => SendPick(arg, select: true);
+        Autotest.Commands["unpick"] = arg => SendPick(arg, select: false);
+        // expectoption <option number> enabled|disabled|hidden|selected: checks the option row of the pending page.
+        Autotest.Commands["expectoption"] = arg =>
+        {
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            int index = Int(parts[0]) - 1;
+            var page = CurrentView() ?? throw new InvalidOperationException("no event page");
+            var o = page.Options.FirstOrDefault(v => v.Id == index);
+            string actual = o is null ? "hidden" : o.Selected ? "selected" : o.Active ? "enabled" : "disabled";
+            Autotest.Check(actual == parts[1], $"option {index + 1} is {parts[1]} (actual {actual}: {EventView.Plain(o?.Text ?? "")})");
         };
         Autotest.Commands["expectflag"] = arg =>
         {

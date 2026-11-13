@@ -5,11 +5,12 @@ using Halfling.Geometry;
 using Halfling.Graphics;
 using Halfling.Graphics.Text;
 using Halfling.Gui;
+using HotCargo.Core;
 
 namespace HotCargo.Ui;
 
 /// <summary>
-/// A centered HUD panel with a title, a body and one button, in the game's blurred panel style.
+/// A centered HUD panel with a title, a body and one or two buttons, in the game's blurred panel style.
 /// It does not pause the game and does not block input outside its own rectangle. Used by the run intro and the win panel.
 /// </summary>
 static class CenterPanel
@@ -62,7 +63,12 @@ static class CenterPanel
     /// <summary>The newest panel. For autotests that check the layout.</summary>
     internal static LayoutBox? Newest => Open.Count > 0 ? Open[^1].Box : null;
 
-    public static LayoutBox Show(GameRoot game, string title, Color titleColor, string bodyXml, string button, float width = 620f)
+    /// <summary>
+    /// Shows a panel. <paramref name="button"/> closes it. With <paramref name="primary"/>, that button comes first as the primary
+    /// (Enter) button: it closes the panel and then runs its action, and <paramref name="button"/> becomes the secondary button.
+    /// </summary>
+    public static LayoutBox Show(GameRoot game, string title, Color titleColor, string bodyXml, string button, float width = 620f,
+        (string Text, Action OnClick)? primary = null)
     {
         var box = NewBox(width);
         box.Children.WidgetPadding = new Vector2(16f);
@@ -76,14 +82,18 @@ static class CenterPanel
         var row = new LayoutBox { Height = 50f };
         row.NineSlice.Flags = NineSliceFlags.None;
         row.Children.LayoutAlgorithm = LayoutAlgorithms.CenterTop;
-        var ok = new Button(WidgetRules.Instance.OkayButton)
+        row.Children.WidgetPadding = new Vector2(16f);
+        void Close() { game.Gui.RootWidget.Children.Remove(box); Open.Remove((game, box)); }
+        if (primary is { } p)
         {
-            Size = new Vector2(220f, 46f),
-            Text = button,
-            Hotkey = Inputs.General.Confirm,
-        };
-        ok.Clicked += (_, _) => { game.Gui.RootWidget.Children.Remove(box); Open.Remove((game, box)); };
-        row.AddChild(ok);
+            var main = new Button(WidgetRules.Instance.OkayButton) { Size = new Vector2(220f, 46f), Text = p.Text, Hotkey = Inputs.General.Confirm };
+            main.Clicked += (_, _) => { Close(); Errors.Guard("center panel button", p.OnClick); };
+            row.AddChild(main);
+        }
+        var close = new Button(primary is null ? WidgetRules.Instance.OkayButton : WidgetRules.Instance.FlatButton) { Size = new Vector2(220f, 46f), Text = button };
+        if (primary is null) close.Hotkey = Inputs.General.Confirm;
+        close.Clicked += (_, _) => Close();
+        row.AddChild(close);
         box.AddChild(row);
 
         game.Gui.RootWidget.Children.InsertBelow(game.Gui.FloatingWindows, box);

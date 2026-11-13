@@ -72,6 +72,15 @@ public sealed class OptionRows
         }
     }
 
+    /// <summary>Clicks shown row <paramref name="index"/> (0-based) as a player would. False when there is no such row or it takes no input.</summary>
+    public bool Click(int index)
+    {
+        var shown = Shown.ToList();
+        if (index < 0 || index >= shown.Count || !shown[index].Button.IsInputActive) return false;
+        Clicked?.Invoke(shown[index].View);
+        return true;
+    }
+
     /// <summary>Moves the slider of the row with this key as a player would. For autotests and screenshots.</summary>
     public void SetValue(string key, int value) => _rows.FirstOrDefault(r => r.View?.Key == key)?.Slider.Set(value);
 

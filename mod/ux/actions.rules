@@ -1,0 +1,393 @@
+// UX: inline text icons (TextSprites). Mission icons are named hc_mission_<metatype ID>, so the code finds them by name.
+// All art is vanilla: roof decal icons and GUI icons. They are white, and text tints them (colored='true').
+// Heat change (mission lists).
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_heat
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_fire.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Story chain stage.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoChain
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_star.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Go to the Buyer.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoBuyer
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_credit.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Escort.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoEscort
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_shield_1.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Fleet assault.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoFleetAssault
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_arrow_head.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Shady offer.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoShadyBounty
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_skull_2.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Event: rivals.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoEventRivals
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_skull_1.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Event: siege.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoEventSiege
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_hand_stop.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Event: bounty.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoEventBounty
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_targetor.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Event: tow.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoEventTow
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_magnet.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Courier job.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoCourier
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_arrow_thick.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Drone siege.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoDroneSiege
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_shield_2.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Prototype retrieval.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoPrototype
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_biohazard.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Sunside ore.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoSunMining
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_nuclear.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Salvage rights.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoSalvageRights
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_wrenches.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Repossession.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoCapture
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_gasmask.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Storm survey.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoSurvey
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_lightning.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Claim jumpers.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoClaimJumpers
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_arrow_chevrons.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Listening post.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoListeningPost
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/gui/icon_search.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Marker: the Buyer.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_marker_buyer
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_credit.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Marker: corporate hunters.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_marker_hunter
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_skull_1.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Marker: a ship holds your tech.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_marker_held
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/gui/icon_lock.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
+// Marker: hired ships and mercenaries.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_marker_hired
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_shield_2.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}

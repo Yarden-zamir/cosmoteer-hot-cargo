@@ -151,6 +151,27 @@ public sealed class OutcomeRules
     [Serialize(Optional = true)] public string[] ClearFlags = [];
     /// <summary>On a chain page (mod/chains/pages.rules): the result that this outcome gives the chain stage. Empty elsewhere.</summary>
     [Serialize(Optional = true)] public string ChainResult = "";
+
+    /// <summary>
+    /// A copy with Money, MoneyTech and Fame × k (spec 812). With <paramref name="all"/> also Heat, Reputation, Tech, Crew,
+    /// resources (at the tier) and hull damage. Flags, text and the other fields stay as they are.
+    /// </summary>
+    public OutcomeRules Scaled(float k, int tier, bool all)
+    {
+        if (k < 0 || float.IsNaN(k)) throw new ArgumentOutOfRangeException(nameof(k), k, "scale must not be negative");
+        var c = (OutcomeRules)MemberwiseClone();
+        c.Money *= k;
+        c.MoneyTech *= k;
+        c.Fame *= k;
+        if (!all) return c;
+        c.Heat *= k;
+        c.Reputation *= k;
+        c.Tech = (int)MathF.Round(Tech * k, MidpointRounding.AwayFromZero);
+        c.Crew = (int)MathF.Round(Crew * k, MidpointRounding.AwayFromZero);
+        c.HullDamage = Math.Min(1f, HullDamage * k);
+        c.Resources = [.. Resources.Select(r => new ResourceAmount { ID = r.ID, Amount = (int)MathF.Round(r.At(tier) * k, MidpointRounding.AwayFromZero) })];
+        return c;
+    }
 }
 
 [ReflectiveSerialization(Explicit = true)]
@@ -161,7 +182,73 @@ public sealed class ChoiceRules
     [Serialize(Optional = true)] public CostRules? Cost;
     /// <summary>True: the choice does not show at all when its need is not met (for flag-gated story options).</summary>
     [Serialize(Optional = true)] public bool HideIfUnmet;
+    /// <summary>
+    /// Above 0: a submit of the page's options (spec 811). It needs at least this many points from the selected options,
+    /// plus NeedPointsPerHeat × heat when the page opened. It pays the selected options and applies their effects.
+    /// </summary>
+    [Serialize(Optional = true)] public float NeedPoints;
+    [Serialize(Optional = true)] public float NeedPointsPerHeat;
+    /// <summary>True: the outcome's Money, MoneyTech and Fame scale with the points of the selected options (a sale by amount).</summary>
+    [Serialize(Optional = true)] public bool ScaleByPoints;
     [Serialize] public OutcomeRules[] Outcomes = [];
+
+    public bool IsSubmit => NeedPoints > 0;
+}
+
+/// <summary>What a page option pays with (spec 810). One unit is the option's Unit of it.</summary>
+public enum PayKind
+{
+    /// <summary>Nothing: the option only has effects (refugees taken aboard, forged codes).</summary>
+    None,
+    /// <summary>The chooser's money. Unit is in event money units.</summary>
+    Money,
+    /// <summary>Tech from the vaults, in crates.</summary>
+    Tech,
+    /// <summary>Crew who leave the fleet.</summary>
+    Crew,
+    /// <summary>Crew on hand who do the work and stay. The option needs them; it pays nothing.</summary>
+    CrewWork,
+    /// <summary>A resource from the fleet's storage.</summary>
+    Resource,
+}
+
+/// <summary>
+/// One option of an event page's multiselect (spec 810). Players select options and set their amounts, then pick a submit
+/// choice. The slider picks steps: units = steps × StepUnits, from MinUnits to MaxUnits. Rules numbers are per unit.
+/// </summary>
+[ReflectiveSerialization(Explicit = true)]
+public sealed class OptionRules
+{
+    [Serialize] public string Text = "";
+    [Serialize(Optional = true)] public PayKind Pay;
+    [Serialize(Optional = true)] public string Resource = "";
+    /// <summary>Size of one unit: money units, crates, crew or resource amount. Plus UnitPerTier for each tier above 1, plus UnitPerHeat × heat.</summary>
+    [Serialize(Optional = true)] public float Unit = 1f;
+    [Serialize(Optional = true)] public float UnitPerTier;
+    [Serialize(Optional = true)] public float UnitPerHeat;
+    /// <summary>Slider range and step in units. MinUnits = MaxUnits: no slider.</summary>
+    [Serialize(Optional = true)] public float MinUnits = 1f;
+    [Serialize(Optional = true)] public float MaxUnits = 1f;
+    [Serialize(Optional = true)] public float StepUnits = 1f;
+    /// <summary>Points per unit toward a submit's NeedPoints.</summary>
+    [Serialize(Optional = true)] public float Points = 1f;
+    /// <summary>Effects per unit, scaled by the units. Flags apply once. Its Text, when set, shows as a result line.</summary>
+    [Serialize(Optional = true)] public OutcomeRules? Effect;
+    /// <summary>Effects once when the option is selected, whatever its amount.</summary>
+    [Serialize(Optional = true)] public OutcomeRules? Once;
+    /// <summary>True: a submit takes its first outcome without a roll while this option is selected.</summary>
+    [Serialize(Optional = true)] public bool Sure;
+    /// <summary>Chance per unit (capped at 1) of the Risk effects, rolled once on submit.</summary>
+    [Serialize(Optional = true)] public float RiskChance;
+    [Serialize(Optional = true)] public OutcomeRules? Risk;
+    /// <summary>The slider's value text for Pay = None, with {0} = units × unit size, for example "{0} people".</summary>
+    [Serialize(Optional = true)] public string ValueText = "";
+    [Serialize(Optional = true)] public NeedRules? Need;
+    /// <summary>True: the option does not show while its need is not met.</summary>
+    [Serialize(Optional = true)] public bool HideIfUnmet;
+
+    public int MinSteps => (int)MathF.Round(MinUnits / StepUnits);
+    public int MaxSteps => (int)MathF.Round(MaxUnits / StepUnits);
 }
 
 [ReflectiveSerialization(Explicit = true)]
@@ -191,6 +278,10 @@ public sealed class EventRules
     [Serialize] public string Title = "";
     [Serialize] public string Text = "";
     [Serialize] public ChoiceRules[] Choices = [];
+    /// <summary>Multiselect options of the page (spec 810). The submit choices (NeedPoints above 0) use them.</summary>
+    [Serialize(Optional = true)] public OptionRules[] Options = [];
+    /// <summary>A line under the options, with {0} = the offer in percent of the first submit's need. Empty: no line.</summary>
+    [Serialize(Optional = true)] public string OfferLine = "";
 }
 
 [ReflectiveSerialization(Explicit = true)]
@@ -207,6 +298,8 @@ sealed class EventFile
 public static class EventLibrary
 {
     public const int MaxChoices = 4;
+    /// <summary>Option rows that fit the event window and a hail page with its choices.</summary>
+    public const int MaxOptions = 4;
 
     static Dictionary<string, EventRules>? _events;
     static EventRules[] _ordered = [];
@@ -282,6 +375,25 @@ public static class EventLibrary
         if (e.Choices.Length is < 1 or > MaxChoices) throw new InvalidDataException($"{at} needs 1 to {MaxChoices} choices");
         if (e.Weight < 0) throw new InvalidDataException($"{at}: Weight must not be negative");
         ValidateNeed(e.Need, at);
+        if (e.Options.Length > MaxOptions) throw new InvalidDataException($"{at} has more than {MaxOptions} options");
+        if (e.Options.Length > 0 && !e.Choices.Any(c => c.IsSubmit)) throw new InvalidDataException($"{at} has options but no choice with NeedPoints");
+        for (int o = 0; o < e.Options.Length; o++)
+        {
+            var opt = e.Options[o];
+            string oat = $"{at} option {o + 1}";
+            if (opt.Text.Length == 0) throw new InvalidDataException($"{oat} has no Text");
+            if (opt.StepUnits <= 0 || opt.MinUnits <= 0 || opt.MaxUnits < opt.MinUnits || opt.MinSteps < 1 || opt.MaxSteps >= MultiChoiceSpan)
+                throw new InvalidDataException($"{oat}: needs 0 < MinUnits <= MaxUnits and StepUnits above 0, at most {MultiChoiceSpan - 1} steps");
+            if (opt.Unit <= 0 || opt.Points < 0 || opt.RiskChance < 0) throw new InvalidDataException($"{oat}: Unit must be above 0, Points and RiskChance not negative");
+            if ((opt.Pay == PayKind.Resource) != (opt.Resource.Length > 0)) throw new InvalidDataException($"{oat}: Resource is set exactly when Pay = Resource");
+            if (opt.Pay == PayKind.Resource) ValidateResource(opt.Resource, oat);
+            if (opt.Pay == PayKind.None && opt.MaxSteps > opt.MinSteps && opt.ValueText.Length == 0) throw new InvalidDataException($"{oat}: a slider without Pay needs a ValueText");
+            if (opt.RiskChance > 0 != opt.Risk is not null) throw new InvalidDataException($"{oat}: RiskChance and Risk go together");
+            ValidateNeed(opt.Need, oat);
+            foreach (var fx in new[] { opt.Effect, opt.Once, opt.Risk })
+                if (fx is not null && (fx.Next.Length > 0 || fx.Spawn.Length > 0 || fx.ChainResult.Length > 0 || fx.BuyerPrice > 0 || fx.UnlockOffer || fx.OfferPrice))
+                    throw new InvalidDataException($"{oat}: option effects take numbers, flags and text only (no Next, Spawn, ChainResult, BuyerPrice or offers)");
+        }
         for (int c = 0; c < e.Choices.Length; c++)
         {
             var choice = e.Choices[c];
@@ -292,6 +404,8 @@ public static class EventLibrary
             ValidateNeed(choice.Need, cat);
             foreach (var r in choice.Cost?.Resources ?? []) ValidateResource(r.ID, cat);
             if (choice.Cost?.OfferUnits == true && e.Offer != OfferKind.ResearchTrade) throw new InvalidDataException($"{cat}: Cost.OfferUnits needs Offer = ResearchTrade");
+            if (choice.IsSubmit && e.Options.Length == 0) throw new InvalidDataException($"{cat}: NeedPoints needs page Options");
+            if (choice.NeedPoints < 0 || choice.NeedPointsPerHeat < 0) throw new InvalidDataException($"{cat}: NeedPoints must not be negative");
             if (choice.Cost is { } cost && (cost.Money < 0 || cost.MoneyPerHeat < 0 || cost.Tech < 0 || cost.Crew < 0)) throw new InvalidDataException($"{cat}: Cost values must not be negative");
             for (int o = 0; o < choice.Outcomes.Length; o++)
             {
@@ -309,6 +423,9 @@ public static class EventLibrary
             }
         }
     }
+
+    /// <summary>Slider steps of an option stay below this, like the amounts of other multiselect domains.</summary>
+    const int MultiChoiceSpan = 1000;
 
     static void ValidateNeed(NeedRules? need, string at)
     {

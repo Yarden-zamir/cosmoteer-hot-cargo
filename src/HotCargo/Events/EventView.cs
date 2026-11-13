@@ -3,11 +3,20 @@ using HotCargo.Core;
 
 namespace HotCargo.Events;
 
-/// <summary>One button on an event page. Index is the choice index in the rules, or -1 for "Continue" on a result page.</summary>
-public sealed record ChoiceView(int Index, string Text, bool Enabled);
+/// <summary>
+/// One button on an event page. Index is the choice index in the rules, or -1 for "Continue" on a result page.
+/// Submit: the choice submits the page's options (spec 811); Enter picks the first enabled one (UX V15).
+/// </summary>
+public sealed record ChoiceView(int Index, string Text, bool Enabled, bool Submit = false);
+
+/// <summary>
+/// One option row of a page (spec 810): Id is the option index in the rules and the multiselect option ID. Selected and Value come
+/// from the shared draft; Value is the slider steps. Active is false while the option's need is not met (Tooltip says why).
+/// </summary>
+public sealed record OptionView(int Id, string Text, bool Active, string? Tooltip, Ui.SliderSpec? Slider, bool Selected, int Value);
 
 /// <summary>What the dialog shows. Built from sim state without widgets, so autotests check it headless.</summary>
-public sealed record EventPage(string Key, int Serial, string Title, string Body, IReadOnlyList<ChoiceView> Choices);
+public sealed record EventPage(string Key, int Serial, string Title, string Body, IReadOnlyList<ChoiceView> Choices, IReadOnlyList<OptionView> Options);
 
 public static class EventView
 {
@@ -24,7 +33,7 @@ public static class EventView
     public static EventPage Result(EventResult r)
     {
         string body = r.Lines.Length > 0 ? $"{r.Text}\n\n{string.Join("\n", r.Lines)}" : r.Text;
-        return new EventPage($"result {r.Serial}", r.Serial, r.Title, body, [new ChoiceView(-1, "Continue.", true)]);
+        return new EventPage($"result {r.Serial}", r.Serial, r.Title, body, [new ChoiceView(-1, "Continue.", true)], []);
     }
 
     public static EventPage Pending(Run run, SimRoot sim, PendingEvent p, int localPlayer)
@@ -32,16 +41,56 @@ public static class EventView
         var e = EventLibrary.Get(p.EventId);
         int money = run.Game.GetPlayerState(localPlayer, deterministic: false).Money;
         var snapshot = EventRunner.Snap(run, sim, money, p.Tier, p.TechValue);
+        var picks = EventRunner.Picks(run, e, p.Serial);
         var choices = new List<ChoiceView>();
         for (int i = 0; i < e.Choices.Length; i++)
         {
             var c = e.Choices[i];
-            var unmet = EventModel.FirstUnmet(EventRunner.ChoiceNeed(run, c, p), snapshot);
+            var unmet = EventRunner.ChoiceUnmet(run, c, p, c.IsSubmit ? picks : [], snapshot);
             if (unmet is not null && c.HideIfUnmet) continue;
-            choices.Add(new ChoiceView(i, ChoiceText(run, c, p, unmet), unmet is null));
+            choices.Add(new ChoiceView(i, ChoiceText(run, c, p, unmet), unmet is null, c.IsSubmit));
         }
         string body = EventText.Fill(p.Lead.Length > 0 ? $"{p.Lead}\n\n{e.Text}" : e.Text, run.State.FleetTech, p);
-        return new EventPage($"event {p.Serial}", p.Serial, e.Title, body, choices);
+        if (e.OfferLine.Length > 0 && e.Choices.FirstOrDefault(c => c.IsSubmit) is { } submit)
+            body += "\n\n" + string.Format(e.OfferLine, EventModel.OfferPercent(EventRunner.PointsOf(picks), EventModel.NeedPoints(submit.NeedPoints, submit.NeedPointsPerHeat, p.Heat)));
+        return new EventPage($"event {p.Serial}", p.Serial, e.Title, body, choices, Options(run, e, p, picks, snapshot));
+    }
+
+    /// <summary>The page's option rows: hidden ones left out, the rest with the draft's selection and value.</summary>
+    static List<OptionView> Options(Run run, EventRules e, PendingEvent p, IReadOnlyList<EventRunner.OptionPick> picks, Snapshot snapshot)
+    {
+        var rows = new List<OptionView>();
+        for (int i = 0; i < e.Options.Length; i++)
+        {
+            var o = e.Options[i];
+            var unmet = EventModel.FirstUnmet(EventRunner.ToNeed(run, o.Need, p.Tier, p.TechValue), snapshot);
+            if (unmet is not null && o.HideIfUnmet) continue;
+            var pick = picks.FirstOrDefault(k => k.Index == i);
+            int steps = pick?.Steps ?? o.MinSteps;
+            var slider = o.MaxSteps > o.MinSteps
+                ? new Ui.SliderSpec($"ev{p.Serial}.{i}", "", o.MinSteps, o.MaxSteps, 1, o.MinSteps, v => ValueText(run, o, v * o.StepUnits, p))
+                : null;
+            string text = EventText.Fill(o.Text, run.State.FleetTech, p);
+            if (slider is null && ValueText(run, o, o.MinUnits, p) is { Length: > 0 } fixedValue) text += $" <gray>({fixedValue})</gray>";
+            rows.Add(new OptionView(i, unmet is null ? text : $"<gray>{text}</gray>", unmet is null, unmet is null ? null : EventText.Reason(unmet), slider, pick is not null, steps));
+        }
+        return rows;
+    }
+
+    /// <summary>What an option's amount pays or gives: "3,000 credits", "2 Stolen Tech", "15 Hyperium", or its own ValueText.</summary>
+    public static string ValueText(Run run, OptionRules o, float units, PendingEvent p)
+    {
+        var pay = EventRunner.PayOf(run, o, units, p);
+        return o.Pay switch
+        {
+            PayKind.Money => $"{pay.Money:n0} credits",
+            PayKind.Tech => $"{pay.Tech} tech",
+            PayKind.Crew => $"{pay.Crew} crew",
+            PayKind.CrewWork => $"{pay.CrewWork} crew",
+            PayKind.Resource => EventText.ResourceName(o.Resource, pay.Resource),
+            PayKind.None => o.ValueText.Length > 0 ? string.Format(o.ValueText, EventModel.Whole(units, EventRunner.UnitSize(o, p))) : "",
+            _ => throw new ArgumentOutOfRangeException(nameof(o), o.Pay, null),
+        };
     }
 
     /// <summary>

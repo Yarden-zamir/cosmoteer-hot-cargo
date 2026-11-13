@@ -134,6 +134,7 @@ public static class EventText
         UnmetKind.Flag or UnmetKind.NotFlag or UnmetKind.FlagAge => "Not available",
         UnmetKind.MinSectorsLeft or UnmetKind.MaxSectorsLeft => "Not available here",
         UnmetKind.NotWanted => "Only while wanted",
+        UnmetKind.Points => u.Amount <= 0 ? "Select an option first" : "Offer more",
         _ => throw new ArgumentOutOfRangeException(nameof(u), u.Kind, null),
     };
 }
