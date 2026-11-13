@@ -1,0 +1,107 @@
+// Targeted reactor (spec 1053). reactor_small with half its battery output, sent straight into the BatteryStorage of each part
+// that touches one of its sides (one vanilla ResourceStorageProxy per outside edge tile). No crew can take power from it, and
+// crew cannot walk through it. Art: the reactor_small art with the thermal battery roof and a cold glow.
+Part : <./Data/ships/terran/reactor_small/reactor_small.rules>/Part
+{
+	NameKey = "HotCargoAutonomy/TargetedReactor"
+	IconNameKey = "HotCargoAutonomy/TargetedReactorIcon"
+	ID = yarden_zamir.targeted_reactor
+	OtherIDs = []
+	DescriptionKey = "HotCargoAutonomy/TargetedReactorDesc"
+	SelectionTypeID = "yarden_zamir.targeted_reactor"
+	Resources
+	[
+		[steel, 32]
+		[coil, 60]
+		[enriched_uranium, 4]
+	]
+	// No provides_power: crew and the vanilla AI do not look for power here.
+	TypeCategories = [reactor]
+	CrewSpeedFactor = 0
+	AllowedDoorLocations = []
+	GeneratorRequiresDoor = false
+	EditorIcon
+	{
+		Texture
+		{
+			File = "./Data/ships/terran/reactor_small/icon.png"
+			SampleMode = Linear
+		}
+		Size = [56, 56]
+		VertexColor = [150, 210, 255]
+	}
+	Components : ^/0/Components
+	{
+		// Kept for the vanilla battery art and overclock values; nothing fills it and crew cannot take from it.
+		BatteryStorage : ^/0/BatteryStorage
+		{
+			StartingResources = 0
+			SuppliesResources = false
+		}
+		BatteryProducer : ^/0/BatteryProducer
+		{
+			ToStorage = AdjacentPower
+			// Half of reactor_small: 500 every 2/3 s = 750 battery per second.
+			ToQuantity : ^/0/ToQuantity
+			{
+				BaseValue = 500
+			}
+			MinToQuantityForConversion = 1
+		}
+		AdjacentPower
+		{
+			Type = MultiResourceStorage
+			ResourceType = battery
+			AddMode = PrioritizeMostEmptyCapacity
+			ResourceStorages = [PowerUp0, PowerUp1, PowerRight0, PowerRight1, PowerDown0, PowerDown1, PowerLeft0, PowerLeft1]
+		}
+		PowerUp0
+		{
+			Type = ResourceStorageProxy
+			ResourceType = battery
+			PartLocation = [0, -1]
+			ComponentID = BatteryStorage
+			PartCriteria
+			{
+				ExcludeCategories = [provides_power]
+			}
+		}
+		PowerUp1 : PowerUp0 { PartLocation = [1, -1] }
+		PowerRight0 : PowerUp0 { PartLocation = [2, 0] }
+		PowerRight1 : PowerUp0 { PartLocation = [2, 1] }
+		PowerDown0 : PowerUp0 { PartLocation = [0, 2] }
+		PowerDown1 : PowerUp0 { PartLocation = [1, 2] }
+		PowerLeft0 : PowerUp0 { PartLocation = [-1, 0] }
+		PowerLeft1 : PowerUp0 { PartLocation = [-1, 1] }
+
+		Graphics : ^/0/Graphics
+		{
+			Roof
+			{
+				Layer = "roofs"
+				DamageLevels
+				[
+					{ File = "./Data/ships/terran/thermal_battery/roof.png"; NormalsFile = "./Data/ships/terran/thermal_battery/roof_normals.png"; Size = [2, 2] }
+					{ File = "./Data/ships/terran/thermal_battery/roof_33.png"; NormalsFile = "./Data/ships/terran/thermal_battery/roof_normals_33.png"; Size = [2, 2] }
+					{ File = "./Data/ships/terran/thermal_battery/roof_66.png"; NormalsFile = "./Data/ships/terran/thermal_battery/roof_normals_66.png"; Size = [2, 2] }
+				]
+			}
+			OperationalRoofDoodad
+			{
+				Layer = "roof_doodads"
+				DamageLevels
+				[
+					{ File = "./Data/ships/terran/thermal_battery/roof_glows.png"; Size = [2, 2]; VertexColor = [90, 190, 255] }
+				]
+			}
+			OperationalRoofLighting
+			{
+				Layer = "roof_lights_fancy"
+				DamageLevels
+				[
+					{ File = "./Data/ships/common/light_blob.png"; Size = [5, 5]; Z = 1.5; VertexColor = [70, 170, 255] }
+				]
+			}
+		}
+	}
+}

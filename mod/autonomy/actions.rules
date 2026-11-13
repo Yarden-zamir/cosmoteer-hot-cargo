@@ -1,0 +1,60 @@
+	// Autonomous ships (spec 1050 to 1057): the Computer, the targeted reactor and the Funnel, and the Funnel filter setting.
+	{
+		Action = AddMany
+		AddTo = "<ships/terran/terran.rules>/Terran/Parts"
+		ManyToAdd
+		[
+			&<autonomy/computer.rules>/Part
+			&<autonomy/targeted_reactor.rules>/Part
+			&<autonomy/funnel.rules>/Part
+		]
+	}
+	{
+		Action = Add
+		AddTo = "<gui/game/parts/part_toggles.rules>/PartToggles"
+		ToAdd
+		{
+			ToggleID = "hc_funnel_filter"
+			Style = Popout
+			ShowInEditor = true
+			Choices
+			[
+				{
+					ChoiceID = "hc_funnel_ship"
+					Mode = 0
+					ButtonToolTipKey = "HotCargoAutonomy/FunnelShipTip"
+					ButtonSprite { Texture { File = "./Data/ships/terran/factory_processor/processor3.png"; MipLevels = 2; SampleMode = Linear } }
+				}
+				{
+					ChoiceID = "hc_funnel_all"
+					Mode = 1
+					ButtonToolTipKey = "HotCargoAutonomy/FunnelAllTip"
+					ButtonSprite { Texture { File = "./Data/resources/iron/icon.png"; MipLevels = 2; SampleMode = Linear } }
+				}
+				{
+					ChoiceID = "hc_funnel_50"
+					Mode = 2
+					ButtonToolTipKey = "HotCargoAutonomy/Funnel50Tip"
+					ButtonSprite { Texture { File = "./Data/resources/coil/icon.png"; MipLevels = 2; SampleMode = Linear } }
+				}
+				{
+					ChoiceID = "hc_funnel_200"
+					Mode = 3
+					ButtonToolTipKey = "HotCargoAutonomy/Funnel200Tip"
+					ButtonSprite { Texture { File = "./Data/resources/gold/icon.png"; MipLevels = 2; SampleMode = Linear } }
+				}
+				{
+					ChoiceID = "hc_funnel_1000"
+					Mode = 4
+					ButtonToolTipKey = "HotCargoAutonomy/Funnel1000Tip"
+					ButtonSprite { Texture { File = "./Data/resources/diamond/icon.png"; MipLevels = 2; SampleMode = Linear } }
+				}
+				{
+					ChoiceID = "hc_funnel_off"
+					Mode = 5
+					ButtonToolTipKey = "HotCargoAutonomy/FunnelOffTip"
+					ButtonSprite { Texture { File = "./Data/gui/game/parts/toggle_power_off.png"; MipLevels = 2; SampleMode = Linear } }
+				}
+			]
+		}
+	}

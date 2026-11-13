@@ -61,6 +61,11 @@ HotCargoShipAi
 	Preset_Sniper = "Sniper"
 	Preset_Escort = "Escort"
 	Preset_VaultGuard = "Vault guard"
+	Preset_Looter = "Looter (autonomous)"
+	Preset_Miner = "Miner (autonomous)"
+	Preset_SupplyRunner = "Supply runner (autonomous)"
+	Preset_Salvager = "Salvager (autonomous)"
+	Preset_EscortDrone = "Escort drone (autonomous)"
 
 	// Conditions
 	Cond_Always = "Always"
@@ -84,6 +89,13 @@ HotCargoShipAi
 	Cond_CratesWithin = "Tech crates within"
 	Cond_EnemyHoldsTech = "An enemy holds our tech"
 	Cond_EnemyCalling = "An enemy calls for help"
+	Cond_CargoAbove = "My cargo above"
+	Cond_CargoToSell = "I carry cargo to sell"
+	Cond_LootWithin = "Loot (my filter) within"
+	Cond_StationInRange = "A station is in hail range"
+	Cond_AsteroidWithin = "Asteroid (my ores) within"
+	Cond_WreckWithin = "Wreck within"
+	Cond_FleetBeyond = "My crewed ship is further than"
 
 	// Actions
 	Act_TargetNearest = "Target: nearest"
@@ -102,6 +114,11 @@ HotCargoShipAi
 	Act_FollowLeader = "Move: follow first ship"
 	Act_Guard = "Move: guard"
 	Act_CollectTech = "Move: collect tech crates"
+	Act_CollectLoot = "Move: collect loot"
+	Act_GoToStation = "Move: go to station"
+	Act_Mine = "Move: mine asteroid"
+	Act_Salvage = "Move: salvage wreck"
+	Act_ReturnToFleet = "Move: return to my crewed ship"
 	Act_FireAtWill = "Fire: at will"
 	Act_FocusTarget = "Fire: focus"
 	Act_TargetWeapons = "Fire: at their weapons"
@@ -110,6 +127,9 @@ HotCargoShipAi
 	Act_HoldFire = "Fire: hold"
 	Act_FireDisruptors = "Fire: disruptors, EMP at callers"
 	Act_Face = "Face the target with"
+	Act_Sell = "Trade: sell cargo"
+	Act_Buy = "Trade: buy cargo"
+	Act_Unload = "Trade: unload into my crewed ship"
 
 	// Parameters
 	PercentFmt = "{0}%"
@@ -133,4 +153,7 @@ HotCargoShipAi
 	GuardWho_Flagship = "my first ship"
 	GuardWho_VaultShip = "the vault ship"
 	GuardWho_WeakestAlly = "the weakest ally"
+	Station_Nearest = "nearest"
+	Station_BestPrice = "best sell price"
+	Station_Cheapest = "cheapest to buy"
 }
