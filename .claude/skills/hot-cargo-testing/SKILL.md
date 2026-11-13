@@ -40,11 +40,13 @@ description: Build Hot Cargo, run unit tests, headless game tests and co-op test
 - A release tags a tested commit: `scripts/release.sh <version>` takes the newest commit on `origin/main` whose required checks all passed (`--commit <sha>` picks one), and builds the zip at that commit. No merge freeze is needed.
 
 ## Co-op tests
-- Co-op tests are 3 sessions (`tests/autotest-mp/<session>.txt`). On the Mac: `scripts/autotest-sim.sh 400 mp:coop-core` (one session: `scripts/autotest-sim-mp.sh tests/autotest-mp/coop-core.txt`). On the PC: `scripts/autotest-all.sh 400 mp:coop-core`. Two headless instances play host and client over UDP on 127.0.0.1. The session file holds all choreography; the client follows (`client.txt`).
+- Co-op tests are 4 sessions (`tests/autotest-mp/<session>.txt`). In the headless sim: `scripts/autotest-sim.sh 400 mp:coop-core` (one session: `scripts/autotest-sim-mp.sh tests/autotest-mp/coop-core.txt`). On the PC: `scripts/autotest-all.sh 400 mp:coop-core`. Two headless instances play host and client over UDP on 127.0.0.1. The session file holds all choreography; the client follows (`client.txt`).
 - Each `step <area>.<name>` reports on its own. The summary gives one reason: join failed, steps failed, desync, state differs, PC link. A state difference names the step and the `RunState` members that differ.
 - `as 1 <command>` runs a command in the sim as the client player. `on 1 <command>` runs it on the client's machine (its UI, its real inputs). Details: CONTRIBUTING.md, Co-op tests.
 - On the Mac both processes keep the real-time clock (`SIM_REALTIME=1`): network requests and lockstep read the game clock. The headless sim can run slower than real time when the Mac is busy, so give waits that depend on crew or flight time some margin.
 - A new co-op check is a new step in the session that fits, not a new test. Keep each session under about 6 minutes.
+- 3 players: `scripts/autotest-all.sh 400 mp3:<session>` (or `PLAYERS=3 scripts/autotest-mp.sh ...`). It needs 3 slots, so run one at a time. Every client follows; `on 1` and `as 1` address the first client. `mpstart {PLAYERS}` starts with the player count, and a line that starts with `@3p ` or `@2p ` runs only with that count.
+- Frame and tick cost of Hot Cargo code: `selfprof on|reset|report <label>` (test `telemetry-stress`, session `coop-stress`). Headless slots draw nothing, so `frameprof on|report <label>` calls the draw-time hooks once per frame and logs time and bytes per frame.
 
 ## Infrastructure failures
 - After a change to the slot locks in `scripts/autotest-lib.sh`, run `scripts/test-slot-locks.sh`: dummy takers on this Mac, in their own lock folder (no PC, no game).

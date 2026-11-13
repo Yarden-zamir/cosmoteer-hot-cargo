@@ -1,6 +1,7 @@
 # Economy: spec 19. Tech value is a fraction of the peak tier's ship value. Heat gains raise it (notoriety); heat losses do not lower it.
 newgame run
 wait 8
+pu_set Enabled false
 expect peaktier >= 1
 # Time heat already counts.
 expect notoriety < 2

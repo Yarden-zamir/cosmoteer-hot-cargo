@@ -2,6 +2,7 @@
 # tunables.rules gets only the changed values, and invalid values are rejected with a message.
 newgame run
 wait 8
+pu_set Enabled false
 expect hunters == 0
 menu open
 expect menu_sections >= 13

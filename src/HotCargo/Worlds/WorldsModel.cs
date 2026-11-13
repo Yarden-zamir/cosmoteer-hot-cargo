@@ -38,6 +38,47 @@ public static class WorldsModel
     }
 
     /// <summary>
+    /// Spec 221: the outward direction at a point of a current band: across the flow, toward the nearer side of the band.
+    /// The offset is from the band center (a point on its axis) to the point. A point exactly on the axis goes to one fixed side,
+    /// so nothing stays on the axis.
+    /// </summary>
+    public static (float X, float Y) Outward(float flowX, float flowY, float offsetX, float offsetY)
+    {
+        float acrossX = -flowY, acrossY = flowX;
+        float side = offsetX * acrossX + offsetY * acrossY >= 0f ? 1f : -1f;
+        return (acrossX * side, acrossY * side);
+    }
+
+    /// <summary>
+    /// Spec 221: the push of the current on a ship or a loose item, in units per second squared. Along the flow it is PushAccel.
+    /// Across the flow, toward the outward side, it is PushAccel with the flow speed and the push times sideShare.
+    /// So a drifting object moves toward the drift velocity flowSpeed × (flow + sideShare × outward), at the angle
+    /// atan(sideShare) from the flow, and leaves the band. It leaves at the side when sideShare is above
+    /// (distance to the side) ÷ (distance to the end): 0.4 from the center of a 6000 × 2400 band.
+    /// </summary>
+    public static (float X, float Y) Push(float vx, float vy, (float X, float Y) flow, (float X, float Y) outward,
+        float flowSpeed, float maxAccel, float sideShare, float strength)
+    {
+        float along = PushAccel(vx * flow.X + vy * flow.Y, flowSpeed, maxAccel, strength);
+        float across = PushAccel(vx * outward.X + vy * outward.Y, flowSpeed * sideShare, maxAccel * sideShare, strength);
+        return (flow.X * along + outward.X * across, flow.Y * along + outward.Y * across);
+    }
+
+    /// <summary>
+    /// Spec 221: the velocity change per second of a loose item (a vanilla nugget) in the current: the ship push, plus a term
+    /// that cancels the vanilla drag (Nugget.FixedUpdateDynamic: v -= v × damping × dt) while the item is in the cloud.
+    /// So an item moves like a ship without engines. Without the cancel, the drag stops items in the soft cloud edge, where the
+    /// push fades with the cloud strength.
+    /// </summary>
+    public static (float X, float Y) ItemPush(float vx, float vy, (float X, float Y) flow, (float X, float Y) outward,
+        float flowSpeed, float maxAccel, float sideShare, float strength, float damping)
+    {
+        if (strength <= 0f) return (0f, 0f);
+        var (ax, ay) = Push(vx, vy, flow, outward, flowSpeed, maxAccel, sideShare, strength);
+        return (ax + vx * damping, ay + vy * damping);
+    }
+
+    /// <summary>
     /// Spec 223: how deep a point is in a sun's heat zone. 0 at the outer edge (and outside), 1 at the kill radius (and inside).
     /// The vanilla heat damage scales with the same inverse distance (PlanetDoodad.ProximityEffects).
     /// </summary>

@@ -1,0 +1,37 @@
+# Network outage (spec 920 to 925): gains are blocked, losses apply, it ends on time; a natural outage goes through the pacer.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+pu_set ScoutChance 0
+pu_set BlockadeChance 0
+heat -100
+heat 10
+pu_outage 20 natural
+wait 1
+expect pu_outage >= 17
+expect pu_count_outage == 1
+log start
+# Time, fame and flat gains add nothing.
+pu_gain 10
+fame 500
+wait 10
+expect heat <= 10.05
+# Losses still apply.
+pu_gain -4
+wait 1
+expect heat <= 6.05
+expect heat >= 5.5
+# It ends on time, then gains count again.
+waitfor pu_outage == 0 20
+pu_gain 10
+wait 1
+expect heat >= 15.5
+# A rolled natural outage that the pacer refuses (kind gap) does not start.
+pu_outage_due 1
+wait 3
+expect pu_outage == 0
+expect pu_outage_due == -1
+expect pu_count_outage == 1
+log end
+quit

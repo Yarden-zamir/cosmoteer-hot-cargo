@@ -1,0 +1,25 @@
+HotCargoPursuit
+{
+	// Reporting scout (spec 910 to 914)
+	Reporting = "REPORTING"
+	ScoutChatFmt = "<bad>{0} breaks off and runs for the relay. Stop it before it reports.</bad>"
+	ScoutReportedFmt = "Scout reported your position: heat +{0:0}"
+
+	// Relay blockade (spec 915 to 919)
+	BlockadeFmt = "BLOCKADE: hunters hold the relay to {0}"
+
+	// Network outage (spec 920 to 926)
+	OutageStartFmt = "NETWORK DOWN for {0}: no heat gains"
+	OutageOver = "Corporate network back up"
+	PanelOutageFmt = "<b>NETWORK DOWN {0}</b>  heat gains +0"
+	PanelBlocked = "+0 heat: network down"
+
+	// Hacker (spec 930 to 936)
+	HackerOfferFmt = "<b>Proxy:</b> <i>\"Corporate net is mine for the taking. {0} of dark: no one logs your heat. {1} credits.\"</i>\n<gray>Leaves in {2}.</gray>"
+	HackerPayFmt = "Pay {0}: network down for {1}"
+	HackerDecline = "\"Not today.\""
+	HackerNoMoney = "Not enough money."
+	HackerPaidFmt = "You paid the hacker {0}. The corporate network goes dark."
+	HackerDeclined = "The hacker shrugs and cuts the link."
+	HackerGone = "The hacker's proxy jumps away."
+}

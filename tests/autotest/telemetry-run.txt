@@ -4,6 +4,7 @@
 # (shieldplayers) and damagehostiles stands in for won fights.
 newgame run
 wait 8
+pu_set Enabled false
 shieldplayers on
 # System 1: an event, a contract, a sale, an escort, mission fame and heat up to Warning.
 event the_fence

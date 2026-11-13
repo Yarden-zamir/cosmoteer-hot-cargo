@@ -98,7 +98,7 @@ Actions: **smoke** (in the smoke tier), keep (full tier only), done (changed in 
 | tunablesmenu-live | 67 s | settings window applies, writes the file, rejects bad values | UI, files | — | **smoke** |
 | ux-basic | 80 s | panels, comms pause, ship alert, loss panel | UI | — | **smoke** |
 | ux-more | 80 s | dialogue keys, supplies, trade hints, comms on the map | UI | — | keep |
-| worlds-current | 79 s | a ship drifts in the current | physics | WorldsModel.PushAccel | keep |
+| worlds-current | 150 s | a ship and a crate drift in the current and out of it | physics | WorldsModel.Push, WorldsModel.ItemDrift | keep |
 | worlds-fit | 89 → 85 s | map archetypes, hazard tooltip, real placement in each archetype, trade hub offers | system generation, UI | — | **smoke** (with worlds-map) |
 | worlds-lair | 79 s | lair found only near it | proximity | — | keep |
 | worlds-map | 68 s | map archetypes, hazard tooltip, trade hub | — | — | done: merged into worlds-fit |
@@ -108,7 +108,7 @@ Actions: **smoke** (in the smoke tier), keep (full tier only), done (changed in 
 
 ### Co-op
 
-Co-op tests are 3 sessions (`tests/autotest-mp/`): `coop-core`, `coop-economy` and `coop-combat`. Each session checks determinism with a hash of the whole run state and has one step for each old co-op test check. A touched area runs every session with a step of the area. `coop-core` is the co-op smoke test for shared code. The old 21 tests map to steps as listed in the session files (the step names start with the area).
+Co-op tests are 4 sessions (`tests/autotest-mp/`): `coop-core`, `coop-economy`, `coop-combat` and `coop-stress` (a cost measure, spec 42). Each session checks determinism with a hash of the whole run state and has one step for each old co-op test check. A touched area runs every session with a step of the area. `coop-core` is the co-op smoke test for shared code. The old 21 tests map to steps as listed in the session files (the step names start with the area).
 
 ## Findings
 

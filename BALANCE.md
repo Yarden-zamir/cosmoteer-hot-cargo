@@ -81,6 +81,7 @@ Heat stages and missions. One typical mission adds about 11.8 heat: 5.8 from fam
 - Three stages give three clear steps: scouts (Warning), a real fight (Hunt), then repeat waves until the players jump (Strike). Warning is above the highest carried heat (25), so the scouts always come after the players arrive. Hunt starts with the station markup (75, requirement 655).
 - Before the 5 % cut, the Strike came after 6.1, 6.9 and 7.3 missions. The cut gives about 0.3 more missions in each sector. A very fast player who picks low-fame missions (bounties, 2.5 std fame) does about 8.
 - A clear relay and a blind jump are earned (a relay without hunters near it, or 1.5 × fuel, a slower spin-up and a damage risk), and they stay inside "about 6, a fast player more".
+- **Smaller systems** (requirement 105, `SystemScale` 0.5, was about 0.7). Measured in `worlds-rings`: trade stations at 4,200 to 6,800 from the center (was 7,500 to 11,000), gates at 9,400 to 11,250 (was 13,500 to 16,000), sites from the center at half the vanilla radius. A trip between stations is about 0.6 as long; a trip from a station to a gate is about 4,000 (was about 5,500), because the stations moved in with the gates. Short hops next to a station keep their length. If travel is half of a mission's 2.9 minutes and gets 0.4 shorter, a mission takes about 2.3 minutes and adds about 0.8 less heat (11.0), so the Strike after a watched relay comes after about 6.8 missions (was 6.4). That stays inside "about 6, a fast player more". No retune; check it with telemetry.
 - **Changes:** `HeatPerStandardMission` 15 → **1.5** (per std fame unit). `HeatPerGameMinute` 2 → **1.2**. `EscortHeatChange` −15 → **−8** (the old value was one old mission; it would now be three). Later: both heat rates −5 % (`HeatPerStandardMission` **1.425**, `HeatPerGameMinute` **1.14**), and 3 heat stages in place of 4 (Patrol removed).
 - **Boards.** Each system offers 20 to 26 missions on its station boards (about 4 per station), plus 50 galaxy "visit" offers in a separate list. Hot Cargo adds 4 to 6 of them; the largest share was story chains (2 to 3 per system, one at every station). With 6 missions per sector, a board of about 3 × 6 = 18 to 24 offers is enough choice. **Change:** chains start at 60 % of stations and at most 2 per system (`Chains.StationChance` 1 → 0.6, new `Chains.MaxNewChainsPerSystem` = 2). Measured after: 0 to 2 chains and 3 to 4 Hot Cargo offers per system, 20 to 25 offers in total. Mechanics missions already average under 1 per system (they need asteroids, storms or a single sun). No other cut.
 
@@ -108,6 +109,23 @@ Heat stages and missions. One typical mission adds about 11.8 heat: 5.8 from fam
 - Hunters give no fame (no kill fame, measured 0 at every tier) and no money reward, but their wrecks pay about 10 % of their value in salvage (1 std at `RewardScale` 1), and 30 to 60 fuel.
 - **Recommendation: no bounty.** Kill fame would add heat, so a fight would call the next wave (a loop). A money bounty would make repeat Strike waves (every 180 s, up to 12 hunters) a farm. Salvage already pays, and it takes time to collect under pressure, which is the trade-off we want.
 
+### 8. The Pursuit (spec 900 to 949)
+
+The Pursuit changes hunter strength and adds heat events. The budget above still holds: the Strike comes after about 6.3 to 7.5 missions per sector.
+
+Modelled with the numbers of section 4 (8 units, multiplier 1.2: one typical mission is about 11.8 heat with its contract and its time, time 1.37 heat per minute):
+
+| Pursuit part | Rule | Heat per sector | Missions before the Strike |
+|---|---|---|---|
+| Reporting scout | `ScoutChance` 0.5 × `ScoutReportHeat` 15 × an escape share of about 0.5. Warning (40) starts in every sector, because it is above the highest carried heat (25). | +3.75 | −0.3 |
+| Natural outage | 120 s without gains: time 2.7 + about 0.7 missions (6 missions in 17.5 min) × 8.5 (fame and contract) = about −9 in the sector where it runs. 1.9 per run (`PursuitModel.ExpectedCapped(6, 0.5, 2)`), so about −2 per sector on average. | −9 there | +0.7 there |
+| Hacker outage | 240 s: about −17 in that sector. It comes in 82 % of runs (1 − 0.75⁶), at most once, and costs 0.5 × TVM: 1 to 1.5 typical missions of money. | −17 there | +1.5 there, if bought |
+| Ramp and fleet factor | Fewer hunters early (× 0.75 in sector 1, × 1 at the Buyer), ± 15 % by fleet value. Hunters give no fame, so no heat change. | 0 | 0 |
+| Blockade | No heat change. Parked ships make the relay a watched relay (−75 % instead of −85 %): about +10 heat in the next sector if the players do not lure them away or jump blind. At most 2 per run. | +10 next sector, rare | −0.8 there |
+
+- Run average: scouts (+3.75 per sector) and outages (−2 per sector) leave about +1.7 heat per sector. The Strike comes about 0.15 missions earlier than in the section 4 table: about 6.3 missions after a watched relay. A sector with an outage gives about 0.7 more, a sector with an escaped scout about 1.3 fewer. That is the spread that the Pursuit wants: the heat clock varies, the budget holds.
+- Limit: the escape share of scouts and the hacker buy rate are guesses. Check them against telemetry (`TELEMETRY.md`, heat events by source) when real runs exist.
+
 ## Changes
 
 | Tunable or rule | Before | After | Requirement |
@@ -129,6 +147,12 @@ Heat stages and missions. One typical mission adds about 11.8 heat: 5.8 from fam
 | Station fuel stock (typed, untyped) | 80–90 %, 0–10 % | 25–40 %, 0–2 % | 300 |
 | Jump fuel cost (map, local) | 1 per 100 mass per 10 LY, 25 km | per 5 LY, 12.5 km | 300 |
 | `Balance.StationFuelPerMillion`, `StationFuelMinimum` (new) | no floor | 100 per million of the next tier's ship value, at least 10 | 304 |
+| `Pursuit.EarlyShipFactor`, `LateShipFactor` (new) | 1 | 0.75 in sector 1 → 1 at the Buyer | 901 |
+| `Pursuit.EarlyIntervalFactor`, `LateIntervalFactor` (new) | 1 | 1.5 → 1 (repeat Strike waves) | 901 |
+| `Pursuit.FleetFactorPerDoubling`, `FleetFactorMax` (new) | none | ± 15 % hunter ships by fleet value | 902 |
+| `Pursuit.ScoutChance`, `ScoutReportHeat` (new) | none | 0.5, +15 heat | 910, 912 |
+| `Pursuit.OutageChance`, `OutageSeconds` (new) | none | 0.5 per sector, at most 2 a run, 120 s | 920, 921 |
+| `Pursuit.HackerChance`, `HackerOutageSeconds`, `HackerPriceShare` (new) | none | 0.25, 240 s, 0.5 × TVM | 930, 931 |
 | Convoy reward sort value | int.MinValue (the sum wrapped) | 0 | — |
 
 ## Dependencies on other areas
