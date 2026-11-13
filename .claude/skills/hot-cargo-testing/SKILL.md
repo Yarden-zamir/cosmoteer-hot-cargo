@@ -38,6 +38,7 @@ description: Build Hot Cargo, run unit tests, headless game tests and co-op test
 - A new co-op check is a new step in the session that fits, not a new test. Keep each session under about 6 minutes.
 
 ## Infrastructure failures
+- After a change to the slot locks in `scripts/autotest-lib.sh`, run `scripts/test-slot-locks.sh`: dummy takers on this Mac, in their own lock folder (no PC, no game).
 These are not game failures. Rerun the test:
 - "relay was lost", "no signed connection to kitshn", "kitshn refused the run", "tar: Write error", "the PC did not confirm the deploy", "not enough free memory to start slot" (the PC is full; it waited 120 s).
 - An empty test log after the deploy line.
