@@ -1,4 +1,6 @@
+using System.Globalization;
 using Cosmoteer.Factions;
+using Cosmoteer.Modes.Career;
 using Cosmoteer.Ships;
 using Cosmoteer.Ships.Commands;
 using Cosmoteer.Ships.Parts.Weapons;
@@ -32,8 +34,26 @@ static class AllyPeaceAutotest
             _allyHits = _hunterHits = _playerHits = 0;
             Log.Info($"AUTOTEST factions peace: watching {_watched.ID}");
         };
+        // fa_peace_attack: single player. Orders the player ship to attack the nearest hunter, as a right click does, so it moves to a firing spot.
+        Autotest.Commands["fa_peace_attack"] = _ =>
+        {
+            var player = Tech.TechAutotest.PlayerShip();
+            var hunter = HunterSpawner.Hunters(Autotest.RequireRun().Game.Sim).MinBy(h => h.DetWorldCenter.DistanceTo(player.DetWorldCenter))
+                         ?? throw new InvalidOperationException("no hunter to attack");
+            HunterOrders.Attack(player, hunter);
+            Log.Info($"AUTOTEST factions peace: {player.Metadata.PlainShipName} attacks {hunter.Metadata.PlainShipName}");
+        };
+        // fa_peace_shield <seconds>: single player. Every hunter takes no damage for this time (vanilla AddInvincibleShip). Weapons and AI
+        // still target it, so the fight goes on and the peace counts cover the whole watch.
+        Autotest.Commands["fa_peace_shield"] = arg =>
+        {
+            var sim = Autotest.RequireRun().Game.Sim;
+            var career = (CareerSimModeManager)sim.Mode;
+            var duration = Halfling.Timing.Time.FromSeconds(double.Parse(arg, CultureInfo.InvariantCulture));
+            foreach (var h in HunterSpawner.Hunters(sim)) career.AddInvincibleShip(h, duration);
+        };
         Run.Hooks.Tick += OnTick;
-        // Ticks in which a ship of the watched faction targets a hunter, a hunter targets a ship of that faction, and a human ship targets a hunter.
+        // Ticks in which a ship of the watched faction targets a hunter, a hunter targets a ship of that faction, and a turret of a human ship aims at a hunter.
         Autotest.Fields["fa_peace_allyhits"] = () => _allyHits;
         Autotest.Fields["fa_peace_hunterhits"] = () => _hunterHits;
         Autotest.Fields["fa_peace_playerhits"] = () => _playerHits;
@@ -50,11 +70,13 @@ static class AllyPeaceAutotest
         var allies = Ships(faction, sim).ToList();
         if (allies.Any(a => hunters.Any(h => Targets(a, h)))) _allyHits++;
         if (hunters.Any(h => allies.Any(a => Targets(h, a)))) _hunterHits++;
-        if (sim.Ships.HumanPlayerShips.Any(p => hunters.Any(h => Targets(p, h)))) _playerHits++;
+        // Only a turret counts for the players: the attack order of fa_peace_attack alone is no proof of a fight.
+        if (sim.Ships.HumanPlayerShips.Any(p => hunters.Any(h => TurretAims(p, h)))) _playerHits++;
     }
 
     /// <summary>The ship's current attack order or a turret aims at the other ship.</summary>
     static bool Targets(Ship ship, Ship other) =>
-        ship.Commands.CurConfirmedCommand is IAttackCommand { Target: var t } && t == other
-        || ship.Weapons.Any(w => w is TurretWeapon { Target: { } target } && target.Ship == other);
+        ship.Commands.CurConfirmedCommand is IAttackCommand { Target: var t } && t == other || TurretAims(ship, other);
+
+    static bool TurretAims(Ship ship, Ship other) => ship.Weapons.Any(w => w is TurretWeapon { Target: { } target } && target.Ship == other);
 }
