@@ -1,8 +1,5 @@
 	// Spec 105: smaller star systems and fewer missions per system, for shorter in-system travel and a faster run.
-	// contracts/system_scale.rules holds the scale. Each distance below is the vanilla value times Scale, each scattered count the
-	// vanilla count times Area. Gaps between gameplay objects scale too. Gaps under 1000 are hull clearances and keep the vanilla value.
-	// Sun gaps are max(vanilla gap * Scale, SunClearance), so no station or ship spawns in the heat.
-	// Scenery (suns, planets, nebulas, the fog radius) keeps the vanilla size.
+	// Distances, gaps and counts follow contracts/system_scale.rules (the rules for each kind of value are there).
 	// These change the shared sector rules, so they apply to every map size while the mod is on.
 	// The trade stations move in with the gates, so the gates stay outside the station ring.
 	{
