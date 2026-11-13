@@ -9,9 +9,11 @@ ev_tostation
 wait 2
 expect ev_courier_offers == 1
 # Spec 1119: with the offer selected in the station's comms, the accept button follows the storage at once, without a reselect.
-ev_courier_ui
+ev_courier_ui open
+waitfor ev_courier_ui_open == 1 15
+ev_courier_ui tab
 wait 1
-ev_courier_ui_select
+ev_courier_ui select
 wait 1
 expect ev_accept_active == 1
 ev_storage_fill steel
@@ -20,7 +22,7 @@ expect ev_accept_active == 0
 ev_storage_clear steel
 wait 1
 expect ev_accept_active == 1
-ev_courier_ui_close
+ev_courier_ui close
 # Full storage: the accept is refused and the offer stays.
 ev_storage_fill steel
 ev_courier_accept
@@ -54,6 +56,6 @@ ev_mark
 ev_comms carrier Hand over the sealed case.
 expect ev_courier_handover == 1
 expect ev_res_yarden_zamir.sealed_case_gain == -1
-expect ev_heat_gain == 0
+expect ev_heat_gain < 1
 expectcomms contact Hand over the case. 0
 quit

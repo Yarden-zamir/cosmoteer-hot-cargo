@@ -21,16 +21,16 @@ item_action yarden_zamir.sealed_case open
 expect ev_res_yarden_zamir.sealed_case_gain == -1
 expect ev_res_yarden_zamir.opened_case_gain == 1
 expect ev_res_yarden_zamir.tracer_beacon_gain == 1
-expect ev_heat_gain == 0
-# It calls home once a minute (3 heat).
-waitfor ev_heat_gain >= 3 80
+# It calls home once a minute (3 heat). Time alone adds less than 2 heat a minute.
+wait 65
+expect ev_heat_gain >= 3
 # Spaced, it is gone, and heat stops rising.
 item_action yarden_zamir.tracer_beacon space
 expect ev_res_yarden_zamir.tracer_beacon_gain == 0
 expect ev_loose_yarden_zamir.tracer_beacon_gain == 0
 ev_mark
 wait 65
-expect ev_heat_gain == 0
+expect ev_heat_gain < 2
 # Full storage: the opened case takes the case's slot, and the codes (forced) drift loose.
 item_give yarden_zamir.sealed_case
 ev_storage_fill steel

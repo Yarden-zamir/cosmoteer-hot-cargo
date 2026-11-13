@@ -899,14 +899,13 @@ Events
 		[
 			{
 				Text = "Hand over the sealed case."
-				Need { Resources = [{ ID = yarden_zamir.sealed_case; Amount = 1 }] }
+				// The cost is the need: the choice hides while no sealed case is aboard.
 				HideIfUnmet = true
 				Cost { Resources = [{ ID = yarden_zamir.sealed_case; Amount = 1 }] }
 				Outcomes [ { Text = "The hatch closes. Your pay waits at the station."; HandOver = true } ]
 			}
 			{
 				Text = "Hand over the opened case."
-				Need { Resources = [{ ID = yarden_zamir.opened_case; Amount = 1 }] }
 				HideIfUnmet = true
 				Cost { Resources = [{ ID = yarden_zamir.opened_case; Amount = 1 }] }
 				Outcomes

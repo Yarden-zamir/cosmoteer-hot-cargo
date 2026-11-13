@@ -250,30 +250,51 @@ public static class EventsArea
             var mission = CourierOffers(RequireSim()).Select(o => o.Mission).FirstOrDefault()
                 ?? throw new InvalidOperationException("no Courier Job offer in this system");
             var station = CourierStation();
+            _acceptedCourier = mission;
             RequireRun().Game.NetManager.EnqueueInput(new Cosmoteer.Modes.Career.Comms.CommMissionsTab.MPAcceptMissionInput(
                 Cosmoteer.Modes.Career.Comms.CommMissionsTab.MissionSourceType.Ship, station, mission));
             Autotest.Wait(2);
         };
-        // Spec 1119, the real comms UI: ev_courier_ui opens the offer station's comms on the missions tab, ev_courier_ui_select selects
-        // the offer, ev_courier_ui_close closes it. ev_accept_active is 1 while the tab's accept button reacts.
-        Autotest.Commands["ev_courier_ui"] = _ =>
+        // Spec 1119, the real comms UI, one frame apart (the window builds its tabs on its first frame):
+        // ev_courier_ui open | tab | select | close: open the offer station's comms, show the missions tab, select the offer, close.
+        // ev_accept_active is 1 while the tab's accept button reacts.
+        Autotest.Commands["ev_courier_ui"] = arg =>
         {
             var game = RequireRun().Game;
-            var window = new Cosmoteer.Modes.Career.Comms.CommWindow(game, SimQueries.FirstHumanShip(RequireSim()) ?? throw new InvalidOperationException("no player ship"), CourierStation());
-            game.Gui.FloatingWindows.AddChild(window);
-            window._tabs.TabsListBox.SelectedWidget = window._missionsTab ?? throw new InvalidOperationException("the station has no missions tab");
+            var station = CourierStation();
+            Cosmoteer.Modes.Career.Comms.CommWindow.s_openWindows.TryGetValue(station, out var open);
+            switch (arg.Trim())
+            {
+                case "open":
+                    // Next to the offer's station, in comms range, then its comms window as a hail opens it.
+                    var caller = SimQueries.FirstHumanShip(RequireSim()) ?? throw new InvalidOperationException("no player ship");
+                    Autotest.Teleport(caller, station.DetWorldCenter + new Halfling.Geometry.Vector2(station.WorldBoundingRadius + caller.WorldBoundingRadius + 200f, 0));
+                    game.Gui.FloatingWindows.AddChild(new Cosmoteer.Modes.Career.Comms.CommWindow(game, caller, station));
+                    break;
+                case "tab":
+                    var window = open ?? throw new InvalidOperationException("no comms window with the station; ev_courier_ui open first");
+                    window._tabs.TabsListBox.SelectedWidget = window._missionsTab ?? throw new InvalidOperationException("the station has no missions tab");
+                    break;
+                case "select":
+                    var mission = CourierOffers(RequireSim()).Select(o => o.Mission).FirstOrDefault() ?? throw new InvalidOperationException("no Courier Job offer");
+                    MissionsTab()._missionsPanel._missionItems[mission].IsSelected = true;
+                    break;
+                case "close":
+                    if (open is not null) Cosmoteer.Game.Gui.Extensions.Unparent(open);
+                    break;
+                default: throw new InvalidOperationException("ev_courier_ui needs: open | tab | select | close");
+            }
         };
-        Autotest.Commands["ev_courier_ui_select"] = _ =>
-        {
-            var tab = MissionsTab();
-            var mission = CourierOffers(RequireSim()).Select(o => o.Mission).FirstOrDefault() ?? throw new InvalidOperationException("no Courier Job offer");
-            tab._missionsPanel._missionItems[mission].IsSelected = true;
-        };
-        Autotest.Commands["ev_courier_ui_close"] = _ =>
-        {
-            foreach (var w in RequireRun().Game.Gui.FloatingWindows.Children.OfType<Cosmoteer.Modes.Career.Comms.CommWindow>().ToList()) Cosmoteer.Game.Gui.Extensions.Unparent(w);
-        };
+        Autotest.Fields["ev_courier_ui_open"] = () => Cosmoteer.Modes.Career.Comms.CommWindow.s_openWindows.TryGetValue(CourierStation(), out _) ? 1 : 0;
         Autotest.Fields["ev_accept_active"] = () => MissionsTab()._acceptBtn.SelfInputActive ? 1 : 0;
+        // The Courier Job that ev_courier_accept accepted last, also after it left the log: 1 done, 0 open, -1 failed, -2 none.
+        Autotest.Fields["ev_courier_job"] = () =>
+        {
+            if (_acceptedCourier is not { } m) return -2;
+            var found = new List<HandOverObjective>();
+            m.GetObjectives(found);
+            return found.Single().Completion switch { CompletionState.Completed => 1, CompletionState.Failed => -1, _ => 0 };
+        };
         // The money reward of the latest Courier Job in the log, or -1.
         Autotest.Fields["ev_courier_pay"] = () => RequireRun().Mode.Missions.LastOrDefault(m => m.MetatypeID.Equals(CourierType))?.Rewards
             .OfType<Cosmoteer.Modes.Career.Missions.Rewards.MoneyReward>().Sum(m => m.Money) ?? -1;
@@ -684,6 +705,7 @@ public static class EventsArea
         Contracts.ContractsUi.AcceptButtonPatch.LastTab?.TryGetTarget(out var tab) == true ? tab : throw new InvalidOperationException("no missions tab; ev_courier_ui first");
 
     static Cosmoteer.Game.ObjectID? _markedContact;
+    static Mission? _acceptedCourier;
     static ID<Cosmoteer.Resources.ResourceRules>? _selectedItem;
 
     /// <summary>The player that a test command acts for: the "as" player inside the sim, else the local player.</summary>

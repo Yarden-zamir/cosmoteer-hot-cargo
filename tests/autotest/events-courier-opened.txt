@@ -12,12 +12,12 @@ ev_tostation
 wait 2
 ev_courier_offer
 ev_courier_accept
-expect ev_courier_handover == 0
+expect ev_courier_job == 0
 ev_mark
 item_force 1
 item_action yarden_zamir.sealed_case open
 expect ev_res_yarden_zamir.opened_case_gain == 1
-expect ev_courier_handover == 0
+expect ev_courier_job == 0
 # The first teleport loads the contact out of stasis, the second one puts the ships next to its live position.
 ev_courier_goto
 pause off
@@ -30,7 +30,7 @@ ev_comms contact Hand over the case.
 expectevent courier_handover
 ev_force_outcome 2
 ev_comms carrier Hand over the opened case.
-expect ev_courier_handover == 1
+expect ev_courier_job == 1
 expect ev_res_yarden_zamir.opened_case_gain == 0
 expect ev_courier_pay_ratio > 0.75
 expect ev_courier_pay_ratio < 0.85
@@ -39,12 +39,12 @@ ev_tostation
 wait 2
 ev_courier_offer
 ev_courier_accept
-expect ev_courier_handover == 0
+expect ev_courier_job == 0
 ev_mark
 item_force 1
 item_action yarden_zamir.sealed_case open
 expect ev_res_yarden_zamir.opened_case_gain == 1
-expect ev_courier_handover == 0
+expect ev_courier_job == 0
 # The first teleport loads the contact out of stasis, the second one puts the ships next to its live position.
 ev_courier_goto
 pause off
@@ -57,7 +57,7 @@ ev_comms contact Hand over the case.
 expectevent courier_handover
 ev_force_outcome 3
 ev_comms carrier Hand over the opened case.
-expect ev_courier_handover < 0
+expect ev_courier_job == -1
 expect ev_contact_hostile == 1
 expect ev_res_yarden_zamir.opened_case_gain == 0
 # Job 3: the contact jumps away. The job fails.
@@ -65,12 +65,12 @@ ev_tostation
 wait 2
 ev_courier_offer
 ev_courier_accept
-expect ev_courier_handover == 0
+expect ev_courier_job == 0
 ev_mark
 item_force 1
 item_action yarden_zamir.sealed_case open
 expect ev_res_yarden_zamir.opened_case_gain == 1
-expect ev_courier_handover == 0
+expect ev_courier_job == 0
 # The first teleport loads the contact out of stasis, the second one puts the ships next to its live position.
 ev_courier_goto
 pause off
@@ -83,7 +83,7 @@ ev_comms contact Hand over the case.
 expectevent courier_handover
 ev_force_outcome 4
 ev_comms carrier Hand over the opened case.
-expect ev_courier_handover < 0
+expect ev_courier_job == -1
 waitfor ev_contact_gone == 1 20
 expect ev_res_yarden_zamir.opened_case_gain == 0
 quit
