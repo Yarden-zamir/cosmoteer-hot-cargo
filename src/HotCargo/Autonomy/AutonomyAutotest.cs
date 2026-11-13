@@ -44,6 +44,14 @@ internal static class AutonomyAutotest
         // asteroid (next to the nearest asteroid), or x,y offset from the first own ship. The test fields then read this ship.
         Autotest.Commands["auto_build"] = arg => Build(arg);
         Autotest.Commands["auto_ship"] = arg => _shipName = arg;
+        // auto_focus <size>: centers the camera on the test ship and fits a square of this world size (screenshots, UI only).
+        Autotest.Commands["auto_focus"] = arg =>
+        {
+            var ship = TestShip();
+            ship.FocusCamera(playSound: false);
+            float size = float.Parse(arg, CultureInfo.InvariantCulture);
+            ship.Sim.Camera.ViewController.ZoomToFit(new Vector2(size));
+        };
         // auto_log <label>: logs the test ship's state, so a failed wait shows what the ship did.
         Autotest.Commands["auto_log"] = arg =>
         {
