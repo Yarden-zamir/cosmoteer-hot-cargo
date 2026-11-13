@@ -135,7 +135,8 @@ public sealed class DiplomacyHail : IHailProvider
     {
         if (S(run).WasUsed(callee.UniqueID, offer)) return;
         bool ok = Allowed(run, sim, player, caller, callee, offer, amount, out string why);
-        page.AddChoice(xml, DiplomacyChoiceDomain.Option(offer, amount), ok, ok ? null : DipText.Format("WhyNotFmt", why), close);
+        // The pay-off button sends the page's multiselect draft: Enter picks it (UX V15).
+        page.AddChoice(xml, DiplomacyChoiceDomain.Option(offer, amount), ok, ok ? null : DipText.Format("WhyNotFmt", why), close, submit: offer == Offer.PayOff);
     }
 
     /// <summary>An option row of a shared choice with its own slider (spec 591). The text is built for the slider value.</summary>

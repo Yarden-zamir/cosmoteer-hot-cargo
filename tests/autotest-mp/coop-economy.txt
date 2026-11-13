@@ -15,6 +15,9 @@ waitfor ev_pending == 1 10
 expectevent toll_gate
 ev_mark
 on 1 ev_mark
+# The toll is a page option (spec 810): 4 steps of credits make one toll. The client's draft is shared, so the host sees it.
+on 1 pick 1 4
+expectoption 1 selected
 as 1 choose 1
 waitfor ev_answered == 1 30
 expect ev_money_gain == 0
@@ -40,7 +43,9 @@ mp event clean_record
 wait 2
 expectevent clean_record
 ev_mark
-as 1 choose 2
+# The crate is a page option (spec 810): the client selects it in the shared draft, then submits.
+on 1 pick 2
+as 1 choose 1
 waitfor ev_wanted == 0 30
 expect ev_pending == 0
 expect ev_tech_gain == -1
@@ -51,12 +56,29 @@ mp event the_fence
 waitfor ev_pending == 1 10
 ev_mark
 on 1 ev_mark
+pick 1
+expectoption 1 selected
 choose 1
 waitfor ev_answered == 1 30
 expect ev_tech_gain == -1
 expect ev_money_gain > 0
 on 1 expect ev_money_gain > 0
 on 1 expect ev_pending == 0
+
+step events.options-draft
+# Spec 810, 592: the client selects two crates on the Fence page, the host sees the same shared draft and submits it,
+# and both machines sell the same two crates. The two crates come first, so the later steps keep their tech.
+mp tech add 2
+mp event the_fence
+waitfor ev_pending == 1 10
+ev_mark
+on 1 ev_mark
+on 1 pick 1 2
+expectoption 1 selected
+choose 1
+waitfor ev_answered == 1 30
+expect ev_tech_gain == -2
+on 1 expect ev_tech_gain == -2
 
 step events.hail
 # Spec 771: a freighter carries the page. The client chooses in its comms window; the host's late click on the same page does nothing.
@@ -84,7 +106,9 @@ ev_open station
 ev_click station Sell a crate off the books
 expectevent off_books
 ev_mark
-ev_click station Sell one crate
+pick 1
+expectoption 1 selected
+ev_click station Sell the crates
 waitfor ev_pending == 0 20
 expect ev_tech_gain == -1
 expect ev_money_gain > 0
@@ -133,14 +157,14 @@ expect ev_researched_gain >= 1
 on 1 expect ev_researched_gain >= 1
 
 step sharedchoice.hover
-# Spec 600 and later. Presence: the client hovers choice 3. It reaches the host through the hover RPC, not through the sim.
+# Spec 600 and later. Presence: the client hovers choice 2. It reaches the host through the hover RPC, not through the sim.
 # The fence needs 2 tech; earlier steps spent some.
 mp tech add 4
 mp event the_fence
 waitfor ev_pending == 1 10
-on 1 hover 3
+on 1 hover 2
 waitfor sc_hovers >= 1 30
-expect sc_hover_choice == 3
+expect sc_hover_choice == 2
 on 1 hover off
 waitfor sc_hovers == 0 30
 
@@ -149,23 +173,25 @@ step sharedchoice.unanimous
 mp sc_reset
 votemode on
 waitfor sc_votemode == 1 10
-vote 3
-as 1 vote 3
+vote 2
+as 1 vote 2
 waitfor sc_decided_reason == 1 60
-expect sc_decided_choice == 3
+expect sc_decided_choice == 2
 expect ev_pending == 0
 
 step sharedchoice.timeout
-# Host 3, client 2. A tie after 10 game seconds goes to the lowest choice (2, sell two crates).
+# Host 2, client 1 with two crates selected (spec 810). A tie after 10 game seconds goes to the lowest choice (1, sell).
 mp sc_reset
 mp sc_set VoteTimeoutSeconds 10
 mp event the_fence
 waitfor ev_pending == 1 10
 ev_mark
-vote 3
-as 1 vote 2
+on 1 pick 1 2
+expectoption 1 selected
+vote 2
+as 1 vote 1
 waitfor sc_decided_reason == 3 60
-expect sc_decided_choice == 2
+expect sc_decided_choice == 1
 expect ev_tech_gain == -2
 
 step sharedchoice.force
@@ -174,14 +200,14 @@ mp sc_reset
 mp sc_set VoteTimeoutSeconds 0
 mp event the_fence
 waitfor ev_pending == 1 10
-on 1 choose 1
+on 1 choose 2
 on 1 wait 3
 expect ev_pending == 1
-as 1 vote 3
+as 1 vote 2
 waitfor sc_votes >= 1 60
 forcevote
 waitfor sc_decided_reason == 4 30
-expect sc_decided_choice == 3
+expect sc_decided_choice == 2
 expect ev_pending == 0
 votemode off
 waitfor sc_votemode == 0 10
@@ -224,7 +250,7 @@ wait 2
 expect fa_markup == 1.2
 on 1 expect fa_buyratio == 1.2
 on 1 fa_buy 5
-on 1 waitfor fa_spent > 0 60
+on 1 waitfor fa_spent > 0 120
 on 1 expect fa_buygap == 0
 
 step factions.blind

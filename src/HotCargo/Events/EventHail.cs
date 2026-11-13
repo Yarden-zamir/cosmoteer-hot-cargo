@@ -127,7 +127,11 @@ public sealed class EventHailProvider : IHailProvider
             page.AddText($"<b>{view.Title}</b>\n{view.Body}");
             // Shared choices: the comms tab shows co-op hovers and votes, and sends the shared choice input with this page's serial.
             page.Shared = (EventsChoiceDomain.Name, p.Serial);
-            foreach (var c in view.Choices) page.AddChoice(c.Text, c.Index, active: c.Enabled);
+            // Spec 810: the page's options as toggle rows of the shared draft, above the choices.
+            if (view.Options.Count > 0) page.Multi = (EventsMultiDomain.Name, p.Serial);
+            foreach (var o in view.Options)
+                page.AddRow(new HailRow("ev" + o.Id, o.Text, o.Id, o.Slider, o.Active, o.Tooltip, Toggle: true, Selected: o.Selected, Value: o.Value));
+            foreach (var c in view.Choices) page.AddChoice(c.Text, c.Index, active: c.Enabled, submit: c.Submit);
             return;
         }
         foreach (var e in EventHail.Lines(run, sim, caller, callee))

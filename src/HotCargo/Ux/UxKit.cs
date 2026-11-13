@@ -113,6 +113,23 @@ public static class UxKit
         }
     }
 
+    static readonly Dictionary<(Cosmoteer.GalaxyMap.MapNode From, Cosmoteer.GalaxyMap.MapNode To), int> JumpCache = new();
+
+    /// <summary>
+    /// Jumps on the shortest known jumpable route from the current system, or -1 without a route. Cached per route: the map
+    /// changes only when a system becomes known, and a new current system makes a new key.
+    /// Limit: a newly known route can shorten a cached path; the cache clears at 256 routes. Revisit if a stale count shows.
+    /// </summary>
+    public static int Jumps(GameRoot game, Cosmoteer.GalaxyMap.MapNode to)
+    {
+        var key = (game.CurrentMapNode, to);
+        if (JumpCache.TryGetValue(key, out int cached)) return cached;
+        if (JumpCache.Count >= 256) JumpCache.Clear();
+        using var path = Halfling.Pooling.TempList<Cosmoteer.GalaxyMap.MapNode>.Alloc();
+        float dist = game.Map.Nodes.FindPathTo(to, path, requireJumpable: true);
+        return JumpCache[key] = float.IsInfinity(dist) ? -1 : path.Count - 1;
+    }
+
     /// <summary>Runs a UI patch body. A failure logs once, shows in the overlay, and the vanilla UI stays.</summary>
     public static void Guard(string what, Action body) => Errors.Guard("ux " + what, body);
 

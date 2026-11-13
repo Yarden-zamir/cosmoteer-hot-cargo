@@ -13,7 +13,10 @@ static class UxAutotest
 {
     internal static void Register()
     {
+        RegisterMissionSelect();
         // uxpick N: presses dialogue key N (1-based) in the frontmost dialogue (event window first, then comms).
+        // uxsubmit: presses Enter in the frontmost dialogue: the first active submit button of a page with option rows (UX V15).
+        Autotest.Commands["uxsubmit"] = _ => Autotest.Check(DialogueKeys.Submit(), "Enter picked a submit button");
         Autotest.Commands["uxpick"] = arg =>
         {
             int n = int.Parse(arg, System.Globalization.CultureInfo.InvariantCulture);
@@ -213,6 +216,33 @@ static class UxAutotest
             ?? throw new InvalidOperationException("the missions panel lists no missions");
         item.IsSelected = true;
         Log.Info($"ux: selected mission {item.Mission.Name.Text}");
+    }
+
+    /// <summary>The missions panel of the open comms window.</summary>
+    static Cosmoteer.Modes.Career.Missions.MissionsPanel CommsPanel() =>
+        Walk(UxArea.OpenComms).OfType<Cosmoteer.Modes.Career.Missions.MissionsPanel>().FirstOrDefault()
+        ?? throw new InvalidOperationException("no missions panel in the comms window");
+
+    /// <summary>Shown items of the open comms missions list, by kind.</summary>
+    static int ListCount(MissionKind kind) => CommsPanel().Count(i => i.SelfActive && MissionSelect.KindOf(i.Mission) == kind);
+
+    internal static void RegisterMissionSelect()
+    {
+        // missionfilter <All|HotCargo|Chains|Contracts|Vanilla|NoShady>: picks the filter of the open comms missions list, as a click does.
+        Autotest.Commands["missionfilter"] = arg =>
+        {
+            var filter = Enum.Parse<MissionFilter>(arg);
+            var list = Walk(CommsPanel()).OfType<Halfling.Gui.DropList>().FirstOrDefault(d => d.ListBox.Children.Count == Enum.GetValues<MissionFilter>().Length)
+                ?? throw new InvalidOperationException("the comms missions list has no filter");
+            list.ListBox.Children[(int)filter].IsSelected = true;
+        };
+        foreach (var kind in Enum.GetValues<MissionKind>())
+            Autotest.Fields[$"ux_list_{kind.ToString().ToLowerInvariant()}"] = () => ListCount(kind);
+        // Items whose right-hand text names jumps (an offer in another system) or a heat change.
+        Autotest.Fields["ux_list_heat"] = () => CommsPanel().Count(i => i.SelfActive && i._timeDist.Text?.Contains("hc_heat") == true);
+        // 1 when the chain station's badges name its story chain offer (spec 804).
+        Autotest.Fields["ux_badge_chain"] = () => StationBadges.For(Chains.ChainsArea.TestStationShip(), TechAutotest.PlayerShip()).Contains("hc_mission_HotCargoChain") ? 1 : 0;
+        Autotest.Fields["ux_list_icons"] = () => CommsPanel().Count(i => i.SelfActive && i._item.Text?.StartsWith("<image name='hc_mission_", StringComparison.Ordinal) == true);
     }
 
     static IEnumerable<Halfling.Gui.Widget> Walk(Halfling.Gui.Widget w) => w.GetChainedWidgets(recursive: true).Prepend(w);

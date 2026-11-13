@@ -41,10 +41,14 @@ internal sealed class EventDialog : WindowBox
     readonly LayoutBox _header;
     readonly LayoutBox<ImageButton, Widget> _buttons;
     readonly SharedChoicePanel _shared;
+    readonly Ui.OptionRows _rows;
+    /// <summary>Slider values of option rows that are not selected, by slider key. Local UI state until a click sends it.</summary>
+    readonly Dictionary<string, int> _values = new();
     EventPage? _page;
     bool _sent;
     double _sentAt;
     double _nextRefresh;
+    string _draft = "";
     /// <summary>Real seconds after a sent choice before the buttons work again on the same page. Longer than MP input delay.</summary>
     const double ResendSeconds = 3.0;
 
@@ -68,8 +72,11 @@ internal sealed class EventDialog : WindowBox
                 run.Game.Gui.FloatingWindows.AddChild(_open);
                 PauseIfWanted(run);
             }
+            // Rows first: the key numbers that Show adds count the shown rows.
+            _open.ShowRows(page);
             _open.Show(page);
             _open.UpdateShared(page);
+            MultiChoice.DraftSender.Flush();
         }
         catch
         {
@@ -142,6 +149,12 @@ internal sealed class EventDialog : WindowBox
         _shared = new SharedChoicePanel(run, EventsChoiceDomain.Name);
         page.Children.Add(_shared.Bar);
 
+        // Spec 810: option rows of a multiselect page, above the choices. Empty on other pages.
+        _rows = new Ui.OptionRows();
+        _rows.Clicked += view => Errors.Guard("event option", () => OnRowClicked(view));
+        _rows.ValueChanged += (view, value) => Errors.Guard("event option value", () => OnRowValue(view, value));
+        page.Children.Add(_rows.Box);
+
         _buttons = new LayoutBox<ImageButton, Widget>();
         _buttons.NineSlice.Flags = NineSliceFlags.None;
         _buttons.PercentileWidth = 100f;
@@ -194,7 +207,11 @@ internal sealed class EventDialog : WindowBox
     {
         bool newPage = _page?.Key != page.Key;
         double now = App.Clock.Time.Seconds;
-        if (!newPage && now < _nextRefresh) return;
+        // A draft change (an option selected or moved) changes the submit buttons and the offer line at once.
+        string draft = string.Join(",", page.Options.Select(o => $"{o.Id}:{o.Selected}:{o.Value}"));
+        bool draftChanged = draft != _draft;
+        _draft = draft;
+        if (!newPage && !draftChanged && now < _nextRefresh) return;
         _nextRefresh = now + 1.0;
         // The sim can reject a sent choice (the chooser can no longer pay). The page then stays, so the buttons come back.
         if (newPage || now > _sentAt + ResendSeconds) _sent = false;
@@ -210,6 +227,39 @@ internal sealed class EventDialog : WindowBox
             b.SelfInputActive = page.Choices[i].Enabled && !_sent;
         }
     }
+
+    /// <summary>Every frame: the option rows with the shared draft. A row that is not selected shows its local slider value.</summary>
+    void ShowRows(EventPage page)
+    {
+        var views = new List<Ui.OptionRowView>(page.Options.Count);
+        foreach (var o in page.Options)
+        {
+            int value = o.Slider is { } spec && !o.Selected ? spec.Snap(_values.GetValueOrDefault(spec.Key, spec.Default)) : o.Value;
+            views.Add(new Ui.OptionRowView(RowKey(o.Id), o.Text, o.Active, o.Tooltip, Toggle: true, o.Selected, o.Slider, value, SliderActive: o.Selected));
+        }
+        _rows.Show(views);
+    }
+
+    static string RowKey(int id) => "o" + id;
+
+    OptionView? RowOf(Ui.OptionRowView view) => _page?.Options.FirstOrDefault(o => RowKey(o.Id) == view.Key);
+
+    void OnRowClicked(Ui.OptionRowView view)
+    {
+        if (_page is not { } page || RowOf(view) is not { } o) return;
+        int value = o.Slider is { } spec ? spec.Snap(_values.GetValueOrDefault(spec.Key, o.Selected ? o.Value : spec.Default)) : o.Value;
+        MultiChoice.DraftSender.Toggle(_forRun, EventsMultiDomain.Name, page.Serial, o.Id, !o.Selected, value);
+    }
+
+    void OnRowValue(Ui.OptionRowView view, int value)
+    {
+        if (_page is not { } page || RowOf(view) is not { Slider: { } spec } o) return;
+        _values[spec.Key] = value;
+        if (o.Selected) MultiChoice.DraftSender.Value(EventsMultiDomain.Name, page.Serial, o.Id, value);
+    }
+
+    /// <summary>The option rows. For autotests and the dialogue keys.</summary>
+    internal Ui.OptionRows Rows => _rows;
 
     /// <summary>Every frame: hover markers and votes. A result page is local to each player and has no shared options.</summary>
     void UpdateShared(EventPage page)
