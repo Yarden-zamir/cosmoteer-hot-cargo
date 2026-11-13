@@ -8,6 +8,10 @@ HotCargoUx
 	NextFmt = "{0} at {1:0}"
 	NextMax = "top stage"
 	TechFmt = "<fame_color>{0}</fame_color> tech   <money>{1}</money> <gray>each</gray>"
+	TechYouFmt = "you hold {0}"
+	TechDerelictFmt = "{0} in a derelict ship"
+	TechCratesFmt = "+{0} in crates"
+	TechHuntersFmt = "hunters hold {0}"
 	StatusWonFmt = "DELIVERED   score {0}"
 	StatusLost = "TECH LOST"
 	StatusHeatOff = "Heat is off"
@@ -26,7 +30,7 @@ HotCargoUx
 	               "<fame_color>Goal</fame_color>   Sell the tech to the <good>Buyer</good> in sector {0}. Each new system is one sector.\n"\
 	               "<fame_color>Heat</fame_color>   Rises over time and with each mission. Each of its {1} stages sends hunters.\n"\
 	               "<fame_color>Cool</fame_color>   Each jump cuts heat: {2:0%} via a watched relay, {3:0%} via a clear relay, {4:0%} blind.\n"\
-	               "<fame_color>Cargo</fame_color>  Hits on a Tech Vault destroy tech. Lose it all and get none back in time, and the run ends.\n"\
+	               "<fame_color>Cargo</fame_color>  A destroyed Tech Vault drops its tech as crates. Lose it all and get none back in time, and the run ends.\n"\
 	               "<fame_color>Sell?</fame_color>  Selling at stations lowers heat and pays now, but lowers the score."
 	IntroButton = "Fly"
 

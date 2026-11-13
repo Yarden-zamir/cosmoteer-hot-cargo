@@ -8,12 +8,10 @@
 | `Journey.TechCostScale` | 2.5 | 301 |
 | `BuyerPriceFactor` | 4 | 7 |
 | `StartingTechUnits` | 8 | 17 |
-| `VaultDamagePerUnitLost` | 0.5 | 65, 442 |
 | `LossGraceSeconds` | 180 s | 12, 443 |
 | `TechMarkers` | on | 444 |
 | `VaultTechLossChance` | 0.1 | 445 |
 | `HunterGrabChance`, `HunterGrabRange`, `HunterGrabReach` | 0.8, 3,000, 40 | 446 |
-| `VaultSunHeatFactor` | 0.25 | 448 |
 | `TechShipFraction` | 0.25 | 19 |
 | `TechShipFractionPerGameHour` | 0.10 | 19 |
 | `TechShipFractionPer100Notoriety` | 0.05 | 19 |

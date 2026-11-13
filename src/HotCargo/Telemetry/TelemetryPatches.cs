@@ -88,7 +88,7 @@ static class TelemetryPatches
         ("MPUpdateShipInput", "build"), ("CommHireTab", "crew_hire"), ("CommTechsTab", "tech_unlock"),
         ("MPShipSurrenderedInput", "surrender"), ("MPTransferMoneyInput", "transfer"),
         ("FleeStrategy", "flee_jump"), ("AIExitSectorModule", "exit_sector"), ("AIDeleteSelfModule", "delete_self"),
-        ("AITradeShipModule", "trade_route"), ("VaultDamage", "vault_damage"),
+        ("AITradeShipModule", "trade_route"),
     ];
 
     /// <summary>
@@ -195,7 +195,7 @@ static class TelemetryPatches
     }
 
     /// <summary>
-    /// Hits on a Tech Vault that cost tech or destroyed it: damage, health and the tech it cost. Runs after the Tech area's damage patch.
+    /// Hits on a Tech Vault that cost tech (only the hit that destroys it, spec 65): damage, health and the tech it cost.
     /// Hits that cost nothing only add to the vault damage sums (combat.damage, side "vault"), because fire and repair loops make many of them.
     /// </summary>
     [HarmonyPatch(typeof(Part), "OnHealthChanged")]

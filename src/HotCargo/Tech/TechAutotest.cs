@@ -3,6 +3,7 @@ using Cosmoteer;
 using Cosmoteer.Game.Multiplayer;
 using Cosmoteer.Game.Multiplayer.MPInputs;
 using Cosmoteer.Ships;
+using Cosmoteer.Ships.Blueprints;
 using Cosmoteer.Ships.Crew.Jobs;
 using Cosmoteer.Ships.Parts;
 using Cosmoteer.Ships.Parts.Resources;
@@ -59,7 +60,7 @@ static class TechAutotest
         Autotest.Fields["outsidetech"] = () => OutsideVault()?.Resources ?? throw new InvalidOperationException("no vault from vault outside");
         // Vault parts on human ships that are done building.
         Autotest.Fields["vaultsbuilt"] = () => Vaults.HumanShips(Active().Game.Sim).Sum(s => Vaults.VaultParts(s).Count(p => !p.IsUnderConstruction));
-        // Health lost by vault parts, and by all other parts, of the player ship (spec 448).
+        // Health lost by vault parts, and by all other parts, of the player ship.
         Autotest.Fields["vaultdamage"] = () => PlayerShip().Parts.Where(p => p.Rules.ID == Vaults.VaultId).Sum(p => p.Rules.MaxHealth - p.Health);
         Autotest.Fields["partdamage"] = () => PlayerShip().Parts.Where(p => p.Rules.ID != Vaults.VaultId).Sum(p => p.Rules.MaxHealth - p.Health);
         Autotest.Fields["vaultburned"] = () => VaultDropPatch.LostMessages;
@@ -74,6 +75,30 @@ static class TechAutotest
         };
         Autotest.Fields["shipvalid"] = () => Vaults.HumanShips(Active().Game.Sim).All(s => s.BlueprintParts.IsValid && s.PhysicalMatchesBlueprints) ? 1 : 0;
         Autotest.Fields["livetech"] = () => Vaults.CountFleetTech(Active().Game.Sim);
+        // Spec 449: units in every vault grid in the sim, whoever owns the ship: what the vault art shows. Must equal tech while no crew carry tech.
+        // Vault builds and teardowns that crew still have to do on human ships. 0 when a move is done.
+        Autotest.Fields["vaultsbusy"] = () => Vaults.HumanShips(Active().Game.Sim).Sum(s => s.OptionalConstructionManager is not { } cm ? 0
+            : cm.QueuedPartConstructions.Count(q => q.Part.Rules.ID == Vaults.VaultId) + cm.QueuedPartDeconstructions.Count(q => q.Part.Rules.ID == Vaults.VaultId));
+        // The fleet count plus tech crates in space: no tech may vanish in a move.
+        Autotest.Fields["techall"] = () => Active().State.FleetTech + Vaults.CrateUnits(Active().Game.Sim);
+        // The heat panel names the crate units under the total (spec 449).
+        Autotest.Fields["panelcrates"] = () => Ui.HeatPanel.TechText.Contains(Ux.UxKit.Format("TechCratesFmt", Vaults.CrateUnits(Active().Game.Sim))) ? 1 : 0;
+        Autotest.Fields["vaultunits"] = () => Active().Game.Sim.Ships.AllShips.Sum(Vaults.ShipTech);
+        Autotest.Fields["derelicttech"] = () => Vaults.Split(Active().Game.Sim, Active().Game.LocalPlayerIndex).Derelict;
+        Autotest.Fields["mytech"] = () => Vaults.Split(Active().Game.Sim, Active().Game.LocalPlayerIndex).Player;
+        // Lowest health of a built vault on a human ship (spec 65: a vault starts at full health, so the first hits cost no tech).
+        Autotest.Fields["vaultminhealth"] = () => Vaults.HumanShips(Active().Game.Sim).SelectMany(Vaults.VaultParts).Where(p => !p.IsUnderConstruction).Min(p => (int?)p.Health) ?? -1;
+        // The heat panel tech line shows the fleet total (1), and the derelict part (spec 449).
+        Autotest.Fields["paneltotal"] = () => Ui.HeatPanel.TechText.StartsWith(Ux.UxKit.Format("TechFmt", Active().State.FleetTech, Active().TechValue().ToString("N0"))) ? 1 : 0;
+        Autotest.Fields["panelderelict"] = () => Ui.HeatPanel.TechText.Contains(Ux.UxKit.Format("TechDerelictFmt", Vaults.Split(Active().Game.Sim, Active().Game.LocalPlayerIndex).Derelict)) ? 1 : 0;
+        // The blip of the first derelict ship with tech shows "TECH n" (spec 444, 449).
+        Autotest.Fields["derelicttag"] = () =>
+        {
+            var junk = Active().Game.Sim.Ships.AllShips.FirstOrDefault(s => s.IsJunk && Vaults.ShipTech(s) > 0);
+            if (junk is null) return 0;
+            int n = Vaults.ShipTech(junk);
+            return junk.IndicatorSource.GetNonMouseoverText()?.Contains($"TECH {n}") == true ? n : 0;
+        };
         Autotest.Fields["heatmult"] = () => Active().HeatMultiplier(Active().State.FleetTech);
         // Normal storage tiles on human ships that would accept tech. Must stay 0 (spec 14).
         Autotest.Fields["flexsinks"] = () => Vaults.HumanShips(Active().Game.Sim).Sum(s => FlexTilesTakingTech(s));
@@ -88,6 +113,12 @@ static class TechAutotest
 
     static Halfling.Geometry.IntVector2? _outside;
 
+    /// <summary>The vault that "vault grab" picked up, like the part brush of the vanilla grab tool holds it.</summary>
+    static PartMetadata? _grabbed;
+
+    /// <summary>The flags of a build tool input in live (not blueprint) edit mode (BaseBuildState.TryApplyUpdate).</summary>
+    const UpdateShipFlags BuildFlags = UpdateShipFlags.Build | UpdateShipFlags.DestroyBlocking | UpdateShipFlags.UpdateDestroyed;
+
     static TypedResourceGrid? OutsideVault() => _outside is { } at ? Vaults.OnShip(PlayerShip()).FirstOrDefault(g => g.Part!.Location == at) : null;
 
     static double _moneyAtSell;
@@ -97,7 +128,7 @@ static class TechAutotest
 
     static int Int(string s) => int.Parse(s, CultureInfo.InvariantCulture);
 
-    /// <summary>tech add N | tech remove N | tech sell N | tech dump | tech drop N (takes N from the vaults and drops them as crates next to the player ship) | tech collect (crew fetch every tech crate) | tech drophunter N (crates near the first hunter) | tech wreckholder (the first hunter with tech becomes a wreck)</summary>
+    /// <summary>tech derelict (the acting player's ship becomes a derelict) | tech add N | tech remove N | tech sell N | tech dump | tech drop N (takes N from the vaults and drops them as crates next to the player ship) | tech collect (crew fetch every tech crate) | tech drophunter N (crates near the first hunter) | tech wreckholder (the first hunter with tech becomes a wreck)</summary>
     static void Tech(string arg)
     {
         var run = Active();
@@ -134,6 +165,13 @@ static class TechAutotest
                 HunterGrab.Drop(sim, hunter.DetWorldCenter + toward * 600f, taken);
                 Log.Info($"AUTOTEST tech dropped {taken} crates near {hunter.Metadata.PlainShipName}");
                 break;
+            case ["derelict"]:
+                // The acting player's ship loses its owner, like a ship without control rooms or a piece that broke off (ShipAlerts: junk).
+                var lost = PlayerShip();
+                // The crew keep their owner, like the vanilla path (SimModeManager.GetAllegianceForReducedShip).
+                sim.Mode.SetReducedShipAllegiance(lost, Cosmoteer.PlayerIndexes.Junk, null);
+                Log.Info($"AUTOTEST derelict {lost.Metadata.PlainShipName} with {Vaults.ShipTech(lost)} tech");
+                break;
             case ["wreckholder"]:
                 var held = run.State.Tech.HunterHeld.FirstOrDefault() ?? throw new InvalidOperationException("no hunter holds tech");
                 var holder = sim.Ships[held.Ship] ?? throw new InvalidOperationException("the holder is not live");
@@ -157,6 +195,8 @@ static class TechAutotest
     /// vault outside: builds one more vault outside the hull of the player ship, where crew can walk to it.
     /// vault move: moves the tech of the first full vault into the vault that "vault outside" built, with the input of the vanilla move resources tool.
     /// vault steel N: adds steel to the player ship, for a vault build.
+    /// vault grab full|empty: picks up the first vault with tech (or the first empty vault) with the input of the vanilla grab tool (GrabPartState).
+    /// vault place: puts the grabbed vault down outside the hull with the input of the vanilla part brush, so crew rebuild it there.
     /// vault focus [wide]: points the camera at the player ship and zooms in until the ship fills the view (wide: with the dropped crates).
     /// </summary>
     static void Vault(string arg)
@@ -186,6 +226,33 @@ static class TechAutotest
             var at = StartingVault.PlaceOutside(ship, ship.Rules.PartsByID[Vaults.VaultId], requireCrewPath: true, mode) ?? throw new InvalidOperationException("no outside spot with a crew path");
             _outside = at;
             Log.Info($"AUTOTEST vault build at {at}, construction mode {mode}");
+            return;
+        }
+        if (parts is ["grab", var which and ("full" or "empty")])
+        {
+            var ship = PlayerShip();
+            var grid = Vaults.OnShip(ship).FirstOrDefault(g => which == "full" ? g.Resources > 0 : g.Resources == 0) ?? throw new InvalidOperationException($"no {which} vault");
+            var bp = ship.BlueprintParts[grid.Part!.Location, PartRectType.Normal] ?? throw new InvalidOperationException("vault has no blueprint part");
+            _grabbed = new PartMetadata(ship, bp, p => p == bp, isBlueprintMode: false);
+            using var sui = ShipUpdateInfo.Alloc(ship);
+            if (!sui.TryRemoveBlueprintPart(bp, mirrorPhysical: true, out var reasons, force: false, grabbed: true))
+                throw new InvalidOperationException($"vault grab refused: {reasons}");
+            Active().Game.NetManager.EnqueueInput(new MPUpdateShipInput(sui, BuildFlags));
+            Log.Info($"AUTOTEST vault grab {which} at {bp.Location}, tech in it {grid.Resources}");
+            return;
+        }
+        if (parts is ["place"])
+        {
+            var ship = PlayerShip();
+            var metadata = _grabbed ?? throw new InvalidOperationException("vault place needs vault grab first");
+            _grabbed = null;
+            var rules = ship.Rules.PartsByID[Vaults.VaultId];
+            _outside = StartingVault.PlaceOutside(ship, rules, requireCrewPath: true, apply: sui =>
+            {
+                var added = sui.PartsToAdd.Single(p => p.Rules == rules);
+                Active().Game.NetManager.EnqueueInput(new MPUpdateShipInput(sui, BuildFlags, new() { [new PartSaveData(added)] = metadata }));
+            }) ?? throw new InvalidOperationException("no outside spot with a crew path");
+            Log.Info($"AUTOTEST vault place at {_outside}");
             return;
         }
         if (parts is ["focus"] or ["focus", "wide"])
@@ -330,8 +397,9 @@ static class TechAutotest
     static void Dump(Run run)
     {
         var sim = run.Game.Sim;
-        foreach (var ship in Vaults.HumanShips(sim))
+        foreach (var ship in sim.Ships.AllShips.Where(s => Vaults.HoldsForPlayers(sim, s)))
         {
+            Log.Info($"AUTOTEST ship {ship.Name} player={ship.Metadata.PlayerIndex} junk={ship.IsJunk} disposed={ship.IsDisposed} parts={ship.Parts.Count} vaulttech={Vaults.ShipTech(ship)} stored={ship.Resources.GetResourceTotal(Vaults.TechId, includeStored: true, includeCarried: false)}");
             Log.Info($"AUTOTEST ship {ship.Name}: blueprint valid={ship.BlueprintParts.IsValid} matches={ship.PhysicalMatchesBlueprints}");
             foreach (var p in ship.BlueprintParts.OrderBy(p => p.Location.Y).ThenBy(p => p.Location.X))
                 Log.Info($"  part {p.Rules.ID} at {p.Location} rect {p.Rect}");
@@ -339,7 +407,11 @@ static class TechAutotest
             var cm = ship.OptionalConstructionManager;
             Log.Info($"  steel {ship.Resources.GetResourceTotal(new Cosmoteer.Data.ID<Cosmoteer.Resources.ResourceRules>("steel"))}, queued builds {cm?.QueuedPartConstructions.Count}, blocked {cm?.BlockedPartConstructions.Count}, needs resources {cm?.HasSinksNeedingResources}");
             foreach (var v in Vaults.VaultParts(ship))
-                Log.Info($"  vault part at {v.Location}: health {v.Health}, flags {v.Flags}, destroyed={v.IsDestroyed}, tech {Vaults.OnShip(ship).FirstOrDefault(g => g.Part == v)?.Resources}");
+            {
+                Log.Info($"  vault part at {v.Location}: health {v.Health}, salvage {v.SalvageDamage}, flags {v.Flags}, destroyed={v.IsDestroyed}, tech {Vaults.OnShip(ship).FirstOrDefault(g => g.Part == v)?.Resources}");
+                if (v.IsUnderConstruction && v.Components.OfType<Cosmoteer.Ships.Parts.Construction.PartConstructionTracker>().FirstOrDefault() is { } t)
+                    Log.Info($"    building: progress {t.Progress}/{t.MaxProgress}, steel {t.GetStoredResources(new Cosmoteer.Data.ID<Cosmoteer.Resources.ResourceRules>("steel"))}, queued={cm?.IsConstructionQueued(new PartInfo(v.Rules, v.Location, v.Rotation, v.FlipX))}");
+            }
         }
         foreach (var starter in GameApp.Rules.CareerMode.StarterShips)
         {
@@ -350,6 +422,6 @@ static class TechAutotest
         }
         foreach (var ship in Vaults.HumanShips(sim)) LogMap(ship);
         foreach (var s in sim.Ships.AllShips.Where(s => !sim.Mode.IsHumanPlayerShip(s)))
-            Log.Info($"AUTOTEST other ship {s.Name} player={s.Metadata.PlayerIndex} trades={s.AI?.WillTradeWith(PlayerShip())} flexTilesForTech={FlexTilesTakingTech(s)}");
+            Log.Info($"AUTOTEST other ship {s.Name} player={s.Metadata.PlayerIndex} trades={(Autotest.ActingShip(sim) is { } me ? s.AI?.WillTradeWith(me) : null)} flexTilesForTech={FlexTilesTakingTech(s)}");
     }
 }

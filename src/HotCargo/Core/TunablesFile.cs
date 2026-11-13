@@ -89,7 +89,6 @@ public static class TunablesFile
             string min = Tactics.TacticGate.Settings(t.Tactics, tactic).MinStage;
             Require(min.Length == 0 || stages.Contains(min), $"Tactics.{tactic}MinStage '{min}' is not a Heat.Stages name");
         }
-        Require(t.Tech.VaultDamagePerUnitLost > 0, "Tech.VaultDamagePerUnitLost must be above 0");
         Require(t.Tech.TechShipFraction > 0, "Tech.TechShipFraction must be above 0");
         Require(t.Tech.TechShipFractionPerGameHour >= 0 && t.Tech.TechShipFractionPer100Notoriety >= 0, "Tech value growth must not be negative: the value only goes up (spec 19)");
         Require(t.Tech.BuyBackFactor >= 1, "Tech.BuyBackFactor must be 1 or more, or players can sell and buy back for profit");
