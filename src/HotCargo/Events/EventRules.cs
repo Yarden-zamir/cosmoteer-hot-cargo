@@ -81,6 +81,8 @@ public sealed class NeedRules
     [Serialize(Optional = true)] public int Crew;
     /// <summary>Free crew bunks (spec 1106), for a choice that brings someone aboard.</summary>
     [Serialize(Optional = true)] public int Bunks;
+    /// <summary>The page's hand-over is ready (spec 1110), for a choice that hands over a ship.</summary>
+    [Serialize(Optional = true)] public bool HandOverReady;
     [Serialize(Optional = true)] public float MinHeat;
     [Serialize(Optional = true)] public float MaxHeat;
     [Serialize(Optional = true)] public int MinSector;

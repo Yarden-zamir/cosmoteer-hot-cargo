@@ -975,6 +975,29 @@ Events
 		]
 	}
 
+	// Repossession hand-over (spec 1110): the bank takes the freighter at the station, once it is close and no player crew is aboard.
+	{
+		ID = repo_handover
+		Trigger = Hail
+		HailTarget = Contact
+		HailLine = "Hand over the repossessed freighter."
+		MaxPerRun = 0
+		Title = "Repossession: The Bank"
+		Text = "The bank's dock crew wait with a docking clamp. \"Bring it alongside and clear your people off. We take it from there.\""
+		Choices
+		[
+			{
+				Text = "Hand over the freighter."
+				Need { HandOverReady = true }
+				Outcomes [ { Text = "The clamps lock on, and the bank's pilots take the helm. Your pay waits at the station."; HandOver = true } ]
+			}
+			{
+				Text = "Not yet."
+				Outcomes [ { Text = "\"The meter is running.\"" } ]
+			}
+		]
+	}
+
 	// ---- Station
 
 	{

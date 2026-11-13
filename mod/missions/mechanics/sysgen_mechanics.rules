@@ -544,6 +544,14 @@ Capture
 							AreaTag = { Mode=Latest; Tag=hc_capture_area; }
 							TierOffset = 1
 						}
+						// Deliver the freighter to the bank at the station (spec 1110, events.rules repo_handover). No player crew may stay aboard.
+						{
+							Type = HotCargoHandOver
+							ContactShipTag = { Mode=Nearest; Tag=trade_station; }
+							ShipTag = { Mode=Latest; Tag=hc_capture_target; }
+							Page = repo_handover
+							LineKey = "HotCargoMechanics/RepoHandOverFmt"
+						}
 						{
 							Type = ReceiveRewards
 						}

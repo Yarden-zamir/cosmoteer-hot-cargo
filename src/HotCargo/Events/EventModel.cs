@@ -9,6 +9,8 @@ public sealed record Need
     public int Crew { get; init; }
     /// <summary>Free crew bunks in the human fleet (spec 1106).</summary>
     public int Bunks { get; init; }
+    /// <summary>The page's hand-over must be ready (spec 1110): a delivered ship in place, with no player crew aboard.</summary>
+    public bool HandOverReady { get; init; }
     public float MinHeat { get; init; }
     /// <summary>Heat must stay below this. Zero means no limit.</summary>
     public float MaxHeat { get; init; }
@@ -37,6 +39,8 @@ public sealed record Snapshot
     public int VaultSpace { get; init; }
     public int Crew { get; init; }
     public int Bunks { get; init; }
+    /// <summary>Why the page's hand-over cannot happen yet, or null when it can (or the page has none).</summary>
+    public string? HandOverBlock { get; init; }
     public float Heat { get; init; }
     public int Sector { get; init; }
     public IReadOnlyDictionary<string, int> Resources { get; init; } = new Dictionary<string, int>();
@@ -55,7 +59,7 @@ public sealed record ResearchTrade(IReadOnlyList<string> Techs, int Units, long 
 public sealed record ResearchSale(IReadOnlyList<string> Techs, long Worth, int Price);
 
 /// <summary>The first need that the fleet does not meet.</summary>
-public enum UnmetKind { Money, Tech, VaultSpace, Crew, Bunks, MinHeat, MaxHeat, MinSector, MaxSector, Resource, Part, Flag, NotFlag, FlagAge, MinSectorsLeft, MaxSectorsLeft, NotWanted }
+public enum UnmetKind { Money, Tech, VaultSpace, Crew, Bunks, HandOver, MinHeat, MaxHeat, MinSector, MaxSector, Resource, Part, Flag, NotFlag, FlagAge, MinSectorsLeft, MaxSectorsLeft, NotWanted }
 
 public sealed record Unmet(UnmetKind Kind, string Id = "", float Amount = 0);
 
@@ -70,6 +74,7 @@ public static class EventModel
         if (s.VaultSpace < need.VaultSpace) return new(UnmetKind.VaultSpace, Amount: need.VaultSpace);
         if (s.Crew < need.Crew) return new(UnmetKind.Crew, Amount: need.Crew);
         if (s.Bunks < need.Bunks) return new(UnmetKind.Bunks, Amount: need.Bunks);
+        if (need.HandOverReady && s.HandOverBlock is { } why) return new(UnmetKind.HandOver, why);
         if (s.Heat < need.MinHeat) return new(UnmetKind.MinHeat, Amount: need.MinHeat);
         if (need.MaxHeat > 0 && s.Heat >= need.MaxHeat) return new(UnmetKind.MaxHeat, Amount: need.MaxHeat);
         if (s.Sector < need.MinSector) return new(UnmetKind.MinSector, Amount: need.MinSector);

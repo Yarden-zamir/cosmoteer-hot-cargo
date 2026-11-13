@@ -32,7 +32,7 @@ A seam of Helion Ore asteroids sits 2,000 to 3,300 from a single sun, inside the
 A crewless freighter drifts 3,000 to 4,500 from a station. Bring its hull within 800 of the station's hull within 25 minutes. Tractor beams work best. Your crew can also claim the wreck and fly it, if its engines still work. If the hulk is destroyed or salvaged to nothing, the mission fails.
 
 ### Repossession
-A stolen freighter flies with one or two escorts. Take it intact. Beat it until it offers surrender and accept, or kill its crew and move your own crew aboard to claim it. If the freighter is destroyed, the mission fails. A wreck that nobody claims yet does not fail the mission.
+A stolen freighter flies with one or two escorts. Take it intact. Beat it until it offers surrender and accept, or kill its crew and move your own crew aboard to claim it. Then bring it alongside the station and hail the bank: they take it once your crew are off. A surrendered freighter stays in the system and its crew fly it to the station. If the freighter is destroyed, the mission fails. A wreck that nobody claims yet does not fail the mission.
 
 ### Storm Survey
 Three markers sit inside clouds or storms (gas clouds, electron clouds or ion storms). Hold a ship with a working sensor array within 400 of each marker for 15 s. Ion storms and electron clouds are the danger. A system without any of them offers no survey.

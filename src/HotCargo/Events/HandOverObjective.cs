@@ -49,6 +49,10 @@ internal sealed class HandOverObjective : Objective
         /// fills every storage tile, so it cannot give exactly one). Salvage or capture it to get the unit out.
         /// </summary>
         [Serialize(Optional = true), PortableHash] public SpawnedObjectSearch? SourceShipTag;
+        /// <summary>A ship that the players deliver to the contact, which takes it (spec 1110). A choice with Need { HandOverReady } waits for it.</summary>
+        [Serialize(Optional = true), PortableHash] public SpawnedObjectSearch? ShipTag;
+        /// <summary>Hull-to-hull gap between the delivered ship and the contact.</summary>
+        [Serialize(Optional = true), PortableHash] public float DeliveryRadius = 800f;
         [Serialize, PortableHash] public SpawnedObjectSearch ContactShipTag = null!;
         /// <summary>The Hail event (events.rules) that the contact's comms show for this exchange.</summary>
         [Serialize, PortableHash] public string Page = "";
@@ -76,6 +80,9 @@ internal sealed class HandOverObjective : Objective
                 LineKey = LineKey,
                 GiveOnAccept = GiveOnAccept,
                 Source = source,
+                DeliveredShipId = ShipTag is null ? null : objects.FindObject(ShipTag, loc, rand).UniqueID
+                    ?? throw new InvalidOperationException($"ship tag {ShipTag} found an object without an ID"),
+                DeliveryRadius = DeliveryRadius,
                 AreaDoodadID = ContactAreaTag is null ? null : objects.FindObject(ContactAreaTag, loc, rand).UniqueID,
                 Tier = Math.Max(1, ((Cosmoteer.Modes.Career.CareerSimModeManager)sim.Mode).TierFields.GetTier(contact.Location.Center)),
             };
@@ -92,6 +99,48 @@ internal sealed class HandOverObjective : Objective
     [Serialize(Optional = true)] public ObjectiveTargetShip? Source { get; private set; }
     /// <summary>The source ship got its one unit.</summary>
     [Serialize(Optional = true)] public bool Seeded { get; private set; }
+    [Serialize(Optional = true)] public ObjectID? DeliveredShipId { get; private set; }
+    [Serialize(Optional = true)] public float DeliveryRadius { get; private set; } = 800f;
+
+    /// <summary>
+    /// Why the delivered ship cannot be handed over yet, or null when it can (or there is none). Sim state only, so every machine agrees.
+    /// </summary>
+    internal string? Blocker(SimRoot sim)
+    {
+        if (DeliveredShipId is not { } id) return null;
+        if (sim.Ships[id] is not { } ship) return Strings.GetText("HotCargoEventMissions/DeliverGone");
+        string name = ship.Metadata.PlainShipName;
+        if (Contact.TargetShip is not { } contact) return Strings.FormatText("HotCargoEventMissions/DeliverFarFmt", name, DeliveryRadius);
+        Circle a = ship.DetWorldBoundingCircle, b = contact.DetWorldBoundingCircle;
+        if (a.Center.DistanceTo(b.Center) - a.Radius - b.Radius > DeliveryRadius) return Strings.FormatText("HotCargoEventMissions/DeliverFarFmt", name, DeliveryRadius);
+        if (PlayerCrewAboard(sim, ship)) return Strings.FormatText("HotCargoEventMissions/DeliverCrewFmt", name);
+        return null;
+    }
+
+    /// <summary>Human crew whose home is the ship, or who stand on it now.</summary>
+    static bool PlayerCrewAboard(SimRoot sim, Ship ship) =>
+        (sim.Mode.IsHumanPlayerShip(ship) && ship.Crew.Assigned.Count > 0)
+        || Tech.Vaults.HumanShips(sim).SelectMany(s => s.Crew.Assigned).Any(c => c.CurrentShip == ship);
+
+    /// <summary>A surrendered delivered ship stays in the system and flies to the contact (spec 1110). Sim tick.</summary>
+    internal void SteerSurrendered(SimRoot sim)
+    {
+        if (DeliveredShipId is not { } id || sim.Ships[id] is not { } ship || Contact.Location is not { } at) return;
+        if (!((Cosmoteer.Modes.Career.CareerSimModeManager)sim.Mode).SurrenderedAIs.Contains(id)) return;
+        if (ship.AI is not { Parameters: { } parameters } ai || parameters.PatrolOrigin is { } origin && origin.DistanceTo(at) < 100f) return;
+        var p = parameters.Clone();
+        p.PatrolOrigin = at;
+        ai.Parameters = p;
+        Log.Info($"hand-over: surrendered {ship.Metadata.PlainShipName} flies to its contact");
+    }
+
+    /// <summary>True for the delivered ship of any open hand-over: vanilla must not fly it out of the system (spec 1110).</summary>
+    internal static bool IsHeld(Run run, ObjectID shipId)
+    {
+        var found = new List<HandOverObjective>();
+        foreach (Mission m in run.Mode.Missions) m.GetObjectives(found);
+        return found.Any(o => o.Completion == CompletionState.InProgress && o.DeliveredShipId == shipId);
+    }
 
     /// <summary>Puts the one unit into the source ship once it is live. Sim tick, for every open hand-over (its turn or not).</summary>
     internal void SeedSource(SimRoot sim)
@@ -139,6 +188,13 @@ internal sealed class HandOverObjective : Objective
         if (contact is not { } id || ForContact(run, id) is not { } o)
             throw new InvalidOperationException($"a HandOver outcome ran on ship {contact?.ToString() ?? "none"}, which is no open hand-over contact");
         Log.Info($"hand-over: {o.Page} done with {o.Contact.GetPlainTargetName(run.Game.Sim)}");
+        if (o.DeliveredShipId is { } shipId && run.Game.Sim is { } sim)
+        {
+            if (o.Blocker(sim) is { } why) throw new InvalidOperationException($"hand-over {o.Page} ran while blocked: {why}");
+            var ship = sim.Ships[shipId] ?? throw new InvalidOperationException("the delivered ship is gone");
+            Log.Info($"hand-over: {o.Contact.GetPlainTargetName(sim)} takes {ship.Metadata.PlainShipName}");
+            sim.Ships.Remove(ship, dispose: true, handleLostShip: false);
+        }
         o.Complete();
     }
 
@@ -230,6 +286,12 @@ internal sealed class HandOverObjective : Objective
     void OnTick(object? sender, SimRoot sim) => Errors.Guard("hand-over tick", () =>
     {
         if (Mission?.Game is not { } game || Completion != CompletionState.InProgress || sim != game.Sim) return;
+        if (DeliveredShipId is { } shipId && sim.NodeId() == Contact.MapNodeID && sim.Ships[shipId] is null && !sim.Stasis.Any(st => st.ReservedObjectID == shipId))
+        {
+            Log.Info("hand-over: the ship to deliver is gone; the job fails");
+            Fail();
+            return;
+        }
         if (ResourceType is not { } item) return;
         if (!Held)
         {
@@ -309,8 +371,11 @@ public static class MissionCargo
         Watch(run.Game);
         var found = new List<HandOverObjective>();
         foreach (Mission m in run.Mode.Missions) m.GetObjectives(found);
-        foreach (var o in found)
-            if (o.Completion == CompletionState.InProgress && o.Source is not null && !o.Seeded) o.SeedSource(sim);
+        foreach (var o in found.Where(o => o.Completion == CompletionState.InProgress))
+        {
+            if (o.Source is not null && !o.Seeded) o.SeedSource(sim);
+            o.SteerSurrendered(sim);
+        }
     });
 
     static MissionList? _watched;
@@ -337,4 +402,20 @@ public static class MissionCargo
             Log.Info($"mission cargo: {m.MetatypeID} {m.MissionID} left the log without the hand-over; removed {removed} {item}");
         }
     });
+}
+
+/// <summary>Spec 1110: a surrendered ship that a running hand-over must deliver does not leave the system until the mission ends.</summary>
+[HarmonyLib.HarmonyPatch(typeof(Cosmoteer.Ships.AI.StrategyModules.AIExitSectorModule), nameof(Cosmoteer.Ships.AI.StrategyModules.AIExitSectorModule.OnAITick))]
+static class HeldShipExitPatch
+{
+    static bool Prefix(Cosmoteer.Ships.AI.StrategyModules.AIExitSectorModule __instance, Ship ship, ref bool __result)
+    {
+        // Cheap check first: this runs on every AI tick of every ship with the module.
+        if (!__instance.IsActivated) return true;
+        bool held = false;
+        Errors.Guard("held ship exit", () => held = Run.Current is { } run && ship.Sim == run.Game.Sim && HandOverObjective.IsHeld(run, ship.UniqueID));
+        if (!held) return true;
+        __result = false;
+        return false;
+    }
 }

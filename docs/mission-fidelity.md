@@ -56,7 +56,8 @@ Checked and true to the text: Convoy Duty, Joint Strike, Drone Siege, Sunside Or
 - Hand it to the broker in the station's comms; haggling is the small risk. A lost core fails the mission.
 
 ### 5. Repossession (P2)
-- After the capture, bring the freighter within 800 of the station (the Salvage Rights tow check). The station takes the ship.
+- After the capture, bring the freighter within 800 of the station and hail the bank. The hand-over waits until no player crew is aboard; the bank then takes the ship.
+- A surrendered freighter stays in the system while the job runs, and its crew fly it to the station.
 
 ### 6. Hold the Pass (P2)
 - Text fix: "hold the pass for N minutes". A real convoy is a bigger change; it only makes sense if the escort AI from Convoy Duty can drive it.
@@ -83,5 +84,6 @@ Checked and true to the text: Convoy Duty, Joint Strike, Drone Siege, Sunside Or
 | 2 | Fixed: `chains-extraction` |
 | 3 | Fixed: `chains-blackbox` |
 | 4 | Fixed: `mechanics-prototype` |
-| 5-12 | Open |
+| 5 | Fixed: `mechanics-salvage` |
+| 6-12 | Open |
 | 13 | Checked, no change |

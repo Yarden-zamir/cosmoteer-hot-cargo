@@ -137,6 +137,7 @@ public static class EventText
         UnmetKind.Flag or UnmetKind.NotFlag or UnmetKind.FlagAge => "Not available",
         UnmetKind.MinSectorsLeft or UnmetKind.MaxSectorsLeft => "Not available here",
         UnmetKind.NotWanted => "Only while wanted",
+        UnmetKind.HandOver => u.Id,
         _ => throw new ArgumentOutOfRangeException(nameof(u), u.Kind, null),
     };
 }

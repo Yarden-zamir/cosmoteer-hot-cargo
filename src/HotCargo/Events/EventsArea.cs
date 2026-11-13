@@ -247,6 +247,27 @@ public static class EventsArea
             var at = h.Contact.Location ?? throw new InvalidOperationException("the hand-over contact is not in this system");
             MoveNextTo(RequireSim(), at, h.Contact.TargetShip?.WorldBoundingRadius + 300f ?? 1200f);
         };
+        // ev_deliver_ship: moves the delivered ship of the first open hand-over next to its contact, and the fleet beside it. Test only.
+        Autotest.Commands["ev_deliver_ship"] = _ =>
+        {
+            var h = OpenHandOvers().FirstOrDefault(o => o.DeliveredShipId is not null) ?? throw new InvalidOperationException("no open hand-over with a ship to deliver");
+            var ship = RequireSim().Ships[h.DeliveredShipId!.Value] ?? throw new InvalidOperationException("the ship to deliver is not live; run ev_goto on it first");
+            var at = h.Contact.Location ?? throw new InvalidOperationException("the hand-over contact is not in this system");
+            // The contact can be in stasis (no size known): 900 from its center clears a trade station and stays within DeliveryRadius.
+            float offset = h.Contact.TargetShip?.WorldBoundingRadius + 300f ?? 900f;
+            Autotest.Teleport(ship, at + new Vector2(offset + ship.WorldBoundingRadius, 0));
+            MoveNextTo(RequireSim(), at, offset + 2 * ship.WorldBoundingRadius + 200f);
+        };
+        // ev_delivered_crew <n>: n > 0 puts n player crew on the delivered ship (it must be a player ship); 0 takes them all off. Test only.
+        Autotest.Commands["ev_delivered_crew"] = arg =>
+        {
+            var h = OpenHandOvers().FirstOrDefault(o => o.DeliveredShipId is not null) ?? throw new InvalidOperationException("no open hand-over with a ship to deliver");
+            var ship = RequireSim().Ships[h.DeliveredShipId!.Value] ?? throw new InvalidOperationException("the ship to deliver is not live");
+            int n = Int(arg);
+            if (n > 0) { if (ship.Crew.CreateCrewsAtRandomParts(n) != n) throw new InvalidOperationException($"{ship.Metadata.PlainShipName} has no room for {n} crew"); }
+            else foreach (var soul in ship.Crew.Assigned.ToList()) soul.Delete(killed: false);
+            Autotest.Wait(1);
+        };
         // ev_take <tag> <resource>: moves the resource out of the live tagged ship's storage into the fleet, as crew carrying
         // salvage would. Fails when the ship holds none. Test only.
         Autotest.Commands["ev_take"] = arg =>

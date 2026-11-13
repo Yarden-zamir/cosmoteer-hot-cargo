@@ -23,6 +23,7 @@ HotCargoMechanics
 	CoreLost = "The prototype core was destroyed"
 	TowFmt = "Bring {0} in to {1}"
 	CaptureFmt = "Capture {0} intact"
+	RepoHandOverFmt = "Bring the freighter to the bank at {0}: hail it"
 	SurveyLine = "Scan storm markers"
 	ScanEscortFmt = "Take {0} within {1} km of the base"
 	OrderStartScan = "<b>[Click]</b> Start the scan here"

@@ -271,7 +271,7 @@ public static class EventRunner
         if (choiceIndex < 0 || choiceIndex >= e.Choices.Length) throw new InvalidOperationException($"event {e.ID} has no choice {choiceIndex}");
         var choice = e.Choices[choiceIndex];
         int money = run.Game.GetPlayerState(playerIndex, deterministic: true).Money;
-        var snapshot = Snap(run, sim, money, p.Tier, p.TechValue);
+        var snapshot = PageSnap(run, sim, money, p);
         if (EventModel.FirstUnmet(ChoiceNeed(run, choice, p), snapshot) is { } unmet)
         {
             Log.Info($"event choice ignored: {e.ID} choice {choiceIndex + 1} needs {unmet}");
@@ -342,6 +342,7 @@ public static class EventRunner
         VaultSpace = n.VaultSpace,
         Crew = n.Crew,
         Bunks = n.Bunks,
+        HandOverReady = n.HandOverReady,
         MinHeat = n.MinHeat,
         MaxHeat = n.MaxHeat,
         MinSector = n.MinSector,
@@ -367,6 +368,13 @@ public static class EventRunner
     /// <summary>Credits of a sure money cost, with the heat part from when the page opened.</summary>
     public static int CostCredits(Run run, CostRules cost, PendingEvent p) =>
         Credits(run, EventModel.HeatScaledUnits(cost.Money, cost.MoneyPerHeat, p.Heat), 0f, p.Tier, p.TechValue);
+
+    /// <summary>The fleet as a pending page's choices see it: Snap, plus the state of the hand-over on the page's ship (spec 1110).</summary>
+    public static Snapshot PageSnap(Run run, SimRoot sim, int money, PendingEvent p) =>
+        Snap(run, sim, money, p.Tier, p.TechValue) with
+        {
+            HandOverBlock = p.Carrier is { } c && HandOverObjective.ForContact(run, c) is { } h ? h.Blocker(sim) : null,
+        };
 
     /// <summary>The fleet as conditions see it. Money is the given player's; everything else is the whole human fleet in this system.</summary>
     public static Snapshot Snap(Run run, SimRoot sim, int money, int tier, long techValue)
