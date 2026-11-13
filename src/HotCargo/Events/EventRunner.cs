@@ -265,6 +265,8 @@ public static class EventRunner
         if (EventModel.FirstUnmet(ChoiceNeed(run, choice, p), snapshot) is { } unmet)
         {
             Log.Info($"event choice ignored: {e.ID} choice {choiceIndex + 1} needs {unmet}");
+            // UI only, for the player who clicked: the choice did nothing, so say why.
+            if (playerIndex == run.Game.LocalPlayerIndex) Ux.UxKit.ChatLine(run.Game, EventText.Reason(unmet));
             return;
         }
         var lines = new List<string>();

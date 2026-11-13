@@ -8,5 +8,7 @@ ev_comms carrier Strip their cargo
 waitfor ev_pending == 0 30
 wait 6
 expect ev_res_steel_gain == 30
+# The host's Off the Books sale reaches the client's sim.
+waitfor ev_tech_gain == -1 90
 expect desyncs == 0
 quit
