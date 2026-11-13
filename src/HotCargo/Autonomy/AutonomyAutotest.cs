@@ -44,9 +44,20 @@ internal static class AutonomyAutotest
         // asteroid (next to the nearest asteroid), or x,y offset from the first own ship. The test fields then read this ship.
         Autotest.Commands["auto_build"] = arg => Build(arg);
         Autotest.Commands["auto_ship"] = arg => _shipName = arg;
+        // auto_log <label>: logs the test ship's state, so a failed wait shows what the ship did.
+        Autotest.Commands["auto_log"] = arg =>
+        {
+            var named = Sim().Ships.AllShips.Where(s => s.Metadata.PlainShipName == _shipName).ToList();
+            foreach (var s in named)
+                Log.Info($"AUTOTEST auto_log {arg}: {s.Metadata.PlainShipName} id={s.UniqueID} owner={s.Metadata.PlayerIndex} junk={s.IsJunk} parts={s.Parts.Count} " +
+                         $"computers={s.Parts.Count(p => p.Rules.ID == Autonomous.ComputerId)} points={s.Commands.CommandPointsProvided} control={s.Commands.CanExecuteCommands} " +
+                         $"crew={s.Crew.Assigned.Count} cmd={s.Commands.CurConfirmedCommand?.GetType().Name} cargo={AutonomyWorld.CargoFill(s):0.00}");
+        };
         Autotest.Fields["auto_autonomous"] = () => Autonomous.IsAutonomous(TestShip()) ? 1 : 0;
         Autotest.Fields["auto_owner"] = () => Sim().Ships.AllShips.Where(s => s.Metadata.PlainShipName == _shipName).MinBy(s => s.UniqueID)?.Metadata.PlayerIndex ?? -99;
         Autotest.Fields["auto_crew"] = () => TestShip().Crew.Assigned.Count;
+        Autotest.Fields["auto_computers"] = () => TestShip().Parts.Count(p => p.Rules.ID == Autonomous.ComputerId);
+        Autotest.Fields["auto_points"] = () => TestShip().Commands.CommandPointsProvided;
         Autotest.Fields["auto_control"] = () => TestShip().Commands.CanExecuteCommands ? 1 : 0;
         Autotest.Fields["auto_manned"] = () => TestShip().Parts.Count(Autonomous.IsManned);
         // Parts with crew slots whose crew toggles are all on (what vanilla reads as crewed), manned or not.
