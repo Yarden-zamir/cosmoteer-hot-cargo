@@ -65,6 +65,20 @@ public static class WorldsModel
     }
 
     /// <summary>
+    /// Spec 221: the velocity change per second of a loose item (a vanilla nugget) in the current: the ship push, plus a term
+    /// that cancels the vanilla drag (Nugget.FixedUpdateDynamic: v -= v × damping × dt) while the item is in the cloud.
+    /// So an item moves like a ship without engines. Without the cancel, the drag stops items in the soft cloud edge, where the
+    /// push fades with the cloud strength.
+    /// </summary>
+    public static (float X, float Y) ItemPush(float vx, float vy, (float X, float Y) flow, (float X, float Y) outward,
+        float flowSpeed, float maxAccel, float sideShare, float strength, float damping)
+    {
+        if (strength <= 0f) return (0f, 0f);
+        var (ax, ay) = Push(vx, vy, flow, outward, flowSpeed, maxAccel, sideShare, strength);
+        return (ax + vx * damping, ay + vy * damping);
+    }
+
+    /// <summary>
     /// Spec 223: how deep a point is in a sun's heat zone. 0 at the outer edge (and outside), 1 at the kill radius (and inside).
     /// The vanilla heat damage scales with the same inverse distance (PlanetDoodad.ProximityEffects).
     /// </summary>

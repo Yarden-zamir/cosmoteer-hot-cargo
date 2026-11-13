@@ -55,28 +55,34 @@ public class WorldsModelTests
         Assert.Equal(0f, sy, 4);
         Assert.Equal((0f, 0f), WorldsModel.Push(80f, 30f, flow, outward, 45f, 9f, 0.5f, 1f));
         Assert.Equal(0f, WorldsModel.Push(0f, 0f, flow, outward, 45f, 9f, 0f, 1f).Y); // no side share: no side push
+        Assert.Equal((0f, 0f), WorldsModel.ItemPush(20f, 5f, flow, outward, 45f, 9f, 0.5f, 0f, 0.5f)); // outside the cloud: vanilla drag only
     }
 
     /// <summary>
-    /// A ship (no drag) and a loose item (the vanilla nugget drag, Nugget.FixedUpdateDynamic) that only drift, from the
-    /// center of a 6000 × 2400 band on its axis, leave it at the near side, before the end, in bounded time.
+    /// A ship (no drag, Push) and a loose item (the vanilla nugget drag of Nugget.FixedUpdateDynamic, ItemPush) that only drift,
+    /// from the center of a 6000 × 2400 band on its axis, leave it at the near side, before the end, in bounded time.
+    /// The cloud strength fades to 0.05 near the side, like the soft cloud edge.
     /// </summary>
     [Theory]
     [InlineData(0f)]
     [InlineData(0.5f)]
     public void Push_drives_a_drifting_object_out_at_the_near_side(float damping)
     {
+        bool item = damping > 0f;
         (float X, float Y) flow = (1f, 0f);
         const float halfLength = 3000f, halfWidth = 1200f, dt = 0.05f;
         float px = 0f, py = 0f, vx = 0f, vy = 0f, t = 0f;
         while (MathF.Abs(px) < halfLength && MathF.Abs(py) < halfWidth)
         {
             var outward = WorldsModel.Outward(flow.X, flow.Y, px, py);
-            var (ax, ay) = WorldsModel.Push(vx, vy, flow, outward, 45f, 9f, 0.5f, 1f);
+            float strength = MathF.Abs(py) < halfWidth - 300f ? 1f : 0.05f;
+            var (ax, ay) = item
+                ? WorldsModel.ItemPush(vx, vy, flow, outward, 45f, 9f, 0.5f, strength, damping)
+                : WorldsModel.Push(vx, vy, flow, outward, 45f, 9f, 0.5f, strength);
             vx += ax * dt - vx * damping * dt;
             vy += ay * dt - vy * damping * dt;
             px += vx * dt; py += vy * dt; t += dt;
-            Assert.True(t < 300f, "a drifting object leaves the band");
+            Assert.True(t < 120f, $"a drifting object leaves the band (at {px:0}, {py:0} after {t:0} s)");
         }
         Assert.True(MathF.Abs(py) >= halfWidth, $"it leaves at the side, not the end (at {px:0}, {py:0} after {t:0} s)");
     }
