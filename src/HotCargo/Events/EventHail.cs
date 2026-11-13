@@ -81,6 +81,8 @@ public static class EventHail
         // A mission step, so it works with random events turned off.
         var handOver = HandOverObjective.ForContact(run, callee.UniqueID);
         if (handOver is null && !run.T.Events.Enabled) return [];
+        // With an item, the line needs a unit in any of its forms: sealed or opened (spec 1117).
+        if (handOver?.ResourceType is { } item && HandOverObjective.FleetUnits(sim, HandOverObjective.Forms(item)) == 0) return [];
         HailTarget? target = handOver is not null ? HailTarget.Contact : TargetOf(callee, caller);
         if (target is null) return [];
         var snap = EventRunner.Snap(run, sim, run.Game.GetPlayerState(caller.Metadata.PlayerIndex, deterministic: true).Money, run.CurrentTier, EventRunner.CurrentTechValue(run));

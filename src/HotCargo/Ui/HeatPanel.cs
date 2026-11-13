@@ -44,6 +44,7 @@ sealed class HeatPanel : LayoutBox
     int _seenStages = -1;
     double _alertUntil;
     double _flashUntil;
+    double _nextText;
 
     public HeatPanel(CareerGameModeManager mode)
     {
@@ -111,6 +112,12 @@ sealed class HeatPanel : LayoutBox
         var t = run.T;
         double now = App.Clock.Time.Seconds;
         DetectStageStart(run, now);
+        // Spec 922: a blocked heat gain shows "+0" for a moment, unless a stage alert shows.
+        bool blockedFlash = now - Pursuit.Outage.LastBlockedShownAt < 2.5 && now >= _alertUntil;
+        if (blockedFlash) _alert.Text = Pursuit.PursuitText.Blue(Pursuit.PursuitText.Text("PanelBlocked"));
+        _alert.SelfActive = now < _alertUntil || blockedFlash;
+        // Spec 872: the texts below refresh every HudRefreshSeconds, not in every frame.
+        if (!UxKit.HudDue(ref _nextText)) return;
 
         _sector.Text = UxKit.Format("SectorFmt", s.SectorIndex, t.Journey.RunSectorCount);
         float mult = run.HeatMultiplier(s.FleetTech);
@@ -129,10 +136,6 @@ sealed class HeatPanel : LayoutBox
         string? contracts = Contracts.ContractsUi.HeatPanelLine(run);
         _contracts.SelfActive = contracts is not null;
         _contracts.Text = contracts ?? "";
-        // Spec 922: a blocked heat gain shows "+0" for a moment, unless a stage alert shows.
-        bool blockedFlash = now - Pursuit.Outage.LastBlockedShownAt < 2.5 && now >= _alertUntil;
-        if (blockedFlash) _alert.Text = Pursuit.PursuitText.Blue(Pursuit.PursuitText.Text("PanelBlocked"));
-        _alert.SelfActive = now < _alertUntil || blockedFlash;
         // Spec 60: in multiplayer the tunables hash stays visible, so players can compare it.
         _debug.SelfActive = t.Debug.DebugKeys || run.IsMultiplayer;
         if (_debug.SelfActive)

@@ -40,6 +40,16 @@ public enum HailTarget
     Contact,
 }
 
+/// <summary>How a hand-over contact ends a deal (spec 1118).</summary>
+public enum ContactReaction
+{
+    None,
+    /// <summary>It turns on the players and fights.</summary>
+    Hostile,
+    /// <summary>It jumps out of the system.</summary>
+    Leaves,
+}
+
 /// <summary>A computed offer that an event page carries (spec 760-762). Its contents come from the tech tree when the page opens.</summary>
 public enum OfferKind
 {
@@ -159,6 +169,12 @@ public sealed class OutcomeRules
     [Serialize(Optional = true)] public string[] ClearFlags = [];
     /// <summary>Completes the open hand-over whose contact carries this page (spec 1102). Put the item in the choice Cost.</summary>
     [Serialize(Optional = true)] public bool HandOver;
+    /// <summary>With HandOver: the job's money reward × this (spec 1118). 0 means no change.</summary>
+    [Serialize(Optional = true)] public float HandOverPay;
+    /// <summary>The contact takes the item and ends the deal (spec 1118). The hand-over fails. Do not combine with HandOver.</summary>
+    [Serialize(Optional = true)] public ContactReaction ContactTurns;
+    /// <summary>True: the outcome text also goes to the chat, so every player knows what happened.</summary>
+    [Serialize(Optional = true)] public bool Chat;
     /// <summary>On a chain page (mod/chains/pages.rules): the result that this outcome gives the chain stage. Empty elsewhere.</summary>
     [Serialize(Optional = true)] public string ChainResult = "";
 
@@ -430,6 +446,9 @@ public static class EventLibrary
                 if (outcome.BuyerPrice is < 0 or > 1) throw new InvalidDataException($"{oat}: BuyerPrice must be 0 (no change) or above 0 and at most 1");
                 foreach (var r in outcome.Resources) ValidateResource(r.ID, oat);
                 if (outcome.Spawn.Length > 0) Spawn(outcome.Spawn);
+                if (outcome.HandOverPay < 0 || outcome.HandOverPay > 0 && !outcome.HandOver) throw new InvalidDataException($"{oat}: HandOverPay needs HandOver and must not be negative");
+                if (outcome.ContactTurns != ContactReaction.None && (outcome.HandOver || e.HailTarget != HailTarget.Contact))
+                    throw new InvalidDataException($"{oat}: ContactTurns needs a Contact page and no HandOver");
             }
         }
     }

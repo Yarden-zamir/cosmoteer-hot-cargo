@@ -1,0 +1,27 @@
+# Heavy fight for a performance measure (spec 870 to 873), single player: 3 player ships, enemy scaling for 3 players,
+# the Strike stage with repeat waves, personalities, teams and cover among rocks, 60 wrecks, events and diplomacy on.
+# selfprof times every Hot Cargo entry point; the SELFPROF lines compare our time with the sim tick time.
+# frameprof times the frame code that only a drawing game runs (FRAMEPROF lines).
+newgame run
+wait 8
+godmode on
+enemyplayers 3
+aiplayership
+aiplayership
+maxhunters 16
+strikeinterval 20
+airocks 10 900
+wrecks 60
+aispawn pirates 4
+aispawn monolith 4
+aispawn imperium 3
+heat 100
+selfprof on
+wait 20
+selfprof reset
+frameprof on
+wait 90
+selfprof report stress
+frameprof report stress
+telestats
+quit

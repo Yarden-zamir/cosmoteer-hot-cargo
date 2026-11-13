@@ -15,6 +15,22 @@
 	AddTo = "<resources/resources.rules>/Resources"
 	ToAdd = &<events/flight_recorder.rules>
 }
+// Spec 1115, 1116: what a Sealed Case holds.
+{
+	Action = Add
+	AddTo = "<resources/resources.rules>/Resources"
+	ToAdd = &<events/opened_case.rules>
+}
+{
+	Action = Add
+	AddTo = "<resources/resources.rules>/Resources"
+	ToAdd = &<events/access_codes.rules>
+}
+{
+	Action = Add
+	AddTo = "<resources/resources.rules>/Resources"
+	ToAdd = &<events/tracer_beacon.rules>
+}
 {
 	Action = Overrides
 	OverrideIn = "<modes/career/mission_metatypes.rules>"
