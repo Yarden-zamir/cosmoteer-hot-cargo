@@ -30,7 +30,7 @@ internal sealed class CoverStrategyRules : AIStrategyModuleRules
 /// Spec 366. A ship with the Cover trait fights from behind rocks. While its target is within CoverEngageRange, it fights for
 /// CoverPeekSeconds, then hides behind the nearest rock that blocks weapon fire (asteroids) for CoverHideSeconds, and repeats.
 /// The hiding spot is on the far side of the rock from the target, so the rock blocks the shots between them.
-/// Tell: the ship ducks behind an asteroid, the label shows IN COVER, and it comes out again to shoot.
+/// Tell: the ship ducks behind an asteroid and comes out again to shoot. No label: the plan stays hidden (spec 368).
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
 internal sealed class CoverStrategy(CoverStrategyRules rules) : AIStrategyModule
@@ -88,7 +88,7 @@ internal sealed class CoverStrategy(CoverStrategyRules rules) : AIStrategyModule
         _noRockLogged = false;
         if (rock != _rock) TacticsLog.Event(ship, Tactic.Cover, $"hides behind a rock (radius {rock.WorldBoundingRadius:0}) from {target.Metadata.PlainShipName}");
         _rock = rock;
-        HunterOrders.MoveTo(ship, Spot(ship, target, rock, t), rules.MoveTolerance);
+        PersonalityStrategy.MoveGuarded(ship, Spot(ship, target, rock, t), rules.MoveTolerance, target, t);
         return true;
     }
 

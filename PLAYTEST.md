@@ -68,28 +68,29 @@ Switch a behavior off to compare: `Tactics { CallEnabled = false }` for hunters,
 1. Sector 1, low FTL fuel: raise heat to 100 (F9). Strike sends one ship now and one 45 s later. Can you destroy the first one, pick up or salvage its fuel, and jump before the second one arrives? Is it "by the skin of your teeth", or too easy, or impossible? Tune `Hunters.Stages` Strike `EarlyScale`, `WaveGapSeconds` and `Hunters.MinFuel`.
 2. Destroy a hunter's hyperdrive or storage. Do hyperium nuggets drop (about half the fuel)? Does salvaging the wreck give the rest?
 3. Last sector: three strike ships of tier + 2, one at a time. Is the last sector a real threat but still survivable?
-4. Call for help: a hunter calls when it first sees you while another group waits. Is the red ring and "CALLING HELP n%" label easy to notice in a fight? Is 6 s the right window?
+4. Call for help: a hunter calls when it first sees you while another group waits. Is the red ring and "CALLING HELP n%" label easy to notice in a fight? Is 15 s the right window to jam or kill the caller?
 5. Hit a calling ship with a disruptor, an EMP missile or an ion beam. Does the call stop at once, with the "call was cut off" log line? Does that feel like a reward for carrying disruptors?
 6. Fight a pirate group (asteroid field pirates or a fleet bounty). When you engage one, does it call the others, and do they come? Is a 6,000 call range too far or too short?
 7. Fly into an ion storm or electron nebula and fight there. Are calls blocked as expected? Is it clear to the player why no one called?
-8. Flee: damage a pirate or hunter below a quarter of its value. About half of them should break off and run (label FLEEING). A hunter jumps out after 25 s (label shows the countdown). Is the window long enough to chase and kill it? Does a fleeing pirate come back after repairs?
+8. Flee: damage a pirate or hunter below a quarter of its value. About half of them should break off and run (no label). A hunter jumps out after 25 s (label shows the countdown). Is the window long enough to chase and kill it? Does a fleeing pirate come back after repairs?
 9. Destroy all weapons on an enemy. Does it always run?
 10. Focus fire: let one of your ships get badly hurt. Do the enemies switch to it? Is that too punishing (lower `FocusWeakFactor`)?
-11. Regroup: a lone weak enemy near stronger friends should turn toward them (label REGROUPING) and attack together. Does it look smart, or like hesitation? Is 25 s too long?
+11. Regroup: a lone weak enemy near stronger friends should pull back toward them (no label) and attack together. Does it look smart, or like hesitation? Is 25 s too long?
 12. Co-op: run a strike with calls and flees for 20 minutes. Check for no desync.
 
 ## AI personalities (spec 360-369)
 
-Hover an enemy ship: the mouseover names its personality, its traits and its team role. Switch personalities off to compare: `Tactics { PersonalitiesEnabled = false }` (hunters use every tactic, pirates and faction ships use none). Switch one off by name: `Tactics { PersonalitiesOff = ["Cabal Zealots"] }`.
+Nothing on screen names an enemy personality, trait or role: read them from the fight. `Debug { TacticsLog = true }` logs them. Switch personalities off to compare: `Tactics { PersonalitiesEnabled = false }` (hunters use every tactic, pirates and faction ships use none). Switch one off by name: `Tactics { PersonalitiesOff = ["Cabal Zealots"] }`.
 
 1. Fight pirates, then a faction that wants you (attack one of its ships). Do the two feel different? Can you name a faction's style after one or two fights?
 2. Two ships of one faction: do they behave a little differently (one calls, one does not; one flanks, one brawls)? Or does the jitter make factions blur together (lower `Jitter`)?
-3. Heavy ships: a big, slow ship never kites or baits. Does any big ship still dance at long range? Report its name and the mouseover line.
+3. Heavy ships: a big, slow ship never kites or baits. Does any big ship still dance at long range? Report its name and its "tactic personality" log line.
 4. Fast, light, long-range ships: do they hold distance and back off? Fast short-range ships: do they flank? Short-range armored ships: do they close in?
-5. Cover: fight pirates or Fringe ships in an asteroid field. Does a small ship duck behind a rock (label IN COVER), then come out to shoot? Can you flank it, or does it feel like cheating? Tune `CoverPeekSeconds` and `CoverHideSeconds`.
+5. Cover: fight pirates or Fringe ships in an asteroid field. Does a small ship duck behind a rock (no label), then come out to shoot? Can you flank it, or does it feel like cheating? Tune `CoverPeekSeconds` and `CoverHideSeconds`.
 6. Teams (Monolith, Imperium, hunters): do the team's ships all turn on one of your ships? Does the tank lead, the sniper hang back and the flankers swing wide? Put two of your ships in the fight: does the team stay on one?
 7. Do the profile scores match the ships? `Debug { TacticsLog = true }` writes each ship's scores to `hot_cargo_log.txt` ("tactic personality"). If too many ships count as heavy or protected, tune `Tactics { Profile { ... } }`.
-8. Co-op: fight a faction team among asteroids for 10 minutes. Check for no desync.
+8. Weak sides: knock the armor off the back of an enemy with its control room near the back. Does it stop turning its back on you when it runs or falls back (it strafes away instead)?
+9. Co-op: fight a faction team among asteroids for 10 minutes. Check for no desync.
 
 ## Run and UX
 

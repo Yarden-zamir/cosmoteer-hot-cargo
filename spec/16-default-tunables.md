@@ -58,7 +58,7 @@
 | `Hunters.MinFuel` | 60 | 192 |
 | `FleeHealthFraction`, `FleeChance` | 0.25, 0.5 | 193 |
 | `FleeDistance`, `FleeJumpSeconds`, `FleeRecoverFraction` | 1500, 25 s, 0.6 | 195 |
-| `CallSeconds`, `CallRange`, `CallCooldownSeconds` | 6 s, 6000, 60 s | 196, 197 |
+| `CallSeconds`, `CallRange`, `CallCooldownSeconds` | 15 s, 6000, 60 s | 196, 197 |
 | `CallAssistSeconds` | 60 s | 198 |
 | `CallBlockedInNebulas`, `CallStormStrength` | [ion_storm, electron], 0.5 | 199 |
 | `FocusWeakFactor` | 1.5 | 200 |
@@ -69,6 +69,7 @@
 | `TeamRadius`, `TeamFlankDegrees` | 2500, 90° | 364, 365 |
 | `CoverSearchRange`, `CoverEngageRange`, `CoverPeekSeconds`, `CoverHideSeconds` | 2000, 1500, 8 s, 6 s | 366 |
 | `BrawlRangeFraction` | 0.5 | 365, 367 |
+| `WeakSideEnabled`, `VulnerableParts`, `WeakSideCover`, `ArmorCoverWeight`, `WeaponSideWeight` | on, [command, reactor, yarden_zamir.tech_vault], 4, 3, 1 | 1030 to 1034 |
 | `Mechanics.<Mission>Chance` | 0.15 to 0.25 | 131 |
 | `Mechanics.Siege`, `Guard`, `Scan` (hold-out profiles) | see MISSIONS.md | 132, 137, 140 |
 | `Mechanics.DeliveryRadius` | 800 | 134 |
