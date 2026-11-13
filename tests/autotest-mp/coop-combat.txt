@@ -12,12 +12,16 @@ mp ev_set Enabled false
 step scaling.generation
 # Spec 330 to 336: the host's value reaches the client. Both machines generate the first system with factor 2:
 # pirate wanderers are [9, 11] (mod/contracts/actions.rules), so 18 to 22. The state hash compares the ship counts.
+# With 3 players the factor is 1 + (2 - 1) x 2 = 3 (spec 331), so 27 to 33.
 expect enemysetting == 2
-expect enemyfactor == 2
+@2p expect enemyfactor == 2
+@3p expect enemyfactor == 3
 on 1 expect enemysetting == 2
-on 1 expect enemyfactor == 2
+@2p on 1 expect enemyfactor == 2
+@3p on 1 expect enemyfactor == 3
 counttag pirate
-expect tagcount >= 18
+@2p expect tagcount >= 18
+@3p expect tagcount >= 27
 
 step diplomacy.payoff
 # Spec 587 (#25): the client ticks tech on the hunter page, and the draft is shared, so the host adds money to it. The client
@@ -140,18 +144,21 @@ mprestart
 mp godmode off
 mp ev_set Enabled false
 mp tech_set LossGraceSeconds 600
-# Starting vaults are at full health: 4 units for each player.
+# Starting vaults are at full health: 4 units for each player (3 + 3 + 2 with 3 players, spec 17).
 expect vaultminhealth == 3000
 expect tech == 8
 expect vaultunits == 8
-expect mytech == 4
+@2p expect mytech == 4
+@3p expect mytech == 3
 on 1 expect vaultminhealth == 3000
-on 1 expect mytech == 4
+@2p on 1 expect mytech == 4
+@3p on 1 expect mytech == 3
 mp tech remove 1
 wait 1
 expect tech == 7
 expect vaultunits == 7
-expect mytech == 3
+@2p expect mytech == 3
+@3p expect mytech == 2
 # Damage costs no tech while the vault stands. A destroyed vault drops its units as crates, in every machine's count.
 mp tech_set VaultTechLossChance 0
 mp vault damage 0.6
