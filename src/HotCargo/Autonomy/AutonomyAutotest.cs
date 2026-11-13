@@ -52,6 +52,9 @@ internal static class AutonomyAutotest
         // asteroid (next to the nearest asteroid), or x,y offset from the first own ship. The test fields then read this ship.
         Autotest.Commands["auto_build"] = arg => Build(arg);
         Autotest.Commands["auto_ship"] = arg => _shipName = arg;
+        // Live ships with the auto_ship name. Unlike the other fields it does not throw with none, so a test can wait for a build
+        // that runs in the sim later ("mp auto_build" in co-op).
+        Autotest.Fields["auto_ship_live"] = () => Sim().Ships.AllShips.Count(s => s.Metadata.PlainShipName == _shipName && !s.IsJunk);
         // auto_focus <size>: centers the camera on the test ship and fits a square of this world size (screenshots, UI only).
         Autotest.Commands["auto_focus"] = arg =>
         {

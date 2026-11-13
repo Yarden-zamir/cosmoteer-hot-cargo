@@ -11,7 +11,11 @@ on 1 closepanel
 step autonomy.looter
 # Spec 1076: collect loot with the Funnel, full bay, nearest station, sell. The money arrives on both machines.
 mp auto_build Looter away yarden_zamir.computer@2,0 yarden_zamir.targeted_reactor@2,1 cosmoteer.storage_2x2@0,0 yarden_zamir.funnel@0,2 cosmoteer.thruster_small@0,4 cosmoteer.thruster_small@3,3 cosmoteer.thruster_small@0,-2,2 cosmoteer.thruster_small@3,-2,2 cosmoteer.thruster_small@-2,0,1 cosmoteer.thruster_small@-2,2,1 cosmoteer.thruster_small@4,0,3 cosmoteer.thruster_small@4,1,3
-wait 1
+# The build runs in the sim some ticks after the line (later on a busy machine): wait for the ship on both machines.
+auto_ship Looter
+waitfor auto_ship_live == 1 60
+on 1 auto_ship Looter
+on 1 waitfor auto_ship_live == 1 60
 tactics_ship Looter
 tactics Looter
 tacticsauto on
@@ -29,7 +33,11 @@ on 1 waitfor auto_money_gain > 0 30
 step autonomy.miner
 # Spec 1077: the Computer mans the mining laser on both machines; the ship mines and the Funnel takes the ore in.
 mp auto_build Miner player yarden_zamir.computer@2,0,1 cosmoteer.mining_laser_small@3,0,1 yarden_zamir.targeted_reactor@2,2 cosmoteer.storage_2x2@0,0 yarden_zamir.funnel@0,2 cosmoteer.thruster_small@0,4 cosmoteer.thruster_small@3,4 cosmoteer.thruster_small@0,-2,2 cosmoteer.thruster_small@3,-2,2 cosmoteer.thruster_small@-2,0,1 cosmoteer.thruster_small@-2,2,1 cosmoteer.thruster_small@6,0,3 cosmoteer.thruster_small@4,2,3
-wait 1
+# The build runs in the sim some ticks after the line (later on a busy machine): wait for the ship on both machines.
+auto_ship Miner
+waitfor auto_ship_live == 1 60
+on 1 auto_ship Miner
+on 1 waitfor auto_ship_live == 1 60
 tactics_ship Miner
 tactics HC1:CargoAbove=25>GoToStation=0;StationInRange&CargoToSell>Sell;LootWithin=600>CollectLoot;AsteroidWithin=20000>Mine;Always>ReturnToFleet
 tacticsauto on
