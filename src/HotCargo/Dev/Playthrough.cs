@@ -137,7 +137,8 @@ public static class Playthrough
             Halfling.App.Director.FrameEnded += (_, _) =>
             {
                 double now = Halfling.App.Clock.Time.Seconds;
-                if (now < next || Run.Current is null) return;
+                // No acting ship during a jump (between systems) or after the ship is lost: nothing to report.
+                if (now < next || Run.Current is not { Game.Sim: { } sim } || Autotest.ActingShip(sim) is null) return;
                 next = now + every;
                 Errors.Guard("playthrough watch", () => Status("watch"));
             };
