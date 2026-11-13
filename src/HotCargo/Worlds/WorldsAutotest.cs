@@ -76,6 +76,8 @@ static class WorldsAutotest
         Autotest.Fields["worlds_gate_min"] = () => Radii(Gate).Min();
         Autotest.Fields["worlds_gate_max"] = () => Radii(Gate).Max();
         Autotest.Fields["worlds_trade_station_max"] = () => Radii(TradeStation).Max();
+        // The vanilla rules spawn 2 to 3 military stations in each of two groups; fewer means that they did not fit.
+        Autotest.Fields["worlds_military_stations"] = () => At(new ID<SimObjectSpawner>("military_station")).Count;
         Autotest.Fields["worlds_station_heat_gap"] = () =>
         {
             var suns = HeatZone.Suns(Sim());
