@@ -6,7 +6,7 @@ menu open
 expect menu_readonly == 1
 menu reject Heat.HeatPerGameMinute 10
 menu close
-menu value Hunters.Stages[0].ShipCount == 2
+menu value Hunters.Stages[0].ShipCount == 4
 menu value Heat.HeatCarryOverFraction == 0.5
 mp mpmark 1
 waitfor hunters >= 2 60

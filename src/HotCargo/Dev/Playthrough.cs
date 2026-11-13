@@ -134,22 +134,32 @@ public static class Playthrough
         };
     }
 
-    /// <summary>One right click: an attack order on the nearest live target ship of the mission, else a move order to its area.</summary>
+    /// <summary>
+    /// One right click: an attack order on the nearest live target ship of the mission. A target in stasis (it fled out of sight) shows
+    /// where its landmark is discovered, and a player who focuses the objective line flies there (vanilla ObjectiveTargetShip.OnFocused).
+    /// Else a move order to the mission area.
+    /// </summary>
     static void Engage(Mission m)
     {
         var ship = TechAutotest.PlayerShip();
         var targets = new List<DefeatShipsObjective>();
         m.GetObjectives(targets, activeOnly: true);
-        var target = targets.SelectMany(o => o.TargetShips).Select(t => t.TargetShip)
+        var targetShips = targets.SelectMany(o => o.TargetShips).ToList();
+        var target = targetShips.Select(t => t.TargetShip)
             .Where(t => t is { IsJunk: false } && t.Sim == ship.Sim).MinBy(t => t!.DetWorldCenter.DistanceTo(ship.DetWorldCenter));
+        var landmark = targetShips.Select(t => t.TargetSpawner).OfType<Cosmoteer.Simulation.Stasis.StasisSpawner>()
+            .Where(sp => StasisLandmark.GetLandmark(sp) is { IsDiscovered: true }).Select(sp => (Vector2?)sp.Location).FirstOrDefault();
         Command order;
         if (target is not null)
             order = new AttackCommand(ship, ship.Commands.AllocLocalCommandID(), target, CollisionAvoidanceFlags.All, isTentative: false, isConfirmed: true);
+        else if (landmark is { } seen)
+            order = new MoveCommand(ship, ship.Commands.AllocLocalCommandID(), seen, null, CollisionAvoidanceFlags.All, isTentative: false);
         else if (m.GetClosestObjective(out _)?.GetAreaLocation(Game()) is { } area)
             order = new MoveCommand(ship, ship.Commands.AllocLocalCommandID(), area.Center, null, CollisionAvoidanceFlags.All, isTentative: false);
         else throw new InvalidOperationException($"mission {m.MetatypeID} has no target ship and no area");
         Game().NetManager.EnqueueInput(new MPEnqueueCommandsInput(order, append: false, playLocalSound: false));
-        Log.Info($"AUTOTEST playthrough: {order.GetType().Name} {(target is null ? "to the mission area" : $"on {target.Metadata.PlainShipName}")}");
+        string where = target is not null ? $"on {target.Metadata.PlainShipName}" : landmark is not null ? "to the target's landmark" : "to the mission area";
+        Log.Info($"AUTOTEST playthrough: {order.GetType().Name} {where}");
     }
 
     static Cosmoteer.Game.GameRoot Game() => Autotest.RequireRun().Game;
