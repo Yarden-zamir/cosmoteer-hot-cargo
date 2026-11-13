@@ -20,10 +20,12 @@ wait 3
 expect pt_mission == 1
 pt_fight 600
 pt_status fight
-expect pt_mission == 2
-# Back to the station: sell 1 tech, unlock and build a hyperdrive, buy fuel.
+expect pt_mission == 1
+# Back to the station: collect the bounty, sell 1 tech, unlock and build a hyperdrive, buy fuel.
 pt_goto station
 waitfor pt_near == 1 300
+pt_collect
+waitfor pt_mission == 2 30
 tech sell 1
 wait 20
 pt_status sold

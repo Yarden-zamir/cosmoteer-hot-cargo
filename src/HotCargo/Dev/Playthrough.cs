@@ -102,14 +102,15 @@ public static class Playthrough
         };
         Autotest.Fields["pt_ready"] = () => TechAutotest.PlayerShip().Ftl.IsReadyToJump ? 1 : 0;
         // pt_fight <timeout seconds>: right clicks the mission's nearest live target ship, again every 20 seconds as it moves,
-        // until the mission ends. A target in stasis or out of sight gets a move order to the objective area instead.
+        // until no fight step is left: the mission ended, or only a step such as ReceiveRewards is left (pt_collect).
+        // A target in stasis or out of sight gets a move order to the objective area instead.
         Autotest.Commands["pt_fight"] = arg =>
         {
             double next = 0;
             Autotest.WaitFor(() =>
             {
                 var m = _mission ?? throw new InvalidOperationException("no accepted mission");
-                if (m.Completion != CompletionState.InProgress) return true;
+                if (m.Completion != CompletionState.InProgress || !FightLeft(m)) return true;
                 double now = Halfling.App.Clock.Time.Seconds;
                 if (now >= next)
                 {
@@ -119,6 +120,10 @@ public static class Playthrough
                 return false;
             }, double.Parse(arg, CultureInfo.InvariantCulture), "the mission to end");
         };
+        // pt_collect: the "receive payment" button in the comms window of the picked station (CommMissionsTab.MPMissionPaymentInput).
+        // A vanilla bounty ends with a ReceiveRewards step after its target dies.
+        Autotest.Commands["pt_collect"] = _ =>
+            Game().NetManager.EnqueueInput(new CommMissionsTab.MPMissionPaymentInput(Station(), _mission ?? throw new InvalidOperationException("no accepted mission")));
         Autotest.Commands["pt_status"] = arg => Status(arg);
         // pt_watch <real seconds>: a status line at that interval, so a failed wait shows what the ship did. It only reads.
         Autotest.Commands["pt_watch"] = arg =>
@@ -160,6 +165,14 @@ public static class Playthrough
         Game().NetManager.EnqueueInput(new MPEnqueueCommandsInput(order, append: false, playLocalSound: false));
         string where = target is not null ? $"on {target.Metadata.PlainShipName}" : landmark is not null ? "to the target's landmark" : "to the mission area";
         Log.Info($"AUTOTEST playthrough: {order.GetType().Name} {where}");
+    }
+
+    /// <summary>True while a fight step of the mission is not over, also one that a later step of a sequence holds.</summary>
+    static bool FightLeft(Mission m)
+    {
+        var fights = new List<DefeatShipsObjective>();
+        m.GetObjectives(fights);
+        return fights.Any(o => o.Completion == CompletionState.InProgress);
     }
 
     static Cosmoteer.Game.GameRoot Game() => Autotest.RequireRun().Game;
@@ -223,7 +236,6 @@ public static class Playthrough
             .FirstOrDefault() ?? throw new InvalidOperationException(
                 $"{station.Name} has no local fight to accept; offers: {string.Join(", ", list.Select(m => $"{m.MetatypeID} local={m.IsLocal} accept={m.CanAccept(sim)}"))}");
         _mission = pick;
-        WatchTargetRemoval(sim);
         run.Game.NetManager.EnqueueInput(new CommMissionsTab.MPAcceptMissionInput(CommMissionsTab.MissionSourceType.Ship, station, pick));
         Log.Info($"AUTOTEST playthrough: accepted {pick.MetatypeID} {pick.MissionID} '{Events.EventView.Plain(pick.Name.Text)}' at {station.Name}, {pick.GetDistanceToClosestObjective():0} away");
     }
@@ -266,21 +278,7 @@ public static class Playthrough
         return objectives.SelectMany(o => o.TargetShips);
     }
 
-    /// <summary>Logs only: when a target ship leaves the sim, who removed it (stack) and what state it was in.</summary>
-    static void WatchTargetRemoval(SimRoot sim)
-    {
-        sim.Ships.Removed += (_, ship) =>
-        {
-            if (!TargetShips().Any(t => t.ShipID.Equals(ship.UniqueID))) return;
-            Errors.Guard("playthrough target removed", () =>
-            {
-                var player = TechAutotest.PlayerShip();
-                Log.Info($"AUTOTEST playthrough: target {ship.Metadata.PlainShipName} {ship.UniqueID} left the sim: junk={ship.IsJunk} significant={ship.IsSignificant} " +
-                         $"parts={ship.Parts.Count} away={ship.DetWorldCenter.DistanceTo(player.DetWorldCenter):0} stasisMode={sim.Mode.GetShipStasisMode(ship)}\n{Environment.StackTrace}");
-            });
-        };
-    }
-
+    /// <summary>Logs only. A killed target has id 0 and alive=False: vanilla clears the ship ID (ObjectiveTargetShip.OnTargetShipChanged).</summary>
     static string TargetState(SimRoot sim) => string.Join("; ", TargetShips().Select(t =>
         $"id={t.ShipID} node={(t.MapNodeID.Equals(sim.MapNode.UniqueID) ? "here" : t.MapNodeID.ToString())} alive={t.IsAlive} live={t.TargetShip is not null} " +
         $"spawner={t.TargetSpawner?.GetType().Name ?? "none"} stasis={sim.Stasis[t.ShipID]?.GetType().Name ?? "none"} at={t.Location?.ToString() ?? "none"}"));
