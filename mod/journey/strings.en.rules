@@ -5,5 +5,5 @@ HotCargoJourney
 	BuyerMission = "Deliver the tech to the Buyer"
 	BuyerHere = "The Buyer is in this system"
 	WinReason = "The Buyer has the tech. The corporation lost."
-	BuyerMissionDesc = "The Buyer is in this system. Sell it at least one unit of Stolen Tech to win the run."
+	BuyerMissionDesc = "Sell the Buyer at least 1 tech to win the run."
 }
