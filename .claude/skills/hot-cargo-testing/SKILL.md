@@ -32,6 +32,10 @@ description: Build Hot Cargo, run unit tests, headless game tests and co-op test
 - `core-playthrough` plays to sector 2 without cheats (only `pt_*` commands that stand in for one click). It runs in the full suite only. A script asks for a longer timeout with a `# timeout: <seconds>` line.
 - A test reads what the game shows, not our own value source. For UI, check the vanilla widget's text or state (for example the tooltip text the game stores), and take a screenshot when the result is visual.
 
+## Before a merge
+- `scripts/game-check.sh [PR]` runs the affected game tests (every test of the touched areas) on the PR head with current `origin/main` merged in, in a scratch worktree, and posts the commit status `game-tests` on the PR head: success or failure with the reason and the log path (`../.state/game-check/`). Then `gh pr merge --auto --merge` (CLAUDE.md, Git).
+- A release tags a tested commit: `scripts/release.sh <version>` takes the newest commit on `origin/main` with a full PC suite pass marker (`--commit <sha>` picks one), and builds the zip at that commit. No merge freeze is needed.
+
 ## Co-op tests
 - Co-op tests are 3 sessions (`tests/autotest-mp/<session>.txt`). On the Mac: `scripts/autotest-mac.sh 400 mp:coop-core` (one session: `scripts/autotest-mac-mp.sh tests/autotest-mp/coop-core.txt`). On the PC: `scripts/autotest-all.sh 400 mp:coop-core`. Two headless instances play host and client over UDP on 127.0.0.1. The session file holds all choreography; the client follows (`client.txt`).
 - Each `step <area>.<name>` reports on its own. The summary gives one reason: join failed, steps failed, desync, state differs, PC link. A state difference names the step and the `RunState` members that differ.
