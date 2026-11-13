@@ -98,6 +98,44 @@ public static class Playthrough
                 return false;
             }, double.Parse(parts[0], CultureInfo.InvariantCulture), $"the ship to store {string.Join(", ", wants.Select(w => $"{w.Total} {w.Resource}"))}");
         };
+        // pt_repair <timeout seconds>: the repair-all button of the build window (BuildToolbox.OnRepairAllClicked: repair damaged parts,
+        // rebuild destroyed ones), then the trade window for the resources that it costs. A person repairs at the station before a long
+        // flight: a ship with shot thrusters crawls. Ends when no repair or rebuild is left. Every 20 seconds, a resource of the
+        // repair that the ship has run out of, with no buy on its way, is bought again (RepairTopUp units).
+        Autotest.Commands["pt_repair"] = arg =>
+        {
+            double timeout = double.Parse(arg, CultureInfo.InvariantCulture);
+            var ship = TechAutotest.PlayerShip();
+            if (!ship.NeedsPhysicalRepairs)
+            {
+                Log.Info("AUTOTEST playthrough: repair: nothing to repair");
+                return;
+            }
+            List<ID<ResourceRules>> resources;
+            using (var sui = ShipUpdateInfo.Alloc(ship))
+            {
+                if (!sui.TryConstruct(ConstructionFlags.RepairExisting | ConstructionFlags.RebuildDestroyed, maxCrewToHire: 0))
+                    throw new InvalidOperationException("repair: construction blocked");
+                using var cost = sui.GetTotalPhysicalCost(MPValueType.Displayed, returnFinalCost: true, isBuild: false);
+                resources = [.. cost.Resources.Keys];
+                foreach (var (resource, units) in cost.Resources)
+                    if (units > Stored(resource)) Buy(resource, units - Stored(resource));
+                var flags = UpdateShipFlags.Repair | UpdateShipFlags.DestroyBlocking;
+                if (Game().Sim.Mode.AllowInsufficientResources(ship)) flags |= UpdateShipFlags.AllowPartialConstruction;
+                Game().NetManager.EnqueueInput(new MPUpdateShipInput(sui, flags));
+                Log.Info($"AUTOTEST playthrough: repair queued, cost {string.Join(", ", cost.Resources.Select(r => $"{r.Value} {r.Key}"))}");
+            }
+            double next = Halfling.App.Clock.Time.Seconds + 20;
+            Autotest.WaitFor(() =>
+            {
+                if (!Repairing(TechAutotest.PlayerShip())) return true;
+                double now = Halfling.App.Clock.Time.Seconds;
+                if (now < next) return false;
+                next = now + 20;
+                foreach (var r in resources.Where(r => Stored(r) == 0 && !BuyPending(r))) Buy(r, RepairTopUp);
+                return false;
+            }, timeout, "the crew to repair the ship");
+        };
         // pt_build <part id>: a blueprint part on a free spot next to the hull, confirmed like the build tool's button. Crew build it.
         Autotest.Commands["pt_build"] = arg =>
         {
@@ -214,6 +252,16 @@ public static class Playthrough
     }
 
     static Cosmoteer.Game.GameRoot Game() => Autotest.RequireRun().Game;
+
+    /// <summary>
+    /// A repair is left: a part still needs one, or the crew still work on a queued repair or rebuild. NeedsPhysicalRepairs alone
+    /// turns false once the repair-all button queued the work.
+    /// </summary>
+    static bool Repairing(Ship ship) => ship.NeedsPhysicalRepairs
+        || ship.OptionalConstructionManager is { } c && (c.QueuedPartRepairs.Count > 0 || c.QueuedPartConstructions.Count > 0);
+
+    /// <summary>Units of a repair resource that pt_repair buys again when the ship ran out before the repair ended.</summary>
+    const int RepairTopUp = 20;
 
     static ObjectID? _stationId;
     static Func<Circle?>? _station;

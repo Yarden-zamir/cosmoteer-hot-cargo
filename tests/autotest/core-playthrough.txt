@@ -22,7 +22,7 @@ expect pt_mission == 1
 pt_fight 600
 pt_status fight
 expect pt_mission == 1
-# Back to the station: collect the bounty, sell 1 tech, unlock and build a hyperdrive, buy fuel.
+# Back to the station: collect the bounty, sell 1 tech, repair, unlock and build a hyperdrive, buy fuel.
 # A ship with shot thrusters still flies, slowly, so the way back may take long.
 pt_goto station 900
 pt_collect
@@ -30,6 +30,9 @@ waitfor pt_mission == 2 30
 tech sell 1
 wait 20
 pt_status sold
+# Repair before the long flight to the relay: the crew rebuild shot thrusters from bought steel.
+pt_repair 300
+pt_status repaired
 pt_unlock cosmoteer.hyperdrive_small
 waitfor pt_unlocked == 1 30
 pt_buy 300 steel 40 coil 90
