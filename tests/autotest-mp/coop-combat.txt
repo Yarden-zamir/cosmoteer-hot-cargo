@@ -146,7 +146,8 @@ mp ev_set Enabled false
 mp tech_set LossGraceSeconds 600
 # Starting vaults are at full health: 4 units for each player (3 + 3 + 2 with 3 players, spec 17).
 expect vaultminhealth == 3000
-expect tech == 8
+# The fleet count updates on the first sim tick of the new run.
+waitfor tech == 8 10
 expect vaultunits == 8
 @2p expect mytech == 4
 @3p expect mytech == 3
