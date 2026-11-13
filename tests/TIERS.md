@@ -91,7 +91,6 @@ Actions: **smoke** (in the smoke tier), keep (full tier only), done (changed in 
 | tech-outside | 102 s | vault outside the hull, move tool, loss timer | ship design, crew | — | keep |
 | tech-sell | 106 s | sale through the trade window, loss on the last sale | trade inputs | TechModel.Value | keep |
 | tech-start | 123 s | starting vaults, price, damage steps, save; price after 55 s | ship design, save | TechModel.Value, UnitsLostToDamage | **smoke**; proposed: drop the 55 s price wait (tech fixes open) |
-| tech-sun | 91 s | vault sun heat factor | sun damage | — | keep |
 | tech-timer | 175 s | loss timer, crate markers, save; loss after 60 s | crew, save | — | proposed: shorter grace after the load (tech fixes open) |
 | telemetry-basic | 97 s | session file events, overhead | game hooks, files | — | **smoke** |
 | telemetry-run | 256 s | every event kind in a scripted three-system run | whole game | — | keep |

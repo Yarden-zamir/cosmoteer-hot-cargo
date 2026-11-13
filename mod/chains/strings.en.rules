@@ -2,7 +2,7 @@ HotCargoChains
 {
 	Category = "Story Chains"
 	Name = "{chain_tag} {chain_name}: {chain_stage}"
-	Desc = "{chain_story}{chain_brief}"
+	Desc = "{chain_brief}"
 	Tag = "[Chain]"
 	PartFmt = "Story chain, part {0}. How it ends decides what comes next."
 	SoFarFmt = "So far: {0}"

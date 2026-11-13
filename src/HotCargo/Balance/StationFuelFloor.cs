@@ -41,13 +41,34 @@ static class StationFuelFloor
     /// </summary>
     internal static void OnSystemEntered(Run run, bool firstVisit) => OnNewRun(run);
 
-    internal static void OnNewRun(Run run) => Errors.Guard("station fuel floor", () =>
+    internal static void OnNewRun(Run run) => TopUp(run, includeRemembered: false);
+
+    /// <summary>
+    /// Spec 852: a higher floor tops up the live stations at once, also the stations in stasis that remember a stock.
+    /// A system entry does not top up remembered stocks, so fuel that the players bought does not come back on a return visit.
+    /// </summary>
+    internal static void OnTunablesApplied(Run run) => TopUp(run, includeRemembered: true);
+
+    static void TopUp(Run run, bool includeRemembered) => Errors.Guard("station fuel floor", () =>
     {
         var sim = run.Game.Sim;
         if (Floor(sim) is not { } floor) return;
         foreach (var station in SpaceStation.GetStations(sim, onlyOperating: true).OrderBy(s => s.StationID))
-            if (station.PhysicalShip is { } ship && ship.Resources.GetResourceTotal(Fuel) is var have && have < floor)
-                ship.Resources.AddResources(Fuel, floor - have, excludeConstructionSinks: true);
+        {
+            if (station.PhysicalShip is { } ship)
+            {
+                // The trade stock of MetaShip.GetTotalTradeResources: stored fuel minus planned pickups, without fuel that crew carry.
+                int have = ship.Resources.GetResourceTotal(Fuel, includeStored: true, includeCarried: false, includeAnticipatedPickups: true);
+                if (have < floor) ship.Resources.AddResources(Fuel, floor - have, excludeConstructionSinks: true);
+            }
+            else if (includeRemembered && station.MetaShip.Spawner is Cosmoteer.Simulation.Stasis.StasisShipSpawner { ResourcesMemory: { } memory })
+            {
+                var stock = new Dictionary<ID<ResourceRules>, int>();
+                memory.GetTotalResources(stock, new Dictionary<ID<ResourceRules>, int>());
+                int have = stock.GetValueOrDefault(Fuel);
+                if (have < floor) memory.AddResources(Fuel, floor - have);
+            }
+        }
     });
 
     static readonly ID<SimObjectSpawner> TradeStationTag = new("trade_station");

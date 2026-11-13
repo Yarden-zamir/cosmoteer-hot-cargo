@@ -18,6 +18,10 @@ CENSUS = Path(sys.argv[2]).read_text()
 HUNTERS = Path(sys.argv[3]).read_text()
 CENSUS_AFTER = Path(sys.argv[4]).read_text()
 OUT = Path(__file__).with_name("model.json")
+# Heat stages of the current defaults, read from the C# tunables, so the charts follow the stage list.
+TUNABLES_CS = (Path(__file__).parents[2] / "src/HotCargo/Core/Tunables.cs").read_text()
+STAGES = [(float(h), n) for n, h in re.findall(r'new\(\) \{ Name = "(\w+)", Heat = ([\d.]+)f \}', TUNABLES_CS)]
+if not STAGES: raise SystemExit("no heat stages found in Tunables.cs")
 
 # ---- Vanilla data -------------------------------------------------------------------------------------------------------
 tier_tables = (DATA / "modes/career/tier_tables.rules").read_text()
@@ -113,19 +117,18 @@ for t in sorted({int(p[0]) for p in probes}):
 ROUTE = [1, 3, 5, 7, 9, 11, 12, 12]  # main route low tier per sector (galaxy.rules: +2 per jump up to FinalSectorTier)
 MISSIONS_PER_SECTOR = 6
 MINUTES_PER_SECTOR = 17.5
-KILLS_PER_SECTOR = 3  # hunters destroyed per sector (Warning 1 + Patrol 2), salvage only
+KILLS_PER_SECTOR = 1.5  # hunters destroyed per sector before the players jump at Hunt (Warning: 1 early, 2 late), salvage only
 JUMP_LY = statistics.mean(distances) if distances else 7.5
 
 OLD = dict(name="before", RewardScale=2.0, HeatPerGameMinute=2.0, HeatPerStandardMission=15.0, FameCapLeak=True,
            EscortHeatChange=-15, TechCostScale=1.0, FuelPrice=50, FuelStack=20, StationFuelTyped=0.85, StationFuelUntyped=0.05,
            JumpCostScale=1.0, HunterFuel=40, ChainsPerSystem=None, StationFuelPerMillion=0)
-NEW = dict(name="after", RewardScale=1.0, HeatPerGameMinute=1.2, HeatPerStandardMission=1.5, FameCapLeak=False,
+NEW = dict(name="after", RewardScale=1.0, HeatPerGameMinute=1.14, HeatPerStandardMission=1.425, FameCapLeak=False,
            EscortHeatChange=-8, TechCostScale=2.5, FuelPrice=150, FuelStack=10, StationFuelTyped=0.325, StationFuelUntyped=0.01,
            JumpCostScale=2.0, HunterFuel=60, ChainsPerSystem=2, StationFuelPerMillion=100)
 MULT = 1.2  # heat multiplier with 8 tech units
 CARRY = 0.25
 CONTRACT_HEAT = MISSION_FLAT + MISSION_INFORMANT * 0.75 * 15  # flat heat and expected informant heat per accepted contract
-STAGES = [25, 50, 75, 100]
 
 
 def tech_value(tier, hours, notoriety):
@@ -192,7 +195,7 @@ result = dict(
     measured=dict(board=board, boardAfter=board_after, stationFuelAfter=fuel_after, missionTypes=MISSION_TYPES, pickMoney=round(PICK_MONEY, 2),
                   missionFame=round(MISSION_FAME, 2), contractHeat=round(CONTRACT_HEAT, 2), hunters=HUNTER,
                   stationFuel={s: v for s, v in fuel_lines.items()}, systems=systems, jumpLY=round(JUMP_LY, 1)),
-    model=dict(missionsPerSector=MISSIONS_PER_SECTOR, minutesPerSector=MINUTES_PER_SECTOR, route=ROUTE),
+    model=dict(missionsPerSector=MISSIONS_PER_SECTOR, minutesPerSector=MINUTES_PER_SECTOR, route=ROUTE, stages=STAGES),
     before=run(OLD), after=run(NEW),
 )
 OUT.write_text(json.dumps(result, indent=1))

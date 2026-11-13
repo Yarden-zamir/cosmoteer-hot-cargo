@@ -1,8 +1,9 @@
 # Save and load with a pending event: the page, its serial and the flags come back.
 newgame run
 wait 8
-expectevent getaway
-choose 1 1
+# The Fence's Ledger page gives the forged codes (fake_codes).
+event fence_offer
+choose 2 1
 expectflag fake_codes 1
 heat 30
 # The repaint costs 1 money unit (5,000 at tier 1). Leave 1,500 credits, so the repaint is greyed out after the load.

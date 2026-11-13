@@ -1,11 +1,10 @@
 ## 10. Corporate response
 
-30. `HeatStages` is a list of stages. Each stage has a threshold and a response. Defaults:
+30. `HeatStages` is a list of stages. Each stage has a threshold and a response. The list decides the stage count, and the last stage is the Strike stage. Warning is above the highest heat that a jump carries in (requirement 650), so it always starts after arrival. Hunt starts with the station markup (requirement 655). Defaults:
 
 | Stage | Heat | Response |
 |---|---|---|
-| Warning | 25 | Alert sound and message. One scout ship of the sector tier. |
-| Patrol | 50 | Two hunter ships of the sector tier. |
+| Warning | 40 | Alert sound and message. Scouts: 1 ship of the sector tier in sector 1, 2 in the last sector (requirement 190). |
 | Hunt | 75 | Three hunter ships of the sector tier + 1. |
 | Strike | 100 | A strike force: 2 ships of the sector tier + 1 in sector 1, up to 3 ships of tier + 2 in the last sector (requirement 190). The ships arrive one at a time, 45 s apart (requirement 191). A new wave every `StrikeWaveIntervalSeconds` (default 180 s) while heat stays at 100. |
 

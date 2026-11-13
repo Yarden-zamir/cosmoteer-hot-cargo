@@ -3,6 +3,8 @@
 render on
 mphost {PORT}
 mpstart 2
+mp ev_set Enabled false
+mp event the_fence
 waitfor ev_pending == 1 60
 wait 3
 closepanel

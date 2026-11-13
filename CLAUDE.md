@@ -8,6 +8,7 @@ Procedures are skills in `.claude/skills/`:
 - `hot-cargo-install`: install a build into the player's own game.
 - `hot-cargo-release`: publish a GitHub release.
 - `hot-cargo-new-area`: add a feature area (entry point, tunables, rules, strings).
+- `hot-cargo-tune`: change tunables in the player's running game on request (`scripts/tune.sh`), also as the co-op host.
 
 ## Git
 

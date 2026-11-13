@@ -19,14 +19,44 @@ public static class Vaults
     public static IEnumerable<Ship> HumanShips(SimRoot sim) => sim.Ships.AllShips.Where(sim.Mode.IsHumanPlayerShip);
 
     /// <summary>
-    /// The fleet tech count (spec section 4, requirement 59): tech stored on human ships, plus tech that crew carry for the players.
-    /// Tech on ships left in another system is not in this sim, so it is not counted.
+    /// Spec 65, 449: ships whose vaults hold tech for the players. Human ships, and derelict (junk) ships: a human ship without control
+    /// or a piece that broke off one. Only player ships have vaults, so every vault on a derelict holds the players' tech.
+    /// </summary>
+    public static bool HoldsForPlayers(SimRoot sim, Ship ship) => ship.IsJunk || sim.Mode.IsHumanPlayerShip(ship);
+
+    /// <summary>Tech in the vaults of one ship: the vault storage, the same units that the vault art shows.</summary>
+    public static int ShipTech(Ship ship) => OnShip(ship).Sum(g => g.Resources);
+
+    /// <summary>
+    /// The fleet tech count (spec section 4, requirement 59): tech in the vaults of human and derelict ships, plus tech that crew carry
+    /// for the players. Tech on ships left in another system is not in this sim, so it is not counted.
     /// </summary>
     public static int CountFleetTech(SimRoot sim)
     {
-        int stored = HumanShips(sim).Sum(s => s.Resources.GetResourceTotal(TechId, includeStored: true, includeCarried: false));
+        int stored = sim.Ships.AllShips.Where(s => HoldsForPlayers(sim, s)).Sum(ShipTech);
         int carried = sim.Crew._allSouls.Where(c => CarriesForPlayers(sim, c)).Sum(c => c.CarriedResource.QuantityOfType(TechId));
         return stored + carried;
+    }
+
+    /// <summary>Spec 449: tech in crates (nuggets) in space. Not in the fleet count: crew must bring it back.</summary>
+    public static int CrateUnits(SimRoot sim)
+    {
+        int units = 0;
+        for (int i = 0; i < sim.Nuggets.Count; i++)
+            if (sim.Nuggets[i].ResourceType == TechId) units += sim.Nuggets[i].Quantity;
+        return units;
+    }
+
+    /// <summary>Spec 449: the vault tech of one player's ships, and the vault tech on derelict ships. For the heat panel.</summary>
+    public static (int Player, int Derelict) Split(SimRoot sim, int playerIndex)
+    {
+        int player = 0, derelict = 0;
+        foreach (var ship in sim.Ships.AllShips)
+        {
+            if (ship.IsJunk) derelict += ShipTech(ship);
+            else if (ship.Metadata.PlayerIndex == playerIndex && sim.Mode.IsHumanPlayerShip(ship)) player += ShipTech(ship);
+        }
+        return (player, derelict);
     }
 
     /// <summary>

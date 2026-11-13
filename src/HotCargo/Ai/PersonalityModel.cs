@@ -23,7 +23,30 @@ public readonly record struct TraitSet(uint Bits)
 /// Raw build numbers of one ship (spec 362). Acceleration = thrust over mass. Turn = thruster torque over rotational inertia.
 /// Range = longest active weapon range. Armor = armor cells over all part cells. Shields = parts with a shield. Radius = bounding radius.
 /// </summary>
-public readonly record struct ShipProfile(float Acceleration, float Turn, float Range, float Armor, int Shields, float Radius);
+public readonly record struct ShipProfile(float Acceleration, float Turn, float Range, float Armor, int Shields, float Radius, SideProfile Sides = default);
+
+/// <summary>
+/// Spec 1030-1031. The guarded and weak sides of a ship, in 8 ship-local directions: direction i points at i × 45°, 0 is the
+/// ship's +X cell axis, and cells grow down (the game's Direction convention). Weak: bit i is set when a vulnerable part has less
+/// cover than the weak-side limit in direction i. Strong: the direction to turn toward a threat. The default has no weak side.
+/// </summary>
+public readonly record struct SideProfile(byte Weak, byte Strong)
+{
+    public const int Directions = 8;
+    const float Step = MathF.Tau / Directions;
+
+    public bool IsWeak(int direction) => (Weak & (1 << Wrap(direction))) != 0;
+    /// <summary>The direction nearest to a ship-local angle in radians.</summary>
+    public static int Index(float localRadians) => Wrap((int)MathF.Round(localRadians / Step));
+    public static float Angle(int direction) => Wrap(direction) * Step;
+    public static int Wrap(int direction) => ((direction % Directions) + Directions) % Directions;
+}
+
+/// <summary>A part rectangle in ship cells: X, Y of its top-left cell, W, H its size.</summary>
+public readonly record struct CellRect(int X, int Y, int W, int H)
+{
+    public bool Contains(int x, int y) => x >= X && x < X + W && y >= Y && y < Y + H;
+}
 
 /// <summary>
 /// Where each build number reaches 0 and 1 on its score (spec 362). Each pair is (low, high). The shield score is shield parts
@@ -37,9 +60,13 @@ public readonly record struct ProfileScale(
 /// Build scores, each 0 to 1 (spec 362). Agility 0 means a heavy ship: it never kites or baits.
 /// Protection is the larger of the armor and shield scores.
 /// </summary>
-public readonly record struct BuildScores(float Agility, float Turn, float Range, float Protection, float Size)
+public readonly record struct BuildScores(float Agility, float Turn, float Range, float Protection, float Size, SideProfile Sides = default, int Flight = 0)
 {
     public bool Heavy => Agility <= 0f;
+    /// <summary>Spec 1032. The side opposite the flight direction is weak. A ship turns it to the threat when it flies away.</summary>
+    public bool WeakBack => Sides.IsWeak(Flight + SideProfile.Directions / 2);
+    /// <summary>Spec 1032. Every side is weak: no side can face a threat safely.</summary>
+    public bool NoGuardedSide => Sides.IsWeak(Sides.Strong);
 }
 
 public enum TeamRole { None, Tank, Sniper, FlankLeft, FlankRight, Line }
@@ -51,21 +78,24 @@ public static class PersonalityModel
     public static float Score(float value, float low, float high) =>
         high <= low ? (value >= high ? 1f : 0f) : Math.Clamp((value - low) / (high - low), 0f, 1f);
 
-    public static BuildScores Scores(ShipProfile p, ProfileScale s) => new(
+    public static BuildScores Scores(ShipProfile p, ProfileScale s, int flight = 0) => new(
         Agility: Score(p.Acceleration, s.AccelHeavy, s.AccelAgile),
         Turn: Score(p.Turn, s.TurnSlow, s.TurnFast),
         Range: Score(p.Range, s.RangeShort, s.RangeLong),
         Protection: Math.Max(Score(p.Armor, s.ArmorLight, s.ArmorHeavy), Score(p.Radius > 0f ? p.Shields / p.Radius : 0f, 0f, s.ShieldsPerRadiusFull)),
-        Size: Score(p.Radius, s.RadiusSmall, s.RadiusLarge));
+        Size: Score(p.Radius, s.RadiusSmall, s.RadiusLarge),
+        Sides: p.Sides,
+        Flight: flight);
 
     /// <summary>
     /// Spec 363. How well a build suits a trait, 0 to 1. Heavy ships never kite or bait. Fast light ships suit kiting, bait and
     /// flanking. Long range suits kiting. Short range and protection suit brawling. Unprotected small ships suit cover.
+    /// Spec 1032: a ship with a weak back never kites (it turns its back when it backs off far), and a ship with no guarded side never baits.
     /// </summary>
     public static float Fit(Trait trait, BuildScores b) => trait switch
     {
-        Trait.Kite => b.Heavy ? 0f : (0.5f + 0.5f * b.Agility) * (0.3f + 0.7f * b.Range),
-        Trait.Bait => b.Heavy ? 0f : b.Agility * (1f - 0.5f * b.Size),
+        Trait.Kite => b.Heavy || b.WeakBack ? 0f : (0.5f + 0.5f * b.Agility) * (0.3f + 0.7f * b.Range),
+        Trait.Bait => b.Heavy || b.NoGuardedSide ? 0f : b.Agility * (1f - 0.5f * b.Size),
         Trait.Pincer => 0.3f + 0.35f * (b.Agility + b.Turn),
         Trait.Brawl => (1f - b.Range) * (0.5f + 0.5f * b.Protection),
         Trait.Cover => (1f - 0.7f * b.Protection) * (1f - 0.6f * b.Size),
@@ -169,6 +199,57 @@ public static class PersonalityModel
         for (int i = 0; i < members.Count; i++)
             if (allowed(i) && (best < 0 || value(members[i]) > value(members[best]))) best = i;
         return best;
+    }
+
+    /// <summary>
+    /// Spec 1030. Cover of one part in one direction: the summed weight of the cells on a ray from the part center to the hull edge,
+    /// each cell counted once, the part's own cells left out. cover[x - minX, y - minY] is the weight of a cell, 0 for no part.
+    /// </summary>
+    public static float RayCover(float[,] cover, int minX, int minY, CellRect part, int direction)
+    {
+        float angle = SideProfile.Angle(direction);
+        float dx = MathF.Cos(angle) * 0.5f, dy = MathF.Sin(angle) * 0.5f;
+        float px = part.X + part.W * 0.5f, py = part.Y + part.H * 0.5f;
+        int lastX = int.MinValue, lastY = int.MinValue;
+        float sum = 0f;
+        while (true)
+        {
+            px += dx;
+            py += dy;
+            int x = (int)MathF.Floor(px), y = (int)MathF.Floor(py);
+            int gx = x - minX, gy = y - minY;
+            if (gx < 0 || gy < 0 || gx >= cover.GetLength(0) || gy >= cover.GetLength(1)) return sum;
+            if ((x == lastX && y == lastY) || part.Contains(x, y)) continue;
+            (lastX, lastY) = (x, y);
+            sum += cover[gx, gy];
+        }
+    }
+
+    /// <summary>
+    /// Spec 1030-1031. The side profile from the cover grid, the vulnerable part rectangles and the operational weapons that cover
+    /// each direction. A direction is weak when its lowest part cover is below weakCover. The strong direction has the best score:
+    /// cover capped at 2 × weakCover (so weapons decide between well guarded sides) + weaponWeight × weapons. Ties go to the
+    /// direction nearest the flight direction, then the lowest index. No vulnerable part: no weak side.
+    /// </summary>
+    public static SideProfile Sides(float[,] cover, int minX, int minY, IReadOnlyList<CellRect> vulnerable, IReadOnlyList<int> weapons,
+        int flight, float weakCover, float weaponWeight)
+    {
+        if (weapons.Count != SideProfile.Directions) throw new ArgumentException($"need {SideProfile.Directions} weapon counts", nameof(weapons));
+        byte weak = 0;
+        int strong = -1;
+        float bestScore = float.MinValue;
+        int bestDistance = int.MaxValue;
+        for (int i = 0; i < SideProfile.Directions; i++)
+        {
+            float least = vulnerable.Count == 0 ? float.MaxValue : vulnerable.Min(part => RayCover(cover, minX, minY, part, i));
+            if (least < weakCover) weak |= (byte)(1 << i);
+            float score = Math.Min(least, 2f * weakCover) + weaponWeight * weapons[i];
+            int d = SideProfile.Wrap(i - flight);
+            int distance = Math.Min(d, SideProfile.Directions - d);
+            if (score > bestScore || (score == bestScore && distance < bestDistance))
+                (strong, bestScore, bestDistance) = (i, score, distance);
+        }
+        return new SideProfile(weak, (byte)strong);
     }
 
     public enum CoverPhase { Peek, Hide }

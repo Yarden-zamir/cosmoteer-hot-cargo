@@ -1,8 +1,6 @@
 # Abandoned ships (spec 764) and the run's relic ship (spec 765).
 newgame run
 wait 8
-expectevent getaway
-choose 3 1
 ev_set CooldownSeconds 0
 ev_set StationEventChance 0
 ev_set CourierChance 0
