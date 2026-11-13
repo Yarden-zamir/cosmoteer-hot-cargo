@@ -135,12 +135,28 @@ mp ev_courier_goto
 wait 3
 mp ev_courier_goto
 waitfor ev_courier_seen == 1 20
-on 1 ev_comms contact Hand over the sealed case.
+on 1 ev_comms contact Hand over the case.
 waitfor ev_carrier == 1 20
-on 1 ev_comms carrier Hand it over.
+on 1 ev_comms carrier Hand over the sealed case.
 waitfor ev_courier_handover == 1 30
 expect ev_res_yarden_zamir.sealed_case_gain == 0
 on 1 waitfor ev_res_yarden_zamir.sealed_case_gain == 0 30
+
+step items.open-case
+# Spec 1111 to 1115: the client opens a sealed case in its own hold with the item action (a real MP input from its machine).
+# Both machines see the opened case and the codes (forced on both).
+mp item_force 1
+ev_mark
+on 1 ev_mark
+as 1 item_give yarden_zamir.sealed_case
+waitfor ev_res_yarden_zamir.sealed_case_gain == 1 20
+on 1 waitfor ev_res_yarden_zamir.sealed_case_gain == 1 30
+on 1 item_action yarden_zamir.sealed_case open
+waitfor ev_res_yarden_zamir.access_codes_gain == 1 30
+expect ev_res_yarden_zamir.opened_case_gain == 1
+expect ev_res_yarden_zamir.sealed_case_gain == 0
+on 1 waitfor ev_res_yarden_zamir.access_codes_gain == 1 30
+on 1 waitfor ev_res_yarden_zamir.opened_case_gain == 1 30
 
 step events.research-trade
 # Spec 760 to 763: the offer is built the same on both machines, the client trades from its own machine, the techs unlock on both.

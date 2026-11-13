@@ -195,7 +195,7 @@ Reads as: the corporation's own data is worth money, safety or a crate. Selling 
 | Mission (missions.rules) | Where | Mechanic | Objectives |
 |---|---|---|---|
 | `ChainEscort` | Station | Escort | Freighter to a jump point past 2 to 3 raiders (HotCargoEscort, ProtectShips), payment at the station. |
-| `ChainExtraction` | Station | Careful targeting, pickup | 7 minutes: destroy 2 escorts, keep the hostile transport whole (ProtectShips). Then hail the transport: Okafor crosses over as crew (needs a free bunk). Payment at the station. |
+| `ChainExtraction` | Station | Careful targeting, pickup | 7 minutes: destroy 2 escorts, keep the hostile transport whole (ProtectShips). Then hail the transport: Okafor crosses over as crew (needs a free bunk). Its hold is real processors: wreck it after the pickup to take them. Payment at the station. |
 | `ChainCourierHit` | Arrival | Careful targeting | As above, near the fleet, no payment trip. |
 | `ChainMine` | Station | Mining | 15 minutes: deliver 40 to 60 iron to the station. |
 | `ChainSalvageRace` | Station | Salvage | 8 minutes: haul 3 processors from a drifting cargo pod to the station; 2 rival ships guard it (vanilla Normal AI, so they fight only near the pod). |

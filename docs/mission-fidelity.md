@@ -35,14 +35,14 @@ Checked and true to the text: Convoy Duty, Joint Strike, Drone Siege, Sunside Or
 ### 1. Courier Job (P1)
 - New resource `yarden_zamir.sealed_case`: 1 per storage slot, normal storage holds it, stations do not trade it. A destroyed storage drops it as a loose crate, like any cargo.
 - Accept: the accepting player's nearest ship with a free storage slot gets the case. No room: the accept is refused with a reason, like the contract fee check.
-- Hand-over: the contact ship has a comms line "Hand over the sealed case." while a player ship is in comms range and the fleet holds the case. It opens a shared-choice page on the contact (spec 769, 771):
+- Hand-over: the contact ship has a comms line "Hand over the case." while a player ship is in comms range and the fleet holds the case. It opens a shared-choice page on the contact (spec 769, 771):
   - Hand it over: the case leaves your hold. The objective completes.
-  - Open it first: the case leaves your hold. More pay, and more heat; a heat-weighted chance that the seal was a tracer.
+  - Opened case: the case opens in the hold, an item action (spec 1115). The contact may notice (spec 1118).
 - Fail: the fleet holds no case before the hand-over (the storage was destroyed and nobody picked the crate up), or the time limit runs out.
 - Then collect the pay at the station, as now.
 
 ### 2. Extraction (P1)
-- After the escorts die, hail the transport: "Get Okafor out." Bringing her aboard needs a free bunk and adds 1 crew. A second choice also strips the hold (processors, heat +10).
+- After the escorts die, hail the transport: "Get Okafor out." Bringing her aboard needs a free bunk and adds 1 crew. The transport's hold is real processors; wreck it after the pickup to take them (spec 1120).
 - The Debrief page then decides: keep her, hand her to the navy (−1 crew) or sell her (−1 crew).
 - She dies with the transport: a transport destroyed before the pickup gives the `lost` result.
 
@@ -53,7 +53,7 @@ Checked and true to the text: Convoy Duty, Joint Strike, Drone Siege, Sunside Or
 
 ### 4. Prototype Retrieval (P2)
 - The lift puts a Prototype Core item (`yarden_zamir.prototype_core_cargo`) into the nearest player ship with room. No room: the lift waits.
-- Hand it to the broker in the station's comms; haggling is the small risk. A lost core fails the mission.
+- Hand it to the broker in the station's comms; asking for more is a clear deal: more money, more heat (spec 1121). A lost core fails the mission.
 
 ### 5. Repossession (P2)
 - After the capture, bring the freighter within 800 of the station and hail the bank. The hand-over waits until no player crew is aboard; the bank then takes the ship.
