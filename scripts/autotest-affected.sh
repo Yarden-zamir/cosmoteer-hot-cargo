@@ -12,18 +12,20 @@
 #   Without the game files on the Mac (scripts/pull-game.sh), every test runs on the PC.
 # Rule, derived from the folder names (no list to keep up to date):
 # - A changed file under src/HotCargo/<A>/<B>/... or mod/<a>/<b>/... touches the areas a, b (lowercase).
-# - An area runs the single-player tests named "<area>-*.txt" and the co-op tests whose name starts with "<area>".
-# - A changed test script runs itself.
+# - An area runs the single-player tests named "<area>-*.txt" and every co-op session with a "step <area>.<name>" line.
+# - A changed test script runs itself. A changed generic co-op client (tests/autotest-mp/client.txt) runs every session.
 # - Docs (*.md, docs/), CI (.github/), scripts and unit tests (tests/HotCargo.Tests) add no autotest beyond core.
 # - Anything else (Core, shared UI, root files, a folder with no tests of its own) runs the full suite.
 #   Core is shared: every area builds on it, so its own "core" test alone is not enough.
 # The "core" smoke test always runs.
 # Tiers (tests/TIERS.md): AUTOTEST_TIER=smoke (default) or full. integrate.sh uses full for merge batches.
-# - smoke: an area runs only its tests with the line "# tier: smoke" (all of them when it has none), and every co-op test
-#   of the area (they guard co-op determinism). "Full suite" runs every smoke test: single player, and co-op with the line.
+# - smoke: an area runs only its tests with the line "# tier: smoke" (all of them when it has none), and every co-op
+#   session with a step of the area (they guard co-op determinism). "Full suite" runs every smoke test: single player,
+#   and the co-op sessions with the line.
 # - full: the rules above without the filter.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/autotest-lib.sh
 if [[ "${1:-}" == "--detach" ]]; then
   shift
   LOG="$(scripts/detach.sh "autotest-affected-$(basename "$PWD")" scripts/autotest-affected.sh "$@")"
@@ -58,7 +60,7 @@ add_area() {
     found=0
     if [[ "$smoke_only" == no ]] || smoke "$f"; then add "$(basename "$f" .txt)"; fi
   done
-  for f in tests/autotest-mp/"$area"*.host.txt; do [[ -f "$f" ]] && add "mp:$(basename "$f" .host.txt)"; done
+  for n in $(coop_sessions); do grep -q "^step $area\." "tests/autotest-mp/$n.txt" && { add "mp:$n"; found=0; }; done
   return $found
 }
 
@@ -69,7 +71,8 @@ while IFS= read -r path; do
     # Test and tool scripts do not change the game; the core smoke test (always in the list) runs them.
     scripts/*) ;;
     tests/autotest/*.txt) [[ -f "$path" ]] && add "$(basename "$path" .txt)" ;;
-    tests/autotest-mp/*.txt) n="$(basename "$path" .txt)"; n="${n%.host}"; n="${n%.client}"; [[ -f "tests/autotest-mp/$n.host.txt" ]] && add "mp:$n" ;;
+    tests/autotest-mp/client.txt) for n in $(coop_sessions); do add "mp:$n"; done ;;
+    tests/autotest-mp/*.txt) [[ -f "$path" ]] && add "mp:$(basename "$path" .txt)" ;;
     src/HotCargo/Core/*) FULL=yes ;;
     src/HotCargo/*/*|mod/*/*)
       rest="${path#src/HotCargo/}"; rest="${rest#mod/}"
@@ -85,7 +88,7 @@ done <<<"$CHANGED"
 if [[ "$FULL" == yes && "$TIER" == smoke ]]; then
   FULL=no
   for f in tests/autotest/*.txt; do if smoke "$f"; then add "$(basename "$f" .txt)"; fi; done
-  for f in tests/autotest-mp/*.host.txt; do if smoke "$f"; then add "mp:$(basename "$f" .host.txt)"; fi; done
+  for n in $(coop_sessions); do if smoke "tests/autotest-mp/$n.txt"; then add "mp:$n"; fi; done
   echo "== shared code changed: every smoke test"
 fi
 if [[ "$FULL" == yes ]]; then
@@ -106,7 +109,7 @@ fi
 if [[ "$FULL" == yes ]]; then
   TESTS=()
   for f in tests/autotest/*.txt; do TESTS+=("$(basename "$f" .txt)"); done
-  for f in tests/autotest-mp/*.host.txt; do TESTS+=("mp:$(basename "$f" .host.txt)"); done
+  for n in $(coop_sessions); do TESTS+=("mp:$n"); done
 fi
 MAC=() PC=()
 for t in "${TESTS[@]}"; do
