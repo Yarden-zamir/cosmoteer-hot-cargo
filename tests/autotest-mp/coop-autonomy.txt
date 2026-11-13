@@ -15,12 +15,16 @@ wait 1
 tactics_ship Looter
 tactics Looter
 tacticsauto on
+# The mark runs in the sim some ticks later: read the gains only after it ran on both machines. The gain is the money of the
+# looter's owner (the host), on the client too.
 mp auto_mark
-mp auto_loot gold 1 24 120
 auto_ship Looter
-waitfor auto_money_gain > 0 400
+waitfor auto_marked == 1 10
 on 1 auto_ship Looter
-on 1 waitfor auto_money_gain > 0 60
+on 1 waitfor auto_marked == 1 10
+mp auto_loot gold 1 24 120
+waitfor auto_money_gain > 0 400
+on 1 waitfor auto_money_gain > 0 30
 
 step autonomy.miner
 # Spec 1077: the Computer mans the mining laser on both machines; the ship mines and the Funnel takes the ore in.

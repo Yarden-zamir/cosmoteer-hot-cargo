@@ -1,6 +1,7 @@
 using System.Globalization;
 using Cosmoteer;
 using Cosmoteer.Data;
+using Cosmoteer.Game;
 using Cosmoteer.Game.Multiplayer;
 using Cosmoteer.Game.Multiplayer.MPInputs;
 using Cosmoteer.Resources;
@@ -36,6 +37,13 @@ internal static class AutonomyAutotest
     static Ship Home() => TechAutotest.PlayerShip();
 
     static int _moneyMark, _homeMark;
+    /// <summary>The ship that auto_mark ran for, so a test can wait until a co-op mark reached the sim.</summary>
+    static ObjectID? _marked;
+
+    static int OwnerMoney() => Sim().RequireGame().GetPlayerState(TestShip().Metadata.PlayerIndex, deterministic: true).Money;
+
+    static int OwnerHomeSteel() => (Autonomous.FirstCrewed(TestShip()) ?? throw new InvalidOperationException("the test ship's owner has no crewed ship"))
+        .Resources.GetResourceTotal(new ID<ResourceRules>("steel"));
 
     internal static void Register()
     {
@@ -85,14 +93,18 @@ internal static class AutonomyAutotest
             ? Math.Max(0f, AutonomyWorld.EdgeDistance(TestShip(), s.Center) - s.Radius) : -1f);
         Autotest.Fields["auto_home_cargo"] = () => Home().Resources.GetResourceTotal(new ID<ResourceRules>("steel"));
         Autotest.Fields["auto_home_dist"] = () => (int)HunterOrders.EdgeDistance(TestShip(), Home());
-        // auto_mark: remembers the money and the first own ship's steel, for auto_money_gain and auto_home_gain.
+        // auto_mark: remembers the money of the test ship's owner and the steel of the owner's first crewed ship, for auto_money_gain
+        // and auto_home_gain. Both read the owner, not the local player, so a co-op client checks the host's autonomous ship correctly.
+        // In co-op it runs in the sim ("mp auto_mark") some ticks after the line: wait for auto_marked == 1 before reading the gains.
         Autotest.Commands["auto_mark"] = _ =>
         {
-            _moneyMark = Sim().RequireGame().GetPlayerState(Autotest.ActingPlayerIndex, deterministic: true).Money;
-            _homeMark = Home().Resources.GetResourceTotal(new ID<ResourceRules>("steel"));
+            _moneyMark = OwnerMoney();
+            _homeMark = OwnerHomeSteel();
+            _marked = TestShip().UniqueID;
         };
-        Autotest.Fields["auto_money_gain"] = () => Sim().RequireGame().GetPlayerState(Autotest.ActingPlayerIndex, deterministic: true).Money - _moneyMark;
-        Autotest.Fields["auto_home_gain"] = () => Home().Resources.GetResourceTotal(new ID<ResourceRules>("steel")) - _homeMark;
+        Autotest.Fields["auto_marked"] = () => _marked == TestShip().UniqueID ? 1 : 0;
+        Autotest.Fields["auto_money_gain"] = () => OwnerMoney() - _moneyMark;
+        Autotest.Fields["auto_home_gain"] = () => OwnerHomeSteel() - _homeMark;
         // auto_drain: empties the battery of every part of the test ship except reactors (setup: the targeted reactor must refill them).
         Autotest.Commands["auto_drain"] = _ =>
         {
