@@ -60,6 +60,7 @@ Actions: **smoke** (in the smoke tier), keep (full tier only), done (changed in 
 | factions-zones | 89 → 73 s | ally zone, shelter, fence prices, zone rate, markers | map factions, sim tick | FactionsModel.TimeHeatFactor, NotorietyFactor | done: one rate measurement in place of two |
 | hunters-spawn | 100 s | stage spawns, distance, tier, strike waves, save | spawns, AI | WaveModel | **smoke** |
 | hunters-tactics | 114 s | every tactic acts | AI | TacticsModel | keep |
+| hunters-takeover | 33 s | players take over a hunter, then new hunters stay hostile; a wave joins the hunters in stasis; save | spawns, stasis, ownership | — | keep |
 | hunters-waves | 128 s | strike scaling by sector, wave gaps, save, fuel drop | spawns, save | WaveModel | proposed: shorter late-sector gap (hunter fixes open) |
 | journey-jump | 77 s | Buyer appears through the real jump hook | jumps | — | keep |
 | journey-run | 152 s | run map, tier cap, Buyer price, save, win | map generation, trade | TierCapModel | **smoke** |
