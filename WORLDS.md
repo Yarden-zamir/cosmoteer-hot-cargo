@@ -71,4 +71,4 @@ Pay is in standard mission units at the system tier, before `RewardScale`. Every
 
 - Unit (`tests/HotCargo.Tests/WorldsModelTests.cs`): flow directions, push, heat depth, pass hold steps, waves, band distance.
 - Game (`tests/autotest/worlds-*.txt`): map weights and hazard tooltip, current drift (and none beside it), belt and passes, pass hold win and loss, heat depth, sundive, lair discovery, save and load.
-- Co-op (`tests/autotest-mp/worlds.*.txt`): a current painted on both machines pushes the host ship the same way, with no desync.
+- Co-op (step `worlds.current` in `tests/autotest-mp/coop-combat.txt`): a current painted on both machines pushes the host ship the same way, with no desync.

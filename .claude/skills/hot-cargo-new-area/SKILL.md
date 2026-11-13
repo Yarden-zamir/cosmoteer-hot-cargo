@@ -10,5 +10,5 @@ description: Add a new Hot Cargo feature area with its entry point, tunables sec
 3. Rules: `mod/<area>/actions.rules` holds only Action objects `{ ... }`, without an outer list. `scripts/assemble-mod.sh` merges every area's actions into `mod.rules`. Paths are relative to the mod root, for example `&<area/file.rules>`.
 4. Strings: `mod/<area>/strings.en.rules`. Use a top-level section that no other area uses.
 5. How to Play page and run log lines: see CONTRIBUTING.md, "How to Play pages and the run log".
-6. Tests: `tests/autotest/<area>-*.txt`, co-op tests in `tests/autotest-mp/`, pure math in `tests/HotCargo.Tests`.
+6. Tests: `tests/autotest/<area>-*.txt`, co-op checks as `step <area>.<name>` in a session in `tests/autotest-mp/`, pure math in `tests/HotCargo.Tests`.
 7. Spec: a new section file `spec/<next free number>-<name>.md` and a new requirement number range. Add the area to the architecture section and to `CONTRIBUTING.md`.
