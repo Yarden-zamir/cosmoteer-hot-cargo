@@ -6,6 +6,7 @@ PluralNameKey = "HotCargoTech/StolenTechPlural"
 DescriptionKey = "HotCargoTech/StolenTechDesc"
 // Static fallback only. TechPatches replaces buy and sell prices with the tech value (spec 19).
 BuyPrice = 10000
+// One crate holds one unit (spec 442).
 MaxPerNugget = 1
 // A Tech Vault has 1 tile, so it holds 2 units.
 MaxStackSize = 2
@@ -13,7 +14,7 @@ MaxStackSize = 2
 // "Supply Stolen Tech" job out of every storage part's job list.
 FlexGridPriorityKey = "flex_grid_processor"
 FlexGridDefaultPriority = 1
-// A destroyed vault drops its tech as crates (spec 65, 445; VaultDropPatch burns it with a small chance). Salvage drops it too.
+// A vault loses tech only when it is destroyed: it drops its tech as crates (spec 65, 445; VaultDropPatch burns it with a small chance). Salvage drops it too.
 // Killed crew lose the tech they carry (spec 9): CrewKilled would fall back to StorageDestroyed without its own value.
 DropRates
 {
@@ -58,6 +59,7 @@ NuggetSprite
 	VertexColor = &~/TINT
 }
 
+// One sprite per unit (spec 442): 1 unit shows one item, 2 units show two. Vanilla picks sprite (units - 1).
 StackSprites
 [
 	{
@@ -66,12 +68,7 @@ StackSprites
 		VertexColor = &~/TINT
 	}
 	{
-		File = "./Data/resources/processor/processor_stack_3.png"
-		Size = [1, 1]
-		VertexColor = &~/TINT
-	}
-	{
-		File = "./Data/resources/processor/processor_stack_5.png"
+		File = "./Data/resources/processor/processor_stack_2.png"
 		Size = [1, 1]
 		VertexColor = &~/TINT
 	}

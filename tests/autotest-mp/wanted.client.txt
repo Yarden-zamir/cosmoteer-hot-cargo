@@ -1,11 +1,9 @@
 # Co-op wanted and hunted, client side.
 mpjoin 127.0.0.1:{PORT}
 mpready
-waitfor ev_pending == 1 30
-waitfor ev_pending == 0 60
 waitfor ev_wanted_warned == 1 60
-# Three pages opened: the intro, the event that the Wanted trigger picked, and the host's forced Clean Record.
-waitfor ev_seen >= 3 60
+# Two pages opened: the event that the Wanted trigger picked, and the host's forced Clean Record.
+waitfor ev_seen >= 2 60
 expectevent clean_record
 ev_mark
 # The crate is a page option (spec 810): the client selects it in the shared draft, then submits.

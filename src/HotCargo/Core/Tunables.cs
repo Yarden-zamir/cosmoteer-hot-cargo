@@ -19,21 +19,24 @@ public sealed partial class Tunables
 public sealed class HeatTunables
 {
     /// <summary>Spec 24: heat per game minute at multiplier 1. About a quarter of a sector's heat comes from time (BALANCE.md).</summary>
-    [Serialize(Optional = true)] public float HeatPerGameMinute = 1.2f;
+    [Serialize(Optional = true)] public float HeatPerGameMinute = 1.14f;
     /// <summary>
     /// Spec 25: heat per standard mission fame unit at multiplier 1. A typical mission pays about 3.4 units (kill fame plus reward fame),
-    /// so it adds about 5 heat, and six missions with the time and contract heat fill a sector.
+    /// so it adds about 5.8 heat, and about six missions with the time and contract heat fill a sector.
     /// </summary>
-    [Serialize(Optional = true)] public float HeatPerStandardMission = 1.5f;
+    [Serialize(Optional = true)] public float HeatPerStandardMission = 1.425f;
     /// <summary>Heat multiplier for each fleet tech count, from 0 units up. A count above the table uses the last entry.</summary>
     [Serialize(Optional = true)] public float[] HeatMultiplierByUnits = [0.25f, 0.4f, 0.52f, 0.64f, 0.76f, 0.88f, 1.0f, 1.1f, 1.2f];
     /// <summary>Share of the heat that stays after a switch to a system where own ships wait, without a jump (0 to 1). Jumps use the Factions heat cuts.</summary>
     [Serialize(Optional = true)] public float HeatCarryOverFraction = 0.25f;
-    /// <summary>Heat stages, ordered by Heat. Hunters.Stages has the response for each stage, matched by Name.</summary>
+    /// <summary>
+    /// Heat stages, ordered by Heat. Hunters.Stages has the response for each stage, matched by Name. The last stage repeats its waves.
+    /// Warning is above the highest heat that a jump carries in (25), so its scouts always come after arrival. Hunt starts with the
+    /// station markup (Factions.MarkupStartHeat).
+    /// </summary>
     [Serialize(Optional = true)] public StageThreshold[] Stages =
     [
-        new() { Name = "Warning", Heat = 25f },
-        new() { Name = "Patrol", Heat = 50f },
+        new() { Name = "Warning", Heat = 40f },
         new() { Name = "Hunt", Heat = 75f },
         new() { Name = "Strike", Heat = 100f },
     ];

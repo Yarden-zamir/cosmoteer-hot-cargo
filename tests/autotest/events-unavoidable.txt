@@ -1,8 +1,6 @@
 # Unavoidable events (spec 87): every choice costs something, and at most MaxUnavoidablePerRun (1) open in a run.
 newgame run
 wait 8
-expectevent getaway
-choose 3 1
 expecteligible vault_coolant_leak 1
 event vault_coolant_leak
 # Venting costs one crate from the live vault count.

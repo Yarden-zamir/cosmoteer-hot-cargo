@@ -55,11 +55,17 @@ public sealed class DiplomacyHail : IHailProvider
         if (!Situation.Career(sim).CanShipCallShip(caller, callee)) { why = "out of comms range"; return false; }
         switch (offer)
         {
-            case Offer.HandOver or Offer.Deal or Offer.Bluff:
+            case Offer.PayOff:
                 if (!enemy || !hunter) { why = "not a hunter"; return false; }
-                if (amount < 1 || amount > stock || (offer == Offer.Bluff && amount >= stock)) { why = $"amount {amount} of {stock}"; return false; }
-                if (offer == Offer.Deal && !Situation.CanPay(run, player, Quotes.DealPrice(run, amount))) { why = "money"; return false; }
+                return Deals.PayAllowed(run, sim, player, Deals.PayDraft(run, callee), out why);
+            case Offer.Bluff:
+            {
+                if (!enemy || !hunter) { why = "not a hunter"; return false; }
+                int units = Quotes.BluffUnits(run, sim);
+                if (units == 0) { why = "too little tech"; return false; }
+                if (amount != units) { why = $"amount {amount}, not {units}"; return false; }
                 return true;
+            }
             case Offer.Refuse:
                 if (!hunter) { why = "not a hunter"; return false; }
                 return true;
@@ -116,9 +122,7 @@ public sealed class DiplomacyHail : IHailProvider
         // One shared choice domain per page (CommsHail limit): a page that another provider owns (an event page) shows no diplomacy options.
         if (page.Shared is { } owner && owner.Domain != DiplomacyChoiceDomain.Name) return;
         page.Shared = (DiplomacyChoiceDomain.Name, DiplomacyChoiceDomain.Serial(callee));
-        // The punishment page leaves out the last result (the hand-over line is in the chat), so its rows fit the window.
-        bool punishPage = S(run).Punish is not null && Situation.IsHunter(callee) && caller.IsEnemiesWith(callee);
-        if (!punishPage && S(run).Results.FirstOrDefault(r => r.Ship == callee.UniqueID) is { } result) page.AddText(result.Text);
+        if (S(run).Results.FirstOrDefault(r => r.Ship == callee.UniqueID) is { } result) page.AddText(result.Text);
         if (caller.IsEnemiesWith(callee))
         {
             if (Situation.IsHunter(callee)) HunterPage(run, sim, player, caller, callee, page);
@@ -131,7 +135,8 @@ public sealed class DiplomacyHail : IHailProvider
     {
         if (S(run).WasUsed(callee.UniqueID, offer)) return;
         bool ok = Allowed(run, sim, player, caller, callee, offer, amount, out string why);
-        page.AddChoice(xml, DiplomacyChoiceDomain.Option(offer, amount), ok, ok ? null : DipText.Format("WhyNotFmt", why), close);
+        // The pay-off button sends the page's multiselect draft: Enter picks it (UX V15).
+        page.AddChoice(xml, DiplomacyChoiceDomain.Option(offer, amount), ok, ok ? null : DipText.Format("WhyNotFmt", why), close, submit: offer == Offer.PayOff);
     }
 
     /// <summary>An option row of a shared choice with its own slider (spec 591). The text is built for the slider value.</summary>
@@ -147,29 +152,29 @@ public sealed class DiplomacyHail : IHailProvider
 
     static string Cost(Run run, int credits) => Cosmoteer.Extensions.ToXmlCostString(credits, run.Game);
 
+    static int Percent(float chance) => (int)MathF.Round(chance * 100f);
+
+    /// <summary>
+    /// Spec 562: the demand page. Three choices: pay them off (multiselect rows and one button, spec 594), bluff (spec 565), fight.
+    /// The general enemy talk (demand surrender, accept their surrender) stays.
+    /// </summary>
     void HunterPage(Run run, SimRoot sim, int player, Ship caller, Ship hunter, HailPage page)
     {
-        if (S(run).Punish is { } punish) { PunishPage(run, sim, player, hunter, page, punish); return; }
+        var t = run.T.Diplomacy;
         int stock = Situation.VaultTech(sim);
         string name = hunter.Metadata.XmlShipName;
+        int drop = (int)MathF.Round(t.HandOverHeatDrop);
         bool talked = Done(run, hunter, Offer.Refuse);
         if (!talked)
         {
             page.AddText(stock > 0 ? DipText.Format("DemandFmt", name, stock) : DipText.Format("DemandEmptyFmt", name));
-            if (stock > 0)
-            {
-                SliderSpec Units(string key) => new(key, DipText.Text("SliderUnits"), 1, stock, 1, Math.Max(1, stock / 2), v => DipText.Format("UnitsFmt", v, stock));
-                Row(run, sim, player, caller, hunter, page, Offer.HandOver, Units("handover"), k => k >= stock
-                    ? DipText.Format("HandOverAllFmt", stock)
-                    : DipText.Format("HandOverFmt", k, Pct(Quotes.HandOver(run, sim, player, hunter, k))));
-                if (stock > 1)
-                {
-                    var bluff = new SliderSpec("bluff", DipText.Text("SliderUnits"), 1, stock - 1, 1, Math.Max(1, stock / 2), v => DipText.Format("UnitsFmt", v, stock));
-                    Row(run, sim, player, caller, hunter, page, Offer.Bluff, bluff, k => DipText.Format("BluffFmt", k, Pct(Quotes.Bluff(run, sim, player, k))));
-                }
-                Row(run, sim, player, caller, hunter, page, Offer.Deal, Units("deal"),
-                    k => DipText.Format("DealFmt", Cost(run, Quotes.DealPrice(run, k)), k, Pct(Quotes.Deal(run, sim, hunter, k))));
-            }
+            PayRows(run, sim, hunter, page);
+            float pay = Quotes.PayOff(run, sim, hunter, Deals.PayDraft(run, hunter));
+            Button(run, sim, player, caller, hunter, page, Offer.PayOff, 0, DipText.Format("PayOffFmt", Percent(pay), drop));
+            int units = Quotes.BluffUnits(run, sim);
+            if (units > 0)
+                Button(run, sim, player, caller, hunter, page, Offer.Bluff, units,
+                    DipText.Format("BluffFmt", units, Percent(Quotes.Bluff(run, sim, player)), drop, (int)MathF.Round(t.BluffCaughtHeat)));
         }
         if (S(run).Rolled.Contains(DiplomacyState.Key(hunter.UniqueID, "yieldok")))
         {
@@ -179,35 +184,32 @@ public sealed class DiplomacyHail : IHailProvider
                 payout > 0 ? DipText.Format("AcceptYieldFmt", Events.EventText.Money(payout)) : DipText.Text("AcceptYieldFuel"));
         }
         Button(run, sim, player, caller, hunter, page, Offer.DemandSurrender, 0, DipText.Format("DemandSurrenderFmt", Pct(Quotes.DemandSurrender(run, sim, player, hunter))));
-        if (!talked) Button(run, sim, player, caller, hunter, page, Offer.Refuse, 0, DipText.Text("Refuse"), close: true);
+        if (!talked) Button(run, sim, player, caller, hunter, page, Offer.Refuse, 0, DipText.Text("Fight"), close: true);
     }
 
     /// <summary>
-    /// Spec 594 to 597: after an accepted hand-over the hunters want more. A multiselect page: each option adds its chance, the
-    /// sliders set the amounts, and Submit decides for the whole draft. Every hunter shows the same page.
+    /// Spec 594: the pay-off rows of the shared draft. Each row shows what it adds to the chance (after the crowd factor); the sliders set
+    /// the amounts. The pay-off button sends the whole draft.
     /// </summary>
-    void PunishPage(Run run, SimRoot sim, int player, Ship hunter, HailPage page, Punishment punish)
+    static void PayRows(Run run, SimRoot sim, Ship hunter, HailPage page)
     {
-        page.Shared = (DiplomacyChoiceDomain.Name, punish.Serial);
-        page.Multi = (DiplomacyMultiDomain.Name, punish.Serial);
-        int left = (int)Math.Ceiling(Math.Max(0, punish.Due - run.State.GameSeconds));
-        page.AddText(DipText.Format("PunishFmt", hunter.Metadata.XmlShipName, left));
-        var picks = MultiChoice.MultiChoices.Draft(run, DiplomacyMultiDomain.Name, punish.Serial);
-        foreach (var option in Quotes.PunishOptions(run, sim))
+        int serial = DiplomacyChoiceDomain.Serial(hunter);
+        page.Multi = (DiplomacyMultiDomain.Name, serial);
+        int others = Situation.OtherHunters(run, sim, hunter);
+        float crowd = Quotes.PayCrowd(run, sim, hunter);
+        page.AddText(DipText.Text("PayHint") + (others == 0 ? "" : " " + DipText.Format(crowd > 0 ? "PayCrowdFmt" : "PayCrowdNoneFmt", others)));
+        var picks = Deals.PayDraft(run, hunter);
+        foreach (var option in Quotes.PayOptions(run, sim))
         {
-            var kind = (PunishOption)option.Id;
+            var kind = (PayOption)option.Id;
             var pick = picks.FirstOrDefault(p => p.Option == option.Id);
-            SliderSpec? spec = option.HasSlider
-                ? new SliderSpec("punish" + kind, "", option.Min, option.Max, option.Step, option.Min, v => Quotes.PunishValueText(run, kind, v))
-                : null;
-            int value = pick?.Value ?? (spec is null ? 0 : CommsHail.SliderValue(hunter, spec));
-            string text = DipText.Format("Punish" + kind + "Fmt", Pct(Quotes.PunishChance(run, sim, kind, value)));
-            page.AddRow(new HailRow("punish" + kind, text, option.Id, spec, Active: true, Toggle: true, Selected: pick is not null, Value: value));
+            int start = kind switch { PayOption.Tech => Math.Max(1, option.Max / 2), PayOption.Money => Quotes.PayMoneySteps / 2, _ => option.Min };
+            var spec = new SliderSpec("pay" + kind, "", option.Min, option.Max, option.Step, Math.Clamp(start, option.Min, option.Max),
+                v => Quotes.PayValueText(run, sim, kind, v));
+            int value = pick?.Value ?? CommsHail.SliderValue(hunter, spec);
+            string text = DipText.Format("Pay" + kind + "Fmt", DipText.Format("PartFmt", Percent(crowd * Quotes.PayPart(run, sim, kind, value))));
+            page.AddRow(new HailRow("pay" + kind, text, option.Id, spec, Active: true, Toggle: true, Selected: pick is not null, Value: value));
         }
-        page.AddText(DipText.Format("PunishCombinedFmt", Pct(Quotes.PunishCombined(run, sim, picks))));
-        bool ok = Deals.PunishAllowed(run, sim, player, picks, out string why);
-        page.AddChoice(DipText.Text("PunishSubmit"), DiplomacyChoiceDomain.Option(Offer.Punish, 0), ok, ok ? null : DipText.Format("WhyNotFmt", why), submit: true);
-        page.AddChoice(DipText.Text("PunishRefuse"), DiplomacyChoiceDomain.Option(Offer.PunishRefuse, 0));
     }
 
     void EnemyPage(Run run, SimRoot sim, int player, Ship caller, Ship ai, HailPage page)

@@ -1,4 +1,4 @@
-# Co-op onboarding, client side. "mp heat" raises heat in the sim on both machines; each machine logs the stage itself.
+# Co-op onboarding, client side. "mp stage" starts the next heat stage in the sim on both machines; each machine logs the stage itself.
 codex_reset
 tutorials on
 mpjoin 127.0.0.1:{PORT}

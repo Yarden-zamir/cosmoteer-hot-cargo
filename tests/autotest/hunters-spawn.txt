@@ -1,7 +1,7 @@
 # Hunter waves: stage spawns, distance, tier, hostility, approach, strike waves, save and load.
 newgame run
 wait 8
-# No random events during the hunter checks (the start event already opened; nobody chooses it).
+# No random events during the hunter checks.
 ev_set Enabled false
 log start
 expect hunters == 0
@@ -20,35 +20,35 @@ markhunters
 wait 12
 hunters closing
 expect hunterdistdelta < -100
-# Patrol: 2 more ships, allied with the first (if the scout still lives).
+# Hunt: 3 ships of tier + 1, allied with the first (if the scout still lives).
 stage
 wait 1
-expect hunters >= 2
+expect hunters >= 3
 expect hunterindices == 1
 expect huntershostile == 1
-# Hunt: 3 ships of tier + 1. Strike in sector 1: 2 ships of tier + 1, one now and one later (spec 190-191).
-stage
+# Strike in sector 1: 2 ships of tier + 1, one now and one later (spec 190-191). One wave for each stage so far.
 stage
 wait 1
 hunters strike
-expect hunters >= 5
+expect hunters >= 4
 expect huntertiermax <= 2
-expect hunterwaves == 4
+expect hunterwaves == stagecount
 expect hunterspending >= 1
 expect hunterfuelmin >= 40
 # Strike waves repeat while heat stays at 100.
 strikeinterval 5
 wait 8
-expect hunterwaves >= 5
+expect hunterwaves > stagecount
 strikeinterval 600
 save hunters
 wait 3
 load hunters
 wait 2
 hunters loaded
-expect hunters >= 5
+expect hunters >= 4
 expect hunterindices == 1
 expect huntershostile == 1
 wait 10
 expect huntersattacking >= 1
 quit
+# tier: smoke

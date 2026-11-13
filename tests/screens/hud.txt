@@ -7,13 +7,15 @@ pause off
 screenshot hud-01-intro
 closepanel
 wait 2
-screenshot hud-02-event-start
-uxpick 2
+ev_set Enabled false
+event the_fence
+wait 1
+screenshot hud-02-event
+uxpick 1
 wait 2
 screenshot hud-03-event-result
 uxpick 1
 wait 1
-ev_set Enabled false
 godmode on
 screenshot hud-04-heat-calm
 # A greyed choice (no sensor array) and a follow-up page.
@@ -28,15 +30,15 @@ wait 1
 uxpick 1
 wait 1
 # Stage start: heat panel strip, chat line, hunter center text.
-heat 27
+stage
 wait 1.5
 screenshot hud-07-heat-warning
 wait 6
-heat 50
+stage
 wait 1.5
 screenshot hud-08-heat-hunt
 wait 6
-heat 25
+stage
 wait 1.5
 screenshot hud-09-heat-strike
 # Ship alerts: damage ping, low supply, hull. Godmode would heal the damage at once.
@@ -101,9 +103,6 @@ newgame run
 wait 8
 closepanel
 wait 1
-uxpick 3
-wait 1
-uxpick 1
 godmode off
 lose
 wait 4

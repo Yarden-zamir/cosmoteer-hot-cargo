@@ -51,6 +51,8 @@ public sealed class HailPage : AIDialogueModule.DialogueExchange
     {
         if (Shared is null) throw new InvalidOperationException("set HailPage.Shared before adding a shared choice");
         var b = new HailChoice(option) { Text = xml, Tooltip = tooltip, SelfInputActive = active, CloseOnClick = close, Submit = submit };
+        // The comms tab replaces this click with the shared choice panel's. A click that still lands here is a bug: show it, never do nothing.
+        b.OnClick = (_, _) => Errors.Report("hail choice", $"choice {option} of {Shared.Value.Domain} has no shared choice panel");
         Buttons.Add(b);
         return b;
     }
@@ -99,11 +101,15 @@ public static class CommsHail
     static readonly ConditionalWeakTable<CommDialogueTab, OptionRows> Rows = new();
     static readonly ConditionalWeakTable<CommDialogueTab, SharedState> Panels = new();
 
-    /// <summary>The shared choice panel of a dialogue tab and the lock after a first pick, like the event window.</summary>
-    sealed class SharedState(SharedChoice.SharedChoicePanel panel, string domain)
+    /// <summary>
+    /// The shared choice panel of a dialogue tab and the lock after a first pick, like the event window. The panel is null until the
+    /// tab shows a page with shared choices.
+    /// </summary>
+    sealed class SharedState(Halfling.Gui.ScrollBox pageBox)
     {
-        public readonly SharedChoice.SharedChoicePanel Panel = panel;
-        public readonly string Domain = domain;
+        public readonly Halfling.Gui.ScrollBox PageBox = pageBox;
+        public SharedChoice.SharedChoicePanel? Panel;
+        public string? Domain;
         public int LockedSerial;
         public double LockedUntil;
     }
@@ -196,8 +202,9 @@ public static class CommsHail
                 pageBox.Children.BorderPadding = new Halfling.Gui.Borders(40f, 30f, 40f, 30f);
                 pageBox.Children.WidgetPadding = new Halfling.Geometry.Vector2(12f);
             }
+            Panels.AddOrUpdate(__instance, new SharedState(pageBox));
             ShowRows(__instance, rows);
-            UpdateShared(__instance, pageBox);
+            UpdateShared(__instance);
         });
     }
 
@@ -208,7 +215,7 @@ public static class CommsHail
         static void Postfix(CommDialogueTab __instance) => Errors.Guard("hail rows", () =>
         {
             if (Rows.TryGetValue(__instance, out var rows)) ShowRows(__instance, rows);
-            UpdateShared(__instance, null);
+            UpdateShared(__instance);
             MultiChoice.DraftSender.Flush();
         });
     }
@@ -247,7 +254,7 @@ public static class CommsHail
             MultiChoice.DraftSender.Toggle(run, multi.Domain, multi.Serial, row.Option, !row.Selected, value);
             return;
         }
-        if (page.Shared is not { } s || !Panels.TryGetValue(tab, out var shared) || shared.Domain != s.Domain) return;
+        if (page.Shared is not { } s || !Panels.TryGetValue(tab, out var shared) || shared.Panel is null || shared.Domain != s.Domain) return;
         if (shared.LockedSerial == s.Serial && Halfling.App.Clock.Time.Seconds < shared.LockedUntil) return;
         if (!shared.Panel.Click(s.Serial, row.Option)) return;
         shared.LockedSerial = s.Serial;
@@ -266,19 +273,24 @@ public static class CommsHail
     /// Wires the choice buttons of a shared page to its panel: the click goes through the panel, the panel draws hovers and votes,
     /// and a first pick locks the buttons until the result arrives or LockSeconds pass. A page without shared choices hides the panel.
     /// </summary>
-    static void UpdateShared(CommDialogueTab tab, Halfling.Gui.ScrollBox? pageBox)
+    static void UpdateShared(CommDialogueTab tab)
     {
-        if (Run.Current is not { } run) return;
+        if (Run.Current is not { } run || !Panels.TryGetValue(tab, out var shared)) return;
         var page = tab._currentDialogue as HailPage;
         var buttons = tab._dialogueButtonsBox.Children;
-        if (!Panels.TryGetValue(tab, out var shared))
+        if (page?.Shared is not { } s) { shared.Panel?.Hide(buttons); return; }
+        // The page of an open tab changes: a hail line opens an event page in the same tab. The first page with shared choices,
+        // or a page of another domain, gets a new panel in place of the old one.
+        if (shared.Panel is null || shared.Domain != s.Domain)
         {
-            if (page?.Shared is not { } first || pageBox is null) return;
-            shared = new SharedState(new SharedChoice.SharedChoicePanel(run, first.Domain), first.Domain);
-            pageBox.Children.Insert(pageBox.Children.IndexOf(tab._dialogueButtonsBox), shared.Panel.Bar);
-            Panels.AddOrUpdate(tab, shared);
+            var box = shared.PageBox.Children;
+            if (shared.Panel is not null) box.Remove(shared.Panel.Bar);
+            shared.Panel = new SharedChoice.SharedChoicePanel(run, s.Domain);
+            shared.Domain = s.Domain;
+            shared.LockedUntil = 0;
+            box.Insert(box.IndexOf(tab._dialogueButtonsBox), shared.Panel.Bar);
         }
-        if (page?.Shared is not { } s || s.Domain != shared.Domain) { shared.Panel.Hide(buttons); return; }
+        var panel = shared.Panel;
         bool locked = shared.LockedSerial == s.Serial && Halfling.App.Clock.Time.Seconds < shared.LockedUntil;
         var slots = new List<SharedChoice.OptionSlot>();
         for (int i = 0; i < page.Buttons.Count && i < buttons.Count; i++)
@@ -289,7 +301,7 @@ public static class CommsHail
             slots.Add(new SharedChoice.OptionSlot(widget, choice.Option));
             choice.OnClick = (_, _) => Errors.Guard("hail choice", () =>
             {
-                if (!shared.Panel.Click(s.Serial, choice.Option)) return;
+                if (!panel.Click(s.Serial, choice.Option)) return;
                 shared.LockedSerial = s.Serial;
                 shared.LockedUntil = Halfling.App.Clock.Time.Seconds + LockSeconds;
             });
@@ -301,7 +313,7 @@ public static class CommsHail
                     if (locked) button.SelfInputActive = false;
                     slots.Add(new SharedChoice.OptionSlot(button, row.Option));
                 }
-        shared.Panel.Update(s.Serial, slots);
+        panel.Update(s.Serial, slots);
     }
 
     /// <summary>Unlocks the buttons of every tab with this page, when its result arrived. Called by providers after a result changes.</summary>
@@ -313,6 +325,14 @@ public static class CommsHail
 
     /// <summary>The option rows of a dialogue tab, or null before the tab has them. For the dialogue keys.</summary>
     internal static OptionRows? RowsOf(CommDialogueTab tab) => Rows.TryGetValue(tab, out var rows) ? rows : null;
+
+    /// <summary>The open dialogue tab with this callee, or null. For autotests.</summary>
+    internal static CommDialogueTab? OpenTab(Ship callee)
+    {
+        foreach (var (tab, rows) in Rows)
+            if (tab.Callee == callee && rows.Box.Root is not null) return tab;
+        return null;
+    }
 
     /// <summary>The option rows of an open dialogue tab with this callee, or null. For autotests.</summary>
     internal static OptionRows? OpenRows(Ship callee)

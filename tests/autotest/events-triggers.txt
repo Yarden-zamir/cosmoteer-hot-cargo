@@ -1,15 +1,13 @@
-# Event triggers: Start, Arrival (without a jump), Signal POI and Station.
+# Event triggers: Arrival (without a jump), Signal POI and Station.
 newgame run
 wait 8
-expectevent getaway
 ev_set CooldownSeconds 0
 ev_set ArrivalEventChance 1
 ev_set ArrivalDelaySeconds 1
 ev_set StationEventChance 0
-# Through the MP input, like the dialog.
-choose 3
+# No page opens at the start of a run.
 expect ev_pending == 0
-expect ev_seen == 1
+expect ev_seen == 0
 # Arrival: the first-arrival hook opens an Arrival event after the delay.
 ev_arrive
 wait 4

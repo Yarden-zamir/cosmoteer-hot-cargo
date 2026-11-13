@@ -13,8 +13,6 @@ namespace HotCargo.Events;
 public enum EventTrigger
 {
     None,
-    /// <summary>Once, shortly after a new run starts.</summary>
-    Start,
     /// <summary>Shortly after the first arrival in a system.</summary>
     Arrival,
     /// <summary>When a human ship reaches a signal POI (mod/events/sysgen_events.rules).</summary>
