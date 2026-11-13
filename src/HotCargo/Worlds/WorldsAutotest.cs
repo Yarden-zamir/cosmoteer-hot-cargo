@@ -305,7 +305,9 @@ static class WorldsAutotest
         CheckMin("pass ring edge to station or gate center", fixedPoints, Doodads(sim, Pass).Select(c => (c.Center, c.Radius)), 600f);
         CheckMin("belt rock to station or gate center", fixedPoints, Tagged(sim, BeltRock).Select(p => (p, 0f)), 600f);
         CheckMin("hub planet to gate center", At(Gate), At(HubPlanet).Select(p => (p, 0f)), 2000f);
-        CheckMin("lair to station or gate center", fixedPoints, lairs.Select(p => (p, 0f)), 3000f);
+        // The lair keeps the vanilla military gaps times the system scale 0.5: 3000 from stations, 1500 from gates (spec 105).
+        CheckMin("lair to station center", At(Station).Where(p => !lairs.Contains(p)).ToList(), lairs.Select(p => (p, 0f)), 3000f);
+        CheckMin("lair to gate center", At(Gate), lairs.Select(p => (p, 0f)), 1500f);
     }
 
     static int State(CompletionState c) => c switch { CompletionState.Completed => 1, CompletionState.Failed => -1, _ => 0 };

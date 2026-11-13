@@ -10,7 +10,7 @@
 		OverrideIn = "<modes/career/sectors/sysgen_trade_stations.rules>/SubSpawners/0"
 		Overrides
 		{
-			Distance = ["(&<contracts/system_scale.rules>/Scale) * 4000", "(&<contracts/system_scale.rules>/Scale) * 11000"]
+			Distance = &<contracts/system_scale.rules>/TradeStationDistance
 			MinDistanceFromTags = [[sun, "max((&<contracts/system_scale.rules>/Scale) * 7500, (&<contracts/system_scale.rules>/SunClearance))"]]
 		}
 	}
@@ -20,7 +20,7 @@
 		Overrides
 		{
 			Count = [2, 3] // was [2, 4] stations outside the starting system: fewer missions, not the area
-			Distance = ["(&<contracts/system_scale.rules>/Scale) * 4000", "(&<contracts/system_scale.rules>/Scale) * 11000"]
+			Distance = &<contracts/system_scale.rules>/TradeStationDistance
 			MinDistanceFromTags = [[sun, "max((&<contracts/system_scale.rules>/Scale) * 7500, (&<contracts/system_scale.rules>/SunClearance))"]]
 		}
 	}
@@ -62,7 +62,7 @@
 	{
 		Action = Overrides
 		OverrideIn = "<modes/career/sectors/sysgen_ftl_gates.rules>"
-		Overrides { Distance = ["(&<contracts/system_scale.rules>/Scale) * 18750", "(&<contracts/system_scale.rules>/Scale) * 22500"] }
+		Overrides { Distance = &<contracts/system_scale.rules>/GateDistance }
 	}
 	// Pirates.
 	{

@@ -31,9 +31,9 @@ DroneSiege
 			Type = Ships
 			Tags = [hc_siege_outpost]
 			Distance = [3000, 4500]
-			MinDistanceFromTags = [[sun, 6000], [station, 2500], [bounty, 2000]]
-			// Inside the gate ring of the smaller systems (spec 105).
-			MaxDistanceFromTags = [[sun, 13500]]
+			MinDistanceFromTags = [[sun, "max((&<../../contracts/system_scale.rules>/Scale) * 6000, (&<../../contracts/system_scale.rules>/SunClearance))"], [station, "(&<../../contracts/system_scale.rules>/Scale) * 2500"], [bounty, "(&<../../contracts/system_scale.rules>/Scale) * 2000"]]
+			// Inside the gate ring (spec 105, contracts/system_scale.rules).
+			MaxDistanceFromTags = [[sun, &<../../contracts/system_scale.rules>/GateDistance/0]]
 			MinDistanceFromNebulas = [[ion_storm, 1000]]
 			SuppressLocationAssertions = true
 			Allegiance = FactionMilitary
@@ -126,9 +126,9 @@ Prototype
 	Type = None
 	Tags = [hc_mech_prototype]
 	SpawnChance = 20%
-	// Inside the gate ring of the smaller systems (spec 105; vanilla gates at 18750 and more, Hot Cargo gates at 13500 to 16000).
-	Distance = [0, 13000]
-	MinDistanceFromTags = [[sun, 6000], [station, 4000], [bounty, 3000], [hc_shady, 4000]]
+	// Inside the gate ring (spec 105, contracts/system_scale.rules), like the vanilla bounties.
+	Distance = [0, "(&<../../contracts/system_scale.rules>/Scale) * 19000"]
+	MinDistanceFromTags = [[sun, "max((&<../../contracts/system_scale.rules>/Scale) * 6000, (&<../../contracts/system_scale.rules>/SunClearance))"], [station, "(&<../../contracts/system_scale.rules>/Scale) * 4000"], [bounty, "(&<../../contracts/system_scale.rules>/Scale) * 3000"], [hc_shady, "(&<../../contracts/system_scale.rules>/Scale) * 4000"]]
 	MinDistanceFromNebulas = [[ion_storm, 1000]]
 	SuppressLocationAssertions = true
 
@@ -354,9 +354,9 @@ Tow
 			Type = Ships
 			Tags = [hc_tow_hulk]
 			Distance = [3000, 4500]
-			MinDistanceFromTags = [[sun, 5000], [station, 2500], [bounty, 2000]]
-			// Inside the gate ring of the smaller systems (spec 105).
-			MaxDistanceFromTags = [[sun, 13500]]
+			MinDistanceFromTags = [[sun, "max((&<../../contracts/system_scale.rules>/Scale) * 5000, (&<../../contracts/system_scale.rules>/SunClearance))"], [station, "(&<../../contracts/system_scale.rules>/Scale) * 2500"], [bounty, "(&<../../contracts/system_scale.rules>/Scale) * 2000"]]
+			// Inside the gate ring (spec 105, contracts/system_scale.rules).
+			MaxDistanceFromTags = [[sun, &<../../contracts/system_scale.rules>/GateDistance/0]]
 			MinDistanceFromNebulas = [[ion_storm, 1000]]
 			SuppressLocationAssertions = true
 			Allegiance = Junk
@@ -448,9 +448,9 @@ Capture
 	Type = None
 	Tags = [hc_mech_capture]
 	SpawnChance = 15%
-	// Inside the gate ring of the smaller systems (spec 105).
-	Distance = [0, 13000]
-	MinDistanceFromTags = [[sun, 6000], [station, 4000], [bounty, 3000], [hc_shady, 4000]]
+	// Inside the gate ring (spec 105, contracts/system_scale.rules).
+	Distance = [0, "(&<../../contracts/system_scale.rules>/Scale) * 19000"]
+	MinDistanceFromTags = [[sun, "max((&<../../contracts/system_scale.rules>/Scale) * 6000, (&<../../contracts/system_scale.rules>/SunClearance))"], [station, "(&<../../contracts/system_scale.rules>/Scale) * 4000"], [bounty, "(&<../../contracts/system_scale.rules>/Scale) * 3000"], [hc_shady, "(&<../../contracts/system_scale.rules>/Scale) * 4000"]]
 	MinDistanceFromNebulas = [[ion_storm, 1000]]
 	SuppressLocationAssertions = true
 	SynchronizeAllegiance = true
@@ -587,13 +587,13 @@ Survey
 			ScaleFactor = 400
 			Tags = [hc_survey_marker]
 			Count = 3
-			Distance = [2500, 16000]
-			MinDistanceFromSiblings = 1500
+			Distance = [2500, &<../../contracts/system_scale.rules>/GateDistance/0]
+			MinDistanceFromSiblings = "(&<../../contracts/system_scale.rules>/Scale) * 1500"
 			// A location inside any of these nebula types counts (the vanilla check is an OR).
 			MaxDistanceFromNebulas = [[ion_storm, 0], [electron, 0], [cloudy, 0]]
-			MinDistanceFromTags = [[sun, 5000], [station, 2000]]
-			// Within reach in the smaller systems (spec 105): no marker past the gate ring. Limit: a system without a sun gets no survey.
-			MaxDistanceFromTags = [[sun, 16000]]
+			MinDistanceFromTags = [[sun, "max((&<../../contracts/system_scale.rules>/Scale) * 5000, (&<../../contracts/system_scale.rules>/SunClearance))"], [station, "(&<../../contracts/system_scale.rules>/Scale) * 2000"]]
+			// Within reach (spec 105): no marker past the gate ring. Limit: a system without a sun gets no survey.
+			MaxDistanceFromTags = [[sun, &<../../contracts/system_scale.rules>/GateDistance/0]]
 			Undiscovered = true
 			HideIfUnexplored = true
 			ShowOnlyInFog = true
@@ -768,10 +768,9 @@ ListeningPost
 	Type = None
 	Tags = [hc_mech_listening]
 	SpawnChance = 15%
-	// Inside the gate ring of the smaller systems (spec 105). The trade stations keep the vanilla ring (7500 to 11000), so the
-	// station gap is smaller than in vanilla (was 6000 in [0, 20000]), or the base finds no place.
-	Distance = [0, 14500]
-	MinDistanceFromTags = [[sun, 7500], [station, 4500], [ftl_gate, 2500], [bounty, 3000]]
+	// The vanilla military station placement at the system scale (spec 105, contracts/system_scale.rules).
+	Distance = [0, "(&<../../contracts/system_scale.rules>/Scale) * 20000"]
+	MinDistanceFromTags = [[sun, "max((&<../../contracts/system_scale.rules>/Scale) * 7500, (&<../../contracts/system_scale.rules>/SunClearance))"], [station, "(&<../../contracts/system_scale.rules>/Scale) * 6000"], [ftl_gate, "(&<../../contracts/system_scale.rules>/Scale) * 3000"], [bounty, "(&<../../contracts/system_scale.rules>/Scale) * 3000"]]
 	MinDistanceFromNebulas = [[electron, 1000], [ion_storm, 1000]]
 	SuppressLocationAssertions = true
 
@@ -790,11 +789,11 @@ ListeningPost
 		{
 			Type = None
 			Tags = [hc_lp_post_area]
-			// Smaller systems (spec 105): was 5500 to 7000. Still past ScanRange (3500), so the players bring the scout in.
+			// Past ScanRange (3500), so the players bring the scout in. A local hop, so it keeps its distance.
 			Distance = [4000, 5000]
 			MaxDistanceFromNebulas = [[cloudy, 0]]
-			MinDistanceFromTags = [[sun, 5000], [station, 2500]]
-			MaxDistanceFromTags = [[sun, 16000]]
+			MinDistanceFromTags = [[sun, "max((&<../../contracts/system_scale.rules>/Scale) * 5000, (&<../../contracts/system_scale.rules>/SunClearance))"], [station, "(&<../../contracts/system_scale.rules>/Scale) * 2500"]]
+			MaxDistanceFromTags = [[sun, &<../../contracts/system_scale.rules>/GateDistance/0]]
 			SuppressLocationAssertions = true
 			SynchronizeFactions = true
 

@@ -284,7 +284,7 @@ Drone
 }
 
 // Courier Job (spec 85). C# runs this at the first trade station that the players reach in a system; the root is that station.
-// It spawns the contact 8,000 to 12,000 away and puts the offer into the nearest trade station's mission list (that station).
+// It spawns the contact 8,000 to 12,000 times the system scale away (spec 105) and puts the offer into the nearest trade station's mission list (that station).
 Courier
 {
 	Spawners
@@ -292,8 +292,8 @@ Courier
 		{
 			Type = Ships
 			Tags = [hc_courier_contact]
-			Distance = [8000, 12000]
-			MinDistanceFromTags = [[sun, 5000], [station, 4000]]
+			Distance = ["(&<../contracts/system_scale.rules>/Scale) * 8000", "(&<../contracts/system_scale.rules>/Scale) * 12000"]
+			MinDistanceFromTags = [[sun, "max((&<../contracts/system_scale.rules>/Scale) * 5000, (&<../contracts/system_scale.rules>/SunClearance))"], [station, "(&<../contracts/system_scale.rules>/Scale) * 4000"]]
 			MinDistanceFromNebulas = [[ion_storm, 1000]]
 			SuppressLocationAssertions = true
 			Allegiance = Neutral
@@ -613,7 +613,7 @@ TowJob
 }
 
 // The run's relic ship (spec 765): a dead ship that holds 1 tech unit. Junk allegiance and the vanilla "abandoned" label, like the
-// vanilla abandoned ships, so the players can also salvage it. 5,000 to 8,000 from the fleet, with an unknown POI.
+// vanilla abandoned ships, so the players can also salvage it. 5,000 to 8,000 times the system scale from the fleet (spec 105), with an unknown POI.
 Relic
 {
 	Spawners
@@ -622,8 +622,8 @@ Relic
 			Type = Ships
 			Tags = [hc_relic_ship]
 			Count = 1
-			Distance = [5000, 8000]
-			MinDistanceFromTags = [[sun, 5000], [station, 3000]]
+			Distance = ["(&<../contracts/system_scale.rules>/Scale) * 5000", "(&<../contracts/system_scale.rules>/Scale) * 8000"]
+			MinDistanceFromTags = [[sun, "max((&<../contracts/system_scale.rules>/Scale) * 5000, (&<../contracts/system_scale.rules>/SunClearance))"], [station, "(&<../contracts/system_scale.rules>/Scale) * 3000"]]
 			MinDistanceFromNebulas = [[ion_storm, 500]]
 			SuppressLocationAssertions = true
 			Allegiance = Junk
