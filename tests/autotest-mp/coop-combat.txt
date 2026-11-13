@@ -131,7 +131,8 @@ on 1 expect worlds_flow_speed > 2
 step tech.loss-timer
 # Spec 443, in a new run (8 tech): tech at 0 starts the timer on both machines, tech back stops it, and the timer ends the run.
 mprestart
-mp godmode on
+# The loss must happen: godmode blocks it, and its switch stays on across a restart.
+mp godmode off
 mp ev_set Enabled false
 mp tech_set LossGraceSeconds 30
 mp tech drop 8

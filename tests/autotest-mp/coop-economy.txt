@@ -189,7 +189,8 @@ step tech.trade-loss
 # Spec 17, 441, 443: a new run. Each player starts with 2 vaults and half of the tech (4 + 4) and sells from their own ship.
 # The last sale loses the run for both.
 mprestart
-mp godmode on
+# The loss must happen: godmode blocks it, and its switch stays on across a restart.
+mp godmode off
 mp ev_set Enabled false
 mp tech_set LossGraceSeconds 3
 expect vaulttech == 8

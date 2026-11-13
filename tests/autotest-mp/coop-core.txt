@@ -72,23 +72,6 @@ on 1 menu close
 on 1 menu value Hunters.Stages[0].ShipCount == 2
 on 1 menu value Heat.HeatCarryOverFraction == 0.5
 
-step runmodes.difficulty
-# Spec 680 to 685: the host changes the difficulty through the vanilla settings inputs. The client sees the same effective
-# heat rate, hunter count and tier, tech value and fees. The state hash compares the heat that time adds at the new rate.
-rm_difficulty very_hard slow scarce
-rm_log host
-on 1 expect rm_heatrate > 1
-on 1 expect rm_ships > 1
-on 1 expect rm_tech < 1
-on 1 expect rm_techgap < 0.01
-on 1 expect pricegap == 0
-on 1 rm_log client
-mp spawnstage Patrol
-wait 15
-rm_log host-after
-on 1 expect rm_tiers >= 1
-on 1 rm_log client-after
-
 step shipai.tactics
 # Spec 409, 411: edits by either player go through the tactics input. The client's edits come from its own machine.
 mp aiset FleeEnabled false
@@ -156,6 +139,24 @@ expect heat >= 30
 on 1 waitfor active == 1 60
 on 1 expectevent smuggler_den
 on 1 expect hc_trap_state == 2
+
+step runmodes.difficulty
+# Spec 680 to 685: the host changes the difficulty through the vanilla settings inputs. The client sees the same effective
+# heat rate, hunter count and tier, tech value and fees. The state hash compares the heat that time adds at the new rate.
+# Late in the session: the very hard fight can destroy a ship that earlier steps check.
+rm_difficulty very_hard slow scarce
+rm_log host
+on 1 expect rm_heatrate > 1
+on 1 expect rm_ships > 1
+on 1 expect rm_tech < 1
+on 1 expect rm_techgap < 0.01
+on 1 expect pricegap == 0
+on 1 rm_log client
+mp spawnstage Patrol
+wait 15
+rm_log host-after
+on 1 expect rm_tiers >= 1
+on 1 rm_log client-after
 
 step onboarding.restore
 # The slot keeps its settings file: tutorials off again for later tests in these slots.
