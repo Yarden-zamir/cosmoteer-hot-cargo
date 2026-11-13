@@ -828,6 +828,30 @@ Events
 		]
 	}
 
+	// Spec 1115: the codes from an opened Sealed Case sell at a station, a clear deal at half a standard mission's pay.
+	{
+		ID = codes_fence
+		Trigger = Hail
+		HailTarget = Station
+		HailLine = "Sell corporate access codes."
+		MaxPerRun = 0
+		Need { Resources = [{ ID = yarden_zamir.access_codes; Amount = 1 }] }
+		Title = "Off the Books"
+		Text = "The dock officer reads the first line of the codes and stops. \"I know a buyer. Half a job's pay, no questions.\""
+		Choices
+		[
+			{
+				Text = "Sell the codes."
+				Cost { Resources = [{ ID = yarden_zamir.access_codes; Amount = 1 }] }
+				Outcomes [ { Text = "The codes change hands. Nobody logs it."; Money = 0.5 } ]
+			}
+			{
+				Text = "Not now."
+				Outcomes [ { Text = "\"Come back when you need the money.\"" } ]
+			}
+		]
+	}
+
 	{
 		ID = hunter_intel
 		Trigger = Hail
@@ -859,31 +883,38 @@ Events
 		]
 	}
 
-	// Courier Job hand-over (spec 1102): the line shows on the job's contact while the fleet holds the sealed case.
-	// The cost takes the case; HandOver completes the job's hand-over objective.
+	// Courier Job hand-over (spec 1102): the line shows on the job's contact while the fleet holds the case, sealed or opened (spec 1117).
+	// The cost takes the case; HandOver completes the job's hand-over objective. Opening happens in the hold (spec 1115), not here.
+	// An opened case (spec 1118): the contact does not notice 40, notices and pays 20 % less 30, turns hostile 15 + 0.15 x heat,
+	// leaves 15 + 0.1 x heat. At heat 100: 40 / 30 / 30 / 25.
 	{
 		ID = courier_handover
 		Trigger = Hail
 		HailTarget = Contact
-		HailLine = "Hand over the sealed case."
+		HailLine = "Hand over the case."
 		MaxPerRun = 0
-		Need { Resources = [{ ID = yarden_zamir.sealed_case; Amount = 1 }] }
 		Title = "The Hand-Over"
 		Text = "A hatch opens, and a gloved hand waits for the case. \"You didn't open it. Right?\""
 		Choices
 		[
 			{
-				Text = "Hand it over."
+				Text = "Hand over the sealed case."
+				Need { Resources = [{ ID = yarden_zamir.sealed_case; Amount = 1 }] }
+				HideIfUnmet = true
 				Cost { Resources = [{ ID = yarden_zamir.sealed_case; Amount = 1 }] }
 				Outcomes [ { Text = "The hatch closes. Your pay waits at the station."; HandOver = true } ]
 			}
 			{
-				Text = "Open it first, then hand it over."
-				Cost { Resources = [{ ID = yarden_zamir.sealed_case; Amount = 1 }] }
+				Text = "Hand over the opened case."
+				Need { Resources = [{ ID = yarden_zamir.opened_case; Amount = 1 }] }
+				HideIfUnmet = true
+				Cost { Resources = [{ ID = yarden_zamir.opened_case; Amount = 1 }] }
 				Outcomes
 				[
-					{ Weight = 60; Text = "Corporate access codes. The contact pays extra to keep you quiet, and the corporation notices the leak."; Money = 0.5; Heat = 8; HandOver = true }
-					{ Weight = 40; WeightPerHeat = 0.3; Text = "The seal was a tracer, and it calls home the moment it breaks."; Heat = 15; HandOver = true }
+					{ Weight = 40; Text = "The contact does not check the seal. The hatch closes. Your pay waits at the station."; HandOver = true; Chat = true }
+					{ Weight = 30; Text = "The contact sees the broken seal. \"You looked. That comes out of your pay.\" The station pays 20 % less."; HandOver = true; HandOverPay = 0.8; Chat = true }
+					{ Weight = 15; WeightPerHeat = 0.15; Text = "The contact sees the broken seal, keeps the case, and opens fire. The job failed."; ContactTurns = Hostile; Chat = true }
+					{ Weight = 15; WeightPerHeat = 0.1; Text = "The contact sees the broken seal and jumps away with the case. The job failed."; ContactTurns = Leaves; Chat = true }
 				]
 			}
 			{

@@ -1,0 +1,54 @@
+# Item actions (spec 1111 to 1116): a Sealed Case opens in the hold, without a dialog. Its button shows only while a selected storage
+# part holds a case. A Tracer Beacon adds heat each minute until the crew spaces it. Contents go loose when the storage is full.
+# The codes sell at a station.
+newgame run
+wait 8
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+worlds jumpto hc_trade_hub
+ev_tostation
+wait 2
+item_give yarden_zamir.sealed_case
+item_select yarden_zamir.sealed_case
+expect item_button == 1
+item_select none
+expect item_button == 0
+# Open with the tracer (forced): the case turns into an opened case, and the beacon is aboard.
+ev_mark
+item_force 2
+item_action yarden_zamir.sealed_case open
+expect ev_res_yarden_zamir.sealed_case_gain == -1
+expect ev_res_yarden_zamir.opened_case_gain == 1
+expect ev_res_yarden_zamir.tracer_beacon_gain == 1
+expect ev_heat_gain == 0
+# It calls home once a minute (3 heat).
+waitfor ev_heat_gain >= 3 80
+# Spaced, it is gone, and heat stops rising.
+item_action yarden_zamir.tracer_beacon space
+expect ev_res_yarden_zamir.tracer_beacon_gain == 0
+expect ev_loose_yarden_zamir.tracer_beacon_gain == 0
+ev_mark
+wait 65
+expect ev_heat_gain == 0
+# Full storage: the opened case takes the case's slot, and the codes (forced) drift loose.
+item_give yarden_zamir.sealed_case
+ev_storage_fill steel
+ev_mark
+item_force 1
+item_action yarden_zamir.sealed_case open
+expect ev_res_yarden_zamir.sealed_case_gain == -1
+expect ev_res_yarden_zamir.opened_case_gain == 1
+expect ev_loose_yarden_zamir.access_codes_gain == 1
+# With room, the codes stay aboard and sell at the station.
+ev_storage_clear steel
+item_give yarden_zamir.sealed_case
+ev_mark
+item_force 1
+item_action yarden_zamir.sealed_case open
+expect ev_res_yarden_zamir.access_codes_gain == 1
+ev_comms station Sell corporate access codes.
+ev_comms carrier Sell the codes.
+expect ev_res_yarden_zamir.access_codes_gain == 0
+expect ev_money_gain > 0
+quit

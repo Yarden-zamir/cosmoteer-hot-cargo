@@ -43,6 +43,7 @@ public static class EventsArea
         Run.Hooks.SystemEntered += EventRunner.OnSystemEntered;
         Run.Hooks.Tick += EventRunner.OnTick;
         Run.Hooks.Tick += MissionCargo.OnTick;
+        Run.Hooks.Tick += TracerBeacon.OnTick;
         Run.Hooks.NewRunStarted += Abandoned.OnNewRun;
         Ui.CommsHail.Providers.Add(new EventHailProvider());
         Run.Hooks.SystemEntered += Abandoned.OnSystemEntered;
@@ -248,12 +249,39 @@ public static class EventsArea
         {
             var mission = CourierOffers(RequireSim()).Select(o => o.Mission).FirstOrDefault()
                 ?? throw new InvalidOperationException("no Courier Job offer in this system");
-            var station = Cosmoteer.Ships.Special.SpaceStation.GetStations(RequireSim(), onlyOperating: false)
-                .FirstOrDefault(s => s.GetProvidedMissions()?.ContainsMission(mission) == true).PhysicalShip
-                ?? throw new InvalidOperationException("the Courier Job's station is not live");
+            var station = CourierStation();
             RequireRun().Game.NetManager.EnqueueInput(new Cosmoteer.Modes.Career.Comms.CommMissionsTab.MPAcceptMissionInput(
                 Cosmoteer.Modes.Career.Comms.CommMissionsTab.MissionSourceType.Ship, station, mission));
             Autotest.Wait(2);
+        };
+        // Spec 1119, the real comms UI: ev_courier_ui opens the offer station's comms on the missions tab, ev_courier_ui_select selects
+        // the offer, ev_courier_ui_close closes it. ev_accept_active is 1 while the tab's accept button reacts.
+        Autotest.Commands["ev_courier_ui"] = _ =>
+        {
+            var game = RequireRun().Game;
+            var window = new Cosmoteer.Modes.Career.Comms.CommWindow(game, SimQueries.FirstHumanShip(RequireSim()) ?? throw new InvalidOperationException("no player ship"), CourierStation());
+            game.Gui.FloatingWindows.AddChild(window);
+            window._tabs.TabsListBox.SelectedWidget = window._missionsTab ?? throw new InvalidOperationException("the station has no missions tab");
+        };
+        Autotest.Commands["ev_courier_ui_select"] = _ =>
+        {
+            var tab = MissionsTab();
+            var mission = CourierOffers(RequireSim()).Select(o => o.Mission).FirstOrDefault() ?? throw new InvalidOperationException("no Courier Job offer");
+            tab._missionsPanel._missionItems[mission].IsSelected = true;
+        };
+        Autotest.Commands["ev_courier_ui_close"] = _ =>
+        {
+            foreach (var w in RequireRun().Game.Gui.FloatingWindows.Children.OfType<Cosmoteer.Modes.Career.Comms.CommWindow>().ToList()) Cosmoteer.Game.Gui.Extensions.Unparent(w);
+        };
+        Autotest.Fields["ev_accept_active"] = () => MissionsTab()._acceptBtn.SelfInputActive ? 1 : 0;
+        // The money reward of the latest Courier Job in the log, or -1.
+        Autotest.Fields["ev_courier_pay"] = () => RequireRun().Mode.Missions.LastOrDefault(m => m.MetatypeID.Equals(CourierType))?.Rewards
+            .OfType<Cosmoteer.Modes.Career.Missions.Rewards.MoneyReward>().Sum(m => m.Money) ?? -1;
+        Autotest.Commands["ev_courier_pay_mark"] = _ =>
+        {
+            double at = Autotest.Fields["ev_courier_pay"]();
+            if (at <= 0) throw new InvalidOperationException("no Courier Job pay to mark");
+            Autotest.Fields["ev_courier_pay_ratio"] = () => Autotest.Fields["ev_courier_pay"]() / at;
         };
         // 1: the Courier Job's hand-over is done, 0: open, -1: failed, -2: no Courier Job in the log.
         Autotest.Fields["ev_courier_handover"] = () =>
@@ -356,6 +384,57 @@ public static class EventsArea
             foreach (var ship in Tech.Vaults.HumanShips(RequireSim()))
                 while (ship.Resources.RemoveResources(rid, 100) > 0) { }
             Autotest.Wait(1);
+        };
+        // Item actions (spec 1111 to 1118). Test only.
+        // item_give <resource>: one unit into the acting player's first ship with room.
+        Autotest.Commands["item_give"] = arg =>
+        {
+            var rid = new ID<Cosmoteer.Resources.ResourceRules>(arg.Trim());
+            var sim = RequireSim();
+            var ship = PlayerShips(sim).FirstOrDefault(s => s.Resources.AddResources(rid, 1, excludeConstructionSinks: true) == 1)
+                ?? throw new InvalidOperationException($"no ship of player {ActingPlayer()} has room for {rid}");
+            Log.Info($"AUTOTEST {rid} into {ship.Metadata.PlainShipName}");
+        };
+        // item_action <resource> <action>: the acting player uses the action on its first storage part that holds the resource (MP input).
+        Autotest.Commands["item_action"] = arg =>
+        {
+            var p = arg.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (p.Length != 2) throw new InvalidOperationException("usage: item_action <resource> <action>");
+            var rid = new ID<Cosmoteer.Resources.ResourceRules>(p[0]);
+            var part = ItemPart(RequireSim(), rid) ?? throw new InvalidOperationException($"no storage part of player {ActingPlayer()} holds {rid}");
+            RequireRun().Game.NetManager.EnqueueInput(new ItemActionInput(part, rid, p[1]));
+            Autotest.Wait(1);
+        };
+        // item_select <resource>: selects the local player's storage part that holds the resource, or clears the selection ("none").
+        // The field item_button is 1 while the item's action button shows for that selection.
+        Autotest.Commands["item_select"] = arg =>
+        {
+            var sim = RequireSim();
+            if (arg.Trim() == "none") { sim.PlayerInput.ClearSelectedParts(); return; }
+            var rid = new ID<Cosmoteer.Resources.ResourceRules>(arg.Trim());
+            _selectedItem = rid;
+            sim.PlayerInput.SelectSinglePart(ItemPart(sim, rid) ?? PlayerShips(sim).SelectMany(s => s.Parts).OrderBy(x => x.Location.X).ThenBy(x => x.Location.Y)
+                .First(x => Cosmoteer.Ships.Parts.Resources.FlexResourceGrid.GetAllOnPart(x).Any()));
+        };
+        Autotest.Fields["item_button"] = () =>
+            _selectedItem is { } r && ItemActionButton.Target(RequireRun().Game, r.GetResourceRules()) is not null ? 1 : 0;
+        // item_force <n>: the next item action picks content n (1-based). ev_force_outcome <n>: the next event roll picks outcome n.
+        Autotest.Commands["item_force"] = arg => ItemActions.ForcedContent = int.Parse(arg.Trim()) - 1;
+        Autotest.Commands["ev_force_outcome"] = arg => EventRunner.ForcedOutcome = int.Parse(arg.Trim()) - 1;
+        // ev_contact_mark remembers the courier contact. ev_contact_hostile: 1 while it is live and an enemy of the players.
+        // ev_contact_gone: 1 once it left the system.
+        Autotest.Commands["ev_contact_mark"] = _ => _markedContact = CourierContact(RequireSim()).Id;
+        Autotest.Fields["ev_contact_hostile"] = () =>
+        {
+            var sim = RequireSim();
+            var id = _markedContact ?? throw new InvalidOperationException("ev_contact_mark first");
+            return sim.Ships[id] is { } c && SimQueries.FirstHumanShip(sim) is { } h && c.IsEnemiesWith(h) ? 1 : 0;
+        };
+        Autotest.Fields["ev_contact_gone"] = () =>
+        {
+            var sim = RequireSim();
+            var id = _markedContact ?? throw new InvalidOperationException("ev_contact_mark first");
+            return sim.Ships[id] is null && !sim.Stasis.Any(st => st.ReservedObjectID == id) ? 1 : 0;
         };
         Autotest.Commands["ev_courier_goto"] = _ =>
         {
@@ -591,6 +670,32 @@ public static class EventsArea
     }
 
     /// <summary>The contact of the accepted Courier Job, else the first contact in the system. A system can hold two (a rolled and a forced offer).</summary>
+    /// <summary>The live station whose mission list has the Courier Job offer.</summary>
+    static Ship CourierStation()
+    {
+        var mission = CourierOffers(RequireSim()).Select(o => o.Mission).FirstOrDefault()
+            ?? throw new InvalidOperationException("no Courier Job offer in this system");
+        return Cosmoteer.Ships.Special.SpaceStation.GetStations(RequireSim(), onlyOperating: false)
+            .FirstOrDefault(s => s.GetProvidedMissions()?.ContainsMission(mission) == true).PhysicalShip
+            ?? throw new InvalidOperationException("the Courier Job's station is not live");
+    }
+
+    static Cosmoteer.Modes.Career.Comms.CommMissionsTab MissionsTab() =>
+        Contracts.ContractsUi.AcceptButtonPatch.LastTab?.TryGetTarget(out var tab) == true ? tab : throw new InvalidOperationException("no missions tab; ev_courier_ui first");
+
+    static Cosmoteer.Game.ObjectID? _markedContact;
+    static ID<Cosmoteer.Resources.ResourceRules>? _selectedItem;
+
+    /// <summary>The player that a test command acts for: the "as" player inside the sim, else the local player.</summary>
+    static int ActingPlayer() => Autotest.SimPlayer ?? RequireRun().Game.LocalPlayerIndex;
+
+    static IEnumerable<Ship> PlayerShips(SimRoot sim) =>
+        Vaults.HumanShips(sim).Where(s => s.Metadata.PlayerIndex == ActingPlayer()).OrderBy(s => s.UniqueID);
+
+    /// <summary>The acting player's first storage part, by ship ID and part location, that holds a unit of the item.</summary>
+    static Cosmoteer.Ships.Parts.Part? ItemPart(SimRoot sim, ID<Cosmoteer.Resources.ResourceRules> item) =>
+        PlayerShips(sim).SelectMany(s => s.Parts.OrderBy(x => x.Location.X).ThenBy(x => x.Location.Y)).FirstOrDefault(x => ItemActions.Holds(x, item));
+
     static SimQueries.TaggedShip CourierContact(SimRoot sim)
     {
         var contacts = SimQueries.TaggedShips(sim, CourierContactTag);
@@ -663,6 +768,7 @@ public static class EventsArea
         {
             var id = res.ID;
             yield return ($"res_{id}", () => Vaults.HumanShips(RequireSim()).Sum(s => s.Resources.GetResourceTotal(id, includeStored: true, includeCarried: false)));
+            yield return ($"loose_{id}", () => RequireSim().Nuggets.Where(n => n.ResourceType == id).Sum(n => n.Quantity));
         }
     }
 

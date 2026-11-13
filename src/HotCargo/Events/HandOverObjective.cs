@@ -183,11 +183,18 @@ internal sealed class HandOverObjective : Objective, Missions.IMissionMarkers
     }
 
     /// <summary>The page outcome of a hand-over (HandOver = true) on this contact. The page cost already took the unit. Sim logic.</summary>
-    public static void Deliver(Run run, ObjectID? contact)
+    /// <paramref name="payFactor"/> above 0 scales the job's money reward (spec 1118: the contact notices and pays less).
+    public static void Deliver(Run run, ObjectID? contact, float payFactor = 0f)
     {
-        if (contact is not { } id || ForContact(run, id) is not { } o)
-            throw new InvalidOperationException($"a HandOver outcome ran on ship {contact?.ToString() ?? "none"}, which is no open hand-over contact");
+        var o = Require(run, contact);
         Log.Info($"hand-over: {o.Page} done with {o.Contact.GetPlainTargetName(run.Game.Sim)}");
+        if (payFactor > 0f && o.Mission is { } mission)
+            foreach (var reward in mission.Rewards.OfType<Cosmoteer.Modes.Career.Missions.Rewards.MoneyReward>())
+            {
+                int before = reward.Money;
+                reward.Money = Missions.MissionModel.ScaleReward(reward.Money, payFactor, 100);
+                Log.Info($"hand-over: pay {before} x {payFactor} = {reward.Money}");
+            }
         if (o.DeliveredShipId is { } shipId && run.Game.Sim is { } sim)
         {
             if (o.Blocker(sim) is { } why) throw new InvalidOperationException($"hand-over {o.Page} ran while blocked: {why}");
@@ -198,6 +205,54 @@ internal sealed class HandOverObjective : Objective, Missions.IMissionMarkers
         o.Complete();
     }
 
+    static HandOverObjective Require(Run run, ObjectID? contact) =>
+        contact is { } id && ForContact(run, id) is { } o ? o
+            : throw new InvalidOperationException($"a hand-over outcome ran on ship {contact?.ToString() ?? "none"}, which is no open hand-over contact");
+
+    /// <summary>
+    /// Spec 1118: the contact took the item and ends the deal. The job fails. Hostile: the contact gets its own hostile allegiance and
+    /// hunts the players. Leaves: it jumps out of the system. Sim logic.
+    /// </summary>
+    public static void React(Run run, SimRoot sim, ObjectID? contact, ContactReaction reaction)
+    {
+        var o = Require(run, contact);
+        var ship = sim.Ships[o.Contact.ShipID] ?? throw new InvalidOperationException("the contact is not live");
+        Log.Info($"hand-over: {ship.Metadata.PlainShipName} reacts with {reaction}; the job fails");
+        o.FailAfterHandOver();
+        switch (reaction)
+        {
+            case ContactReaction.Hostile:
+                var career = (Cosmoteer.Modes.Career.CareerSimModeManager)sim.Mode;
+                ship.Metadata.PlayerIndex = career.AllocUniquePlayerIndex();
+                if (ship.AI is { Parameters: { } parameters } ai)
+                {
+                    // The courier contact keeps to its spot (acquire range 200); a hostile contact hunts across the area.
+                    var p = parameters.Clone();
+                    p.PatrolOrigin = ship.DetWorldCenter;
+                    p.TargetAcquireRangeFromOrigin = 4000f;
+                    p.TargetUnacquireRangeFromOrigin = 6000f;
+                    ai.Parameters = p;
+                }
+                break;
+            case ContactReaction.Leaves:
+                // The diplomacy area's leaving list plays the FTL jump-out and removes the ship (spec 195).
+                run.State.Diplomacy.Leaving.Add(new Diplomacy.Leaving { Ship = ship.UniqueID, Due = run.State.GameSeconds + 2 });
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(reaction), reaction, "no reaction");
+        }
+    }
+
+    /// <summary>
+    /// The item and the items that its actions turn it into (spec 1117). An Opened Case is still the job's case: it counts as held, and
+    /// the hand-over page takes it.
+    /// </summary>
+    public static ID<ResourceRules>[] Forms(ID<ResourceRules> item) =>
+        [item, .. ItemActions.For(item).Where(a => a.Becomes is not null).Select(a => a.Becomes!.Value).Distinct()];
+
+    public static int FleetUnits(SimRoot sim, ID<ResourceRules>[] forms) => forms.Sum(f => FleetUnits(sim, f));
+    public static int UnitsLeft(SimRoot sim, ID<ResourceRules>[] forms) => forms.Sum(f => UnitsLeft(sim, f));
+
     /// <summary>Units in the players' ships, stored or carried by crew.</summary>
     public static int FleetUnits(SimRoot sim, ID<ResourceRules> resource) =>
         Tech.Vaults.HumanShips(sim).Sum(s => s.Resources.GetResourceTotal(resource, includeStored: true, includeCarried: true, includeOffShipCarried: true));
@@ -207,6 +262,13 @@ internal sealed class HandOverObjective : Objective, Missions.IMissionMarkers
         FleetUnits(sim, resource) + sim.Nuggets.Where(n => n.ResourceType == resource).Sum(n => n.Quantity);
 
     internal void MarkHeld() => Held = true;
+
+    /// <summary>The contact took the item and still ended the deal (spec 1118). The players hold nothing for this job any more.</summary>
+    internal void FailAfterHandOver()
+    {
+        Held = false;
+        Fail();
+    }
 
     public override void GetIntegrityHash(IntegrityHash iHash)
     {
@@ -307,11 +369,11 @@ internal sealed class HandOverObjective : Objective, Missions.IMissionMarkers
         if (ResourceType is not { } item) return;
         if (!Held)
         {
-            if (FleetUnits(sim, item) == 0)
+            if (FleetUnits(sim, Forms(item)) == 0)
             {
                 // The source is gone (destroyed, or salvaged with the unit destroyed) and no unit drifts loose: it is lost.
                 bool sourceGone = Source is { } src && sim.NodeId() == src.MapNodeID && sim.Ships[src.ShipID] is null && !sim.Stasis.Any(st => st.ReservedObjectID == src.ShipID);
-                if (!sourceGone || UnitsLeft(sim, item) > 0) return;
+                if (!sourceGone || UnitsLeft(sim, Forms(item)) > 0) return;
                 Log.Info($"hand-over: the source of {item} is gone and no unit is loose; the job fails");
                 string lost = item.GetResourceRules().NameKey.Text;
                 Fail();
@@ -323,7 +385,7 @@ internal sealed class HandOverObjective : Objective, Missions.IMissionMarkers
             OnDisplayLinesChanged();
             return;
         }
-        if (UnitsLeft(sim, item) > 0) return;
+        if (UnitsLeft(sim, Forms(item)) > 0) return;
         Log.Info($"hand-over: no {item} left in the fleet or the system; the job fails");
         // Fail() can take the mission out of the log at once, so read everything first.
         string name = item.GetResourceRules().NameKey.Text;
@@ -410,7 +472,8 @@ public static class MissionCargo
         foreach (var o in open.Where(o => o.Completion != CompletionState.Completed))
         {
             if (o.ResourceType is not { } item || !o.Held) continue;
-            int removed = Tech.Vaults.HumanShips(sim).OrderBy(s => s.UniqueID).Select(s => s.Resources.RemoveResources(item, 1)).FirstOrDefault(n => n > 0);
+            // The unit as it is now: sealed, or opened (spec 1117).
+            int removed = HandOverObjective.Forms(item).SelectMany(f => Tech.Vaults.HumanShips(sim).OrderBy(s => s.UniqueID).Select(s => s.Resources.RemoveResources(f, 1))).FirstOrDefault(n => n > 0);
             Log.Info($"mission cargo: {m.MetatypeID} {m.MissionID} left the log without the hand-over; removed {removed} {item}");
         }
     });
