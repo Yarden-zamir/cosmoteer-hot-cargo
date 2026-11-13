@@ -187,12 +187,40 @@ public static class EventsArea
         Autotest.Commands["ev_sector"] = arg => RequireRun().State.SectorIndex = Int(arg);
         // Courier Job (spec 85): offers in station lists, accept the first, fly to the contact, and its GotoShip state.
         Autotest.Fields["ev_courier_offers"] = () => CourierOffers(RequireSim()).Count();
+        // Accepts through the game's own accept input, as the comms window does, so the accept gate and the cargo load run (spec 1101).
         Autotest.Commands["ev_courier_accept"] = _ =>
         {
-            var (list, mission) = CourierOffers(RequireSim()).FirstOrDefault();
-            if (mission is null) throw new InvalidOperationException("no Courier Job offer in this system");
-            list.RemoveMission(mission);
-            RequireRun().Mode.Missions.AddMission(mission, track: true);
+            var mission = CourierOffers(RequireSim()).Select(o => o.Mission).FirstOrDefault()
+                ?? throw new InvalidOperationException("no Courier Job offer in this system");
+            var station = Cosmoteer.Ships.Special.SpaceStation.GetStations(RequireSim(), onlyOperating: false)
+                .FirstOrDefault(s => s.GetProvidedMissions()?.ContainsMission(mission) == true).PhysicalShip
+                ?? throw new InvalidOperationException("the Courier Job's station is not live");
+            RequireRun().Game.NetManager.EnqueueInput(new Cosmoteer.Modes.Career.Comms.CommMissionsTab.MPAcceptMissionInput(
+                Cosmoteer.Modes.Career.Comms.CommMissionsTab.MissionSourceType.Ship, station, mission));
+            Autotest.Wait(2);
+        };
+        // 1: the Courier Job's hand-over is done, 0: open, -1: failed, -2: no Courier Job in the log.
+        Autotest.Fields["ev_courier_handover"] = () =>
+        {
+            var mission = RequireRun().Mode.Missions.LastOrDefault(m => m.MetatypeID.Equals(CourierType));
+            if (mission is null) return -2;
+            var found = new List<HandOverObjective>();
+            mission.GetObjectives(found);
+            return found.Single().Completion switch { CompletionState.Completed => 1, CompletionState.Failed => -1, _ => 0 };
+        };
+        // ev_storage_fill <resource>: fills every human ship's storage with the resource. ev_storage_clear <resource>: takes all of it out. Test only.
+        Autotest.Commands["ev_storage_fill"] = arg =>
+        {
+            var rid = new ID<Cosmoteer.Resources.ResourceRules>(arg.Trim());
+            foreach (var ship in Tech.Vaults.HumanShips(RequireSim()))
+                while (ship.Resources.AddResources(rid, 100, excludeConstructionSinks: true) > 0) { }
+            Autotest.Wait(1);
+        };
+        Autotest.Commands["ev_storage_clear"] = arg =>
+        {
+            var rid = new ID<Cosmoteer.Resources.ResourceRules>(arg.Trim());
+            foreach (var ship in Tech.Vaults.HumanShips(RequireSim()))
+                while (ship.Resources.RemoveResources(rid, 100) > 0) { }
             Autotest.Wait(1);
         };
         Autotest.Commands["ev_courier_goto"] = _ =>
@@ -432,7 +460,7 @@ public static class EventsArea
         return EventView.Current(run, RequireSim(), run.Game.LocalPlayerIndex, lastResultShown: int.MaxValue);
     }
 
-    /// <summary>The ship a comms test talks to: carrier (the pending page's ship), station (nearest trade station), faction (nearest faction ship).</summary>
+    /// <summary>The ship a comms test talks to: carrier (the pending page's ship), contact (the Courier Job's contact), station (nearest trade station), faction (nearest faction ship).</summary>
     static Ship CommsTarget(string which)
     {
         var sim = RequireSim();
@@ -440,9 +468,10 @@ public static class EventsArea
         Ship? found = which switch
         {
             "carrier" => RequireRun().State.Events.Pending?.Carrier is { } id ? sim.Ships[id] : null,
+            "contact" => SimQueries.TaggedShips(sim, CourierContactTag).Select(t => t.Live).FirstOrDefault(l => l is not null),
             "station" => sim.Ships.Where(s => EventHail.TargetOf(s, caller) == HailTarget.Station).MinBy(s => s.DetWorldCenter.DistanceSquaredTo(caller.DetWorldCenter)),
             "faction" => sim.Ships.Where(s => EventHail.TargetOf(s, caller) == HailTarget.FactionShip).MinBy(s => s.DetWorldCenter.DistanceSquaredTo(caller.DetWorldCenter)),
-            _ => throw new InvalidOperationException($"unknown comms target '{which}' (carrier, station, faction)"),
+            _ => throw new InvalidOperationException($"unknown comms target '{which}' (carrier, contact, station, faction)"),
         };
         return found ?? throw new InvalidOperationException($"no live {which} ship for comms");
     }

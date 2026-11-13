@@ -1,0 +1,46 @@
+# Courier Job hand-over (spec 1100 to 1102): no room refuses the accept; the accept loads a sealed case; the case goes over in the contact's comms.
+newgame run
+wait 8
+ev_set CourierChance 1
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+worlds jumpto hc_trade_hub
+ev_tostation
+wait 2
+expect ev_courier_offers == 1
+# Full storage: the accept is refused and the offer stays.
+ev_storage_fill steel
+ev_courier_accept
+expect ev_courier_handover == -2
+expect ev_courier_offers == 1
+ev_storage_clear steel
+# With room, the case is in the hold.
+ev_mark
+ev_courier_accept
+expect ev_courier_offers == 0
+expect ev_res_yarden_zamir.sealed_case_gain == 1
+expect ev_courier_handover == 0
+# The first teleport loads the contact out of stasis, the second one puts the ships next to its live position.
+ev_courier_goto
+pause off
+ev_courier_goto
+pause off
+wait 5
+expect ev_courier_reached == 1
+expect ev_courier_handover == 0
+# The contact's comms offer the hand-over. "Not yet" keeps the case, and the line comes back.
+ev_comms contact Hand over the sealed case.
+expectevent courier_handover
+ev_comms carrier Not yet
+expect ev_courier_handover == 0
+expect ev_res_yarden_zamir.sealed_case_gain == 1
+expectcomms contact Hand over the sealed case. 1
+# Open it first: the case leaves the hold, the job moves on to the pay, and heat rises.
+ev_comms contact Hand over the sealed case.
+ev_mark
+ev_comms carrier Open it first
+expect ev_courier_handover == 1
+expect ev_res_yarden_zamir.sealed_case_gain == -1
+expect ev_heat_gain > 0
+expectcomms contact Hand over the sealed case. 0
+quit
