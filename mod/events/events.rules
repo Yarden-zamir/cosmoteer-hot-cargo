@@ -931,18 +931,13 @@ Events
 		HailLine = "Get Okafor out."
 		MaxPerRun = 0
 		Title = "The Quiet Defector: The Airlock"
-		Text = "The escorts are scrap. Sabine Okafor waits at the transport's airlock in a pressure suit. \"Get me out before they wipe the logs.\""
+		Text = "The escorts are scrap. Sabine Okafor waits at the transport's airlock in a pressure suit. \"Get me out before they wipe the logs.\" Behind her, the hold is stacked with processor crates."
 		Choices
 		[
 			{
 				Text = "Bring her aboard."
 				Need { Bunks = 1 }
 				Outcomes [ { Text = "She crosses on a tether with one bag and takes a bunk."; Crew = 1; HandOver = true } ]
-			}
-			{
-				Text = "Bring her aboard, and strip the transport's hold."
-				Need { Bunks = 1 }
-				Outcomes [ { Text = "She crosses over while your crew empties the hold. The transport's black box records every crate."; Crew = 1; Resources = [{ ID = processor; Amount = 6; PerTier = 2 }]; Heat = 10; HandOver = true } ]
 			}
 			{
 				Text = "Not yet."
@@ -992,14 +987,11 @@ Events
 				Cost { Resources = [{ ID = yarden_zamir.prototype_core_cargo; Amount = 1 }] }
 				Outcomes [ { Text = "The core goes into a shielded crate. Your pay waits at the station."; HandOver = true } ]
 			}
+			// Spec 1121: a clear deal, not a gamble. More money, and the broker sells your hull number to make it back.
 			{
-				Text = "Haggle. The core is worth more than that."
+				Text = "Ask for more. The broker will make it back off you."
 				Cost { Resources = [{ ID = yarden_zamir.prototype_core_cargo; Amount = 1 }] }
-				Outcomes
-				[
-					{ Weight = 50; Text = "The broker sighs and adds to the price."; Money = 0.5; HandOver = true }
-					{ Weight = 50; WeightPerHeat = 0.2; Text = "The broker pays, then sells your hull number to the corporation for the difference."; Heat = 10; HandOver = true }
-				]
+				Outcomes [ { Text = "The broker adds to the price, then sells your hull number to the corporation for the difference."; Money = 0.5; Heat = 10; HandOver = true } ]
 			}
 			{
 				Text = "Not yet."

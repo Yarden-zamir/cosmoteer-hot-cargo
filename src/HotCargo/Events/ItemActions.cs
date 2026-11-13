@@ -64,7 +64,14 @@ public static class ItemActions
         static void Postfix(ResourceRules __instance, GenericSerialReader reader) => Errors.Guard("item actions read", () =>
         {
             if (!reader.TryReadFromPath<ItemActionRules[]>("HotCargoActions", out var actions) || actions.Length == 0) return;
-            if (actions.Select(a => a.ID).Distinct().Count() != actions.Length) throw new InvalidDataException("item actions need distinct IDs");
+            string at = $"HotCargoActions of {__instance.ID}";
+            if (actions.Select(a => a.ID).Distinct().Count() != actions.Length) throw new InvalidDataException($"{at}: two actions with one ID");
+            foreach (var a in actions)
+            {
+                if (a.ID.Length == 0) throw new InvalidDataException($"{at}: an action has no ID");
+                if (a.Contents.Length == 0 && a.MessageKey is null) throw new InvalidDataException($"{at} {a.ID}: an action without Contents needs a MessageKey");
+                if (a.Contents.Any(c => c.Weight < 0 || c.WeightPerHeat < 0)) throw new InvalidDataException($"{at} {a.ID}: weights must not be negative");
+            }
             Table.AddOrUpdate(__instance, actions);
         });
     }
