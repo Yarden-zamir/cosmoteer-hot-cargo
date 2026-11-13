@@ -187,6 +187,15 @@ public static class EventsArea
         Autotest.Commands["ev_sector"] = arg => RequireRun().State.SectorIndex = Int(arg);
         // Courier Job (spec 85, 1100 to 1103): offers in station lists, accept the first, fly to the contact, and the hand-over state.
         Autotest.Fields["ev_courier_offers"] = () => CourierOffers(RequireSim()).Count();
+        // ev_courier_offer: the nearest live trade station offers a Courier Job now, without the roll. Run it with "mp" in co-op tests.
+        Autotest.Commands["ev_courier_offer"] = _ =>
+        {
+            var sim = RequireSim();
+            var at = SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no player ships");
+            var station = sim.Ships.Where(s => s.HasTag(new ID<SimObjectSpawner>("trade_station"))).OrderBy(s => s.DetWorldCenter.DistanceSquaredTo(at)).ThenBy(s => s.UniqueID).FirstOrDefault()
+                ?? throw new InvalidOperationException("no live trade station");
+            EventRunner.OfferCourier(sim, station);
+        };
         // Accepts through the game's own accept input, as the comms window does, so the accept gate and the cargo load run (spec 1101).
         Autotest.Commands["ev_courier_accept"] = _ =>
         {

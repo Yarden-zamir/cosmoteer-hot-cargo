@@ -159,7 +159,7 @@ public static class EventRunner
     /// Puts a Courier Job into the station's mission list: the Courier generator in spawns.rules spawns the contact far away
     /// and a mission offer at the nearest trade station (the one the players reached).
     /// </summary>
-    static void OfferCourier(SimRoot sim, Ship station)
+    internal static void OfferCourier(SimRoot sim, Ship station)
     {
         EventLibrary.Spawn(CourierSpawn).Generate(sim, sim.Rand, loadInstantly: true, rootLoc: station.DetWorldCenter, addExistingSpawnTags: true);
         Log.Info($"courier job offered at {station.Metadata.PlainShipName}");

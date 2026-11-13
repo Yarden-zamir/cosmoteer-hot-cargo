@@ -1,0 +1,25 @@
+# Co-op Courier Job (spec 1100 to 1102), host side: the host accepts and gets the sealed case; the client hands it over in the
+# contact's comms. Both machines see the same case count and the same hand-over, with no desync.
+mphost {PORT}
+mpstart 2
+mp ev_set StationEventChance 0
+mp ev_set ArrivalEventChance 0
+mp ev_tostation
+wait 3
+mp ev_courier_offer
+waitfor ev_courier_offers == 1 20
+ev_mark
+ev_courier_accept
+waitfor ev_courier_handover == 0 20
+expect ev_res_yarden_zamir.sealed_case_gain == 1
+# The first teleport loads the contact out of stasis, the second one puts the ships next to its live position.
+mp ev_courier_goto
+wait 3
+mp ev_courier_goto
+waitfor ev_courier_seen == 1 30
+waitfor ev_courier_handover == 1 120
+wait 3
+expect ev_res_yarden_zamir.sealed_case_gain == 0
+expect desyncs == 0
+waitfor mpconnected == 0 240
+quit
