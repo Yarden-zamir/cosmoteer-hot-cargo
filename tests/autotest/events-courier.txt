@@ -26,5 +26,5 @@ pause off
 wait 5
 log contact
 expect ev_paused == 0
-expect ev_courier_seen == 1
+waitfor ev_courier_seen == 1 20
 quit

@@ -26,7 +26,7 @@ pause off
 ev_courier_goto
 pause off
 wait 5
-expect ev_courier_seen == 1
+waitfor ev_courier_seen == 1 20
 expect ev_courier_handover == 0
 # The contact's comms offer the hand-over. "Not yet" keeps the case, and the line comes back.
 ev_comms contact Hand over the sealed case.

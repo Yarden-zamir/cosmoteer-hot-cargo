@@ -33,7 +33,7 @@ namespace HotCargo.Events;
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
 [SerialDerivedType(TypeName = "HotCargoHandOver")]
-internal sealed class HandOverObjective : Objective
+internal sealed class HandOverObjective : Objective, Missions.IMissionMarkers
 {
     [ReflectiveSerialization(Explicit = true)]
     [SerialDerivedType(TypeName = "HotCargoHandOver")]
@@ -227,6 +227,9 @@ internal sealed class HandOverObjective : Objective
         return Area(game) is { IsExplored: true } poi ? new Circle(poi.WorldLocation, poi.WorldUniformScale) : null;
     }
 
+    /// <summary>Spec 996: the contact's area marker goes with the mission.</summary>
+    public IEnumerable<ObjectID> MarkerIds => AreaDoodadID is { } id ? [id] : [];
+
     POIDoodad? Area(GameRoot game) => AreaDoodadID is { } id ? game.Sim?.Doodads[id] as POIDoodad : null;
 
     public override bool IsPOIAssociated(POIDoodad poi) =>
@@ -234,7 +237,16 @@ internal sealed class HandOverObjective : Objective
 
     public override bool IsShipAssociated(MetaShip ship) => Completion == CompletionState.InProgress && Contact.TargetMetaShip == ship;
 
-    public override bool CheckExpired(GameRoot game) => Completion != CompletionState.Completed && !Contact.IsAlive;
+    /// <summary>
+    /// Only a running step expires; an offer stays even when its contact died, and fails at once when accepted (RegisterEvents).
+    /// Limit: an offer that expired would keep its map marker, because marker cleanup (MissionMarkers) runs when a mission leaves the
+    /// log, not when an offer expires. Revisit when MissionMarkers also cleans up expired offers.
+    /// </summary>
+    public override bool CheckExpired(GameRoot game) => Completion == CompletionState.Failed || _registered && game.Sim is { } sim && ContactGone(sim);
+
+    /// <summary>Gone: not in this system's ships or stasis. By ID, because ObjectiveTargetShip tracks nothing before the step runs.</summary>
+    bool ContactGone(SimRoot sim) =>
+        sim.NodeId() == Contact.MapNodeID && sim.Ships[Contact.ShipID] is null && !sim.Stasis.Any(st => st.ReservedObjectID == Contact.ShipID);
 
     public override bool CanFocusDisplayLine(GameRoot game) => Contact.CanFocus();
 
@@ -268,7 +280,7 @@ internal sealed class HandOverObjective : Objective
         Log.Info($"hand-over: step {Page} starts (loading: {isLoading})");
         Contact.Killed += OnContactKilled;
         game.EventHub.Tick += OnTick;
-        if (!isLoading && !Contact.IsAlive) OnContactKilled(null, EventArgs.Empty);
+        if (!isLoading && game.Sim is { } sim && ContactGone(sim)) OnContactKilled(null, EventArgs.Empty);
     }
 
     public override void UnregisterEvents(GameRoot game)

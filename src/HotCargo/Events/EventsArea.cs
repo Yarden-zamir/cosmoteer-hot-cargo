@@ -257,6 +257,13 @@ public static class EventsArea
             float offset = h.Contact.TargetShip?.WorldBoundingRadius + 300f ?? 900f;
             Autotest.Teleport(ship, at + new Vector2(offset + ship.WorldBoundingRadius, 0));
             MoveNextTo(RequireSim(), at, offset + 2 * ship.WorldBoundingRadius + 200f);
+            // A contact that was in stasis loads now; place the ship again against its real hull.
+            Autotest.WaitFor(() => h.Contact.TargetShip is not null, 15, "the hand-over contact is live", () =>
+            {
+                var contact = h.Contact.TargetShip!;
+                Autotest.Teleport(ship, contact.WorldCenter + new Vector2(contact.WorldBoundingRadius + ship.WorldBoundingRadius + 300f, 0));
+                Autotest.Wait(2);
+            });
         };
         // ev_delivered_crew <n>: n > 0 puts n player crew on the delivered ship (it must be a player ship); 0 takes them all off. Test only.
         Autotest.Commands["ev_delivered_crew"] = arg =>
