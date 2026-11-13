@@ -91,13 +91,13 @@ Sabine Okafor ran supply schedules for the hunter fleets.
 
 ```mermaid
 graph LR
-  extract["Extraction: careful targeting, 7 min"] -->|success| debrief("Debrief")
+  extract["Extraction: careful targeting, 7 min, pickup"] -->|success| debrief("Debrief")
   extract -->|lost: heat +10, reputation -0.5| END1[END]
   extract -->|timeout: heat +15| END2[END]
   extract -->|fail| END3[END]
-  debrief -->|aboard: +1 crew, heat -10| insider("later, Arrival +1: Old Schedules")
-  debrief -->|navy: 0.5 money, reputation +1.5| END4[END]
-  debrief -->|sold: 1.5 money, heat -20| vengeance["later, Arrival +2: Okafor's Friends"]
+  debrief -->|aboard: she stays, heat -10| insider("later, Arrival +1: Old Schedules")
+  debrief -->|navy: crew -1, 0.5 money, reputation +1.5| END4[END]
+  debrief -->|sold: crew -1, 1.5 money, heat -20| vengeance["later, Arrival +2: Okafor's Friends"]
   insider -->|raid| depot["Arrival +0: Okafor's Depot"]
   insider -->|slip: heat -25| END5[END]
   depot -->|success: +1 tech| END6[END]
@@ -173,7 +173,7 @@ A dead hunter's flight recorder.
 
 ```mermaid
 graph LR
-  recorder["The Black Box: drone at tier + 1"] -->|success| playback("Playback")
+  recorder["The Black Box: drone at tier + 1, recover and hand over the recorder"] -->|success| playback("Playback")
   recorder -->|fail| END1[END]
   playback -->|sold: 0.8 money| END2[END]
   playback -->|routes: heat -15| routes("later, Arrival +1: Courier Schedule")
@@ -195,12 +195,12 @@ Reads as: the corporation's own data is worth money, safety or a crate. Selling 
 | Mission (missions.rules) | Where | Mechanic | Objectives |
 |---|---|---|---|
 | `ChainEscort` | Station | Escort | Freighter to a jump point past 2 to 3 raiders (HotCargoEscort, ProtectShips), payment at the station. |
-| `ChainCarefulTarget` | Station | Careful targeting | 7 minutes: destroy 2 escorts, keep the hostile transport whole (ProtectShips), payment at the station. |
+| `ChainExtraction` | Station | Careful targeting, pickup | 7 minutes: destroy 2 escorts, keep the hostile transport whole (ProtectShips). Then hail the transport: Okafor crosses over as crew (needs a free bunk). Payment at the station. |
 | `ChainCourierHit` | Arrival | Careful targeting | As above, near the fleet, no payment trip. |
 | `ChainMine` | Station | Mining | 15 minutes: deliver 40 to 60 iron to the station. |
 | `ChainSalvageRace` | Station | Salvage | 8 minutes: haul 3 processors from a drifting cargo pod to the station; 2 rival ships (hunter AI) guard it. |
 | `ChainClearRaiders` | Station | Combat | Defeat 2 to 3 raiders near the station, payment at the station. |
-| `ChainBlackBox` | Station | Combat | Defeat a tier + 1 security drone (hunter AI) at a hunter wreck, payment at the station. |
+| `ChainBlackBox` | Station | Combat, salvage | Defeat a tier + 1 security drone (hunter AI) at a hunter wreck. Salvage the capsule beside the wreck for the Flight Recorder, hand it to the station's broker in comms, then collect the payment. |
 | `ChainStationRaid` | Return | Defend | Defeat 2 corporate ships (hunter AI) near the station. |
 | `ChainAmbush` | Arrival | Combat | Defeat a rival fleet (hunter AI) that drops in near the fleet. |
 | `ChainDepot` | Arrival | Combat | Destroy 2 defense platforms and a guard ship. |

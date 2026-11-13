@@ -307,7 +307,7 @@ public static class ChainRunner
         var timeLimits = new List<TimeLimitObjective>();
         m.GetObjectives(timeLimits);
         var guarded = new List<Objective>();
-        // A failed hand-over lost its contact or its item: the person or the cargo is gone (spec 1105).
+        // A failed hand-over lost its contact or its item: the person or the cargo is gone (spec 1103).
         m.GetObjectives(guarded, o => o is ProtectShipsObjective or EscortObjective or Events.HandOverObjective);
         return new MissionEnd(
             Completed: m.Completion == CompletionState.Completed,

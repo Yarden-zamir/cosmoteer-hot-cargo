@@ -26,7 +26,7 @@ Priority: P1 = players see it often and the gap breaks the fiction. P2 = less of
 | 10 | Boarding choices: Abandoned Ship, Derelict Survey Ship, Cold Hulk, Hunter Wreck, The Informant ("lean on him") | Send a team aboard. | A crew count is a need. No crew move. Loot is real resources. The trigger already needs a ship close by. | P3 |
 | 11 | Sundive (`HotCargoSundive`) | Salvage the recorder, then get clear. | The objective remembers which ship "holds" it. No item. | P3 |
 | 12 | Discreet Bounty (`HotCargoShadyBounty`) | The client says to come alone. | Nothing checks it. | P3 |
-| 13 | Event resource gains (`Resources` outcomes) | Cargo drifts to your hull. | Not checked yet: what happens when storage is full. | P3 |
+| 13 | Event resource gains (`Resources` outcomes) | Cargo drifts to your hull. | Checked: units that do not fit are lost, and a "no storage" result line says so (`EventRunner.ChangeResource`). | P3 |
 
 Checked and true to the text: Convoy Duty, Joint Strike, Drone Siege, Sunside Ore, Salvage Rights, Storm Survey, Claim Jumpers, Listening Post, Raid the Lair, Tow Job, Freighter Under Fire, Rival Crew, bounty hunters, Salvage Race, Reactor Shielding, Clear the Lane, Navy Tender, Quiet Freight, station raids and ambushes, every tech cost (it comes out of a vault), hunter hand-overs (diplomacy moves real tech), the Buyer sale (normal trade), Relic ship.
 
@@ -42,14 +42,14 @@ Checked and true to the text: Convoy Duty, Joint Strike, Drone Siege, Sunside Or
 - Then collect the pay at the station, as now.
 
 ### 2. Extraction (P1)
-- After the escorts die, the transport stops and waits. Bring a ship within boarding range (vanilla `GotoShip` has no range, so a range objective).
-- Okafor crosses over: +1 crew (needs a free bunk, like event crew gains). The Debrief page then decides: keep her, hand her to the navy (−1 crew) or sell her (−1 crew).
-- She dies with the transport. The objective fails if the ship that carries her is destroyed before the station.
+- After the escorts die, hail the transport: "Get Okafor out." Bringing her aboard needs a free bunk and adds 1 crew. A second choice also strips the hold (processors, heat +10).
+- The Debrief page then decides: keep her, hand her to the navy (−1 crew) or sell her (−1 crew).
+- She dies with the transport: a transport destroyed before the pickup gives the `lost` result.
 
 ### 3. The Black Box (P1)
-- New resource `yarden_zamir.flight_recorder` (1 per slot), shared with Sundive (#11).
-- The wreck holds the recorder. A player ship near the wreck after the drone dies takes it into storage (same rule as Prototype Retrieval's "lift").
-- Deliver it to the station's broker. The Playback page opens only when you bring it in. Selling it removes it; the other choices keep the data and remove the item.
+- New resource `yarden_zamir.flight_recorder` (1 per slot). It can serve Sundive (#11) later.
+- A junk capsule beside the wreck holds exactly one recorder. Salvage it (vanilla salvage), and crew carry the recorder home.
+- Hand it to the station's broker in comms. The navigator keeps a copy, so the Playback page sells or uses the copy.
 
 ### 4. Prototype Retrieval (P2)
 - The lift puts a `Prototype Core` item into the lifting ship's storage (the part already exists as rules; add a resource of the same name). No room: the lift waits.
@@ -79,5 +79,8 @@ Checked and true to the text: Convoy Duty, Joint Strike, Drone Siege, Sunside Or
 
 | # | State |
 |---|---|
-| 1 | Open |
-| 2-13 | Open |
+| 1 | Fixed: `events-courier-handover`, `events-courier-lost`, co-op `courier` |
+| 2 | Fixed: `chains-extraction` |
+| 3 | Fixed: `chains-blackbox` |
+| 4-12 | Open |
+| 13 | Checked, no change |

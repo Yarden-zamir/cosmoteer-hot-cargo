@@ -22,7 +22,7 @@ using HotCargo.Core;
 namespace HotCargo.Events;
 
 /// <summary>
-/// Rules type "HotCargoHandOver" (spec 1101 to 1103, 1105): an exchange with the Contact ship in its comms. Page is the Hail event
+/// Rules type "HotCargoHandOver" (spec 1100 to 1103, 1107): an exchange with the Contact ship in its comms. Page is the Hail event
 /// (HailTarget = Contact) that the contact shows while this objective is active; its outcome with HandOver = true calls <see cref="Deliver"/>.
 /// With a ResourceType, the players carry one unit and hand it over. GiveOnAccept: the accepting player's ship gets it on accept
 /// (<see cref="MissionCargo"/>). Otherwise the players first recover it (salvage, a pickup); the step reads "Recover" until the fleet holds it.
