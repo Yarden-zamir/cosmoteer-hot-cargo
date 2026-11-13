@@ -18,8 +18,11 @@ public static class AllyPeace
     /// The peace of the current system and the sim that it belongs to, or null outside corporate ally space.
     /// The sim tick sets it from sim state only (zone, roles, live hunters), so every co-op machine reads the same value at the same tick.
     /// AreEnemies runs very often, so it reads this value and does not compute the zone itself.
+    /// A class, so a reader never sees a half-written value.
     /// </summary>
-    static (SimRoot Sim, HunterPeace Peace)? _current;
+    static Current? _current;
+
+    sealed record Current(SimRoot Sim, HunterPeace Peace);
 
     internal static void Register()
     {
@@ -35,7 +38,7 @@ public static class AllyPeace
         var zone = FactionsArea.ZoneOf(run, run.Game.CurrentMapNode);
         if (zone != Zone.Ally) { _current = null; return; }
         var ally = FactionsArea.Roles(run).Ally;
-        _current = FactionsModel.Peace(zone, ally.MilitaryPlayerIndex, ally.CivilianPlayerIndex, HunterIndex(sim)) is { } peace ? (sim, peace) : null;
+        _current = FactionsModel.Peace(zone, ally.MilitaryPlayerIndex, ally.CivilianPlayerIndex, HunterIndex(sim)) is { } peace ? new Current(sim, peace) : null;
     }
 
     /// <summary>The shared player index of the live hunters (the same pick as HunterSpawner: an allocated index), or null with none.</summary>
