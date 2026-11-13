@@ -84,9 +84,20 @@ public static class MpAutotest
         {
             var mp = RequireMpGame().NetManager as BaseMPManager ?? throw new InvalidOperationException("no MP manager");
             if (mp.IsHost) return;
-            // A client starts it, as a client does when its integrity hash differs from the host's.
+            // The first client starts it, as a client does when its integrity hash differs from the host's. The host passes
+            // the call on to every client, so each client expects the resync first. With 3 or more players, another client can be
+            // a few ticks behind and get the call before its sim reaches this input; so the first client waits 2 s of real time.
             ExpectResync = true;
-            mp._onOutOfSyncRpc(default);
+            if (RequireMpGame().LocalPlayerIndex != 1) return;
+            double at = App.Clock.Time.Seconds + 2;
+            EventHandler<EventArgs>? start = null;
+            start = (_, _) =>
+            {
+                if (App.Clock.Time.Seconds < at) return;
+                App.Director.FrameEnded -= start;
+                Errors.Guard("mpresync_client", () => mp._onOutOfSyncRpc(default));
+            };
+            App.Director.FrameEnded += start;
         };
         // mp mpmark <n>: sets a test counter inside the sim on every machine. The other machine waits with "waitfor mpmark >= n".
         Autotest.Commands["mpmark"] = arg => _mark = int.Parse(arg, CultureInfo.InvariantCulture);
