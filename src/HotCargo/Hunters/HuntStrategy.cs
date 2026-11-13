@@ -41,7 +41,6 @@ internal sealed class HuntStrategy(HuntStrategyRules rules) : AIStrategyModule
 
     public override bool OnAITick(Ship ship, ShipAI ai)
     {
-        if (HunterOrders.Override(ship)) return true;
         Ship? previous = _target;
         _target = FindTarget(ship);
         if (_target is null) return false;

@@ -94,14 +94,16 @@ public static class PursuitArea
             Autotest.Check(Pacer.MayStart(R(), PacedKinds.Blockade), "pacer allows a blockade");
             Autotest.Check(Blockade.Start(R(), Sim(), HunterSpawner.Hunters(Sim()).OrderBy(h => h.UniqueID).Select(h => h.UniqueID).ToList()), "blockade started");
         };
-        // pu_relaynear <distance>: moves the acting ship this far from the blockade relay, on the line from the relay to the ship.
-        Autotest.Commands["pu_relaynear"] = arg =>
+        // pu_blockadenear <distance>: puts the acting ship at that distance from the center of the blockade ships, on its own side.
+        // The ships can still fly to a far relay, so the relay itself is no fixed place to meet them.
+        Autotest.Commands["pu_blockadenear"] = arg =>
         {
-            var id = R().State.Pursuit.BlockadeRelay ?? throw new InvalidOperationException("no blockade");
-            var relay = FtlGate.GetGates(Sim()).First(g => g.DestinationID == id).DetWorldCenter;
+            var ships = R().State.Pursuit.Blockaders.Select(id => Sim().Ships[id]).OfType<Ship>().ToList();
+            if (ships.Count == 0) throw new InvalidOperationException("no blockade ship");
+            var center = ships.Aggregate(Halfling.Geometry.Vector2.Zero, (sum, sh) => sum + sh.DetWorldCenter) / ships.Count;
             var me = Me();
-            var dir = Halfling.Geometry.Vector2.FromAngle(relay.DirectionTo(me.DetWorldCenter));
-            Autotest.Teleport(me, relay + dir * float.Parse(arg, CultureInfo.InvariantCulture));
+            var dir = Halfling.Geometry.Vector2.FromAngle(center.DirectionTo(me.DetWorldCenter));
+            Autotest.Teleport(me, center + dir * float.Parse(arg, CultureInfo.InvariantCulture));
         };
         // pu_outage <seconds> [natural]: starts an outage now. natural counts in the pacer like a rolled outage.
         Autotest.Commands["pu_outage"] = arg =>
@@ -153,6 +155,10 @@ public static class PursuitArea
         Autotest.Fields["pu_scouts"] = () => R().State.Pursuit.Scouts.Count;
         Autotest.Fields["pu_scoutdist"] = () => R().State.Pursuit.Scouts.FirstOrDefault() is { } s && Sim().Ships[s.Ship] is { } sh ? sh.DetWorldCenter.DistanceTo(s.RelayAt) : -1;
         Autotest.Fields["pu_blockaders"] = () => R().State.Pursuit.Blockaders.Count;
+        // Farthest blockade ship from its relay (spec 916). -1 without a blockade.
+        Autotest.Fields["pu_parkdist"] = () => Blockade.RelayAt(R(), Sim()) is { } relay
+            ? R().State.Pursuit.Blockaders.Select(id => Sim().Ships[id]).OfType<Ship>().Select(sh => (double)sh.DetWorldCenter.DistanceTo(relay)).DefaultIfEmpty(-1).Max()
+            : -1;
         Autotest.Fields["pu_blockade"] = () => R().State.Pursuit.BlockadeRelay is null ? 0 : 1;
         Autotest.Fields["pu_outage"] = () => Outage.SecondsLeft(R());
         Autotest.Fields["pu_outage_due"] = () => R().State.Pursuit.OutageDueAt;

@@ -14,12 +14,13 @@ wait 2
 expect pu_blockade == 1
 expect pu_blockaders >= 1
 expect pu_count_blockade == 1
-# They park and do not chase while the players stay away.
+# They fly to the relay and do not chase while the players stay away.
 wait 30
 expect pu_blockaders >= 1
+expect pu_parkdist >= 0
 log parked
-# A player ship near the relay draws them out.
-pu_relaynear 1200
+# A player ship that comes close draws them out.
+pu_blockadenear 1200
 waitfor pu_blockaders == 0 20
 expect pu_blockade == 0
 # The pacer keeps a second Hunt from another blockade.

@@ -8,8 +8,8 @@ namespace HotCargo.Hunters;
 public static class HunterOrders
 {
     /// <summary>
-    /// Runs first in the hunter chase module (HcHunt) of each live hunter. True means another area gave the ship its orders this AI tick
-    /// (the Pursuit: a reporting scout or a blockade ship, spec 911 and 916) and the chase waits. AI tick: sim state only.
+    /// Runs in the hunter override module (HcOverride), above every hunter tactic except fall back, call and flee. True means another
+    /// area gave the ship its orders this AI tick (the Pursuit: a reporting scout or a blockade ship, spec 911 and 916). AI tick: sim state only.
     /// </summary>
     public static Func<Ship, bool> Override = _ => false;
 

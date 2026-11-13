@@ -1,5 +1,6 @@
 # Hacker (spec 930 to 934): the proxy hails, offers an outage for half a ship's value, the paid outage is not a natural one, then he leaves.
-newgame run
+# Ironman: a career without Ironman allows debt (vanilla AllowDebt), so only Ironman turns the pay button off without the money.
+rm_ironman_newgame pursuit_hacker
 wait 8
 ev_set Enabled false
 godmode on

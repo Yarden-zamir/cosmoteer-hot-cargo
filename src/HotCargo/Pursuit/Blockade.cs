@@ -54,7 +54,7 @@ public static class Blockade
         return true;
     }
 
-    static Vector2? RelayAt(Run run, SimRoot sim) =>
+    internal static Vector2? RelayAt(Run run, SimRoot sim) =>
         run.State.Pursuit.BlockadeRelay is { } id ? FtlGate.GetGates(sim).Where(g => g.DestinationID == id).Select(g => (Vector2?)g.DetWorldCenter).FirstOrDefault() : null;
 
     /// <summary>Each blockade ship has its own spot on a circle around the relay, by its place in the list.</summary>
