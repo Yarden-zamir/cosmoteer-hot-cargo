@@ -20,7 +20,9 @@ wait 3
 expect ai_flee_stay >= 2
 expect ai_flee == 0
 # No offensive weapons: the hunter runs even at chance 0.
+# Both hunters: on some designs the weapons hold the control rooms on, and the disarmed ship breaks into a wreck.
 disarmhunter 0
+disarmhunter 1
 wait 3
 hunters disarmed
 expect ai_flee >= 1
