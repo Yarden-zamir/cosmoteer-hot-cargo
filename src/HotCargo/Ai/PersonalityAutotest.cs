@@ -58,7 +58,8 @@ static class PersonalityAutotest
         Autotest.Fields["ai_weakback_kiters"] = () => Hostile().Count(s => PersonalityStrategy.Scores(s, T()).WeakBack && TacticGate.Active(Tactic.Kite, s) is not null);
         // Fleeing ships with a weak side that strafe away (forced rotation, spec 1033).
         Autotest.Fields["ai_flee_guarded"] = () => FleeingWeak().Count(s => s.Commands.CurConfirmedCommand is MoveCommand { ForceDestinationRotation: true });
-        // Fleeing ships with a weak side, near their threat, whose strong side points more than 60° away from it.
+        // Fleeing ships with a weak side, near their threat, whose strong side points more than 60° away from it. The control check:
+        // with weak sides switched off, the ships no longer keep the strong side to the threat.
         Autotest.Fields["ai_flee_off_strong"] = () => FleeingWeak().Count(s =>
         {
             var threat = AiGate.NearestEnemy(s);
@@ -66,6 +67,17 @@ static class PersonalityAutotest
             float bearing = (float)s.DetWorldCenter.DirectionTo(threat.DetWorldCenter) - (float)s.DetRotation;
             float off = MathF.Abs(MathF.IEEERemainder(bearing - SideProfile.Angle(PersonalityStrategy.Profile(s, T()).Sides.Strong), MathF.Tau));
             return off > MathF.PI / 3f;
+        });
+        // Fleeing ships with a weak side, near their threat, that turn a weak side to it (spec 1033). A side that is not weak may face
+        // the threat. The strong side gets 60° of slack, because a strafing ship turns while it flies.
+        Autotest.Fields["ai_flee_weak_to_threat"] = () => FleeingWeak().Count(s =>
+        {
+            var threat = AiGate.NearestEnemy(s);
+            if (threat is null || HunterOrders.EdgeDistance(s, threat) >= T().FleeDistance) return false;
+            var sides = PersonalityStrategy.Profile(s, T()).Sides;
+            float bearing = (float)s.DetWorldCenter.DirectionTo(threat.DetWorldCenter) - (float)s.DetRotation;
+            float off = MathF.Abs(MathF.IEEERemainder(bearing - SideProfile.Angle(sides.Strong), MathF.Tau));
+            return sides.IsWeak(SideProfile.Index(bearing)) && off > MathF.PI / 3f;
         });
         // Hostile ships whose mouseover names their personality. The contract (spec 368) says 0.
         Autotest.Fields["ai_mouseover_tells"] = () => Hostile().Count(s => PersonalityStrategy.Pick(s, T()) is { } p

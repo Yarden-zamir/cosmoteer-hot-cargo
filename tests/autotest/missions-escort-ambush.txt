@@ -17,8 +17,9 @@ waitfor hc_escort_raiders >= 2 60
 hc_escort_diag ambush
 expect hc_raiders_vs_escort >= 2
 expect hc_raiders_vs_player >= 2
-waitfor hc_raiders_on_escort >= 1 45
 # The freighter outruns the parked players in about 45 s and goes into stasis. Join it again before each wait.
+hc_escort_goto
+waitfor hc_raiders_on_escort >= 1 45
 hc_escort_goto
 waitfor hc_escort_health < 100 40
 hc_escort_diag hit
