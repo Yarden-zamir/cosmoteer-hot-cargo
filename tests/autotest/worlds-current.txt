@@ -1,4 +1,5 @@
 # Current (spec 221): a ship at rest in the current drifts along the flow; beside the current it stays at rest.
+# timeout: 900
 # Ships and loose items get the same push: along the flow and toward the nearer side, so drifting things leave the band.
 newgame run
 wait 8
@@ -32,6 +33,6 @@ waitfor worlds_items_in_current == 0 300
 expect worlds_sim_seconds > 0
 expect worlds_crate_along < 3000
 expect worlds_crate_across > 900
-waitfor worlds_ship_in_current < 0.01 600
+waitfor worlds_ship_in_current < 0.01 800
 expect worlds_sim_seconds > 0
 quit

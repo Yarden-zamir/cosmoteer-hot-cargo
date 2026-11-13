@@ -97,7 +97,7 @@ Actions: **smoke** (in the smoke tier), keep (full tier only), done (changed in 
 | tunablesmenu-live | 67 s | settings window applies, writes the file, rejects bad values | UI, files | — | **smoke** |
 | ux-basic | 80 s | panels, comms pause, ship alert, loss panel | UI | — | **smoke** |
 | ux-more | 80 s | dialogue keys, supplies, trade hints, comms on the map | UI | — | keep |
-| worlds-current | 79 s | a ship and a crate drift in the current and out of it | physics | WorldsModel.Push, WorldsModel.ItemDrift | keep |
+| worlds-current | 150 s | a ship and a crate drift in the current and out of it | physics | WorldsModel.Push, WorldsModel.ItemDrift | keep |
 | worlds-fit | 89 → 85 s | map archetypes, hazard tooltip, real placement in each archetype, trade hub offers | system generation, UI | — | **smoke** (with worlds-map) |
 | worlds-lair | 79 s | lair found only near it | proximity | — | keep |
 | worlds-map | 68 s | map archetypes, hazard tooltip, trade hub | — | — | done: merged into worlds-fit |
