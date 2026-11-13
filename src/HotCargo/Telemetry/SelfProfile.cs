@@ -41,7 +41,7 @@ static class SelfProfile
             {
                 case "on": Install(); Reset(); break;
                 case "reset": Reset(); break;
-                case "report": Report(parts.Length > 1 ? parts[1] : "-", 25); break;
+                case "report": Report(parts.Length > 1 ? parts[1] : "-", 40); break;
                 default: throw new InvalidOperationException("selfprof needs on, reset or report [label]");
             }
         };
@@ -156,7 +156,7 @@ static class SelfProfile
     }
 
     static Totals Summary() => new(
-        Stats.Ms(Stopwatch.GetTimestamp() - _startedAt), Perf.SessionFrames - _framesAtStart, Perf.SessionTicks - _ticksAtStart,
+        Stats.Ms(Stopwatch.GetTimestamp() - _startedAt) / 1000, Perf.SessionFrames - _framesAtStart, Perf.SessionTicks - _ticksAtStart,
         Perf.SessionTickMs - _tickMsAtStart, Stats.Ms(_tickTicks), Stats.Ms(_frameTicks), Stats.Ms(Interlocked.Read(ref _workerTicks)));
 
     static void Report(string label, int top)
