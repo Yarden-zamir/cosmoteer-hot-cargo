@@ -13,7 +13,7 @@ Rules:
 - A game test checks what only the game can show: spawns, AI, physics, UI, saves, co-op sync, vanilla integration. It may compare a game value with a model value (a "gap" field). It does not test the model again with other inputs.
 - Each area has one smoke test: it loads and runs the main flow. An area without a smoke test runs all its tests in the smoke tier.
 - A touched area always runs all its co-op tests: they guard co-op determinism. A change in shared code runs every smoke test and the co-op tests marked smoke (`core`, `save`).
-- Put the marker as the last line of the file, after `quit`, so it does not conflict with edits at the top.
+- Put the marker at the end of the file, after `quit`, so it does not conflict with edits at the top. The `# runner: pc` line (Mac sim) goes there too.
 
 ## Audit
 

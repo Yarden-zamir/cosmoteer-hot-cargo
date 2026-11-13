@@ -84,3 +84,5 @@ expect dip_moneyspent > 0
 expect dip_enemyhostile == 0
 quit
 # tier: smoke
+# Fails most runs in the Mac sim: the Mac draws the same hunters each run, and the hail of the beaten one ends before the check (docs/mac-sim-spike.md).
+# runner: pc
