@@ -1,4 +1,6 @@
-# Cosmoteer sim on the Mac
+# Cosmoteer headless sim (macOS and Linux)
+
+The spike below ran on the Mac. The same host (tools/headless-sim) now also runs on Linux: CI runs every game test with it (`.github/workflows/check.yml`, `scripts/ci-sim-tests.sh`), with the game files from the private refs repo (`scripts/refresh-game-refs.sh`).
 
 Question: can a .NET 10 host on macOS (arm64) run the real game logic with Hot Cargo, so that game tests do not need the Windows PC?
 
@@ -113,6 +115,8 @@ Native libraries and missing files (`NativeSeams.cs`):
 12. `GameApp.CreateGraphicsManager` sets `TextureCache.LoadTexture` as the texture loader. The host replaces it: a missing PNG becomes a blank placeholder that is big enough for the requested mip levels.
 13. `SoundStream.FromFile` opens `*.wav`, `*.ogg` and `*.music` files, which exist only on the PC. A missing file becomes a short silent stereo stream.
 14. `ShipRoofRules.LoadRoofTextures` and `BuildRoofDecalsAtlas` list PNG folders. The host adds one placeholder for the default roof texture and skips the decal atlas. `DecalsManager.LoadSaveData` (ship paint) is skipped.
+15. `TextureData.SaveTo` encodes images with FreeImage. Co-op setup sends the ship icon as PNG bytes; the host writes a blank PNG with ImageSharp.
+16. Linux file names keep letter case, Windows and macOS ignore it. Some vanilla rules refer to a file with another case (`<tractor_Beam.rules>`). On Linux, `OTFile.GetReferencedFile` resolves such a reference to the file that matches without case (`CaseInsensitivePaths.cs`).
 
 The spike also had fallbacks for missing ship designs and name generator files. `scripts/pull-game.sh` now copies the real files, so the fallbacks are gone. A missing file now fails the run. Limit: `tar.exe` skips one design-contest ship whose name is outside the Windows ANSI code page. No test needs it.
 

@@ -16,6 +16,8 @@ CLONE="$(cd .. && pwd)/.game-refs"
 # No git hooks in this clone: a global post-checkout hook could link local machine files into it.
 if [[ ! -d "$CLONE/.git" ]]; then gh repo clone Yarden-zamir/cosmoteer-hot-cargo-game-refs "$CLONE" -- -q -c core.hooksPath=/dev/null; fi
 git -C "$CLONE" config core.hooksPath /dev/null
+# No global ignore rules either: a personal "build/" rule once dropped Data/codex/tutorials/build/*.rules.
+git -C "$CLONE" config core.excludesFile /dev/null
 git -C "$CLONE" pull -q --ff-only
 mkdir -p "$CLONE/Bin" "$CLONE/Data" "$CLONE/StandardMods"
 rsync -a --delete "$GAME/Bin/" "$CLONE/Bin/"
@@ -24,6 +26,9 @@ rsync -a --delete "$GAME/StandardMods/example_mod/" "$CLONE/StandardMods/example
 cp "$GAME/Bin/Cosmoteer.dll" "$GAME/Bin/HalflingCore.dll" "$CLONE/"
 # Only the game files: nothing else may enter this repo.
 git -C "$CLONE" add -A -- Bin Data StandardMods Cosmoteer.dll HalflingCore.dll
+# Every game file must be in the index; a missing one means an ignore rule or a failed add.
+MISSING="$(comm -23 <(cd "$CLONE" && find Bin Data StandardMods -type f | sort) <(git -C "$CLONE" -c core.quotePath=false ls-files -- Bin Data StandardMods | sort))"
+[[ -z "$MISSING" ]] || { echo "refresh-game-refs: not tracked:"; echo "$MISSING" | head; exit 1; }
 if git -C "$CLONE" diff --cached --quiet; then echo "refresh-game-refs: no change"; exit 0; fi
 git -C "$CLONE" diff --cached --stat | tail -1
 if [[ "${1:-}" != --push ]]; then echo "refresh-game-refs: run with --push to commit and push"; git -C "$CLONE" reset -q; exit 0; fi
