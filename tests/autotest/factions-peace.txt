@@ -12,7 +12,7 @@ maxhunters 1
 # Ally space: this system's controller is the corporation's ally.
 fa_roles here other
 expect fa_zone == 1
-spawnstage Patrol
+spawnstage Warning
 waitfor hunters >= 1 30
 hunternear 0 600
 dip_spawn ally 400
