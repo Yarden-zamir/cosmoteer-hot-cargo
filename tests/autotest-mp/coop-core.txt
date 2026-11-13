@@ -142,6 +142,10 @@ mp hc_shady_spring
 mp event smuggler_den
 waitfor hc_trap_state == 2 20
 expectevent smuggler_den
+# The fight can destroy a ship's control room (godmode cannot stop a one-hit kill); a ship without command becomes a wreck.
+# So the tactics check compares every ship that is still a human ship with a snapshot from just before the resync.
+mp tactics_snapshot
+wait 1
 save mpsave
 mpresync
 waitfor mpgames >= 2 120
@@ -150,13 +154,13 @@ expectevent smuggler_den
 expect hc_trap_state == 2
 expect stages >= 1
 expect heat >= 30
-expecttacticsany Defensive
-expecttacticsany HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
-expect tactics_any_auto == 2
+expect tactics_snapshot_kept >= 1
+expect tactics_snapshot_changed == 0
 on 1 waitfor active == 1 60
 on 1 expectevent smuggler_den
 on 1 expect hc_trap_state == 2
-on 1 expecttactics HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
+on 1 expect tactics_snapshot_kept >= 1
+on 1 expect tactics_snapshot_changed == 0
 
 step core.save-load
 # Back to the game setup with the connection kept, load the save (from before the resync) for both players, start.

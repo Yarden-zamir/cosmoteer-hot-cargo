@@ -45,7 +45,7 @@ public static class LossTimer
         Log.Info($"loss timer started ({run.T.Tech.LossGraceSeconds:0} s): {reason}");
         string text = string.Format(Strings.GetText("HotCargoTech/LossTimerStarted"), FormatTime(run.T.Tech.LossGraceSeconds));
         // A co-op tick can run on a worker thread, so the toast waits for the next frame.
-        Run.OnNextFrame(() => run.Game.Gui.ShowAreaName(text));
+        Run.OnNextFrame(() => Ux.UxKit.CenterText(run.Game, text));
     }
 
     static void Stop(Run run)

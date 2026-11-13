@@ -24,8 +24,9 @@ ev_comms station Sell a crate off the books
 expectevent off_books
 expect ev_carrier == 1
 expectcomms station Off the Books 1
+pick 1
 ev_mark
-ev_comms station Sell one crate
+ev_comms station Sell the crates
 expect ev_tech_gain == -1
 expect ev_money_gain > 0
 # Each ship offers each line once per run.

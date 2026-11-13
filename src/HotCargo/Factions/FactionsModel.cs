@@ -9,6 +9,18 @@ public enum Zone { Neutral, Ally, Shelter }
 /// </summary>
 public enum JumpKind { View, RelayWatched, RelayClear, Blind }
 
+/// <summary>
+/// Spec 1150: corporate ally space. The ally faction's military and civilian ships and the hunters (null: none live) are not enemies there,
+/// and the ally faction's ships take no hire contract.
+/// </summary>
+public readonly record struct HunterPeace(int AllyMilitary, int AllyCivilian, int? Hunter)
+{
+    public bool IsAllyFaction(int player) => player == AllyMilitary || player == AllyCivilian;
+
+    /// <summary>True when one player is the ally faction and the other is the hunters, in either order.</summary>
+    public bool Covers(int a, int b) => Hunter is { } h && ((IsAllyFaction(a) && b == h) || (IsAllyFaction(b) && a == h));
+}
+
 /// <summary>Pure math of the Factions area. No game types, so unit tests run on the Mac without the game.</summary>
 public static class FactionsModel
 {
@@ -53,6 +65,10 @@ public static class FactionsModel
         int offset = 1 + (int)(seed / (ulong)count % (ulong)(count - 1));
         return (ally, (ally + offset) % count);
     }
+
+    /// <summary>Spec 1150: the peace holds only in corporate ally space. Neutral space and shelter keep the vanilla relations.</summary>
+    public static HunterPeace? Peace(Zone zone, int allyMilitary, int allyCivilian, int? hunter) =>
+        zone == Zone.Ally ? new HunterPeace(allyMilitary, allyCivilian, hunter) : null;
 
     /// <summary>Spec 657: a station refuses when heat is at refuseHeat or more and its roll (0 to 1) is below the chance.</summary>
     public static bool Refuses(float heat, float refuseHeat, float chance, float roll) => heat >= refuseHeat && roll < chance;

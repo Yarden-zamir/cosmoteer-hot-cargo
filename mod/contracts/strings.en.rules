@@ -37,6 +37,8 @@ HotCargoContracts
 	AcceptPayFmt = "Accept (pay {0:N0})"
 	AcceptCannotPayFmt = "Fee {0:N0}: not enough money"
 	CannotPayFmt = "Not enough money for the contract fee ({0:N0})"
+	AcceptNoRoomFmt = "No free storage for the {0}"
+	NoRoomFmt = "No free storage slot for the {0}. Make room, then accept."
 
 	PanelTrailFmt = "{0} open contracts   trail +{1}/min"
 	PanelOpenFmt = "{0} open contracts   <gray>quiet up to {1}</gray>"
