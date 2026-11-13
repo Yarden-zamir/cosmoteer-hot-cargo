@@ -223,6 +223,7 @@ public static class Playthrough
             .FirstOrDefault() ?? throw new InvalidOperationException(
                 $"{station.Name} has no local fight to accept; offers: {string.Join(", ", list.Select(m => $"{m.MetatypeID} local={m.IsLocal} accept={m.CanAccept(sim)}"))}");
         _mission = pick;
+        WatchTargetRemoval(sim);
         run.Game.NetManager.EnqueueInput(new CommMissionsTab.MPAcceptMissionInput(CommMissionsTab.MissionSourceType.Ship, station, pick));
         Log.Info($"AUTOTEST playthrough: accepted {pick.MetatypeID} {pick.MissionID} '{Events.EventView.Plain(pick.Name.Text)}' at {station.Name}, {pick.GetDistanceToClosestObjective():0} away");
     }
@@ -257,6 +258,33 @@ public static class Playthrough
         Log.Info($"AUTOTEST playthrough: buy {resource}: queued {units - left} of {units} ({sources.Count} station sources, {sinks.Count} ship sinks)");
     }
 
+    static IEnumerable<ObjectiveTargetShip> TargetShips()
+    {
+        if (_mission is null) return [];
+        var objectives = new List<DefeatShipsObjective>();
+        _mission.GetObjectives(objectives, activeOnly: false);
+        return objectives.SelectMany(o => o.TargetShips);
+    }
+
+    /// <summary>Logs only: when a target ship leaves the sim, who removed it (stack) and what state it was in.</summary>
+    static void WatchTargetRemoval(SimRoot sim)
+    {
+        sim.Ships.Removed += (_, ship) =>
+        {
+            if (!TargetShips().Any(t => t.ShipID.Equals(ship.UniqueID))) return;
+            Errors.Guard("playthrough target removed", () =>
+            {
+                var player = TechAutotest.PlayerShip();
+                Log.Info($"AUTOTEST playthrough: target {ship.Metadata.PlainShipName} {ship.UniqueID} left the sim: junk={ship.IsJunk} significant={ship.IsSignificant} " +
+                         $"parts={ship.Parts.Count} away={ship.DetWorldCenter.DistanceTo(player.DetWorldCenter):0} stasisMode={sim.Mode.GetShipStasisMode(ship)}\n{Environment.StackTrace}");
+            });
+        };
+    }
+
+    static string TargetState(SimRoot sim) => string.Join("; ", TargetShips().Select(t =>
+        $"id={t.ShipID} node={(t.MapNodeID.Equals(sim.MapNode.UniqueID) ? "here" : t.MapNodeID.ToString())} alive={t.IsAlive} live={t.TargetShip is not null} " +
+        $"spawner={t.TargetSpawner?.GetType().Name ?? "none"} stasis={sim.Stasis[t.ShipID]?.GetType().Name ?? "none"} at={t.Location?.ToString() ?? "none"}"));
+
     static void Status(string label)
     {
         var run = Autotest.RequireRun();
@@ -267,6 +295,6 @@ public static class Playthrough
                  $"mission={_mission?.MetatypeID} {_mission?.Completion} target={(_mission?.GetClosestObjective(out float d) is null ? "none" : $"{d:0}")} " +
                  $"hostiles={run.Game.Sim.Ships.Count(s => s.IsEnemiesWith(ship) && !s.IsJunk)} " +
                  $"nearest hostile={run.Game.Sim.Ships.Where(s => s.IsEnemiesWith(ship) && !s.IsJunk).Select(s => s.DetWorldCenter.DistanceTo(ship.DetWorldCenter)).DefaultIfEmpty(-1).Min():0} " +
-                 $"order={ship.Commands.ConfirmedCommands.FirstOrDefault()?.GetType().Name}");
+                 $"order={ship.Commands.ConfirmedCommands.FirstOrDefault()?.GetType().Name} targets=[{TargetState(run.Game.Sim)}]");
     }
 }
