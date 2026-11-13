@@ -75,16 +75,29 @@ public static class Playthrough
         Autotest.Commands["pt_unlock"] = arg =>
             Game().NetManager.EnqueueInput(new CommTechsTab.MPBuyTechInput(new ID<TechRules>(arg), Station()));
         Autotest.Fields["pt_unlocked"] = () => Autotest.RequireRun().Mode.Techs.IsTechUnlocked(new ID<TechRules>("cosmoteer.hyperdrive_small")) ? 1 : 0;
-        // pt_buy <resource id> <amount>: the trade window, station to ship.
+        // pt_buy <timeout seconds> <resource id> <total> [<resource id> <total> ...]: the trade window, station to ship, until the ship
+        // stores each total. Vanilla cancels and refunds a transfer that the crew did not finish, for example when the ship chases an
+        // attacker out of trade range. A person then flies back and buys the rest: every 20 seconds, each missing resource with no
+        // transfer on its way is bought again, after a move order back to the picked station if the ship is not near it.
         Autotest.Commands["pt_buy"] = arg =>
         {
             var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length != 2) throw new InvalidOperationException("pt_buy needs: resource amount");
-            Buy(new ID<ResourceRules>(parts[0]), int.Parse(parts[1], CultureInfo.InvariantCulture));
+            if (parts.Length < 3 || parts.Length % 2 == 0) throw new InvalidOperationException("pt_buy needs: timeout resource total [resource total ...]");
+            var wants = parts.Skip(1).Chunk(2).Select(p => (Resource: new ID<ResourceRules>(p[0]), Total: int.Parse(p[1], CultureInfo.InvariantCulture))).ToList();
+            _target = _station ?? throw new InvalidOperationException("no picked station; run pt_goto station first");
+            double next = 0;
+            Autotest.WaitFor(() =>
+            {
+                var missing = wants.Where(w => Stored(w.Resource) < w.Total).ToList();
+                if (missing.Count == 0) return true;
+                double now = Halfling.App.Clock.Time.Seconds;
+                if (now < next) return false;
+                next = now + 20;
+                if (!Near()) GoTo("station");
+                else foreach (var w in missing.Where(w => !BuyPending(w.Resource))) Buy(w.Resource, w.Total - Stored(w.Resource));
+                return false;
+            }, double.Parse(parts[0], CultureInfo.InvariantCulture), $"the ship to store {string.Join(", ", wants.Select(w => $"{w.Total} {w.Resource}"))}");
         };
-        Autotest.Fields["pt_steel"] = () => Stored("steel");
-        Autotest.Fields["pt_coil"] = () => Stored("coil");
-        Autotest.Fields["pt_hyperium"] = () => Stored("hyperium");
         // pt_build <part id>: a blueprint part on a free spot next to the hull, confirmed like the build tool's button. Crew build it.
         Autotest.Commands["pt_build"] = arg =>
         {
@@ -203,6 +216,7 @@ public static class Playthrough
     static Cosmoteer.Game.GameRoot Game() => Autotest.RequireRun().Game;
 
     static ObjectID? _stationId;
+    static Func<Circle?>? _station;
 
     /// <summary>The station that pt_goto station picked. Far stations are in stasis, so the ship exists only near it.</summary>
     static MetaSpaceStation PickedStation()
@@ -223,11 +237,17 @@ public static class Playthrough
             ?? throw new InvalidOperationException("no operating station with missions in this system");
         _stationId = station.StationID;
         // A station in stasis has no hull to measure: 400 is a guess until it is live.
-        return () => PickedStation() is var s ? s.PhysicalShip?.DetWorldBoundingCircle ?? new Circle(s.DetWorldCenter, 400f) : null;
+        return _station = () => PickedStation() is var s ? s.PhysicalShip?.DetWorldBoundingCircle ?? new Circle(s.DetWorldCenter, 400f) : null;
     }
 
-    static int Stored(string resource) =>
-        TechAutotest.PlayerShip().Resources.GetResourceTotal(new ID<ResourceRules>(resource), includeStored: true, includeCarried: false);
+    static int Stored(string resource) => Stored(new ID<ResourceRules>(resource));
+
+    static int Stored(ID<ResourceRules> resource) =>
+        TechAutotest.PlayerShip().Resources.GetResourceTotal(resource, includeStored: true, includeCarried: false);
+
+    /// <summary>A buy of this resource is still on its way: the player ship owns the transfer job (MPMoveResourcesInput.GetJobOwner).</summary>
+    static bool BuyPending(ID<ResourceRules> resource) =>
+        TechAutotest.PlayerShip().Resources.ManualTransferJobs.Any(j => j.TradeType == TradeType.Buy && j.ResourceType == resource);
 
     static MetaFtlGate Relay()
     {

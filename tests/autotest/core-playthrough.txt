@@ -29,13 +29,10 @@ wait 20
 pt_status sold
 pt_unlock cosmoteer.hyperdrive_small
 waitfor pt_unlocked == 1 30
-pt_buy steel 40
-pt_buy coil 90
-waitfor pt_coil >= 90 120
+pt_buy 300 steel 40 coil 90
 pt_build cosmoteer.hyperdrive_small
 waitfor pt_drives == 1 240
-pt_buy hyperium 20
-waitfor pt_hyperium >= 20 120
+pt_buy 300 hyperium 20
 pt_status drive
 # The relay toward an unvisited system: fly there, right click it, wait for the drives, press ENGAGE.
 pt_goto relay 400
