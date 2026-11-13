@@ -33,8 +33,9 @@ public static class MpAutotest
     /// <summary>Desyncs that the game detected in this process (see DesyncPatch).</summary>
     public static int Desyncs { get; internal set; }
 
-    /// <summary>Distinct multiplayer games seen (a resync and a load replace the game).</summary>
-    static int _mpGames;
+    /// <summary>Distinct multiplayer games seen (a resync, a load and mprestart replace the game). Each game counts ticks from 0,
+    /// so the state lines carry it.</summary>
+    internal static int _mpGames;
     static GameRoot? _lastGame;
 
     /// <summary>Port for the networking start of mphost. Null keeps the game's port (35862 or --port).</summary>
@@ -441,8 +442,8 @@ public static class MpAutotest
                          $"human=[{string.Join(",", humans.Select(h => $"{h.Metadata.PlayerIndex}:{h.Parts.Count}"))}] rand={sim.Rand._a ^ sim.Rand._b:x}";
         var fields = StateMembers.Select(m => (m.Name, Hash: Hash(m.Name, m.Get(s), m.Type))).ToList();
         string all = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(string.Join(",", fields.Select(f => f.Hash)) + vanilla)), 0, 4);
-        Log.Info($"MPHASH tick={sim.Tick} all={all} heat={s.Heat:0.000} tech={s.FleetTech} result={s.Result} {vanilla}");
-        Log.Info($"MPFIELDS tick={sim.Tick} {string.Join(" ", fields.Select(f => $"{f.Name}={f.Hash}"))}");
+        Log.Info($"MPHASH game={_mpGames} tick={sim.Tick} all={all} heat={s.Heat:0.000} tech={s.FleetTech} result={s.Result} {vanilla}");
+        Log.Info($"MPFIELDS game={_mpGames} tick={sim.Tick} {string.Join(" ", fields.Select(f => $"{f.Name}={f.Hash}"))}");
     }
 
     /// <summary>Runs a test command inside the sim on every machine, for "mp" and "as". Allowed only in autotests.</summary>
@@ -526,7 +527,7 @@ static class DesyncPatch
         }
         MpAutotest.Desyncs++;
         var s = Run.Current?.State;
-        Log.Error($"MP DESYNC at input tick {__instance._curInputTick}, sim tick={Autotest.Game?.Sim.Tick} (host={__instance.IsHost}); the game resyncs from the host. " +
+        Log.Error($"MP DESYNC at input tick {__instance._curInputTick}, game={MpAutotest._mpGames} sim tick={Autotest.Game?.Sim.Tick} (host={__instance.IsHost}); the game resyncs from the host. " +
                   $"Hot Cargo state: heat={s?.Heat:0.000} stages={s?.StagesStarted} sector={s?.SectorIndex} tech={s?.FleetTech} result={s?.Result}");
     }
 }

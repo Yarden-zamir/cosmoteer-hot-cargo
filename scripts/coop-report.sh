@@ -8,9 +8,12 @@ HOST="$(tr -d '\r' < "${1:?usage: coop-report.sh <host log> <client log>}")"
 CLIENT="$(tr -d '\r' < "${2:?usage: coop-report.sh <host log> <client log>}")"
 REASONS=()
 
-# Sim ticks of the step starts ("mpstep" runs in the sim on both machines): "tick step" lines.
-STEP_TICKS="$(sed -n 's/.*AUTOTEST sim tick \([0-9]*\): mpstep \([^ ]*\).*/\1 \2/p' <<<"$HOST")"
-step_at() { awk -v t="$1" '$1 <= t { s = $2 } END { print (s == "" ? "(before the first step)" : s) }' <<<"$STEP_TICKS"; }
+# Step starts by game and sim tick ("mpstep" runs in the sim on both machines): "game tick step" lines. Each game (a resync,
+# a load, mprestart) counts ticks from 0, so a tick names a step only together with its game number.
+STEP_TICKS="$(awk '/AUTOTEST MP game [0-9]+:/ { g = $6 + 0 }
+  /AUTOTEST sim tick [0-9]+: mpstep / { t = $6; sub(":", "", t); print g, t, $8 }' <<<"$HOST")"
+# The step that ran at game $1, sim tick $2: the last step that started before it, in this game or an earlier one.
+step_at() { awk -v g="$1" -v t="$2" '$1 < g || ($1 == g && $2 <= t) { s = $3 } END { print (s == "" ? "(before the first step)" : s) }' <<<"$STEP_TICKS"; }
 
 if ! grep -q 'AUTOTEST MP game' <<<"$CLIENT"; then
   REASONS+=("join failed")
@@ -33,23 +36,27 @@ DESYNCS="$( { grep -h 'MP DESYNC' <<<"$HOST"; grep -h 'MP DESYNC' <<<"$CLIENT"; 
 if [[ -n "$DESYNCS" ]]; then
   REASONS+=("desync")
   while read -r line; do
-    tick="$(sed -n 's/.*sim tick=\([0-9]*\).*/\1/p' <<<"$line")"
-    echo "   desync at sim tick ${tick:-?}, step $( [[ -n "$tick" ]] && step_at "$tick" || echo '?')"
+    game="$(sed -n 's/.*game=\([0-9]*\).*/\1/p' <<<"$line")" tick="$(sed -n 's/.*sim tick=\([0-9]*\).*/\1/p' <<<"$line")"
+    echo "   desync in game ${game:-?} at sim tick ${tick:-?}, step $( [[ -n "$game" && -n "$tick" ]] && step_at "$game" "$tick" || echo '?')"
   done <<<"$DESYNCS"
 fi
 
 # The state hashes of the ticks that both machines logged. The first difference names the members that differ.
-hashes() { sed -n 's/.*MPHASH \(tick=[0-9]* .*\)/\1/p' <<<"$1" | sort -u; }
-FIRST="$(comm -3 <(hashes "$HOST" | sort) <(hashes "$CLIENT" | sort) | sed 's/^\t//' | sed -n 's/^tick=\([0-9]*\) .*/\1/p' | sort -n | uniq -d | head -1)"
-COMMON="$(comm -12 <(hashes "$HOST" | sed 's/ .*//' | sort -u) <(hashes "$CLIENT" | sed 's/ .*//' | sort -u) | wc -l | tr -d ' ')"
-echo "== state hash: $COMMON common ticks compared"
+# Lines are keyed by "game=N tick=T".
+hashes() { sed -n 's/.*MPHASH \(game=[0-9]* tick=[0-9]* .*\)/\1/p' <<<"$1" | sort -u; }
+keys() { hashes "$1" | cut -d' ' -f1,2 | sort -u; }
+# Keys that both machines logged with different lines, in game and tick order.
+FIRST="$(comm -3 <(hashes "$HOST") <(hashes "$CLIENT") | sed 's/^\t//' | cut -d' ' -f1,2 | sort | uniq -d \
+  | sed 's/game=\([0-9]*\) tick=\([0-9]*\)/\1 \2/' | sort -n -k1,1 -k2,2 | head -1)"
+echo "== state hash: $(comm -12 <(keys "$HOST") <(keys "$CLIENT") | wc -l | tr -d ' ') common ticks compared"
 if [[ -n "$FIRST" ]]; then
+  read -r GAME TICK <<<"$FIRST"
   REASONS+=("state differs")
-  echo "   first difference at sim tick $FIRST, step $(step_at "$FIRST")"
-  fields() { grep -m1 "MPFIELDS tick=$FIRST " <<<"$1" | sed 's/.*MPFIELDS tick=[0-9]* //' | tr ' ' '\n'; }
+  echo "   first difference in game $GAME at sim tick $TICK, step $(step_at "$GAME" "$TICK")"
+  fields() { grep -m1 "MPFIELDS game=$GAME tick=$TICK " <<<"$1" | sed 's/.*MPFIELDS game=[0-9]* tick=[0-9]* //' | tr ' ' '\n'; }
   echo "   members that differ: $(comm -3 <(fields "$HOST" | sort) <(fields "$CLIENT" | sort) | sed 's/^\t//; s/=.*//' | sort -u | tr '\n' ' ')"
-  grep -m1 "MPHASH tick=$FIRST " <<<"$HOST" | sed 's/.*MPHASH/   host:  /'
-  grep -m1 "MPHASH tick=$FIRST " <<<"$CLIENT" | sed 's/.*MPHASH/   client:/'
+  grep -m1 "MPHASH game=$GAME tick=$TICK " <<<"$HOST" | sed 's/.*MPHASH/   host:  /'
+  grep -m1 "MPHASH game=$GAME tick=$TICK " <<<"$CLIENT" | sed 's/.*MPHASH/   client:/'
 fi
 
 # A member that the hash cannot serialize is a gap that hides desyncs in it.
