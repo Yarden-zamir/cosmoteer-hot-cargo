@@ -343,4 +343,14 @@ public class ShipAiModelTests
         Assert.Equal(2, parsed.Skipped);
         Assert.Equal("A B", ShipAiModel.CleanPresetName("  A\tB\n "));
     }
+
+    [Fact]
+    public void Heat_stage_choices_and_limit_follow_the_number_of_heat_stages()
+    {
+        Assert.Equal([1, 2, 3], ShipAiModel.ChoicesOf(ParamKind.Stage, 3));
+        Assert.Equal([1, 2, 3, 4, 5], ShipAiModel.ChoicesOf(ParamKind.Stage, 5));
+        var rows = ShipAiModel.Decode("HC1:HeatStageAtLeast=4>HoldPosition");
+        Assert.NotNull(ShipAiModel.StageError(rows, 3));
+        Assert.Null(ShipAiModel.StageError(rows, 4));
+    }
 }

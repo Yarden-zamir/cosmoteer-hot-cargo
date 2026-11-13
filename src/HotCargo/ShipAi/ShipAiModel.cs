@@ -133,6 +133,12 @@ public static class ShipAiModel
     public const int MaxRows = 16;
     public const int MaxTerms = 8;
     public const int MaxGroup = 10;
+    /// <summary>
+    /// The highest stage that stored tactics text may name. The real limit is the number of heat stages (Heat.Stages), which the
+    /// tactics input checks (StageError). Stored text keeps this wider bound, so a save or design still loads after the stage table
+    /// gets shorter; such a term never holds.
+    /// </summary>
+    public const int MaxStage = 10;
     public const string Prefix = "HC1:";
 
     public static ActKind KindOf(Act act) => act switch
@@ -180,23 +186,36 @@ public static class ShipAiModel
         ParamKind.ShipClass => (0, Enum.GetValues<ShipClass>().Length - 1),
         ParamKind.Group => (0, MaxGroup),
         ParamKind.GuardWho => (0, Enum.GetValues<GuardWho>().Length - 1),
-        ParamKind.Stage => (1, 10),
+        ParamKind.Stage => (1, MaxStage),
         ParamKind.Seconds => (0, 3600),
         ParamKind.Side => (0, Enum.GetValues<Side>().Length - 1),
         ParamKind.Station => (0, Enum.GetValues<StationPick>().Length - 1),
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
     };
 
-    /// <summary>The values that the editor offers for a parameter. A row with another value (pasted text) shows it too.</summary>
-    public static int[] ChoicesOf(ParamKind kind) => kind switch
+    /// <summary>
+    /// The values that the editor offers for a parameter. stages: the number of heat stages (Heat.Stages). A row with another value
+    /// (pasted text) shows it too.
+    /// </summary>
+    public static int[] ChoicesOf(ParamKind kind, int stages) => kind switch
     {
         ParamKind.Percent => [5, 10, 20, 25, 30, 40, 50, 60, 75, 90, 95],
         ParamKind.Distance => [300, 500, 800, 1000, 1500, 2000, 3000, 5000, 10000, 20000],
         ParamKind.Count => [1, 2, 3, 4, 5, 6, 8],
-        ParamKind.Stage => [1, 2, 3, 4, 5],
+        ParamKind.Stage => Enumerable.Range(1, Math.Clamp(stages, 1, MaxStage)).ToArray(),
         ParamKind.Seconds => [10, 20, 30, 60, 90, 120],
         _ => Enumerable.Range(RangeOf(kind).Min, RangeOf(kind).Max - RangeOf(kind).Min + 1).ToArray(),
     };
+
+    /// <summary>Spec 413: an error for a "heat stage at least" term above the number of heat stages, or null when all fit.</summary>
+    public static string? StageError(IEnumerable<TacticRow> rows, int stages)
+    {
+        foreach (var row in rows)
+            foreach (var t in row.Terms)
+                if (t.Cond == Cond.HeatStageAtLeast && t.Param > stages)
+                    return $"HeatStageAtLeast={t.Param}: the run has {stages} heat stages";
+        return null;
+    }
 
     /// <summary>The parameter that a new term or action (or a changed condition or action) starts with.</summary>
     public static int DefaultParam(ParamKind kind) => kind switch
