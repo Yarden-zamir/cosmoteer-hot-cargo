@@ -117,8 +117,8 @@ if [[ "$AUTOTEST" == yes ]]; then
     scripts/autotest-all.sh 400 2>&1 | tee "$TEST_OUT" || rc=$?
   else
     step "affected autotests"
-    # AUTOTEST_MAC=0: the PC suite stays the merge gate until the Mac sim has a track record.
-    AUTOTEST_MAC=0 COMMITTED_ONLY=1 scripts/autotest-affected.sh origin/main 2>&1 | tee "$TEST_OUT" || rc=$?
+    # AUTOTEST_SIM=0: the PC suite stays the merge gate until the headless sim has a track record.
+    AUTOTEST_SIM=0 COMMITTED_ONLY=1 scripts/autotest-affected.sh origin/main 2>&1 | tee "$TEST_OUT" || rc=$?
   fi
   if [[ $rc -ne 0 ]]; then
     FAILED="$(grep '^== failed: ' "$TEST_OUT" | tail -1 || true)"

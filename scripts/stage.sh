@@ -33,7 +33,8 @@ B="$OUT/build"
 # A dev build carries its git version (for example 0.4.0-3-g1a2b3c4), so the title screen shows which build runs.
 # package.sh sets the release version the same way.
 DEV_VERSION="$(git -C "$REPO_ROOT" describe --tags --always --dirty)"
-sed -i '' "s/^Version = .*/Version = ${DEV_VERSION#v}/" "$B/hot_cargo/mod.rules"
+# -i.bak works with BSD sed (macOS) and GNU sed (Linux, CI).
+sed -i.bak "s/^Version = .*/Version = ${DEV_VERSION#v}/" "$B/hot_cargo/mod.rules" && rm -f "$B/hot_cargo/mod.rules.bak"
 mkdir -p "$B/hot_cargo/csharp" "$B/loader"
 cp "$BUILD/HotCargo.dll" "$BUILD/HotCargo.pdb" "$BUILD/HotCargo.xml" "$BUILD/0Harmony.dll" "$B/hot_cargo/csharp/"
 cp "$LOADER" "$REPO_ROOT/src/HotCargo.Loader/VERSION" "$B/loader/"

@@ -30,7 +30,7 @@ static void Run()
     Boot.App();
     Out.Line("GameApp constructed");
     // GameApp.Main reads --cores; the host skips Main. Without it every run starts one spinning helper thread per core,
-    // and parallel runs (scripts/autotest-mac.sh) starve each other.
+    // and parallel runs (scripts/autotest-sim.sh) starve each other.
     int cores = Array.IndexOf(argv, "--cores");
     if (cores >= 0) Halfling.Performance.FastParallel.ThreadCount = int.Parse(argv[cores + 1]) - 1;
     if (at < 0)
@@ -39,9 +39,9 @@ static void Run()
         Out.Line($"ships in rules: {rules.Ships.Length}");
         return;
     }
-    // Co-op runs (scripts/autotest-mac-mp.sh) keep the real-time clock: network requests and lockstep timing read the game
+    // Co-op runs (scripts/autotest-sim-mp.sh) keep the real-time clock: network requests and lockstep timing read the game
     // clock, and the fixed step runs it many times faster than the other process and the network.
-    if (Environment.GetEnvironmentVariable("MAC_SIM_REALTIME") != "1") Boot.FixedStepClock();
+    if (Environment.GetEnvironmentVariable("SIM_REALTIME") != "1") Boot.FixedStepClock();
     var sw = System.Diagnostics.Stopwatch.StartNew();
     // The log decides, like on the PC: an exception after AUTOTEST DONE (shutdown, for example a cancelled stasis preload
     // in StasisDoodadSpawner.CancelPreload) is no failure. An exception during the script leaves no AUTOTEST DONE.

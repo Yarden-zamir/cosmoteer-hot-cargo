@@ -14,12 +14,15 @@ STATE_DIR="${HOT_CARGO_STATE:-$(cd "$REPO_ROOT/.." && pwd)/.state}"
 LOG_DIR="${HOT_CARGO_LOG_DIR:-$STATE_DIR/logs/$(basename "$REPO_ROOT")}"
 mkdir -p "$LOG_DIR"
 
+# Modification time of a file in seconds: GNU stat (Linux, CI) first, then BSD stat (macOS).
+mtime() { stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null; }
+
 # True when a lock folder's owner process is gone. A lock with no pid yet is being created, so it is stale only when it
 # is older than 60 s (its owner died between mkdir and the pid write; otherwise it would block a slot forever).
 lock_is_stale() {
   local pid; pid="$(cat "$1/pid" 2>/dev/null)"
   if [[ -n "$pid" ]]; then ! kill -0 "$pid" 2>/dev/null; return; fi
-  [[ -d "$1" ]] && (( $(date +%s) - $(stat -f %m "$1" 2>/dev/null || echo 0) > 60 ))
+  [[ -d "$1" ]] && (( $(date +%s) - $(mtime "$1" || echo 0) > 60 ))
 }
 # Writes this shell's pid into a lock folder in one rename, so a reader never sees an empty pid file.
 lock_write_pid() { echo $$ > "$1/pid.tmp" && mv -f "$1/pid.tmp" "$1/pid"; }
@@ -35,7 +38,7 @@ slot_lock() { echo "$LOCK_DIR/hot_cargo_slot_${1#t}.lock"; }
 clean_stale_locks() {
   local mutex="$LOCK_DIR/hot_cargo_lock_cleanup.lock" l
   if ! mkdir "$mutex" 2>/dev/null; then
-    if (( $(date +%s) - $(stat -f %m "$mutex" 2>/dev/null || date +%s) > 30 )); then rm -rf "$mutex"; fi
+    if (( $(date +%s) - $(mtime "$mutex" || date +%s) > 30 )); then rm -rf "$mutex"; fi
     return 0
   fi
   for l in "$@"; do if [[ -d "$l" ]] && lock_is_stale "$l"; then rm -rf "$l"; fi; done
@@ -55,7 +58,7 @@ PLAYING_CACHE=/tmp/hot_cargo_player_playing
 usable_slots() {
   local now age
   now="$(date +%s)"
-  age=$(( now - $(stat -f %m "$PLAYING_CACHE" 2>/dev/null || echo 0) ))
+  age=$(( now - $(mtime "$PLAYING_CACHE" || echo 0) ))
   if [[ $age -gt 60 ]]; then
     # A failed PC call counts as playing, so a broken link never lets tests load the player's game.
     local out
@@ -198,7 +201,7 @@ slot_log() {
   )
 }
 
-# The two scripts of a co-op session (any runner: PC slots, later the Mac sim). Args: <session file> <port>.
+# The two scripts of a co-op session (any runner: PC slots, later the headless sim). Args: <session file> <port>.
 # Host: the session file without its "client:" lines. Client: those lines (settings before the join), then client.txt.
 # "{PORT}" becomes the port. The first line names the run (telename <session>.host / .client); a pass needs it in the log.
 coop_host_script() { echo "telename $(basename "$1" .txt).host"; grep -v '^client:' "$1" | sed "s/{PORT}/$2/g"; }

@@ -22,9 +22,9 @@ src/HotCargo/
   Dev/Autotest.cs          headless test commands
   Telemetry/               session telemetry files (TELEMETRY.md); read-only hooks and patches
 tests/HotCargo.Tests/      fast unit tests for the pure model files
-tests/autotest/            game tests that scripts/autotest.sh runs on the PC and scripts/autotest-mac.sh runs in the Mac sim
-scripts/                   pull-game, stage, deploy, run, stop, logs, autotest, autotest-mac, suite-wait, integrate, pull-telemetry, release
-tools/mac-sim/             headless host that runs the game loop and autotests on the Mac (docs/mac-sim-spike.md)
+tests/autotest/            game tests that scripts/autotest.sh runs on the PC and scripts/autotest-sim.sh runs in the headless sim
+scripts/                   pull-game, stage, deploy, run, stop, logs, autotest, autotest-sim, suite-wait, integrate, pull-telemetry, release
+tools/headless-sim/             headless host that runs the game loop and autotests on the Mac (docs/headless-sim.md)
 tools/telemetry/           telemetry analysis (uv project): markdown and HTML reports
 ```
 
