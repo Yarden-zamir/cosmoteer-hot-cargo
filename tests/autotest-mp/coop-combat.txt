@@ -67,8 +67,9 @@ expect tagcount == 6
 step missions.escort
 # Offers and sides, then the escort: the freighter steers to the jump point when a player is near, and arrival completes it.
 mp hc_generate all
-# The mp input runs a few ticks later, and the system can already offer an escort, so wait for the assault allies.
-waitfor hc_allies >= 2 20
+# The mp input runs a few ticks later, and the system can already hold these groups, so wait for a mark sent after it.
+mp mpmark 69
+waitfor mpmark >= 69 20
 expect hc_offers_escort >= 1
 expect hc_allies_vs_player == 0
 expect hc_allies_vs_target >= 2
