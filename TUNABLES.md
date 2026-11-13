@@ -55,6 +55,21 @@ A value stays delayed only when an earlier change would be wrong or would break 
 - A new co-op run starts with the defaults. The host's file arrives as an input on the first frame, so the starting vault and the first system's offers use the defaults (spec 60). Later changes of the host's file reach every machine (spec 850). A client's file has no effect.
 - Test commands that change a tunable in place (`ev_set`, `sc_set`, `ux`, `onboarding`, `contract_set`, `mech_set`, `aiset`, `buyer sectors`, `maxhunters`, `tacticlog`): a later menu change or file reload replaces the tunables and drops those edits. Tests that mix the two set every value through the menu.
 
+## A slow co-op client
+
+Co-op runs in lockstep: every machine runs every sim tick, so the game runs at the speed of the slowest machine (spec 42). The host's tunables apply on every machine. When one player's game stutters, the host changes these values in the settings menu, from the top down. Numbers: test `telemetry-stress` (about 230 ships), Hot Cargo time on one machine.
+
+| Setting | Effect | Cost it saves |
+|---|---|---|
+| Enemy ships per extra player (new career screen) | Lower: fewer hostile ships with 3 or more players (spec 330). | Ship count drives most of the vanilla sim and draw time. The largest saving. |
+| `Hunters.MaxLiveHunters` | Lower: fewer hunters at once (scaled with the player count, spec 334). | Fewer ships, as above. |
+| `Ux.HudRefreshSeconds` | Raise from 0.25 to 0.5 or 1: HUD texts and the event window refresh less often (spec 872). | Small; the HUD costs well under 0.1 ms per frame at 0.25. |
+| `Tech.TechMarkers`, `Ux.EdgeLabels`, `Ux.StationBadges`, `Ux.DamagePings` | Off: no tech tag on blips, no edge label alignment, no comms badges, no hit pings. | Each runs in every frame, for every ship blip or own ship: about 0.1 to 0.2 µs each. |
+| `Worlds.CurrentArrows` | Off: no flow arrows over a current. | Under 1 µs per frame. |
+| `Invariants.Enabled` | Off: no rule checks (spec 1000). | About 6 µs per sim tick. Keep it on: playtests need its ERROR lines. |
+
+The slow player also lowers the vanilla graphics settings on their own machine (resolution, effects, frame limit). These are not tunables and change only that machine.
+
 ## Screenshots
 
 `tests/screens/tunables-menu.txt` takes these (main slot only, see UX.md "Screenshots"):
