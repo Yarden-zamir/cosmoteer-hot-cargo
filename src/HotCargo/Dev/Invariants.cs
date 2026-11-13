@@ -91,20 +91,22 @@ public static class Invariants
     }
 
     /// <summary>
-    /// Spec 994, 995: a Hot Cargo hostile ship attacks the players only after its trigger. A chain ship (tag hc_ch_*) waits until
-    /// a chain stage mission of this system is accepted. A hunter waits until heat is above 0 and a stage started, or a hunter wave spawned.
+    /// Spec 994, 995: a Hot Cargo hostile ship attacks the players only after its trigger. A chain ship (tag hc_ch_*) with the hunter AI
+    /// waits until a chain mission is in progress: a stage mission of this system that the players accepted, or a Return or Arrival
+    /// mission, which goes straight to the log. A chain guard with the vanilla Normal AI defends its post like a vanilla bounty guard,
+    /// so it does not count. A hunter waits until heat is above 0 and a stage started, or a hunter wave spawned.
     /// Limit: "attacks" means an attack command on a human ship. A weapon that fires at a ship in range without a command
     /// does not count. Revisit if a playtest shows hits from ships that have no attack command.
     /// </summary>
     static void HostilesWaitForTrigger(Run run, SimRoot sim)
     {
-        bool chainAccepted = ChainStageAccepted(run, sim);
+        bool chainAccepted = ChainMissionInProgress(run);
         // A wave in this session (a stage, a strike wave, an informant, an event or a test command) is the trigger too.
         bool hunterTrigger = (run.State.Heat > 0f && run.State.StagesStarted > 0) || Hunters.HunterSpawner.WavesSpawned > 0;
         foreach (Ship ship in sim.Ships)
         {
             if (ship.IsHumanPlayerShip || ship.IsJunk || ship.Tags is not { Count: > 0 } tags) continue;
-            bool chain = !chainAccepted && tags.Any(t => t.ToString().StartsWith("hc_ch_", StringComparison.Ordinal));
+            bool chain = !chainAccepted && Ai.AiGate.IsHunterAi(ship) && tags.Any(t => t.ToString().StartsWith("hc_ch_", StringComparison.Ordinal));
             bool hunter = !hunterTrigger && ship.HasTag(Hunters.HunterSpawner.HunterTag);
             if (!chain && !hunter) continue;
             if (AttackTarget(ship) is not { } target) continue;
@@ -118,65 +120,45 @@ public static class Invariants
     static Ship? AttackTarget(Ship ship) =>
         ship.Commands.ConfirmedCommands.OfType<IAttackCommand>().Select(c => c.Target).FirstOrDefault(t => t is { IsHumanPlayerShip: true });
 
-    static bool ChainStageAccepted(Run run, SimRoot sim)
-    {
-        var node = sim.NodeId();
-        foreach (var c in run.State.Chains.Instances)
-            if (c.NodeId.Equals(node) && c.MissionId is { } id
-                && run.Mode.Missions.Any(m => m.MissionID.Equals(id) && m.Completion == CompletionState.InProgress))
-                return true;
-        return false;
-    }
+    /// <summary>Every chain mission has the HotCargoChain metatype: stage missions that the players accepted, and Return and Arrival missions.</summary>
+    static bool ChainMissionInProgress(Run run) =>
+        run.Mode.Missions.Any(m => m.MetatypeID == Chains.ChainLibrary.Metatype && m.Completion == CompletionState.InProgress);
 
-    static readonly ID<DoodadRules> TargetArea = new("cosmoteer.poi_target_area");
+    static readonly HashSet<ObjectID> _missionMarkers = [];
     static readonly Dictionary<ObjectID, int> _strayMarkerChecks = [];
 
     /// <summary>
-    /// Spec 996: a mission marker (a shown target area POI) belongs to a mission in progress or an offer. A marker without one for two checks
-    /// in a row stayed after its mission ended. Limit: only the target area type counts, the marker type that Hot Cargo missions use.
+    /// Spec 996: a mission marker (a target area marker that a mission owns, MissionMarkers.Of) goes with its mission. A marker that a
+    /// mission owned at an earlier check and that no mission in progress or offer owns for two checks in a row stayed after its mission
+    /// ended. Map rings that a mission only uses (belt passes) are never mission markers.
+    /// Limit: a marker whose mission ends before its first check is not seen. Revisit if a mission can end within a second of its offer.
     /// </summary>
     static void MarkersEndWithMission(Run run, SimRoot sim)
     {
+        var owned = run.Mode.Missions.Where(m => m.Completion == CompletionState.InProgress)
+            .Concat(Contracts.ContractBook.Offers(sim).Select(o => o.Mission)).SelectMany(Missions.MissionMarkers.Of).ToHashSet();
+        _missionMarkers.UnionWith(owned);
         var seen = new HashSet<ObjectID>();
-        var offers = Contracts.ContractBook.Offers(sim).Select(o => o.Mission).ToList();
-        foreach (Doodad d in sim.Doodads)
+        foreach (var id in _missionMarkers.ToList())
         {
-            if (d is not POIDoodad poi || poi.Rules.ID != TargetArea || (!poi.IsExplored && poi.IsUndiscovered)) continue;
-            if (run.Mode.Missions.Any(m => m.Completion == CompletionState.InProgress && Owns(m, poi)) || offers.Any(m => Owns(m, poi))) continue;
-            seen.Add(poi.UniqueID);
-            int n = _strayMarkerChecks.GetValueOrDefault(poi.UniqueID) + 1;
-            _strayMarkerChecks[poi.UniqueID] = n;
+            if (sim.Doodads[id] is not POIDoodad poi || poi.Rules.ID != Missions.MissionMarkers.TargetArea)
+            {
+                // Gone, or a marker of another system (object IDs belong to one system).
+                if (sim.Doodads[id] is null) continue;
+                _missionMarkers.Remove(id);
+                continue;
+            }
+            if (owned.Contains(id)) continue;
+            seen.Add(id);
+            int n = _strayMarkerChecks.GetValueOrDefault(id) + 1;
+            _strayMarkerChecks[id] = n;
             if (n < 2) continue;
             var ended = run.Mode.Missions.Where(m => m.Completion != CompletionState.InProgress).Select(m => $"{m.MetatypeID} {m.Completion}");
-            Fail("mission_marker", poi.UniqueID.ToString(),
-                $"marker {poi.UniqueID} ({poi.XmlSafeCustomName ?? poi.Rules.ID.ToString()}) at {poi.WorldLocation} belongs to no mission in progress; ended missions: [{string.Join(", ", ended)}]");
+            Fail("mission_marker", id.ToString(),
+                $"marker {id} ({poi.XmlSafeCustomName ?? poi.Rules.ID.ToString()}) at {poi.WorldLocation} belongs to no mission in progress; ended missions: [{string.Join(", ", ended)}]");
         }
         foreach (var id in _strayMarkerChecks.Keys.Where(k => !seen.Contains(k)).ToList()) _strayMarkerChecks.Remove(id);
     }
-
-    /// <summary>
-    /// A mission owns a marker when an objective claims it (IsPOIAssociated) or names it as its POI (POIDoodadID).
-    /// Vanilla DefeatShips stops its claim while a target is on radar, so the claim alone misses a bounty in a fight.
-    /// The four types with POIDoodadID and the two containers are every such type in the 0.30.5a objectives.
-    /// </summary>
-    static bool Owns(Mission m, POIDoodad poi) =>
-        m.IsPOIAssociated(poi) || m.Objectives.SelectMany(Flatten).Any(o => PoiOf(o) is { } id && id.Equals(poi.UniqueID));
-
-    static IEnumerable<Objective> Flatten(Objective o) => o switch
-    {
-        AnyOrderObjective a => a.SubObjectives.SelectMany(Flatten).Prepend(o),
-        SequentialObjective q => q.SubObjectives.SelectMany(Flatten).Prepend(o),
-        _ => [o],
-    };
-
-    static ObjectID? PoiOf(Objective o) => o switch
-    {
-        DefeatShipsObjective d => d.POIDoodadID,
-        ReceiveRewardsObjective r => r.POIDoodadID,
-        ProtectShipsObjective p => p.POIDoodadID,
-        GotoShipObjective g => g.POIDoodadID,
-        _ => null,
-    };
 
     /// <summary>
     /// Spec 103, 997: rivals are symmetric. When accepting A dismisses B, accepting B dismisses A. One offer can sit in several lists

@@ -33,7 +33,7 @@ namespace HotCargo.Missions;
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
 [SerialDerivedType(TypeName = "HotCargoEscort")]
-internal sealed class EscortObjective : Objective
+internal sealed class EscortObjective : Objective, IMissionMarkers
 {
     [ReflectiveSerialization(Explicit = true)]
     [SerialDerivedType(TypeName = "HotCargoEscort")]
@@ -105,6 +105,8 @@ internal sealed class EscortObjective : Objective
     [Serialize] public Vector2 Destination { get; private set; }
     [Serialize] public float ArrivalRadius { get; private set; }
     [Serialize(Optional = true)] public ObjectID? DestinationPoiID { get; private set; }
+
+    IEnumerable<ObjectID> IMissionMarkers.MarkerIds => DestinationPoiID is { } id ? [id] : [];
     [Serialize(Optional = true)] public int Tier { get; private set; }
     /// <summary>Where the escort started. The ambush springs at a share of the route from here.</summary>
     [Serialize(Optional = true)] public Vector2 Start { get; private set; }

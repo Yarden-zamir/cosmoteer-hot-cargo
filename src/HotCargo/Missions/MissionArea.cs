@@ -29,6 +29,7 @@ public static class MissionArea
 
     public static void Register()
     {
+        MissionMarkers.Register();
         foreach (var (name, metatype) in Metatypes)
         {
             var id = new ID<MissionMetatype>(metatype);

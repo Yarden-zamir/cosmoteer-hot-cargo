@@ -161,6 +161,7 @@ public static class ContractBook
             if (run.T.Contracts.RivalsEnabled && terms.RivalGroup.Length > 0 && openGroups.Contains(terms.RivalGroup))
             {
                 list.RemoveMission(m);
+                Missions.MissionMarkers.RemoveOf(run, sim, m, "dismissed");
                 Log.Info($"contracts: dismissed offer {m.MetatypeID} {m.MissionID}, it rivals an open contract");
                 continue;
             }
@@ -221,6 +222,7 @@ public static class ContractBook
                 if (o.MissionID != m.MissionID && Find(run, o)?.RivalGroup == terms.RivalGroup)
                 {
                     list.RemoveMission(o);
+                    Missions.MissionMarkers.RemoveOf(run, sim, o, "dismissed");
                     dismissed[o.MissionID] = o.Name.Text;
                 }
         bool informant = terms.InformantChance > 0 && sim.Rand.Single() < terms.InformantChance;
