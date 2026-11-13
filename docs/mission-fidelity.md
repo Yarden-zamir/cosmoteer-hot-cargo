@@ -80,7 +80,7 @@ Checked and true to the text: Convoy Duty, Joint Strike, Drone Siege, Sunside Or
 
 | # | State |
 |---|---|
-| 1 | Fixed: `events-courier-handover`, `events-courier-lost`, co-op `courier` |
+| 1 | Fixed: `events-courier`, `events-courier-handover`, `events-courier-lost`, co-op step `events.courier` (coop-economy) |
 | 2 | Fixed: `chains-extraction` |
 | 3 | Fixed: `chains-blackbox` |
 | 4 | Fixed: `mechanics-prototype` |
