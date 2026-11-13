@@ -219,6 +219,5 @@ internal static class AutonomyAutotest
         _shipName = tokens[0];
         Log.Info($"AUTOTEST auto_build {tokens[0]} id={ship.UniqueID} parts={ship.Parts.Count} crew={ship.Crew.Assigned.Count} " +
                  $"autonomous={Autonomous.IsAutonomous(ship)} human={ship.IsHumanPlayerShip} at {ship.WorldCenter}");
-        Autotest.Wait(1);
     }
 }

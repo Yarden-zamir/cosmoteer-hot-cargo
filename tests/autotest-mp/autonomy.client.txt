@@ -1,0 +1,13 @@
+# Co-op autonomous ships, client side: the client sees the host's autonomous ships do the same work, with no desync.
+mpjoin 127.0.0.1:{PORT}
+mpready
+waitfor active == 1 60
+waitfor tactics_any_auto >= 2 120
+auto_ship Looter
+waitfor auto_money_gain > 0 400
+auto_ship Miner
+waitfor auto_manned == 1 60
+waitfor auto_salvage_jobs >= 1 300
+waitfor mpmark >= 1 400
+expect desyncs == 0
+quit

@@ -6,6 +6,7 @@ ev_set Enabled false
 godmode on
 shipai Log on
 auto_build Drone player yarden_zamir.computer@2,0,1 cosmoteer.mining_laser_small@3,0,1 yarden_zamir.targeted_reactor@2,2 cosmoteer.storage_2x2@0,0 yarden_zamir.funnel@0,2 cosmoteer.thruster_small@0,4 cosmoteer.thruster_small@3,4 cosmoteer.thruster_small@0,-2,2 cosmoteer.thruster_small@3,-2,2 cosmoteer.thruster_small@-2,0,1 cosmoteer.thruster_small@-2,2,1 cosmoteer.thruster_small@6,0,3 cosmoteer.thruster_small@4,2,3
+wait 1
 expect auto_autonomous == 1
 expect auto_owner >= 0
 expect auto_crew == 0
