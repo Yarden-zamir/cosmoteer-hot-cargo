@@ -217,6 +217,21 @@ public static class EventsArea
             mission.GetObjectives(found);
             return found.Single().Completion switch { CompletionState.Completed => 1, CompletionState.Failed => -1, _ => 0 };
         };
+        // 1: the latest hand-over objective in the log (any mission) is done, 0: open, -1: failed, -2: none.
+        Autotest.Fields["ev_handover"] = () =>
+        {
+            var found = new List<HandOverObjective>();
+            foreach (Mission m in RequireRun().Mode.Missions) m.GetObjectives(found);
+            return found.LastOrDefault()?.Completion switch { null => -2, CompletionState.Completed => 1, CompletionState.Failed => -1, _ => 0 };
+        };
+        // ev_crew_remove <n>: takes n crew off the human ships (lowest ship ID first), so bunks are free. Test only.
+        Autotest.Commands["ev_crew_remove"] = arg =>
+        {
+            var souls = Tech.Vaults.HumanShips(RequireSim()).OrderBy(sh => sh.UniqueID).SelectMany(sh => sh.Crew.Assigned)
+                .Where(c => c.CarriedResource.Quantity == 0).Take(Int(arg)).ToList();
+            foreach (var soul in souls) soul.Delete(killed: false);
+            Autotest.Wait(1);
+        };
         // ev_storage_fill <resource>: fills every human ship's storage with the resource. ev_storage_clear <resource>: takes all of it out. Test only.
         Autotest.Commands["ev_storage_fill"] = arg =>
         {
@@ -450,6 +465,13 @@ public static class EventsArea
         return i >= 0 ? contacts[i] : throw new InvalidOperationException($"the accepted job's contact {id} is not in this system");
     }
 
+    static IEnumerable<HandOverObjective> OpenHandOvers()
+    {
+        var found = new List<HandOverObjective>();
+        foreach (Mission m in RequireRun().Mode.Missions) m.GetObjectives(found);
+        return found.Where(o => o.Completion == CompletionState.InProgress);
+    }
+
     static TowObjective? _lastTow;
 
     /// <summary>The latest tow objective in the mission log, or the last one seen: a completed mission leaves the log when it pays.</summary>
@@ -478,7 +500,8 @@ public static class EventsArea
         Ship? found = which switch
         {
             "carrier" => RequireRun().State.Events.Pending?.Carrier is { } id ? sim.Ships[id] : null,
-            "contact" => CourierContact(sim).Live,
+            // The contact of an open hand-over in the log (any mission, its turn or not), else the Courier Job's contact.
+            "contact" => OpenHandOvers().FirstOrDefault() is { } h ? h.Contact.TargetShip : CourierContact(sim).Live,
             "station" => sim.Ships.Where(s => EventHail.TargetOf(s, caller) == HailTarget.Station).MinBy(s => s.DetWorldCenter.DistanceSquaredTo(caller.DetWorldCenter)),
             "faction" => sim.Ships.Where(s => EventHail.TargetOf(s, caller) == HailTarget.FactionShip).MinBy(s => s.DetWorldCenter.DistanceSquaredTo(caller.DetWorldCenter)),
             _ => throw new InvalidOperationException($"unknown comms target '{which}' (carrier, contact, station, faction)"),

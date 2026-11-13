@@ -86,7 +86,7 @@ Chains
 				ID = extract
 				Title = "Extraction"
 				Text = "A corporate transport carries Sabine Okafor, a logistics officer who wants out. Her escorts do not know that. Destroy the escorts and do not break the transport. You have seven minutes before somebody misses her."
-				Mission = ChainCarefulTarget
+				Mission = ChainExtraction
 				Terms { AcceptFee = 0.3; FlatHeat = 8; TrailWeight = 1.5; InformantChance = 10% }
 				Results
 				[

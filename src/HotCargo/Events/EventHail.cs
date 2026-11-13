@@ -76,9 +76,11 @@ public static class EventHail
     public static List<EventRules> Lines(Run run, SimRoot sim, Ship caller, Ship callee)
     {
         var s = run.State.Events;
-        if (!run.T.Events.Enabled || EventLibrary.LoadError is not null || s.Pending is not null || run.State.Result != RunResult.Running) return [];
+        if (EventLibrary.LoadError is not null || s.Pending is not null || run.State.Result != RunResult.Running) return [];
         // The contact of an active hand-over shows its own page's line until the hand-over ends, so a "not yet" can come back (spec 1102).
+        // A mission step, so it works with random events turned off.
         var handOver = HandOverObjective.ForContact(run, callee.UniqueID);
+        if (handOver is null && !run.T.Events.Enabled) return [];
         HailTarget? target = handOver is not null ? HailTarget.Contact : TargetOf(callee, caller);
         if (target is null) return [];
         var snap = EventRunner.Snap(run, sim, run.Game.GetPlayerState(caller.Metadata.PlayerIndex, deterministic: true).Money, run.CurrentTier, EventRunner.CurrentTechValue(run));

@@ -96,8 +96,8 @@ internal sealed class HandOverObjective : Objective
     {
         var found = new List<HandOverObjective>();
         foreach (Mission m in run.Mode.Missions) m.GetObjectives(found);
-        // Active: an exchange after other steps (kill the escorts first) shows its page only when its turn comes.
-        return found.Where(o => o.Completion == CompletionState.InProgress && o.IsActive);
+        // Its turn: an exchange after other steps (kill the escorts first) shows its page only when the sequence reaches it.
+        return found.Where(o => o.Completion == CompletionState.InProgress && o._registered);
     }
 
     /// <summary>The page outcome of a hand-over (HandOver = true) on this contact. The page cost already took the unit. Sim logic.</summary>
@@ -161,8 +161,16 @@ internal sealed class HandOverObjective : Objective
         });
     }
 
+    /// <summary>
+    /// True while the mission runs this step. A Sequential parent registers a step only when it reaches it, on every machine,
+    /// so this is the same everywhere. Vanilla IsActive does not follow the sequence.
+    /// </summary>
+    bool _registered;
+
     public override void RegisterEvents(GameRoot game, bool isLoading)
     {
+        _registered = true;
+        Log.Info($"hand-over: step {Page} starts (loading: {isLoading})");
         Contact.Killed += OnContactKilled;
         game.EventHub.Tick += OnTick;
         if (!isLoading && !Contact.IsAlive) OnContactKilled(null, EventArgs.Empty);
@@ -170,6 +178,7 @@ internal sealed class HandOverObjective : Objective
 
     public override void UnregisterEvents(GameRoot game)
     {
+        _registered = false;
         Contact.Killed -= OnContactKilled;
         game.EventHub.Tick -= OnTick;
     }

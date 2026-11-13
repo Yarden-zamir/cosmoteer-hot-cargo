@@ -297,7 +297,9 @@ CarefulObjective
 	]
 }
 
-ChainCarefulTarget
+// Extraction (The Quiet Defector, spec 1105): the careful fight, then the pickup in the transport's comms (events.rules, okafor_pickup),
+// then the pay at the station. Okafor joins as crew in the pickup.
+ChainExtraction
 {
 	Spawners
 	[
@@ -311,6 +313,12 @@ ChainCarefulTarget
 					SubObjectives
 					[
 						&~/CarefulObjective
+						{
+							Type = HotCargoHandOver
+							ContactShipTag = { Mode=Latest; Tag=hc_ch_cargo; }
+							Page = okafor_pickup
+							LineKey = "HotCargoEventMissions/OkaforPickupFmt"
+						}
 						{
 							Type = ReceiveRewards
 						}

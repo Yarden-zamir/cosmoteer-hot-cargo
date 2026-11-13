@@ -890,6 +890,34 @@ Events
 		]
 	}
 
+	// Extraction pickup (The Quiet Defector, spec 1105): the transport's comms, after its escorts are gone. HandOver ends the pickup step.
+	{
+		ID = okafor_pickup
+		Trigger = Hail
+		HailTarget = Contact
+		HailLine = "Get Okafor out."
+		MaxPerRun = 0
+		Title = "The Quiet Defector: The Airlock"
+		Text = "The escorts are scrap. Sabine Okafor waits at the transport's airlock in a pressure suit. \"Get me out before they wipe the logs.\""
+		Choices
+		[
+			{
+				Text = "Bring her aboard."
+				Need { Bunks = 1 }
+				Outcomes [ { Text = "She crosses on a tether with one bag and takes a bunk."; Crew = 1; HandOver = true } ]
+			}
+			{
+				Text = "Bring her aboard, and strip the transport's hold."
+				Need { Bunks = 1 }
+				Outcomes [ { Text = "She crosses over while your crew empties the hold. The transport's black box records every crate."; Crew = 1; Resources = [{ ID = processor; Amount = 6; PerTier = 2 }]; Heat = 10; HandOver = true } ]
+			}
+			{
+				Text = "Not yet."
+				Outcomes [ { Text = "\"Hurry. Somebody will miss me.\"" } ]
+			}
+		]
+	}
+
 	// ---- Station
 
 	{
