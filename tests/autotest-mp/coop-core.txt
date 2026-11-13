@@ -132,6 +132,9 @@ step core.save-load
 mplobby
 mpload mpsave
 mpstart 2
+# A loaded co-op game starts paused.
+pause off
+waitfor paused == 0 10
 expectevent smuggler_den
 expect hc_trap_state == 2
 expect stages >= 1

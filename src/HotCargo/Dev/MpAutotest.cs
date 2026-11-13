@@ -41,7 +41,8 @@ public static class MpAutotest
     /// <summary>Port for the networking start of mphost. Null keeps the game's port (35862 or --port).</summary>
     internal static int? Port;
 
-    const int StateLogTicks = 300;
+    /// <summary>5 s at 30 sim ticks a second: a short co-op step still gets a state comparison.</summary>
+    const int StateLogTicks = 150;
 
     /// <summary>Set by "mp mpresync": the next out-of-sync call is a test resync, not a desync.</summary>
     internal static bool ExpectResync;
