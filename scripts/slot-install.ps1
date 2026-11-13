@@ -4,6 +4,24 @@
 # $cacheState (text for the output), $autotestFile (path of the autotest script, or $null), $startGame (PS_START) and
 # $minFreeGB (free memory that a test slot needs before its game starts).
 $ErrorActionPreference = "Stop"
+
+# Writes a text file that every slot shares (the game install folder). Parallel deploys write the same text, and a running
+# game can hold the file open. So it skips the write when the text is already there, and an IO error with the same text in
+# the file counts as success. Other IO errors retry for up to 10 s.
+function Write-SharedText([string]$path, [string]$text) {
+  for ($try = 1; ; $try++) {
+    $current = $null
+    # .NET errors arrive wrapped (MethodInvocationException), so the checks look at the base exception.
+    if (Test-Path $path) { try { $current = [IO.File]::ReadAllText($path) } catch { if ($_.Exception.GetBaseException() -isnot [IO.IOException]) { throw } } }
+    if ($current -ceq $text) { return }
+    try { [IO.File]::WriteAllText($path, $text); return }
+    catch {
+      if ($_.Exception.GetBaseException() -isnot [IO.IOException]) { throw }
+      if ($try -ge 10) { throw "cannot write the shared file ${path}: $($_.Exception.GetBaseException().Message)" }
+      Start-Sleep -Seconds 1
+    }
+  }
+}
 if ($autotestFile -and $slot -ne "main") {
   # Get-SlotProcess finds the slot's games by their command line (see pc.sh), also after a killed run.
   $running = @(Get-SlotProcess | Where-Object { $_ })
@@ -39,23 +57,22 @@ $loaderDll = Join-Path $loaderDir "HotCargo.Loader.dll"; $newLoader = Join-Path 
 $verFile = Join-Path $loaderDir "VERSION"; $newVer = (Get-Content (Join-Path $cache "loader\VERSION") -Raw).Trim()
 $oldVer = if (Test-Path $verFile) { (Get-Content $verFile -Raw).Trim() } else { "" }
 if (-not (Test-Path $loaderDll) -or $oldVer -ne $newVer) {
-  try { Copy-Item $newLoader $loaderDll -Force; [IO.File]::WriteAllText($verFile, $newVer) }
+  try { Copy-Item $newLoader $loaderDll -Force; Write-SharedText $verFile $newVer }
   catch {
     # Version 1 was installed before VERSION files existed. Same code, so keep it.
-    if ($oldVer -eq "" -and $newVer -eq "1") { "loader in use; keeping the installed copy (same code)"; [IO.File]::WriteAllText($verFile, $newVer) }
+    if ($oldVer -eq "" -and $newVer -eq "1") { "loader in use; keeping the installed copy (same code)"; Write-SharedText $verFile $newVer }
     else { throw "HotCargo.Loader.dll version $newVer must replace $oldVer, but a running game uses it. Stop all Cosmoteer instances once, then deploy again." }
   }
 }
-[IO.File]::WriteAllText((Join-Path $loaderDir "hot_cargo_default.txt"), (Join-Path $mainMods "hot_cargo\csharp\HotCargo.dll"))
+Write-SharedText (Join-Path $loaderDir "hot_cargo_default.txt") (Join-Path $mainMods "hot_cargo\csharp\HotCargo.dll")
 $rc = Join-Path $game "Bin\Cosmoteer.runtimeconfig.json"; $orig = "$rc.hot_cargo_orig"
 if (-not (Test-Path $orig)) { Copy-Item $rc $orig }
 $json = Get-Content $orig -Raw | ConvertFrom-Json
 $json.runtimeOptions.configProperties | Add-Member -NotePropertyName STARTUP_HOOKS -NotePropertyValue $loaderDll -Force
 $jsonText = $json | ConvertTo-Json -Depth 10
-# Parallel deploys write the same content. Skip the write when it is already there, so no two writers collide.
-if (-not (Test-Path $rc) -or (Get-Content $rc -Raw) -ne $jsonText) { [IO.File]::WriteAllText($rc, $jsonText) }
+Write-SharedText $rc $jsonText
 # Without this file, Steamworks restarts the game through Steam when a script starts the exe directly.
-[IO.File]::WriteAllText((Join-Path $game "Bin\steam_appid.txt"), "799600")
+Write-SharedText (Join-Path $game "Bin\steam_appid.txt") "799600"
 
 # Test slots: own settings with the mod on.
 if ($slot -ne "main") {
