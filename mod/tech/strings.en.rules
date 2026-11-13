@@ -6,6 +6,8 @@ HotCargoTech
 	TechVault = "Tech Vault"
 	TechVaultIcon = "Tech Vault"
 	TechVaultDesc = "Armored storage for Stolen Tech. Holds 2 units. Crew carry tech between vaults. A destroyed vault drops its tech as crates."
+	NeedVaultsFmt = "Hot Cargo: a starter ship needs Tech Vaults for {0} stolen tech ({1} vaults). This ship's vaults hold {2}. Add vaults in the ship editor (Storage)."
+	NoVaultRoomFmt = "No Tech Vault had room for {0} starting tech, so it is lost. Build Tech Vaults."
 	VaultOutside = "A Tech Vault has no door. Add one so that crew can reach the tech."
 	LossNoTech = "The fleet held no Stolen Tech for too long."
 	LossTimerStarted = "No tech left! Get some back within {0}, or the run is lost."

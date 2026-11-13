@@ -1,0 +1,26 @@
+# New-game check (spec 1010-1013, 1017): a career starter ship needs Tech Vaults for the starting tech.
+# Every preset passes. A vanilla starter (no vault) fails, and the vanilla dialog says what is missing.
+shipcheck preset 0
+expect shiplegal == 1
+expect shipvaulttech >= 8
+shipcheck preset 1
+expect shiplegal == 1
+expect shipvaulttech >= 8
+shipcheck preset 2
+expect shiplegal == 1
+expect shipvaulttech >= 8
+shipcheck preset 3
+expect shiplegal == 1
+expect shipvaulttech >= 8
+shipcheck vanilla 0
+expect shiplegal == 0
+expect shipvaulttech == 0
+wait 1
+expect vaultdialog == 1
+# A new career with a preset starts, and the first ship holds all starting tech.
+newgame run 2
+wait 8
+expect vaults == 4
+expect tech == 8
+expect startresearch == 1
+quit

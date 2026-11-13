@@ -16,8 +16,8 @@ Mission checks are in [tests/playtest/missions.md](tests/playtest/missions.md).
 
 ## Tech
 
-1. Look at the starting ship. Check that 4 tinted 1×1 Tech Vaults replace one storage bay, and that each vault shows 2 units (8 units).
-2. Start a career with the Model-M starter ship. Check that 4 vaults replace 4 tiles of a 3×2 storage bay, with a corridor walkway between them, and that crew can walk to each vault.
+1. In the new-game screen, look at the starter ship pictures. Check that each preset shows 4 tinted 1×1 Tech Vaults in place of one storage bay. Start the career. Check that each vault shows 2 units (8 units) and that the FTL drive research is unlocked.
+2. Start a career with the Model-M starter ship. Check that 4 vaults fill 4 tiles of a 3×2 storage bay, with a corridor walkway between them, and that crew can walk to each vault. Load a saved ship without vaults with Load Ship. Check that a dialog says how many Tech Vaults the ship needs.
 3. Open the build menu, Storage group. Check that "Tech Vault" is there with its name, description and tinted icon.
 4. Dock at a trade station and open the trade window. Check that "Stolen Tech" shows the overlay tech value as its sell price.
 5. Sell 1 unit through the trade window. Check that the money rises by the shown price and the overlay tech count drops by 1.
