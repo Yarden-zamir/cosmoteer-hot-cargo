@@ -93,9 +93,12 @@ public static class ListenIn
     [HarmonyPatch(typeof(CareerGameModeManager), nameof(CareerGameModeManager.Update))]
     static class FramePatch
     {
+        static double _next;
+
         static void Postfix(CareerGameModeManager __instance)
         {
-            if (Run.Current is not { } run || run.Mode != __instance) return;
+            // Spec 872: the list reads sim state and builds texts, so it refreshes every HudRefreshSeconds. Clicks act at once.
+            if (Run.Current is not { } run || run.Mode != __instance || !Ux.UxKit.HudDue(ref _next)) return;
             Errors.Guard("listen-in list", () => UpdateBar(run, __instance));
         }
     }

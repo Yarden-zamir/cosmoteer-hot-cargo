@@ -85,6 +85,10 @@ dip_open hunter0
 on 1 waitfor listen_hails == 1 30
 on 1 listen 1
 on 1 listen_click Come and take it
+# With 3 players the second client listens too, so the vote can be unanimous.
+@3p on 2 waitfor listen_hails == 1 30
+@3p on 2 listen 1
+@3p on 2 listen_click Come and take it
 waitfor comms_vote_marks == 1 30
 on 1 waitfor listen_vote_marks == 1 30
 comms_click Come and take it
