@@ -1,19 +1,45 @@
 #!/usr/bin/env bash
-# Merge a feature branch into main and ship it, stopping at the first failure:
-# merge -> build -> unit tests -> private-data check -> affected autotests -> push -> install into the player's game.
-# Usage: integrate.sh <branch | PR number> [--no-autotest]
-#        integrate.sh --continue [--no-autotest]   after you resolved merge conflicts (staged them, no commit needed)
-# Run it in the main worktree. Nothing is pushed unless every step passed. On a failure the merge commit stays local:
-# fix it with a new commit and run "integrate.sh --continue", or undo it with "git reset --hard origin/main".
+# Merge one or more feature branches into main and ship them together, stopping at the first failure:
+# merge each -> build -> unit tests -> private-data check -> one autotest suite -> push -> install into the player's game.
+# Usage: integrate.sh [--detach] [--no-autotest] [--full] <branch | PR number>...
+#        integrate.sh [--detach] [--no-autotest] [--full] --continue   after you resolved merge conflicts or fixed a
+#        failure with a new commit (merges the rest of the batch first)
+# --detach      run in the background, safe from a killed shell; wait with scripts/suite-wait.sh <log> (see detach.sh).
+# --no-autotest skip the autotests.  --full  run the full suite, not only the tests that the batch affects.
+# Run it in the main worktree. Nothing is pushed unless every step passed. On a failure the merge commits stay local:
+# fix them with a new commit and run "integrate.sh --continue", or undo them with "git reset --hard origin/main".
+# When autotests fail, it names the branches of the batch whose areas own each failed test (autotest-affected.sh rule).
 set -euo pipefail
+# Merge batches run every autotest of the touched areas, not only the smoke tier (tests/TIERS.md).
+export AUTOTEST_TIER=full
 cd "$(dirname "$0")/.."
+ARGS=() AUTOTEST=yes FULL=no CONTINUE=no DETACH=no
+for a in "$@"; do
+  case "$a" in
+    --no-autotest) AUTOTEST=no ;;
+    --full) FULL=yes ;;
+    --continue) CONTINUE=yes ;;
+    --detach) DETACH=yes ;;
+    -*) echo "integrate: unknown option $a"; exit 1 ;;
+    *) ARGS+=("$a") ;;
+  esac
+done
+if [[ "$DETACH" == yes ]]; then
+  rest=(); for a in "$@"; do [[ "$a" != --detach ]] && rest+=("$a"); done
+  LOG="$(scripts/detach.sh integrate scripts/integrate.sh "${rest[@]}")"
+  echo "== integrate runs detached. Log: $LOG"
+  echo "== wait for it: scripts/suite-wait.sh $LOG"
+  exit 0
+fi
 [[ "$(git branch --show-current)" == main ]] || { echo "integrate: run it on main"; exit 1; }
-ARG="${1:?usage: integrate.sh <branch>|--continue [--no-autotest]}"
-AUTOTEST=yes
-[[ "${2:-}" == --no-autotest ]] && AUTOTEST=no
+[[ "$CONTINUE" == yes || ${#ARGS[@]} -gt 0 ]] || { echo "usage: integrate.sh [--detach] [--no-autotest] [--full] <branch|PR>... | --continue"; exit 1; }
+[[ "$CONTINUE" == no || ${#ARGS[@]} -eq 0 ]] || { echo "integrate: --continue takes no branches"; exit 1; }
+STATE_DIR="${HOT_CARGO_STATE:-$(cd .. && pwd)/.state}"; mkdir -p "$STATE_DIR"
+# The refs of the batch, and the refs that are not merged yet (both one per line).
+BATCH_FILE="$STATE_DIR/integrate-batch" PENDING_FILE="$STATE_DIR/integrate-pending"
 step() { echo; echo "== integrate: $*"; }
 
-if [[ "$ARG" == --continue ]]; then
+if [[ "$CONTINUE" == yes ]]; then
   if git rev-parse -q --verify MERGE_HEAD >/dev/null; then
     [[ -z "$(git diff --name-only --diff-filter=U)" ]] || { echo "integrate: unresolved conflicts:"; git diff --name-only --diff-filter=U; exit 1; }
     git commit -q --no-edit
@@ -22,18 +48,36 @@ else
   [[ -z "$(git status --porcelain --untracked-files=no)" ]] || { echo "integrate: main has uncommitted changes"; exit 1; }
   step "update main"
   git pull -q --ff-only origin main
-  # A PR number merges the PR's branch from origin. Merging it into main marks the PR as merged on GitHub.
-  if [[ "$ARG" != *[!0-9]* ]]; then
-    HEAD_BRANCH="$(gh pr view "$ARG" --json headRefName --jq .headRefName)"
-    git fetch -q origin "$HEAD_BRANCH"
-    ARG="origin/$HEAD_BRANCH"
-  fi
-  step "merge $ARG"
-  if ! git merge --no-ff "$ARG" -m "Merge branch '$ARG'"; then
-    echo "integrate: conflicts. Resolve them, git add the files, then run: scripts/integrate.sh --continue"
-    git diff --name-only --diff-filter=U
-    exit 1
-  fi
+  : > "$BATCH_FILE"
+  for a in "${ARGS[@]}"; do
+    # A PR number merges the PR's branch from origin. Merging it into main marks the PR as merged on GitHub.
+    if [[ "$a" != *[!0-9]* ]]; then
+      head="$(gh pr view "$a" --json headRefName --jq .headRefName)"
+      [[ -n "$head" ]] || { echo "integrate: PR $a has no head branch"; exit 1; }
+      git fetch -q origin "$head"
+      a="origin/$head"
+    fi
+    git rev-parse -q --verify "$a^{commit}" >/dev/null || { echo "integrate: unknown branch $a"; exit 1; }
+    echo "$a" >> "$BATCH_FILE"
+  done
+  cp "$BATCH_FILE" "$PENDING_FILE"
+fi
+BATCH=()
+[[ -f "$BATCH_FILE" ]] && while IFS= read -r b; do [[ -n "$b" ]] && BATCH+=("$b"); done < "$BATCH_FILE"
+
+if [[ -s "$PENDING_FILE" ]]; then
+  PENDING=(); while IFS= read -r b; do [[ -n "$b" ]] && PENDING+=("$b"); done < "$PENDING_FILE"
+  for i in "${!PENDING[@]}"; do
+    b="${PENDING[$i]}"
+    step "merge $b"
+    if ! git merge --no-ff "$b" -m "Merge branch '$b'"; then
+      printf '%s\n' "${PENDING[@]:$((i + 1))}" > "$PENDING_FILE"
+      echo "integrate: conflicts. Resolve them, git add the files, then run: scripts/integrate.sh --continue"
+      git diff --name-only --diff-filter=U
+      exit 1
+    fi
+  done
+  rm -f "$PENDING_FILE"
 fi
 # Spec section numbers must stay unique (parallel branches often pick the same next number).
 DUP="$(ls spec | cut -d- -f1 | sort | uniq -d || true)"
@@ -50,12 +94,43 @@ step "unit tests"
 grep -a "Total:" /tmp/hot_cargo_integrate_unit.log | tail -1
 step "private-data check"
 scripts/check-private.sh
+
+# Prints, for each failed test, the branches of the batch whose changes select that test.
+blame() {
+  local failed="$1" t b list owners
+  declare -A lists
+  for b in "${BATCH[@]}"; do lists["$b"]="$(LIST_ONLY=1 HEAD_REF="$b" scripts/autotest-affected.sh origin/main 2>/dev/null | tail -1)"; done
+  for t in $failed; do
+    owners=""
+    for b in "${BATCH[@]}"; do
+      list="${lists[$b]}"
+      if [[ "$list" == *"full suite"* ]]; then owners+=" $b(shared code)"
+      elif [[ " ${list#== affected: } " == *" $t "* ]]; then owners+=" $b"; fi
+    done
+    echo "integrate: $t failed; batch branches that touch it:${owners:- none (core test or flaky)}"
+  done
+}
 if [[ "$AUTOTEST" == yes ]]; then
-  step "affected autotests"
-  COMMITTED_ONLY=1 scripts/autotest-affected.sh origin/main || { echo "integrate: autotests failed; nothing pushed"; exit 1; }
+  TEST_OUT="$STATE_DIR/integrate-autotest.out" rc=0
+  if [[ "$FULL" == yes ]]; then
+    step "full autotest suite"
+    scripts/autotest-all.sh 400 2>&1 | tee "$TEST_OUT" || rc=$?
+  else
+    step "affected autotests"
+    # AUTOTEST_MAC=0: the PC suite stays the merge gate until the Mac sim has a track record.
+    AUTOTEST_MAC=0 COMMITTED_ONLY=1 scripts/autotest-affected.sh origin/main 2>&1 | tee "$TEST_OUT" || rc=$?
+  fi
+  if [[ $rc -ne 0 ]]; then
+    FAILED="$(grep '^== failed: ' "$TEST_OUT" | tail -1 || true)"
+    FAILED="${FAILED#== failed: }"; FAILED="${FAILED% (*}"
+    if [[ ${#BATCH[@]} -gt 1 && -n "$FAILED" ]]; then blame "$FAILED"; fi
+    echo "integrate: autotests failed; nothing pushed"
+    exit 1
+  fi
 fi
 step "push"
 git push -q origin main
 git log --oneline -1
+rm -f "$BATCH_FILE"
 step "install into the player's game"
 scripts/install-player.sh || echo "integrate: install failed (pushed anyway)"

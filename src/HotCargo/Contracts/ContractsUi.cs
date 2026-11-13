@@ -60,8 +60,11 @@ static class ContractsUi
         string trail = F(rateAfter > 0 ? "TrailFmt" : "TrailQuietFmt", Num(terms.TrailWeight), Num(open), Num(after), Rate(rateNow), Rate(rateAfter));
         lines.Add((rateAfter > rateNow ? $"<bad>{trail}</bad>" : trail,
             F("TrailTipFmt", Num(run.T.Contracts.TrailFreeContracts), Num(run.T.Contracts.TrailHeatPerContractMinute))));
-        if (ContractBook.RivalOf(run, m.Game.Sim, m) is { } rival)
-            lines.Add(($"<limited_color>{F("RivalFmt", rival.Name.Text)}</limited_color>", T("RivalTip")));
+        foreach (var (rival, station) in ContractBook.RivalsOf(run, m.Game.Sim, m))
+        {
+            string text = station is null ? F("RivalFmt", Ux.MissionTitle.Xml(rival)) : F("RivalAtFmt", Ux.MissionTitle.Xml(rival), Esc(station));
+            lines.Add(($"<limited_color>{text}</limited_color>", T("RivalTip")));
+        }
         lines.Add(terms.InformantChance > 0
             ? ($"<bad>{F("InformantFmt", Pct(terms.InformantChance))}</bad>", T("InformantTip"))
             : ($"<good>{T("Discreet")}</good>", null));

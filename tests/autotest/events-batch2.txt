@@ -2,8 +2,6 @@
 newgame run
 wait 8
 pu_set Enabled false
-expectevent getaway
-choose 3 1
 eventviewall
 # Wanted Broadcast: local bounty hunters spawn with their own tag, and the Hunters area does not count them.
 event wanted_broadcast

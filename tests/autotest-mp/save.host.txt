@@ -5,7 +5,7 @@ mpstart 2
 mp pu_set Enabled false
 mp ev_set Enabled false
 mp godmode on
-mp heat 30
+mp stage
 waitfor stages >= 1 30
 mp hc_generate shady
 mp hc_accept shady
@@ -37,3 +37,4 @@ mp mpmark 2
 expect desyncs == 0
 waitfor mpconnected == 0 240
 quit
+# tier: smoke

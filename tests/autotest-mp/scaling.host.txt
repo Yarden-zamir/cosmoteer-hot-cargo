@@ -9,7 +9,9 @@ expect enemysetting == 2
 expect enemyfactor == 2
 mp godmode on
 mp ev_set Enabled false
-mp spawnstage Patrol
+# Two ships of the sector tier: the Warning response of the last sector.
+mp stageset Warning EarlyScale 1
+mp spawnstage Warning
 waitfor hunters >= 4 30
 expect hunters == 4
 mp ev_spawn TollGuards

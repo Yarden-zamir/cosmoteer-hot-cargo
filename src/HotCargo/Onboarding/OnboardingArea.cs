@@ -46,8 +46,8 @@ public static class OnboardingArea
         Hints.Add("hc_wanted", run => run.State.Events.WantedWarned);
         Hints.Add("hc_buyer", run => run.State.BuyerSpawned);
         Hints.Add("hc_settings", run => run.State.SectorIndex >= 2);
-        // Ship tactics matter most in hard fights and with more than one ship for each player.
-        Hints.Add("hc_ship_tactics", run => run.T.ShipAi.Enabled && (run.State.StagesStarted >= 3
+        // Ship tactics matter most in hard fights (the stage before the last, or later) and with more than one ship for each player.
+        Hints.Add("hc_ship_tactics", run => run.T.ShipAi.Enabled && (run.State.StagesStarted >= Math.Max(1, run.T.Heat.Stages.Length - 1)
             || Vaults.HumanShips(run.Game.Sim).Count() > run.Game.HumanPlayersIndexes.Count));
         Hints.Add("hc_coop", run => run.IsMultiplayer && run.Game.HumanPlayersIndexes.Count >= 2);
     }

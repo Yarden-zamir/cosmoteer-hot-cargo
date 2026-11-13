@@ -53,7 +53,7 @@ Category switches are in the `Telemetry` tunables section. The table names the s
 | `heat.strike_wave` | Heat | `live_hunters` |
 | `tech.count` | Tech | `from` (null for the first count of a session), `to`, `delta`, `cause`, `hints` |
 | `tech.value` | Tech | `from`, `to`, `buyer_unit`, `buyback`, `notoriety`, `peak_tier` |
-| `tech.vault_hit` | Tech | Only hits that cost tech or destroy the vault. `ship`, `player`, `damage`, `health`, `max_health`, `tech_before`, `tech_after`, `destroyed` |
+| `tech.vault_hit` | Tech | Only the hit that destroys a vault (only destruction costs tech, spec 65). `ship`, `player`, `damage`, `health`, `max_health`, `tech_before`, `tech_after`, `destroyed` |
 | `econ.money` | Economy | `player`, `amount`, `before`, `after`, `src`, `caller` |
 | `econ.fame` | Economy | `amount`, `after`, `src`, `caller`, `std_mission_fame` |
 | `econ.reputation` | Economy | `faction`, `from`, `to` |
@@ -86,9 +86,9 @@ Terms: `fee`, `bonus`, `flat_heat`, `trail`, `rival`, `informant`.
 
 ### Sources and causes
 
-- `src` of a heat, money or fame change comes from the code that called it. Run.OnTick and ContractBook.OnTick add heat every tick, so they are marked without a stack walk (`time`, `trail`). Other changes walk the stack and name the first frame that a rule in `TelemetryPatches.Sources` matches: for example `fame`, `contract_accept`, `informant`, `escort_cover`, `event`, `chain`, `mission_reward`, `contract_bonus`, `trade`, `build`, `build_refund`, `crew_hire`, `surrender`, `test`, `debug`. Without a match it is the type of the first frame. `caller` holds up to 3 frames, innermost first, joined with ` < `.
+- `src` of a heat, money or fame change comes from the code that called it. Run.OnTick and ContractBook.OnTick add heat every tick, so they are marked without a stack walk (`time`, `trail`). Other changes walk the stack and name the first frame that a rule in `TelemetryPatches.Sources` matches: for example `fame`, `contract_accept`, `informant`, `escort_cover`, `event`, `chain`, `mission_reward`, `contract_bonus`, `trade`, `build`, `build_refund`, `crew_hire`, `surrender`, `fame_cap` (heat above the fame cap, spec 302), `diplomacy` (hunter deals, spec 565 and 593), `test`, `debug`. A heat change with no matching rule breaks the `heat_source` invariant (spec 999). Without a match it is the type of the first frame. `caller` holds up to 3 frames, innermost first, joined with ` < `.
 - Above `CallerLookupsPerSecond` stack walks in one real second, `src` is `rate_limited`.
-- `cause` of a tech count change is the newest hint within 5 game seconds: `jump` (the ships are in jump limbo, so the count is 0 until they arrive), `sale`, `buyer`, `buyback`, `vault_damage`, `vault_destroyed`, `ship_lost`, `crew_death`, `event`, `starting_vault`, `test`, `debug`. `initial` is the first count of a session. `other` means no hint.
+- `cause` of a tech count change is the newest hint within 5 game seconds: `jump` (the ships are in jump limbo, so the count is 0 until they arrive), `sale`, `buyer`, `buyback`, `vault_destroyed`, `ship_lost`, `crew_death`, `event`, `starting_vault`, `test`, `debug`. `initial` is the first count of a session. `other` means no hint.
 
 ### AI sums
 

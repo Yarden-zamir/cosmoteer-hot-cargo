@@ -46,7 +46,7 @@ internal sealed class BaitStrategy(BaitStrategyRules rules) : AIStrategyModule
     {
         var active = TacticGate.Active(Tactic.Bait, ship);
         var group = active is { } on ? Group(ship, on) : [];
-        bool isBait = group.Count >= 2 && Bait(group) == ship;
+        bool isBait = active is { } a && group.Count >= 2 && Bait(group, a) == ship;
         if (isBait != _isBait) TacticsLog.Event(ship, Tactic.Bait, isBait ? "chosen as bait" : "no longer bait");
         _isBait = isBait;
         var target = Ai.AiGate.NearestHumanEnemy(ship);
@@ -69,7 +69,7 @@ internal sealed class BaitStrategy(BaitStrategyRules rules) : AIStrategyModule
         {
             Vector2 toShip = Vector2.FromAngle(target.DetWorldCenter.DirectionTo(ship.DetWorldCenter));
             float stop = target.WorldBoundingRadius + ship.WorldBoundingRadius + t.BaitCloseDistance;
-            HunterOrders.MoveTo(ship, target.DetWorldCenter + toShip * stop, rules.MoveTolerance);
+            Ai.PersonalityStrategy.MoveGuarded(ship, target.DetWorldCenter + toShip * stop, rules.MoveTolerance, target, t);
         }
         else
         {
@@ -77,7 +77,7 @@ internal sealed class BaitStrategy(BaitStrategyRules rules) : AIStrategyModule
             int others = 0;
             foreach (var s in group)
                 if (s != ship) { center += s.DetWorldCenter; others++; }
-            HunterOrders.MoveTo(ship, center / others, rules.MoveTolerance);
+            Ai.PersonalityStrategy.MoveGuarded(ship, center / others, rules.MoveTolerance, target, t);
         }
         return true;
     }
@@ -89,7 +89,7 @@ internal sealed class BaitStrategy(BaitStrategyRules rules) : AIStrategyModule
         Ai.AiGate.Allies(ship).Where(a => a.DetWorldCenter.DistanceTo(ship.DetWorldCenter) <= t.RegroupSearchRange).Prepend(ship).ToList();
 
     /// <summary>The most agile group member with the bait tactic on (thrust per mass). Ties go to the lowest ID, so every client picks the same ship.</summary>
-    static Ship? Bait(List<Ship> group) =>
+    static Ship? Bait(List<Ship> group, TacticsTunables t) =>
         group.Where(s => TacticGate.Active(Tactic.Bait, s) is not null)
-            .OrderByDescending(s => Ai.PersonalityStrategy.Profile(s).Acceleration).ThenBy(s => s.UniqueID).FirstOrDefault();
+            .OrderByDescending(s => Ai.PersonalityStrategy.Profile(s, t).Acceleration).ThenBy(s => s.UniqueID).FirstOrDefault();
 }

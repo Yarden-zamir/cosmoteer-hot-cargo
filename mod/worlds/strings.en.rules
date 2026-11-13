@@ -30,7 +30,7 @@ HotCargoWorlds
 
 	// Missions.
 	HoldPass = "Hold the Pass"
-	HoldPassDesc = "Raiders camp in a pass through the belt and tax every ship. Clear them out, then hold the pass until the convoy is through. Keep a ship in the ring: an empty pass falls back to the raiders."
+	HoldPassDesc = "Clear the raiders from the pass, then hold it until the convoy is through.\nAn empty pass falls back to the raiders."
 	ClearPassFmt = "Clear the raiders from the pass"
 	HoldPassFmt = "Hold the pass: {0} left"
 	HoldPassWaitFmt = "Hold the pass ({0}): fly into the ring"
@@ -38,14 +38,14 @@ HotCargoWorlds
 	PassLost = "The raiders took the pass back."
 
 	Sundive = "Sundive"
-	SundiveDesc = "A courier fell toward the star, and its flight recorder still sends from deep in the heat. Dive in, stay at the wreck until the data is out, then get clear. The heat cooks cargo: a Tech Vault loses units within seconds. Dive fast, raise shields, or move the tech to another ship first."
+	SundiveDesc = "Dive to the courier wreck near the star and stay until the data is out.\nThe heat burns vault tech within seconds: dive fast or move the tech first."
 	SundiveDiveFmt = "Dive to the wreck (depth {0:0}%)"
 	SundiveSalvageFmt = "Salvage the recorder: {0:0}/{1:0} s"
 	SundiveEscapeFmt = "Get {0} out of the heat"
 	SundiveLost = "The recorder burned with the ship."
 
 	LairRaid = "Raid the Lair"
-	LairRaidDesc = "A pirate gang runs its business from the eye of an ion storm. Find the lair in the storm and destroy it."
+	LairRaidDesc = "Find the pirate lair in the ion storm and destroy it."
 	FindLairFmt = "Find the pirate lair in the storm"
 	LairFound = "Pirate lair found."
 	RaidLairFmt = "Destroy the pirate lair"

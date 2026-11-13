@@ -1,11 +1,14 @@
-# Mechanics missions in the smaller systems (spec 105, 131): with every spawn chance at 1, real system generation places
-# each mission that has no nebula requirement, and no mission object lies outside the gate ring. Storm survey and listening
-# post need nebulas (ion storm, gas cloud), so the census only logs them.
+# Mechanics missions (spec 105, 130 to 139): rules load, spawn chances come from the tunables, and each group makes an offer.
+# With every spawn chance at 1, real system generation places each mission that has no nebula requirement, and no mission object
+# lies outside the gate ring. Storm survey and listening post need nebulas (ion storm, gas cloud), so the census only logs them.
 newgame run
 wait 8
 ev_set Enabled false
 godmode on
 contract_set RivalsEnabled off
+expect active == 1
+# Spec 131: MechanicsArea sets the group chance from Mechanics.DroneSiegeChance before a system generates.
+expect mech_chance_siege == 0.2
 mech_set DroneSiegeChance 1
 mech_set PrototypeChance 1
 mech_set SunMiningChance 1
@@ -14,6 +17,17 @@ mech_set CaptureChance 1
 mech_set SurveyChance 1
 mech_set MiningGuardChance 1
 mech_set ListeningPostChance 1
+# Forced offers in the start system: the nebula missions (the test lifts the in-nebula rule) and the sun mining seam.
+mech_generate sunmining
+expect mech_offers_sunmining >= 1
+expect mech_sun_ore_asteroids >= 6
+# Spec 138: the seam sits inside the heat zone of a scale-3000 sun (kill radius 1500, heat out to 3750).
+expect mech_sun_ore_mindist >= 1500
+expect mech_sun_ore_maxdist <= 3750
+mech_generate survey nonebula
+expect mech_offers_survey >= 1
+mech_generate listening nonebula
+expect mech_offers_listening >= 1
 worlds jumpto basic
 mech_census
 expect mech_offers_siege >= 1
@@ -45,3 +59,4 @@ expect mech_offers_guard >= 1
 expect mech_asteroid_fields >= 1
 expect mech_beyond_gates == 0
 quit
+# tier: smoke

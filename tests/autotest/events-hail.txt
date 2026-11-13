@@ -2,8 +2,6 @@
 newgame run
 wait 8
 pu_set Enabled false
-expectevent getaway
-choose 3 1
 ev_set StationEventChance 0
 ev_set CourierChance 0
 ev_set CooldownSeconds 0
@@ -46,5 +44,6 @@ expect ev_carrier == 1
 ev_kill_carrier
 wait 1
 expect ev_pending == 0
-expect ev_result >= 5
+# The result serial: this is the fourth page of the run.
+expect ev_result >= 4
 quit

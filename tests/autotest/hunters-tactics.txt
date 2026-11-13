@@ -2,7 +2,7 @@
 newgame run
 wait 8
 pu_set Enabled false
-# No random events during the hunter checks (the start event already opened; nobody chooses it).
+# No random events during the hunter checks.
 ev_set Enabled false
 # Nine strike-stage hunters destroy a sector-1 starter ship before the tactics can be observed, even with godmode
 # (one big hit still destroys a part). Five hunters are enough for groups (pincer, bait) and every stage (disable, bait).
@@ -18,7 +18,7 @@ heat 100
 wait 1
 hunters start
 expect hunters == 5
-expect stages == 4
+expect stages == stagecount
 wait 45
 hunters engaged
 expect tactic_hunt > 0

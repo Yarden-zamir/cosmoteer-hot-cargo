@@ -2,9 +2,9 @@
 # a careful-targeting mission that starts at once in that system, and a tech reward at the end.
 newgame run
 wait 8
-expectevent getaway
 # Sell one crate, so the vault has room for the chain's tech reward.
-choose 2 1
+event the_fence
+choose 1 1
 ev_set Enabled false
 chain_force black_box
 chain_tostation

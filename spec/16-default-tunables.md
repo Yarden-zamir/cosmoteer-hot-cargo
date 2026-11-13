@@ -8,18 +8,17 @@
 | `Journey.TechCostScale` | 2.5 | 301 |
 | `BuyerPriceFactor` | 4 | 7 |
 | `StartingTechUnits` | 8 | 17 |
-| `VaultDamagePerUnitLost` | 0.5 | 65, 442 |
+| `StartingResearch` | `["cosmoteer.hyperdrive_small"]` | 1015 |
 | `LossGraceSeconds` | 180 s | 12, 443 |
 | `TechMarkers` | on | 444 |
 | `VaultTechLossChance` | 0.1 | 445 |
 | `HunterGrabChance`, `HunterGrabRange`, `HunterGrabReach` | 0.8, 3,000, 40 | 446 |
-| `VaultSunHeatFactor` | 0.25 | 448 |
 | `TechShipFraction` | 0.25 | 19 |
 | `TechShipFractionPerGameHour` | 0.10 | 19 |
 | `TechShipFractionPer100Notoriety` | 0.05 | 19 |
 | `NotorietyStep` | 5 | 19 |
-| `HeatPerGameMinute` | 1.2 | 24 |
-| `HeatPerStandardMission` | 1.5 | 25 |
+| `HeatPerGameMinute` | 1.14 | 24 |
+| `HeatPerStandardMission` | 1.425 | 25 |
 | `HeatMultiplierByUnits` | [0.25, 0.4, 0.52, 0.64, 0.76, 0.88, 1.0, 1.1, 1.2] | 26 |
 | `HeatCarryOverFraction` (a switch without a jump) | 0.25 | 28 |
 | `HeatStages` | see section 10 | 30 |
@@ -30,6 +29,7 @@
 | `ShadyTrapChancePerHeat` | 0.006 | 39 |
 | `ShadyTrapSurvivalReward` | 0.5 | 40 |
 | `EscortHeatChange` | −8 | 36 |
+| `EscortRouteShare`, `EscortAmbushAt`, `EscortAmbushLead`, `EscortRaiderFocus` | 0.65, 0.3, 1800, 20 | 36 |
 | `Events.ArrivalEventChance`, `ArrivalDelaySeconds` | 0.6, 6 s | 69 |
 | `Events.StationEventChance`, `StationTriggerDistance` | 0.5, 1500 | 69 |
 | `Events.SignalTriggerDistance` | 900 | 69 |
@@ -43,7 +43,7 @@
 | `Events.CooldownSeconds`, `MaxEventsPerSystem` | 120 s, 2 | 70 |
 | `Events.MoneyScale`, `FameScale`, `HeatScale` | 1, 1, 1 | 73 |
 | `Contracts.TrailFreeContracts`, `TrailHeatPerContractMinute` | 3, 1 | 101 |
-| `Contracts.FeeChance`, `FeeMin`, `FeeMax`, `PaidBonusFactor` | 0.5, 0.3, 0.8, 2 | 102 |
+| `Contracts.FeeChance`, `FeeMin`, `FeeMax`, `PaidBonusFactor` | 0.5, 0.15, 0.4, 2 | 102 |
 | `Contracts.RivalPairChance` | 0.2 | 103 |
 | `Contracts.InformantShare`, `InformantChanceMin`, `InformantChanceMax` | 0.75, 0.05, 0.15 | 104 |
 | `Contracts.InformantDelayMin`, `InformantDelayMax`, `InformantHeat`, `InformantShips` | 45 s, 150 s, 15, 2 | 104 |
@@ -53,12 +53,13 @@
 | `KiteRangeFraction` | 0.9 | 44 |
 | `PincerAngleDegrees` | 120° | 45 |
 | `FallBackHealthFraction` | 0.35 | 47 |
+| `Hunters.Stages` Warning `ShipCount`, `EarlyScale` | 2, 0.5 | 190 |
 | `Hunters.Stages` Strike `EarlyScale`, `EarlyTierReduction` | 0.67, 1 | 190 |
 | `Hunters.Stages` Strike `Waves`, `WaveGapSeconds` | 3, 45 s | 191 |
 | `Hunters.MinFuel` | 60 | 192 |
 | `FleeHealthFraction`, `FleeChance` | 0.25, 0.5 | 193 |
 | `FleeDistance`, `FleeJumpSeconds`, `FleeRecoverFraction` | 1500, 25 s, 0.6 | 195 |
-| `CallSeconds`, `CallRange`, `CallCooldownSeconds` | 6 s, 6000, 60 s | 196, 197 |
+| `CallSeconds`, `CallRange`, `CallCooldownSeconds` | 15 s, 6000, 60 s | 196, 197 |
 | `CallAssistSeconds` | 60 s | 198 |
 | `CallBlockedInNebulas`, `CallStormStrength` | [ion_storm, electron], 0.5 | 199 |
 | `FocusWeakFactor` | 1.5 | 200 |
@@ -69,6 +70,7 @@
 | `TeamRadius`, `TeamFlankDegrees` | 2500, 90° | 364, 365 |
 | `CoverSearchRange`, `CoverEngageRange`, `CoverPeekSeconds`, `CoverHideSeconds` | 2000, 1500, 8 s, 6 s | 366 |
 | `BrawlRangeFraction` | 0.5 | 365, 367 |
+| `WeakSideEnabled`, `VulnerableParts`, `WeakSideCover`, `ArmorCoverWeight`, `WeaponSideWeight` | on, [command, reactor, yarden_zamir.tech_vault], 4, 3, 1 | 1030 to 1034 |
 | `Mechanics.<Mission>Chance` | 0.15 to 0.25 | 131 |
 | `Mechanics.Siege`, `Guard`, `Scan` (hold-out profiles) | see MISSIONS.md | 132, 137, 140 |
 | `Mechanics.DeliveryRadius` | 800 | 134 |

@@ -4,31 +4,9 @@ HotCargoAi
 	CallStartFmt = "{0} calls for help. Disruptor or EMP cuts it."
 	CallCompleteFmt = "{0} got its call out. More ships inbound."
 	CallStoppedFmt = "{0}'s call was cut off."
-	FleeFmt = "{0} breaks off and runs."
 	JumpedOutFmt = "{0} jumped away."
 
-	// Labels on the ship marker.
+	// Labels on the ship marker: player-facing threats only, never the enemy plan (spec 368).
 	LabelCallingFmt = "CALLING HELP {0}%"
-	LabelJumpFmt = "FLEEING, JUMP {0}s"
-	LabelFleeing = "FLEEING"
-	LabelRegroup = "REGROUPING"
-	LabelCover = "IN COVER"
-
-	// Mouseover line of a hostile ship (spec 368). {0} is the personality name, {1} the trait list, {2} the team role.
-	PersonalityFmt = "{0}: {1}"
-	PersonalityRoleFmt = "{0}: {1} ({2})"
-	TraitKite = "kites"
-	TraitPincer = "flanks"
-	TraitDisable = "aims at guns and engines"
-	TraitFallBack = "falls back to repair"
-	TraitBait = "baits"
-	TraitTeam = "team play"
-	TraitCover = "uses cover"
-	TraitBrawl = "brawls"
-	TraitCall = "calls for help"
-	RoleTank = "tank"
-	RoleSniper = "sniper"
-	RoleFlankLeft = "flanker"
-	RoleFlankRight = "flanker"
-	RoleLine = "line"
+	LabelJumpFmt = "JUMP OUT {0}s"
 }

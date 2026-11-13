@@ -90,7 +90,7 @@ internal sealed class FallBackStrategy : AIStrategyModule
         if (threat is not null && HunterOrders.EdgeDistance(ship, threat) < t.FallBackDistance)
         {
             Vector2 away = Vector2.FromAngle(threat.DetWorldCenter.DirectionTo(ship.DetWorldCenter));
-            HunterOrders.MoveTo(ship, threat.DetWorldCenter + away * (t.FallBackDistance * 1.25f + threat.WorldBoundingRadius), t.FallBackDistance * 0.25f);
+            Ai.PersonalityStrategy.MoveGuarded(ship, threat.DetWorldCenter + away * (t.FallBackDistance * 1.25f + threat.WorldBoundingRadius), t.FallBackDistance * 0.25f, threat, t);
             return true;
         }
         _repair.OnAITick(ship, ai);

@@ -6,9 +6,6 @@ wait 8
 pu_set Enabled false
 closepanel
 wait 1
-uxpick 3
-wait 1
-uxpick 1
 ev_set Enabled false
 godmode on
 pause off

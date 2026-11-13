@@ -2,8 +2,6 @@
 newgame run
 wait 8
 pu_set Enabled false
-expectevent getaway
-choose 3 1
 ev_set WantedEventChance 1
 # Wanted alone stays vanilla: no warning, no event. ("wanted" is the UX test command: the nearest station's faction wants you.)
 wanted
@@ -12,7 +10,9 @@ expect ev_wanted == 1
 expect ev_wanted_warned == 0
 expect ev_pending == 0
 # Heat reaches the first stage: the warning fires and a Wanted event opens.
-heat 30
+stage
+# 5 heat above the stage: the crate payment below takes 5 heat, and the second warning needs the stage.
+heat 5
 wait 2
 expect ev_wanted_warned == 1
 expect ev_pending == 1

@@ -53,7 +53,7 @@ The content files are the source of truth: `mod/chains/chains.rules` (chains, st
 
 ### Presentation
 
-- Comms: a chain stage offer is named "[Chain] <chain title>: <stage title>" with "[Chain]" in gold. Its description starts with "So far:" and the last story lines. Its reward list has a gold "Story chain, part N" line.
+- Comms: a chain stage offer is named "[Chain] <chain title>: <stage title>" with "[Chain]" in gold. Its description is the stage brief: what to do, then the catch. Its reward list has a gold "Story chain, part N" line; its tooltip shows "So far:" and the last story lines.
 - The comms mission list and the mission log group chain stages in their own category, "Story Chains".
 - Chain pages and results use the event window. A result that leads to a page at the station shows above that page, so the window goes straight on.
 
@@ -198,9 +198,9 @@ Reads as: the corporation's own data is worth money, safety or a crate. Selling 
 | `ChainCarefulTarget` | Station | Careful targeting | 7 minutes: destroy 2 escorts, keep the hostile transport whole (ProtectShips), payment at the station. |
 | `ChainCourierHit` | Arrival | Careful targeting | As above, near the fleet, no payment trip. |
 | `ChainMine` | Station | Mining | 15 minutes: deliver 40 to 60 iron to the station. |
-| `ChainSalvageRace` | Station | Salvage | 8 minutes: haul 3 processors from a drifting cargo pod to the station; 2 rival ships (hunter AI) guard it. |
+| `ChainSalvageRace` | Station | Salvage | 8 minutes: haul 3 processors from a drifting cargo pod to the station; 2 rival ships guard it (vanilla Normal AI, so they fight only near the pod). |
 | `ChainClearRaiders` | Station | Combat | Defeat 2 to 3 raiders near the station, payment at the station. |
-| `ChainBlackBox` | Station | Combat | Defeat a tier + 1 security drone (hunter AI) at a hunter wreck, payment at the station. |
+| `ChainBlackBox` | Station | Combat | Defeat a tier + 1 security drone at a hunter wreck (vanilla Normal AI, so it fights only near the wreck), payment at the station. |
 | `ChainStationRaid` | Return | Defend | Defeat 2 corporate ships (hunter AI) near the station. |
 | `ChainAmbush` | Arrival | Combat | Defeat a rival fleet (hunter AI) that drops in near the fleet. |
 | `ChainDepot` | Arrival | Combat | Destroy 2 defense platforms and a guard ship. |

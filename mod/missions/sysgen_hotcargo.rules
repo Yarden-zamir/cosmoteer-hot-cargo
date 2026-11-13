@@ -10,7 +10,8 @@ SubSpawners
 ]
 
 // Spec 36. A civilian freighter waits next to a station. After the players accept, it flies to a jump point in open space.
-// Raiders wait near the jump point. The freighter moves only while a player is near it (ships far from players are in stasis).
+// The escort objective moves the jump point to MissionTunables.EscortRouteShare of the gate ring and spawns the raiders
+// on the route (missions/convoy_ambush.rules). The freighter moves only while a player is near it (ships far from players are in stasis).
 Escort
 {
 	Type = None
@@ -22,7 +23,7 @@ Escort
 
 	SubSpawners
 	[
-		// The jump point. The escort objective reveals it on acceptance.
+		// The jump point. Its direction from the station is the first route that the escort objective tries. The objective reveals it on acceptance.
 		{
 			Type = Doodads
 			DoodadType = cosmoteer.poi_target_area
@@ -35,38 +36,6 @@ Escort
 			HideIfUnexplored = true
 			ShowOnlyInFog = true
 			SuppressLocationAssertions = true
-
-			SubSpawners
-			[
-				// Raiders. Unique allegiance, so they are hostile to everyone, the freighter included.
-				{
-					Type = Ships
-					Tags = [hc_escort_raider]
-					Count = [2, 3]
-					Distance = [900, 1400]
-					Allegiance = Unique
-					SynchronizeAllegiance = true
-					SuppressLocationAssertions = true
-					FamePerTier = &/TIER_TABLES/StandardFamePerTier
-					MaxFamePerTier = &/TIER_TABLES/StandardMaxFamePerTier
-					ShipCriteria
-					{
-						UseLocalFactionWeights = true
-						UseTierField = true
-						Tier = -1
-						AllowTierRangeExpansion = true
-						Tags = [combat]
-					}
-					AI
-					{
-						Type = Normal
-						ChanceToConsiderSurrenderingToPlayer = 0
-						PatrolRadius = 500
-						TargetAcquireRangeFromOrigin = 2500
-						TargetUnacquireRangeFromOrigin = 3500
-					}
-				}
-			]
 		}
 
 		// The freighter. A small unacquire range makes AggroEnemies fly it to its AI origin all the time,

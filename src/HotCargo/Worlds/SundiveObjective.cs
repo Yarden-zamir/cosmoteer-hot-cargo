@@ -17,6 +17,7 @@ using Halfling.Random;
 using Halfling.Serialization;
 using Halfling.Serialization.Generic;
 using HotCargo.Core;
+using HotCargo.Missions;
 
 namespace HotCargo.Worlds;
 
@@ -28,7 +29,7 @@ namespace HotCargo.Worlds;
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
 [SerialDerivedType(TypeName = "HotCargoSundive")]
-internal sealed class SundiveObjective : Objective
+internal sealed class SundiveObjective : Objective, IMissionMarkers
 {
     [ReflectiveSerialization(Explicit = true)]
     [SerialDerivedType(TypeName = "HotCargoSundive")]
@@ -56,6 +57,8 @@ internal sealed class SundiveObjective : Objective
     [Serialize] public Vector2 Site { get; private set; }
     [Serialize] public float Radius { get; private set; }
     [Serialize(Optional = true)] public ObjectID? SitePoiID { get; private set; }
+
+    IEnumerable<ObjectID> IMissionMarkers.MarkerIds => SitePoiID is { } id ? [id] : [];
     [Serialize(Optional = true)] public int Tier { get; private set; }
     [Serialize(Optional = true)] public float SalvageSeconds { get; private set; }
     /// <summary>The ship that holds the recorder. Null while the dive goes on.</summary>

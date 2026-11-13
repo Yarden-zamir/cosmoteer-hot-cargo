@@ -771,7 +771,7 @@ sealed class Session
     {
         w.WriteString("mission", m.MissionID.ToString());
         w.WriteString("type", m.MetatypeID.ToString());
-        w.WriteString("name", m.Name.Text);
+        w.WriteString("name", Ux.MissionTitle.Plain(m));
         w.WriteString("category", m.Metatype.CategoryID.ToString());
         if (m.Faction is { } f) w.WriteString("faction", f.ToString());
         if (m.GetTierRange(m.Game.Sim) is { } tr) { w.WriteNumber("tier_min", tr.Min); w.WriteNumber("tier_max", tr.Max); }

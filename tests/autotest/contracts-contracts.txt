@@ -40,3 +40,4 @@ expect contract_accepted == 1
 expect contract_rival_offered == 0
 contract_stats end
 quit
+# tier: smoke

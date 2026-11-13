@@ -6,10 +6,6 @@ pu_set Enabled false
 pause off
 closepanel
 wait 1
-uxpick 3
-wait 2
-uxpick 1
-wait 2
 ev_set Enabled false
 godmode on
 tostation

@@ -40,7 +40,8 @@ public static class HunterSpawner
     public static int WavesSpawned { get; private set; }
 
     /// <summary>Live hunters. Wreck pieces keep the tag but belong to the junk player, so they do not count.</summary>
-    public static IEnumerable<Ship> Hunters(SimRoot sim) => sim.Ships.Where(s => s.HasTag(HunterTag) && !s.IsJunk);
+    /// <summary>Live hunters. A hunter ship that the players took over (it now has a human owner) is no longer a hunter.</summary>
+    public static IEnumerable<Ship> Hunters(SimRoot sim) => sim.Ships.Where(s => s.HasTag(HunterTag) && !s.IsJunk && !s.IsHumanPlayerShip);
 
     // A spawn error must not crash the sim tick. Errors.Guard skips the wave and shows the error.
     internal static void OnStageStarted(Run run, SimRoot sim, int stageIndex) => Errors.Guard("hunter spawn", () =>
@@ -100,6 +101,43 @@ public static class HunterSpawner
             ? Math.Max(run.CurrentTier, route)
             : run.CurrentTier;
 
+    /// <summary>Ships and tier of a stage response at the current run progress. ScaleShips (the Pursuit factors) first, then
+    /// the difficulty factors (spec 682). Spec 305: the route tier floor.</summary>
+    static (int Ships, int Tier) Plan(Run run, SimRoot sim, StageResponse r)
+    {
+        float progress = WaveModel.Progress(run.State.SectorIndex, run.T.Journey.RunSectorCount);
+        int ships = run.Pressure().Ships(ScaleShips(run, sim, WaveModel.ShipCount(r.ShipCount, r.EarlyScale, progress)));
+        int tier = BaseTier(run) + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + RunModes.Difficulty.ExtraHunterTiers(run);
+        return (ships, tier);
+    }
+
+    /// <summary>
+    /// Spec 854: new tunables replan the waiting groups of each stage with the new count and tier. They keep their arrival times.
+    /// The k waiting groups of a stage take the last k groups of the new plan; a group that the new plan does not have is dropped.
+    /// Runs in Run.Hooks.TunablesApplied, so in co-op it runs in the tunables input on every machine.
+    /// Limit: Strike waves that overlap share one stage name, so their groups replan as one stage. Revisit if that skews counts.
+    /// </summary>
+    internal static void OnTunablesApplied(Run run)
+    {
+        var replanned = new List<PendingWave>();
+        foreach (var stage in run.State.Hunters.Pending.GroupBy(w => w.Stage))
+        {
+            var waves = stage.ToList();
+            if (run.T.Hunters.Stages.FirstOrDefault(s => s.Name == stage.Key) is not { } r) { replanned.AddRange(waves); continue; }
+            var (ships, tier) = Plan(run, run.Game.Sim, r);
+            int[] groups = WaveModel.SplitWaves(ships, r.Waves);
+            for (int j = 0; j < waves.Count; j++)
+            {
+                int g = groups.Length - waves.Count + j;
+                if (g >= 1) replanned.Add(new PendingWave { Due = waves[j].Due, Stage = stage.Key, Count = groups[g], Tier = tier });
+            }
+        }
+        int before = run.State.Hunters.Pending.Sum(w => w.Count);
+        // OrderBy is stable, so groups with the same due time keep their order on every client.
+        run.State.Hunters.Pending = replanned.OrderBy(w => w.Due).ToList();
+        if (before > 0) Log.Info($"hunters: waiting groups replanned for new tunables, {before} -> {replanned.Sum(w => w.Count)} ships");
+    }
+
     /// <summary>
     /// Spec 190-191. Scales the stage response to the run progress, spawns the first group now and queues the others.
     /// </summary>
@@ -107,10 +145,7 @@ public static class HunterSpawner
     {
         if (sim != run.Game.Sim) return;
         var r = Response(run, stageName);
-        float progress = WaveModel.Progress(run.State.SectorIndex, run.T.Journey.RunSectorCount);
-        // Spec 682: the difficulty factors change ships and tier on top of the stage scaling. Spec 305: the route tier floor.
-        int ships = run.Pressure().Ships(ScaleShips(run, sim, WaveModel.ShipCount(r.ShipCount, r.EarlyScale, progress)));
-        int tier = BaseTier(run) + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + RunModes.Difficulty.ExtraHunterTiers(run);
+        var (ships, tier) = Plan(run, sim, r);
         int[] groups = WaveModel.SplitWaves(ships, r.Waves);
         var later = Enumerable.Range(1, groups.Length - 1).Select(i => new PendingWave
         {
@@ -259,8 +294,18 @@ public static class HunterSpawner
     /// All hunters in one system share one hostile player index, so they are allies of each other across waves.
     /// The index comes from the hunters already in the sim, so it survives save and load without extra state.
     /// </summary>
-    static int HunterAllegiance(SimRoot sim, CareerSimModeManager career) =>
-        Hunters(sim).FirstOrDefault()?.Metadata.PlayerIndex ?? career.AllocUniquePlayerIndex();
+    /// <summary>
+    /// The shared allegiance of all hunters: the one of a live hunter, else a new unique one. Only an allocated unique index
+    /// (MaxPlayers and above) is reused: a hunter with a human index belongs to the players, and new hunters with that index
+    /// joined the players' fleet (playtest 2026-11-13).
+    /// </summary>
+    static int HunterAllegiance(SimRoot sim, CareerSimModeManager career)
+    {
+        int index = Hunters(sim).Select(h => h.Metadata.PlayerIndex).FirstOrDefault(p => p >= career.Rules.MaxPlayers, -1);
+        if (index < 0) index = career.AllocUniquePlayerIndex();
+        if (career.IsHumanPlayerAllegiance(index)) throw new InvalidOperationException($"hunter allegiance {index} is a human player's");
+        return index;
+    }
 
     /// <summary>UI and audio only. It changes no sim state, so it is safe in the sim tick on every client.</summary>
     static void ShowAlert(Run run, string text)

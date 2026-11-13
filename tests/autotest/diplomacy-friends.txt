@@ -56,18 +56,14 @@ wait 1
 expect dip_held == 0
 expect dip_vaulttech == 6
 expect tech == 6
-# Held tech keeps the run going: a third ship holds 2, then the players hand all vault tech to a hunter.
+# Held tech keeps the run going: a third ship holds 2, then the players lose all vault tech.
 dip_spawn friend 250
 wait 2
 dip_set FeeChanceBase -5
 dip hold friend 2
 wait 1
 expect dip_held == 2
-spawnstage Warning
-wait 2
-dip_near hunter
-wait 1
-dip handover hunter 4
+tech remove 4
 wait 1
 expect dip_vaulttech == 0
 wait 6

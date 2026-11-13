@@ -4,13 +4,9 @@ wait 8
 pu_set Enabled false
 godmode on
 ev_set Enabled false
-# Three jumps to the lowest tier neighbor each time: sector 4, where the main route is tier 1 + 2 x 3 = 7.
-rm_route low
-wait 12
-rm_route low
-wait 12
-rm_route low
-wait 12
+# Sector index 4 in the tier-1 start system: the main route is tier 1 + 2 x 3 = 7, so the start system is a low side system.
+# The route tier math is a unit test (TierCapModelTests); this test checks that a real stage response uses it.
+sectorindex 4
 expect sector == 4
 expect balance_hunter_base_tier == 7
 expect balance_hunter_floor_gap >= 1
