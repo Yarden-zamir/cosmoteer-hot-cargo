@@ -1,0 +1,262 @@
+# Co-op session: events (who pays, late clicks, money split), comms, research trade, shared choices, contracts, factions prices,
+# wanted, trade and loss. See coop-core.txt for "client:", "as 1", "on 1" and steps.
+# Events stay on until events.wanted (its trigger needs them). A run has no start event (#22): steps open named events.
+mphost {PORT}
+mpstart 2
+mp godmode on
+# The event window opens after the run intro closes (GUI only). The client's hover needs its window.
+closepanel
+on 1 closepanel
+
+step events.client-pays
+# The client pays the toll (choice 1, costs the chooser money).
+mp event toll_gate
+waitfor ev_pending == 1 10
+expectevent toll_gate
+ev_mark
+on 1 ev_mark
+# The toll is a page option (spec 810): 4 steps of credits make one toll. The client's draft is shared, so the host sees it.
+on 1 pick 1 4
+expectoption 1 selected
+as 1 choose 1
+waitfor ev_answered == 1 30
+expect ev_money_gain == 0
+on 1 expect ev_money_gain < 0
+# A click on the answered page arrives late. The sim ignores it: no new result, and the host pays nothing.
+mpchoose marked 1
+wait 3
+expect ev_pending == 0
+expect ev_money_gain == 0
+
+step events.wanted
+# Spec 470 to 472: both machines become wanted, the Wanted event opens on both, the client pays a crate for a clean record.
+mp ev_set WantedEventChance 1
+mp wanted
+wait 2
+expect ev_wanted == 1
+# A heat stage start lets the Wanted trigger open its page (3 stages since #19: heat alone may not reach one).
+mp stage
+waitfor ev_pending == 1 20
+expect ev_wanted_warned == 1
+mp ev_set Enabled false
+mp event clean_record
+wait 2
+expectevent clean_record
+ev_mark
+# The crate is a page option (spec 810): the client selects it in the shared draft, then submits.
+on 1 pick 2
+as 1 choose 1
+waitfor ev_wanted == 0 30
+expect ev_pending == 0
+expect ev_tech_gain == -1
+
+step events.split
+# The host sells one crate through the fence: a tech cost, and the money splits between the players.
+mp event the_fence
+waitfor ev_pending == 1 10
+ev_mark
+on 1 ev_mark
+pick 1
+expectoption 1 selected
+choose 1
+waitfor ev_answered == 1 30
+expect ev_tech_gain == -1
+expect ev_money_gain > 0
+on 1 expect ev_money_gain > 0
+on 1 expect ev_pending == 0
+
+step events.options-draft
+# Spec 810, 592: the client selects two crates on the Fence page, the host sees the same shared draft and submits it,
+# and both machines sell the same two crates. The two crates come first, so the later steps keep their tech.
+mp tech add 2
+mp event the_fence
+waitfor ev_pending == 1 10
+ev_mark
+on 1 ev_mark
+on 1 pick 1 2
+expectoption 1 selected
+choose 1
+waitfor ev_answered == 1 30
+expect ev_tech_gain == -2
+on 1 expect ev_tech_gain == -2
+
+step events.hail
+# Spec 771: a freighter carries the page. The client chooses in its comms window; the host's late click on the same page does nothing.
+mp ev_set StationEventChance 0
+mp event broken_down
+waitfor ev_carrier == 1 20
+ev_mark
+on 1 expectcomms carrier Strip their cargo 1
+on 1 ev_mark
+on 1 ev_comms carrier Strip their cargo
+waitfor ev_pending == 0 30
+mpchoose marked 3
+wait 3
+expect ev_res_steel_gain == 30
+on 1 expect ev_res_steel_gain == 30
+
+step events.off-books
+# Spec 74, 771 (#12): the host sells a crate off the books through the real comms window. The line opens the page in the same
+# tab, and the choice works. The sale reaches the client's sim.
+on 1 ev_mark
+# A station offers event lines only while events are on (EventHail); events.wanted turned them off.
+mp ev_set Enabled true
+wait 1
+ev_open station
+ev_click station Sell a crate off the books
+expectevent off_books
+ev_mark
+pick 1
+expectoption 1 selected
+ev_click station Sell the crates
+waitfor ev_pending == 0 20
+expect ev_tech_gain == -1
+expect ev_money_gain > 0
+mp ev_set Enabled false
+on 1 waitfor ev_tech_gain == -1 30
+
+step events.research-trade
+# Spec 760 to 763: the offer is built the same on both machines, the client trades from its own machine, the techs unlock on both.
+ev_researched_mark
+on 1 ev_researched_mark
+mp event research_trade
+waitfor ev_pending == 1 20
+expect ev_offer_rate >= 1.2
+ev_mark
+on 1 choose 1
+waitfor ev_pending == 0 30
+expect ev_tech_gain <= -1
+expect ev_researched_gain >= 1
+on 1 expect ev_researched_gain >= 1
+
+step sharedchoice.hover
+# Spec 600 and later. Presence: the client hovers choice 2. It reaches the host through the hover RPC, not through the sim.
+# The fence needs 2 tech; earlier steps spent some.
+mp tech add 4
+mp event the_fence
+waitfor ev_pending == 1 10
+on 1 hover 2
+waitfor sc_hovers >= 1 30
+expect sc_hover_choice == 2
+on 1 hover off
+waitfor sc_hovers == 0 30
+
+step sharedchoice.unanimous
+# Both vote "Not today".
+mp sc_reset
+votemode on
+waitfor sc_votemode == 1 10
+vote 2
+as 1 vote 2
+waitfor sc_decided_reason == 1 60
+expect sc_decided_choice == 2
+expect ev_pending == 0
+
+step sharedchoice.timeout
+# Host 2, client 1 with two crates selected (spec 810). A tie after 10 game seconds goes to the lowest choice (1, sell).
+mp sc_reset
+mp sc_set VoteTimeoutSeconds 10
+mp event the_fence
+waitfor ev_pending == 1 10
+ev_mark
+on 1 pick 1 2
+expectoption 1 selected
+vote 2
+as 1 vote 1
+waitfor sc_decided_reason == 3 60
+expect sc_decided_choice == 1
+expect ev_tech_gain == -2
+
+step sharedchoice.force
+# A pick in vote mode does nothing; the vote counts. Then the host forces the decision.
+mp sc_reset
+mp sc_set VoteTimeoutSeconds 0
+mp event the_fence
+waitfor ev_pending == 1 10
+on 1 choose 2
+on 1 wait 3
+expect ev_pending == 1
+as 1 vote 2
+waitfor sc_votes >= 1 60
+forcevote
+waitfor sc_decided_reason == 4 30
+expect sc_decided_choice == 2
+expect ev_pending == 0
+votemode off
+waitfor sc_votemode == 0 10
+
+step contracts.client-pays
+# Spec 102: the client accepts a paid contract from its own machine. The client pays the fee and collects the bonus;
+# the host's money does not change.
+money_mark
+as 1 contract_money 500000
+mp contract_pick paid
+mp contract_terms informant 0
+wait 2
+on 1 contract_accept
+waitfor contract_accepted == 1 30
+on 1 expect contract_fee_diff == 0
+on 1 expect contract_bonus_payer_local == 1
+expect contract_money_change == 0
+expect contract_bonus_payer_local == 0
+mp contract_give_bonus
+waitfor contract_bonus_given == 1 30
+on 1 expect contract_money_change >= 1000
+expect contract_money_change == 0
+
+step factions.prices
+# Spec 644, 650, 655: prices are sim state. The client's trades at a fence and at a heat markup pass the sim's exact price check.
+mp heat -100
+mp tostation
+as 1 tostation
+wait 3
+mp fa_roles - station
+mp fa_base
+wait 2
+expect fa_rivalsell == 1.5
+on 1 expect fa_rivalsell == 1.5
+# One unit to the rival's station pays the fence premium (x1.5 of the tech value).
+on 1 tech sell 1
+on 1 waitfor moneygain >= 22000 60
+mp heat 80
+wait 2
+expect fa_markup == 1.2
+on 1 expect fa_buyratio == 1.2
+on 1 fa_buy 5
+on 1 waitfor fa_spent > 0 60
+on 1 expect fa_buygap == 0
+
+step factions.blind
+on 1 fa_blind on
+waitfor fa_blind == 1 30
+on 1 fa_blind off
+waitfor fa_blind == 0 30
+
+step tech.trade-loss
+# Spec 17, 443, 1011: a new run. Each player's starter ship has 4 vaults and half of the tech (4 + 4); each player sells from
+# their own ship. The last sale loses the run for both.
+mprestart
+# The loss must happen: godmode blocks it, and its switch stays on across a restart.
+mp godmode off
+mp ev_set Enabled false
+mp tech_set LossGraceSeconds 3
+expect vaulttech == 8
+expect vaults == 8
+expect vaultpaths == 8
+expect noaccess == 0
+# The host money before the client sells: the client's sale must not change it (the starting money depends on the starter preset).
+hc_mark
+mp tostation
+as 1 tostation
+wait 5
+on 1 tech sell 4
+waitfor tech == 4 60
+on 1 waitfor moneygain >= 60000 60
+expect hc_money_gain == 0
+tech sell 4
+waitfor lost == 1 120
+expect tech == 0
+expect moneygain >= 60000
+on 1 waitfor lost == 1 30
+
+end
