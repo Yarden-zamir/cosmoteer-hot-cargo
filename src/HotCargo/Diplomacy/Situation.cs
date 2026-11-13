@@ -128,8 +128,12 @@ public static class Situation
     public static bool MayHold(Run run, Ship ship) =>
         !(Cosmoteer.PlayerIndexes.IsFactionMilitary(ship.Metadata.PlayerIndex) && Factions.FactionsArea.IsAlly(run, Faction(ship)));
 
-    /// <summary>A ship that can fight for the players: it has offensive weapons and an AI with the HcHired module (not a platform or station).</summary>
-    public static bool Hireable(Ship ship) => AiGate.HasOffensiveWeapons(ship) && ship.AI?.GetStrategyModule<HiredStrategy>() is not null;
+    /// <summary>
+    /// A ship that can fight for the players: it has offensive weapons and an AI with the HcHired module (not a platform or station).
+    /// Ships of the corporation's ally faction in its own space are at peace with the hunters (spec 1150), so they take no contract there.
+    /// </summary>
+    public static bool Hireable(Ship ship) =>
+        AiGate.HasOffensiveWeapons(ship) && ship.AI?.GetStrategyModule<HiredStrategy>() is not null && !Factions.AllyPeace.IsAllyFactionHere(ship);
 
     /// <summary>Distance from a ship to the nearest station of the system.</summary>
     public static float StationDistance(SimRoot sim, Ship ship)
