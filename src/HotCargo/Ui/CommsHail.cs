@@ -307,8 +307,8 @@ public static class CommsHail
             var widget = buttons[i];
             if (locked) widget.SelfInputActive = false;
             slots.Add(new SharedChoice.OptionSlot(widget, choice.Option));
-            // A listener's click is a vote: it keeps the window open.
-            if (speaker is not null) choice.CloseOnClick = false;
+            // A vote (vote mode, or any click of a listener) is not a pick: the window stays open, so the voter sees the votes.
+            if (speaker is not null || SharedChoice.SharedChoices.Voting(run)) choice.CloseOnClick = false;
             choice.OnClick = (_, _) => Errors.Guard("hail choice", () =>
             {
                 if (!panel.Click(s.Serial, choice.Option)) return;

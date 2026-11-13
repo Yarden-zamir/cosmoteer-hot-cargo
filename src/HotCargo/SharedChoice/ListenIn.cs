@@ -113,7 +113,11 @@ public static class ListenIn
             _barGame = game;
             _shown = [];
         }
-        _shown = Hails(run);
+        var hails = Hails(run);
+        if (hails.Count != _shown.Count)
+            Log.Info($"listen-in: player {game.LocalPlayerIndex} sees {hails.Count} hail(s): " +
+                     string.Join(", ", hails.Select(h => $"player {h.CallerPlayer} with {h.Callee.Metadata.PlainShipName}")));
+        _shown = hails;
         _bar.SelfActive = _shown.Count > 0 && game.MapDisplayFactor < 1f;
         if (!_bar.SelfActive) return;
         while (_bar.Children.Count < _shown.Count)

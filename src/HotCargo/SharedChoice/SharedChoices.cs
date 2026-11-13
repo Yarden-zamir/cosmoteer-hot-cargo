@@ -115,6 +115,8 @@ public static class SharedChoices
             default:
                 throw new InvalidOperationException($"unknown shared choice action {input.Action}");
         }
+        // Also decide at once: a dialogue with an enemy can pause the game (vanilla setting), and a paused game has no ticks.
+        if (box is not null && Voting(run)) TryDecide(run, sim, box, Electorate(run).ToHashSet());
     }
 
     /// <summary>Sim tick: drops the boxes of closed pages and decides the votes that are done (all voted, timeout, force, a voter left).</summary>
@@ -122,19 +124,26 @@ public static class SharedChoices
     {
         var s = run.State.SharedChoice;
         if (s.Boxes.Count == 0) return;
-        s.Boxes.RemoveAll(b => Domain(b.Domain).OptionCount(run, b.Serial) == 0);
+        foreach (var closed in s.Boxes.Where(b => Domain(b.Domain).OptionCount(run, b.Serial) == 0).ToList())
+        {
+            Log.Info($"shared choice: {closed.Domain} {closed.Serial} closed; its {closed.Votes.Count} vote(s) drop");
+            s.Boxes.Remove(closed);
+        }
         if (!Voting(run)) return;
         var electorate = Electorate(run).ToHashSet();
-        foreach (var box in s.Boxes.ToList())
-        {
-            bool timedOut = VoteModel.TimedOut(run.State.GameSeconds, box.FirstVoteSeconds, run.T.SharedChoice.VoteTimeoutSeconds);
-            var decision = VoteModel.Resolve(box.Votes.Select(v => (v.Player, v.Option)), electorate, timedOut, box.Forced);
-            box.Forced = false;
-            if (decision is not { } d) continue;
-            s.Boxes.Remove(box);
-            Decide(run, sim, box, d, electorate);
-        }
+        foreach (var box in s.Boxes.ToList()) TryDecide(run, sim, box, electorate);
     });
+
+    /// <summary>Decides a box when its vote is done (all voted, timeout, force), and removes it. Runs in the sim tick and in the vote input.</summary>
+    static void TryDecide(Run run, SimRoot sim, VoteBox box, IReadOnlySet<MessengerID> electorate)
+    {
+        bool timedOut = VoteModel.TimedOut(run.State.GameSeconds, box.FirstVoteSeconds, run.T.SharedChoice.VoteTimeoutSeconds);
+        var decision = VoteModel.Resolve(box.Votes.Select(v => (v.Player, v.Option)), electorate, timedOut, box.Forced);
+        box.Forced = false;
+        if (decision is not { } d) return;
+        run.State.SharedChoice.Boxes.Remove(box);
+        Decide(run, sim, box, d, electorate);
+    }
 
     /// <summary>
     /// Applies the winning option. The voters of that option pay, the lowest player index first: the next one tries when the sim

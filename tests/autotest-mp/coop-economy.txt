@@ -95,13 +95,16 @@ wait 3
 expect ev_res_steel_gain == 30
 on 1 expect ev_res_steel_gain == 30
 
-step listen.event
+step sharedchoice.listen-event
 # Spec 1131 to 1137: the host talks to a ship that carries an event page. The client sees one listen button, listens and votes.
 # In first pick mode the vote is advisory: both pages show it and the page stays. The host picks; both machines see the result,
 # and the client's listen window closes after the host's channel.
 mp event broken_down
 waitfor ev_carrier == 1 20
 on 1 expect listen_hails == 0
+# Comms range: the host's ship next to the carrier.
+mp ev_carrier_goto
+wait 2
 ev_open carrier
 on 1 waitfor listen_hails == 1 30
 on 1 listen 1

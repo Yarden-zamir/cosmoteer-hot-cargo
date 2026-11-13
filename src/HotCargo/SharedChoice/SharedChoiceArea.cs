@@ -82,9 +82,21 @@ public static class SharedChoiceArea
         // Listen buttons that show on this machine, open listen windows (after one frame of each), and option buttons with votes
         // shown in listen windows and in the player's own comms windows.
         Autotest.Fields["listen_hails"] = () => ListenIn.ShownCount;
+        // Open comms channels of all players in the sim (the vanilla set that the listen list reads).
+        Autotest.Fields["listen_channels"] = () => RequireRun().Game.Sim.Mode is Cosmoteer.Modes.Career.CareerSimModeManager m ? m.OpenComms.Values.Sum(c => c.Count) : 0;
         Autotest.Fields["listen_open"] = () => { ListenIn.Frame(); return ListenIn.OpenWindows().Count(); };
         Autotest.Fields["listen_vote_marks"] = () => Tabs(listening: true).Sum(t => SharedChoicePanel.VoteMarks(t._dialogueButtonsBox.Children));
         Autotest.Fields["comms_vote_marks"] = () => Tabs(listening: false).Sum(t => SharedChoicePanel.VoteMarks(t._dialogueButtonsBox.Children));
+        // listen_log: logs the open comms channels in the sim and this machine's comms windows with the vanilla call checks.
+        Autotest.Commands["listen_log"] = _ =>
+        {
+            var run = RequireRun();
+            var mode = (Cosmoteer.Modes.Career.CareerSimModeManager)run.Game.Sim.Mode;
+            Log.Info($"AUTOTEST LISTEN player {run.Game.LocalPlayerIndex}: channels [{string.Join(", ", mode.OpenComms.SelectMany(kv => kv.Value.Select(c => $"{c.Metadata.PlainShipName} (player {c.Metadata.PlayerIndex}) to {kv.Key.Metadata.PlainShipName}")))}]; " +
+                     $"hails {ListenIn.Hails(run).Count}, shown {ListenIn.ShownCount}; windows [" +
+                     string.Join(", ", run.Game.Gui.FloatingWindows.Children.OfType<Cosmoteer.Modes.Career.Comms.CommWindow>().Select(w =>
+                         $"{w.Caller.Metadata.PlainShipName} to {w.Callee.Metadata.PlainShipName}: call {mode.CanShipCallShip(w.Caller, w.Callee)} answer {mode.WillShipAnswerCall(w.Caller, w.Callee)} dialogue {w.Callee.AI?.WillProvideDialogue(w.Caller)} listen {ListenIn.SpeakerOf(w) is not null}")) + "]");
+        };
         // Disabled buttons in listen windows: a listener only votes.
         Autotest.Fields["listen_buttons_off"] = () => Tabs(listening: true).Sum(t => t._dialogueButtonsBox.Children.Count(b => !b.SelfInputActive));
     }
