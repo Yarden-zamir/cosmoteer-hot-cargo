@@ -75,16 +75,70 @@ public static class Playthrough
         Autotest.Commands["pt_unlock"] = arg =>
             Game().NetManager.EnqueueInput(new CommTechsTab.MPBuyTechInput(new ID<TechRules>(arg), Station()));
         Autotest.Fields["pt_unlocked"] = () => Autotest.RequireRun().Mode.Techs.IsTechUnlocked(new ID<TechRules>("cosmoteer.hyperdrive_small")) ? 1 : 0;
-        // pt_buy <resource id> <amount>: the trade window, station to ship.
+        // pt_buy <timeout seconds> <resource id> <total> [<resource id> <total> ...]: the trade window, station to ship, until the ship
+        // stores each total. Vanilla cancels and refunds a transfer that the crew did not finish, for example when the ship chases an
+        // attacker out of trade range. A person then flies back and buys the rest: every 20 seconds, each missing resource with no
+        // transfer on its way is bought again, after a move order back to the picked station if the ship is not near it.
         Autotest.Commands["pt_buy"] = arg =>
         {
             var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length != 2) throw new InvalidOperationException("pt_buy needs: resource amount");
-            Buy(new ID<ResourceRules>(parts[0]), int.Parse(parts[1], CultureInfo.InvariantCulture));
+            if (parts.Length < 3 || parts.Length % 2 == 0) throw new InvalidOperationException("pt_buy needs: timeout resource total [resource total ...]");
+            var wants = parts.Skip(1).Chunk(2).Select(p => (Resource: new ID<ResourceRules>(p[0]), Total: int.Parse(p[1], CultureInfo.InvariantCulture))).ToList();
+            _target = _station ?? throw new InvalidOperationException("no picked station; run pt_goto station first");
+            double next = 0;
+            Autotest.WaitFor(() =>
+            {
+                var missing = wants.Where(w => Stored(w.Resource) < w.Total).ToList();
+                if (missing.Count == 0) return true;
+                double now = Halfling.App.Clock.Time.Seconds;
+                if (now < next) return false;
+                next = now + 20;
+                if (!Near()) GoTo("station");
+                else foreach (var w in missing.Where(w => !BuyPending(w.Resource))) Buy(w.Resource, w.Total - Stored(w.Resource));
+                return false;
+            }, double.Parse(parts[0], CultureInfo.InvariantCulture), $"the ship to store {string.Join(", ", wants.Select(w => $"{w.Total} {w.Resource}"))}");
         };
-        Autotest.Fields["pt_steel"] = () => Stored("steel");
-        Autotest.Fields["pt_coil"] = () => Stored("coil");
-        Autotest.Fields["pt_hyperium"] = () => Stored("hyperium");
+        // pt_repair <timeout seconds>: the repair-all button of the build window (BuildToolbox.OnRepairAllClicked: repair damaged parts,
+        // rebuild destroyed ones), then the trade window for the resources that it costs. A person repairs at the station before a long
+        // flight: a ship with shot thrusters crawls. Ends when no repair or rebuild is left. Every 20 seconds, a resource of the
+        // repair that the ship has run out of, with no buy on its way, is bought again (RepairTopUp units), after a move order back
+        // to the station if the ship AI chased an attacker away.
+        Autotest.Commands["pt_repair"] = arg =>
+        {
+            double timeout = double.Parse(arg, CultureInfo.InvariantCulture);
+            _target = _station ?? throw new InvalidOperationException("no picked station; run pt_goto station first");
+            var ship = TechAutotest.PlayerShip();
+            if (!ship.NeedsPhysicalRepairs)
+            {
+                Log.Info("AUTOTEST playthrough: repair: nothing to repair");
+                return;
+            }
+            List<ID<ResourceRules>> resources;
+            using (var sui = ShipUpdateInfo.Alloc(ship))
+            {
+                if (!sui.TryConstruct(ConstructionFlags.RepairExisting | ConstructionFlags.RebuildDestroyed, maxCrewToHire: 0))
+                    throw new InvalidOperationException("repair: construction blocked");
+                using var cost = sui.GetTotalPhysicalCost(MPValueType.Displayed, returnFinalCost: true, isBuild: false);
+                resources = [.. cost.Resources.Keys];
+                foreach (var (resource, units) in cost.Resources)
+                    if (units > Stored(resource)) Buy(resource, units - Stored(resource));
+                var flags = UpdateShipFlags.Repair | UpdateShipFlags.DestroyBlocking;
+                if (Game().Sim.Mode.AllowInsufficientResources(ship)) flags |= UpdateShipFlags.AllowPartialConstruction;
+                Game().NetManager.EnqueueInput(new MPUpdateShipInput(sui, flags));
+                Log.Info($"AUTOTEST playthrough: repair queued, cost {string.Join(", ", cost.Resources.Select(r => $"{r.Value} {r.Key}"))}");
+            }
+            double next = Halfling.App.Clock.Time.Seconds + 20;
+            Autotest.WaitFor(() =>
+            {
+                if (!Repairing(TechAutotest.PlayerShip())) return true;
+                double now = Halfling.App.Clock.Time.Seconds;
+                if (now < next) return false;
+                next = now + 20;
+                if (!Near()) GoTo("station");
+                else foreach (var r in resources.Where(r => Stored(r) == 0 && !BuyPending(r))) Buy(r, RepairTopUp);
+                return false;
+            }, timeout, "the crew to repair the ship");
+        };
         // pt_build <part id>: a blueprint part on a free spot next to the hull, confirmed like the build tool's button. Crew build it.
         Autotest.Commands["pt_build"] = arg =>
         {
@@ -202,7 +256,18 @@ public static class Playthrough
 
     static Cosmoteer.Game.GameRoot Game() => Autotest.RequireRun().Game;
 
+    /// <summary>
+    /// A repair is left: a part still needs one, or the crew still work on a queued repair or rebuild. NeedsPhysicalRepairs alone
+    /// turns false once the repair-all button queued the work.
+    /// </summary>
+    static bool Repairing(Ship ship) => ship.NeedsPhysicalRepairs
+        || ship.OptionalConstructionManager is { } c && (c.QueuedPartRepairs.Count > 0 || c.QueuedPartConstructions.Count > 0);
+
+    /// <summary>Units of a repair resource that pt_repair buys again when the ship ran out before the repair ended.</summary>
+    const int RepairTopUp = 20;
+
     static ObjectID? _stationId;
+    static Func<Circle?>? _station;
 
     /// <summary>The station that pt_goto station picked. Far stations are in stasis, so the ship exists only near it.</summary>
     static MetaSpaceStation PickedStation()
@@ -223,11 +288,17 @@ public static class Playthrough
             ?? throw new InvalidOperationException("no operating station with missions in this system");
         _stationId = station.StationID;
         // A station in stasis has no hull to measure: 400 is a guess until it is live.
-        return () => PickedStation() is var s ? s.PhysicalShip?.DetWorldBoundingCircle ?? new Circle(s.DetWorldCenter, 400f) : null;
+        return _station = () => PickedStation() is var s ? s.PhysicalShip?.DetWorldBoundingCircle ?? new Circle(s.DetWorldCenter, 400f) : null;
     }
 
-    static int Stored(string resource) =>
-        TechAutotest.PlayerShip().Resources.GetResourceTotal(new ID<ResourceRules>(resource), includeStored: true, includeCarried: false);
+    static int Stored(string resource) => Stored(new ID<ResourceRules>(resource));
+
+    static int Stored(ID<ResourceRules> resource) =>
+        TechAutotest.PlayerShip().Resources.GetResourceTotal(resource, includeStored: true, includeCarried: false);
+
+    /// <summary>A buy of this resource is still on its way: the player ship owns the transfer job (MPMoveResourcesInput.GetJobOwner).</summary>
+    static bool BuyPending(ID<ResourceRules> resource) =>
+        TechAutotest.PlayerShip().Resources.ManualTransferJobs.Any(j => j.TradeType == TradeType.Buy && j.ResourceType == resource);
 
     static MetaFtlGate Relay()
     {
@@ -238,8 +309,10 @@ public static class Playthrough
     }
 
     /// <summary>
-    /// The accept button for one offer of the station: a local mission with enemies to fight that the player can afford,
-    /// the lowest tier first, then the nearest. A person picks a fight that the starting ship can win.
+    /// The accept button for one offer of the station: a local mission with enemies to fight that the player can afford.
+    /// A person picks the fight with the lowest threat: the lowest tier, then the fewest targets that use the Disable tactic,
+    /// then the nearest. A Disable target shoots the thrusters and control parts of the starter ship, which carries no steel
+    /// to rebuild them (spec 1004). A base has no personality, so a high-tier base never counts as safe.
     /// </summary>
     static void Accept()
     {
@@ -255,15 +328,50 @@ public static class Playthrough
             m.GetEnemyAllegiances(sim, enemies);
             return enemies.Count > 0;
         }
-        var pick = list
+        var fights = list
             .Where(m => m.IsLocal && m.CanAccept(sim) && Fight(m) && m.GetClosestObjective(out _) is not null
                 && Contracts.ContractBook.CanPay(run, m, run.Game.LocalPlayerIndex))
-            .OrderBy(m => m.GetTierRange(sim)?.Max ?? 0).ThenBy(m => m.GetDistanceToClosestObjective())
-            .FirstOrDefault() ?? throw new InvalidOperationException(
+            .Select(m => (Mission: m, Disablers: Disablers(run, sim, m)))
+            .OrderBy(f => f.Mission.GetTierRange(sim)?.Max ?? 0).ThenBy(f => f.Disablers).ThenBy(f => f.Mission.GetDistanceToClosestObjective())
+            .ToList();
+        Log.Info($"AUTOTEST playthrough: fights offered: {string.Join(", ", fights.Select(f => $"{f.Mission.MetatypeID} {f.Mission.MissionID} tier={f.Mission.GetTierRange(sim)?.Max} disable targets={f.Disablers} [{Targets(sim, f.Mission)}]"))}");
+        var pick = fights.Select(f => f.Mission).FirstOrDefault() ?? throw new InvalidOperationException(
                 $"{station.Name} has no local fight to accept; offers: {string.Join(", ", list.Select(m => $"{m.MetatypeID} local={m.IsLocal} accept={m.CanAccept(sim)}"))}");
         _mission = pick;
         run.Game.NetManager.EnqueueInput(new CommMissionsTab.MPAcceptMissionInput(CommMissionsTab.MissionSourceType.Ship, station, pick));
         Log.Info($"AUTOTEST playthrough: accepted {pick.MetatypeID} {pick.MissionID} '{Events.EventView.Plain(pick.Name.Text)}' at {station.Name}, {pick.GetDistanceToClosestObjective():0} away");
+    }
+
+    /// <summary>
+    /// The targets of a mission that will use the Disable tactic. Spec 363: the build fit of Disable is 1, so the personality roll and
+    /// jitter decide it, and both come from the group and the ship ID. That works for a target in stasis too.
+    /// </summary>
+    /// <summary>Logs only: each target with its fame, personality and jittered trait weights.</summary>
+    static string Targets(SimRoot sim, Mission m)
+    {
+        var objectives = new List<DefeatShipsObjective>();
+        m.GetObjectives(objectives);
+        return string.Join(" ", objectives.SelectMany(o => o.TargetShips).Select(t =>
+        {
+            t.GetTargetFameInfo(sim, out int fame, out _, applyDifficultyScaling: false);
+            var tt = Autotest.RequireRun().T.Tactics;
+            string group = t.GetTargetAllegiance(sim) is { } a ? Ai.PersonalityStrategy.GroupOf(a) : "?";
+            var w = Ai.PersonalityStrategy.Weights(group, t.ShipID, tt);
+            string weights = w is null ? "none" : string.Join("/", Enum.GetValues<Ai.Trait>().Select(tr => $"{tr}{w[(int)tr]:0.00}"));
+            return $"{t.GetPlainTargetName(sim)}:{t.ShipID}:fame{fame}:tier{t.GetTargetTier(sim)}:{Ai.PersonalityStrategy.Pick(group, t.ShipID, tt)?.Name}:{weights}";
+        }));
+    }
+
+    static int Disablers(Run run, SimRoot sim, Mission m)
+    {
+        var t = run.T.Tactics;
+        if (!t.PersonalitiesEnabled || !t.DisableEnabled) return 0;
+        var objectives = new List<DefeatShipsObjective>();
+        m.GetObjectives(objectives);
+        return objectives.SelectMany(o => o.TargetShips).Count(target =>
+            target.GetTargetAllegiance(sim) is { } allegiance
+            && Ai.PersonalityStrategy.Weights(Ai.PersonalityStrategy.GroupOf(allegiance), target.ShipID, t) is { } w
+            && w[(int)Ai.Trait.Disable] >= t.PersonalityThreshold);
     }
 
     /// <summary>The trade window's transfer from the station to the ship (CrewAndResourceTransferWindow.DoTransfer).</summary>
