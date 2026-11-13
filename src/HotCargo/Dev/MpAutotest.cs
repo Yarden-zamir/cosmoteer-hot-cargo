@@ -23,10 +23,11 @@ using HotCargo.Core;
 namespace HotCargo.Dev;
 
 /// <summary>
-/// Co-op autotests with two game instances: scripts/autotest-mp.sh runs a host slot and a client slot on the PC.
+/// Co-op autotest sessions with two game instances: scripts/autotest-mp.sh runs a host slot and a client slot on the PC.
 /// They connect over UDP on 127.0.0.1, through the same screens as a LAN game (lobby, game setup, launch).
-/// Commands: mphost, mpjoin, mpready, mpstart, mplobby, mpload, mpresync, and "mp &lt;command&gt;", which runs a test command
-/// inside the sim on every machine (so test commands that change the sim do not desync).
+/// The host's script holds all choreography; the client joins and runs "follow". Commands: mphost, mpjoin, follow, mpready,
+/// mpstart, mplobby, mpload, mprestart, mpresync, "mp &lt;command&gt;" (in the sim on every machine, as the sender),
+/// "as &lt;player&gt; &lt;command&gt;" (in the sim, as that player) and "on &lt;player&gt; &lt;command&gt;" (on that player's machine).
 /// </summary>
 public static class MpAutotest
 {

@@ -409,7 +409,8 @@ public static class Autotest
             if (!arg.Contains('.') || arg.Contains(' ')) throw new InvalidOperationException("step needs: <area>.<name>");
             CloseStep();
             _step = arg;
-            Log.Info($"AUTOTEST STEP START {arg}");
+            // The host's sim tick at the start: every effect of the step comes at or after it (scripts/coop-report.sh maps ticks to steps).
+            Log.Info($"AUTOTEST STEP START {arg} tick={Game?.Sim.Tick.ToString(CultureInfo.InvariantCulture) ?? "-"}");
             MpAutotest.OnStepStarted(arg);
         };
         // end: closes the last step and logs the totals. In a co-op game the host then sends the client away and waits for it.

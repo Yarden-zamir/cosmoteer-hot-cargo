@@ -139,7 +139,7 @@ To see more events fast, put `Events { ArrivalEventChance = 1  StationEventChanc
 
 ## Co-op (two players)
 
-The co-op autotests (`tests/autotest-mp/`) cover sync, the host's tunables, events, a sale, a loss, a win, missions, save, load and resync. Only two people can check the points below.
+The co-op autotest sessions (`tests/autotest-mp/`) cover sync (a hash of the whole run state), the host's tunables, events, a sale, a loss, a win, missions, save, load and resync. Only two people can check the points below.
 
 Before you start:
 

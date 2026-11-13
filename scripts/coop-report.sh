@@ -8,10 +8,10 @@ HOST="$(tr -d '\r' < "${1:?usage: coop-report.sh <host log> <client log>}")"
 CLIENT="$(tr -d '\r' < "${2:?usage: coop-report.sh <host log> <client log>}")"
 REASONS=()
 
-# Step starts by game and sim tick ("mpstep" runs in the sim on both machines): "game tick step" lines. Each game (a resync,
-# a load, mprestart) counts ticks from 0, so a tick names a step only together with its game number.
+# Step starts by game and the host's sim tick at the start: "game tick step" lines. Each game (a resync, a load, mprestart)
+# counts ticks from 0, so a tick names a step only together with its game number.
 STEP_TICKS="$(awk '/AUTOTEST MP game [0-9]+:/ { g = $6 + 0 }
-  /AUTOTEST sim tick [0-9]+: mpstep / { t = $6; sub(":", "", t); print g, t, $8 }' <<<"$HOST")"
+  /AUTOTEST STEP START [^ ]+ tick=[0-9]+/ { t = $7; sub("tick=", "", t); print g, t, $6 }' <<<"$HOST")"
 # The step that ran at game $1, sim tick $2: the last step that started before it, in this game or an earlier one.
 step_at() { awk -v g="$1" -v t="$2" '$1 < g || ($1 == g && $2 <= t) { s = $3 } END { print (s == "" ? "(before the first step)" : s) }' <<<"$STEP_TICKS"; }
 
