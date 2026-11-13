@@ -32,7 +32,10 @@ description: Build Hot Cargo, run unit tests, headless game tests and co-op test
 - A test reads what the game shows, not our own value source. For UI, check the vanilla widget's text or state (for example the tooltip text the game stores), and take a screenshot when the result is visual.
 
 ## Co-op tests
-- `scripts/autotest-mp.sh tests/autotest-mp/<name>.host.txt tests/autotest-mp/<name>.client.txt`. Two headless instances play host and client over LAN. Any desync fails the test. `mp <command>` runs a test command in the sim on both sides.
+- Co-op tests are 3 sessions (`tests/autotest-mp/<session>.txt`): `scripts/autotest-all.sh 400 mp:coop-core`. Two headless instances play host and client over LAN. The session file holds all choreography; the client follows (`client.txt`).
+- Each `step <area>.<name>` reports on its own. The summary gives one reason: join failed, steps failed, desync, state differs, PC link. A state difference names the step and the `RunState` members that differ.
+- `as 1 <command>` runs a command in the sim as the client player. `on 1 <command>` runs it on the client's machine (its UI, its real inputs). Details: CONTRIBUTING.md, Co-op tests.
+- A new co-op check is a new step in the session that fits, not a new test. Keep each session under about 6 minutes.
 
 ## Infrastructure failures
 These are not game failures. Rerun the test:
