@@ -1,0 +1,41 @@
+# Autonomous ships (spec 1050 to 1061): a Computer flies a ship without crew, mans the one part in front of it, the targeted reactor
+# powers the parts next to it, the sim refuses player orders, and the ship stays the player's while a Computer works.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+shipai Log on
+auto_build Drone player yarden_zamir.computer@2,0,1 cosmoteer.mining_laser_small@3,0,1 yarden_zamir.targeted_reactor@2,2 cosmoteer.storage_2x2@0,0 yarden_zamir.funnel@0,2 cosmoteer.thruster_small@0,4 cosmoteer.thruster_small@3,4 cosmoteer.thruster_small@0,-2,2 cosmoteer.thruster_small@3,-2,2 cosmoteer.thruster_small@-2,0,1 cosmoteer.thruster_small@-2,2,1 cosmoteer.thruster_small@6,0,3 cosmoteer.thruster_small@4,2,3
+expect auto_autonomous == 1
+expect auto_owner >= 0
+expect auto_crew == 0
+waitfor auto_control == 1 10
+# The Computer faces the mining laser: that part counts as crewed, and only that one.
+waitfor auto_manned == 1 10
+expect auto_crewed_parts == 1
+# A new autonomous ship gets Auto on with no rows.
+tactics_ship 1
+expect tactics_auto == 1
+expect tactics_rows == 0
+# The targeted reactor refills the batteries of the parts next to it.
+auto_drain
+expect auto_power == 0
+waitfor auto_power >= 1000 30
+# The sim refuses a player order.
+auto_order
+wait 3
+expect auto_player_orders == 0
+# Return to me: the ship flies back to the crewed ship without rows.
+tactics_editor open
+tactics_editor recall on
+tactics_editor close
+waitfor tactics_cmd == 3 10
+tactics_editor open
+tactics_editor recall off
+tactics_editor close
+# Without a working Computer the ship has no command and mans nothing; it is still the player's until it loses more.
+auto_kill yarden_zamir.computer
+waitfor auto_control == 0 10
+waitfor auto_manned == 0 10
+expect auto_owner >= 0
+quit

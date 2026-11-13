@@ -158,6 +158,7 @@ public static class ShipAiArea
         };
         Autotest.Fields["tactics_editor"] = () => TacticsEditor.IsOpen ? 1 : 0;
         Autotest.Fields["tactics_facing_row"] = () => Tactics().FacingRow;
+        Autotest.Fields["tactics_trade_row"] = () => Tactics().TradeRow;
         // The facing of the tactics attack order: the rotation offset in whole degrees, 0 to 359, while it has a rotation target, else -999.
         Autotest.Fields["tactics_face"] = () => TestShip().Commands.CurConfirmedCommand is AttackCommand { RotationTarget: not null, Rotation: { } r }
             ? ((int)MathF.Round((float)r * 180f / MathF.PI) % 360 + 360) % 360 : -999;

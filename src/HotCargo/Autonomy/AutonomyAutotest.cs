@@ -35,6 +35,8 @@ internal static class AutonomyAutotest
 
     static Ship Home() => TechAutotest.PlayerShip();
 
+    static int _moneyMark, _homeMark;
+
     internal static void Register()
     {
         // auto_build <name> <where> <part>@<x>,<y>[,<rot>] ...: builds a ship of the acting player from vanilla and mod parts, complete,
@@ -64,6 +66,21 @@ internal static class AutonomyAutotest
             ? Math.Max(0f, AutonomyWorld.EdgeDistance(TestShip(), s.Center) - s.Radius) : -1f);
         Autotest.Fields["auto_home_cargo"] = () => Home().Resources.GetResourceTotal(new ID<ResourceRules>("steel"));
         Autotest.Fields["auto_home_dist"] = () => (int)HunterOrders.EdgeDistance(TestShip(), Home());
+        // auto_mark: remembers the money and the first own ship's steel, for auto_money_gain and auto_home_gain.
+        Autotest.Commands["auto_mark"] = _ =>
+        {
+            _moneyMark = Sim().RequireGame().GetPlayerState(Autotest.ActingPlayerIndex, deterministic: true).Money;
+            _homeMark = Home().Resources.GetResourceTotal(new ID<ResourceRules>("steel"));
+        };
+        Autotest.Fields["auto_money_gain"] = () => Sim().RequireGame().GetPlayerState(Autotest.ActingPlayerIndex, deterministic: true).Money - _moneyMark;
+        Autotest.Fields["auto_home_gain"] = () => Home().Resources.GetResourceTotal(new ID<ResourceRules>("steel")) - _homeMark;
+        // auto_drain: empties the battery of every part of the test ship except reactors (setup: the targeted reactor must refill them).
+        Autotest.Commands["auto_drain"] = _ =>
+        {
+            foreach (var rs in TestShip().Parts.Where(p => p.Rules.ID != Autonomous.TargetedReactorId).SelectMany(p => p.Components.OfType<ResourceStorage>())
+                         .Where(rs => rs.ResourceType.ToString() == "battery"))
+                rs.Resources = 0;
+        };
         // auto_loot <resource> <amount> <count> <distance>: drops count loot items of amount units in a ring around the test ship, distance from its hull.
         Autotest.Commands["auto_loot"] = arg =>
         {
