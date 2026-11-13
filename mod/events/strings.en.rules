@@ -8,8 +8,21 @@ HotCargoEventMissions
 	Tow = "Tow Job"
 	TowDesc = "Tow the dead freighter to the nearest station.\nKeep it in one piece."
 	TowFmt = "Tow {0} to the nearest station"
+	HandOverFmt = "Hand the {0} {1} to {2}: hail it"
+	HandOverLostFmt = "The {0} is lost. The job failed."
+	OkaforPickupFmt = "Get Okafor off {0}: hail it"
+	DeliverGone = "The ship is gone"
+	DeliverFarFmt = "Bring {0} within {1:0} of the station"
+	DeliverCrewFmt = "Take your crew off {0} first"
+	SealedCase = "Sealed Case"
+	SealedCasePlural = "Sealed Cases"
+	SealedCaseDesc = "A locked case for a Courier Job. Hand it to the contact. The client says not to open it."
+	FlightRecorder = "Flight Recorder"
+	FlightRecorderPlural = "Flight Recorders"
+	FlightRecorderDesc = "A corporate hunter's flight recorder, still sending. A station broker wants it."
+	RecoverFmt = "Recover the {0} {1}"
 	Courier = "Courier Job"
-	CourierDesc = "Fly a sealed case to the contact across the system and back within {time_limit_minutes} min."
+	CourierDesc = "Carry a sealed case to the contact across the system and hail it, within {time_limit_minutes} min.\nThe case needs a free storage slot."
 	SiegeDesc = "Drive the raiders off a pinned freighter before its shields fail."
 }
 
@@ -24,4 +37,26 @@ HotCargoEvents
 	CarrierRefuses = "The station stops answering. Your heat is too high for them."
 	RelicSensed = "Your vault hums: stolen tech nearby"
 	RelicSensedChat = "Your vault picks up a tech signature from a dead ship nearby. Another crew's haul? Fly close to look."
+}
+
+// Item context actions (spec 1111 to 1118).
+HotCargoItems
+{
+	OpenCase = "Open the case"
+	OpenCaseTip = "Break the seal. The contact may notice when you hand it over."
+	OpenedCase = "Opened Case"
+	OpenedCasePlural = "Opened Cases"
+	OpenedCaseDesc = "A courier case with a broken seal. The contact still takes it, but may notice."
+	AccessCodes = "Corporate Access Codes"
+	AccessCodesPlural = "Corporate Access Codes"
+	AccessCodesDesc = "Stolen corporate codes. A station dock officer buys them off the books."
+	TracerBeacon = "Tracer Beacon"
+	TracerBeaconPlural = "Tracer Beacons"
+	TracerBeaconDesc = "It calls the corporation. Heat rises each minute while it is aboard. Space it to stop it."
+	OpenedCodesFmt = "{0} opened the case: corporate access codes. Sell them at a station."
+	OpenedTracerFmt = "{0} opened the case: a tracer beacon. It calls home each minute until you space it."
+	SpaceTracer = "Space the beacon"
+	SpaceTracerTip = "Throw the tracer beacon out of the airlock. It stops calling home."
+	SpacedTracerFmt = "{0} spaced the tracer beacon."
+	TracerPingFmt = "The tracer beacon calls home: heat +{0}."
 }

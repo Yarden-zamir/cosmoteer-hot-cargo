@@ -1,0 +1,35 @@
+# The Black Box (spec 1107): the recorder is a real item in a capsule at the wreck. Recover it, hand it to the station's broker in
+# comms, then the Playback page opens.
+newgame run
+wait 8
+ev_set ArrivalEventChance 0
+ev_set StationEventChance 0
+godmode
+chain_force black_box
+chain_tostation
+chain_accept
+expect chain_accepted == 1
+chain_goto
+chain_kill
+wait 2
+expect ev_handover == 0
+# The capsule holds the recorder; crew carry it over.
+ev_mark
+expect ev_paused == 0
+ev_goto hc_ch_recorder
+pause off
+wait 3
+ev_take hc_ch_recorder yarden_zamir.flight_recorder
+wait 2
+expect ev_res_yarden_zamir.flight_recorder_gain == 1
+chain_tostation
+expectcomms contact Hand over the flight recorder. 1
+ev_comms contact Hand over the flight recorder.
+expectevent blackbox_broker
+ev_comms carrier Hand it over.
+expect ev_handover == 1
+expect ev_res_yarden_zamir.flight_recorder_gain == 0
+chain_pay
+wait 3
+expectevent blackbox_playback
+quit

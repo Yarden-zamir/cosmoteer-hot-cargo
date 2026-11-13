@@ -6,16 +6,6 @@ namespace HotCargo.Tests;
 public class RelaysModelTests
 {
     [Fact]
-    public void Pacing_holds_the_min_sector_the_run_cap_and_the_gap()
-    {
-        Assert.False(RelaysModel.MayStart(sector: 1, minSector: 2, started: 0, max: 2, lastSector: null, minGap: 2));
-        Assert.True(RelaysModel.MayStart(2, 2, 0, 2, null, 2));
-        Assert.False(RelaysModel.MayStart(4, 2, 1, 2, lastSector: 3, minGap: 2));
-        Assert.True(RelaysModel.MayStart(5, 2, 1, 2, 3, 2));
-        Assert.False(RelaysModel.MayStart(9, 2, started: 2, max: 2, lastSector: 3, minGap: 2));
-    }
-
-    [Fact]
     public void Kind_follows_the_weights_and_a_system_without_a_faction_gets_only_pirates()
     {
         Assert.Equal(LockKind.Closed, RelaysModel.PickKind(0.1f, 1f, 1f, 1f, hasFaction: true));

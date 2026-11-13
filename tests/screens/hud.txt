@@ -3,6 +3,7 @@
 render on
 newgame run
 wait 8
+pu_set Enabled false
 pause off
 screenshot hud-01-intro
 closepanel
@@ -101,6 +102,7 @@ wait 2
 screenshot hud-23-heat-after-win
 newgame run
 wait 8
+pu_set Enabled false
 closepanel
 wait 1
 godmode off

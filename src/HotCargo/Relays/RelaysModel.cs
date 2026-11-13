@@ -15,10 +15,6 @@ public enum LockKind
 /// <summary>Pure math of relay lockdowns (spec 951 to 958). No game types.</summary>
 public static class RelaysModel
 {
-    /// <summary>Spec 951: the local pacing rule. A new lockdown may start while the run has started fewer than max and the gap since the last one holds.</summary>
-    public static bool MayStart(int sector, int minSector, int started, int max, int? lastSector, int minGap) =>
-        sector >= minSector && started < max && (lastSector is not { } last || sector - last >= minGap);
-
     /// <summary>
     /// Spec 952: the kind for a roll in [0, 1). A system without a controlling faction can only get pirates.
     /// Returns None when every allowed weight is 0.

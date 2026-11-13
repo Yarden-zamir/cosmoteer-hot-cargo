@@ -1,0 +1,49 @@
+# Extraction (spec 1105): after the escorts, Okafor crosses over in the transport's comms and joins as crew. The debrief hands her
+# on (crew -1). A transport that dies before the pickup fails the stage with the "lost" result.
+newgame run
+wait 8
+ev_set ArrivalEventChance 0
+ev_set StationEventChance 0
+godmode
+chain_force quiet_defector
+chain_tostation
+chain_accept
+expect chain_accepted == 1
+chain_goto hc_ch_cargo
+expectcomms contact Get Okafor out. 0
+chain_kill
+wait 2
+expect ev_handover == 0
+ev_mark
+expectcomms contact Get Okafor out. 1
+ev_comms contact Get Okafor out.
+expectevent okafor_pickup
+# A full crew has no bunk for her: the pickup waits until a bunk is free.
+expectchoice 1 disabled
+ev_comms carrier Not yet
+ev_crew_remove 1
+ev_mark
+ev_comms contact Get Okafor out.
+expectchoice 1 enabled
+ev_comms carrier Bring her aboard.
+expect ev_handover == 1
+expect ev_crew_gain == 1
+chain_tostation
+chain_pay
+wait 3
+expectevent defector_debrief
+choose 2
+expect ev_crew_gain == 0
+# Again, and the transport dies after its escorts: the pickup fails, so the stage ends with the "lost" row (heat +10).
+chain_force quiet_defector
+chain_tostation
+chain_accept
+chain_goto hc_ch_cargo
+chain_kill
+wait 2
+ev_mark
+chain_kill hc_ch_cargo
+wait 3
+expectstage end
+expect ev_heat_gain >= 9
+quit

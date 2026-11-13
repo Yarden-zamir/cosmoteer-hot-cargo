@@ -7,6 +7,10 @@ public sealed record Need
     public int Tech { get; init; }
     public int VaultSpace { get; init; }
     public int Crew { get; init; }
+    /// <summary>Free crew bunks in the human fleet (spec 1106).</summary>
+    public int Bunks { get; init; }
+    /// <summary>The page's hand-over must be ready (spec 1110): a delivered ship in place, with no player crew aboard.</summary>
+    public bool HandOverReady { get; init; }
     public float MinHeat { get; init; }
     /// <summary>Heat must stay below this. Zero means no limit.</summary>
     public float MaxHeat { get; init; }
@@ -34,6 +38,9 @@ public sealed record Snapshot
     public int Tech { get; init; }
     public int VaultSpace { get; init; }
     public int Crew { get; init; }
+    public int Bunks { get; init; }
+    /// <summary>Why the page's hand-over cannot happen yet, or null when it can (or the page has none).</summary>
+    public string? HandOverBlock { get; init; }
     public float Heat { get; init; }
     public int Sector { get; init; }
     public IReadOnlyDictionary<string, int> Resources { get; init; } = new Dictionary<string, int>();
@@ -52,7 +59,9 @@ public sealed record ResearchTrade(IReadOnlyList<string> Techs, int Units, long 
 public sealed record ResearchSale(IReadOnlyList<string> Techs, long Worth, int Price);
 
 /// <summary>The first need that the fleet does not meet.</summary>
-public enum UnmetKind { Money, Tech, VaultSpace, Crew, MinHeat, MaxHeat, MinSector, MaxSector, Resource, Part, Flag, NotFlag, FlagAge, MinSectorsLeft, MaxSectorsLeft, NotWanted }
+public enum UnmetKind { Money, Tech, VaultSpace, Crew, Bunks, HandOver, MinHeat, MaxHeat, MinSector, MaxSector, Resource, Part, Flag, NotFlag, FlagAge, MinSectorsLeft, MaxSectorsLeft, NotWanted,
+    /// <summary>A submit: no option is selected (Amount 0), or the selected options give too few points (Amount = the points needed).</summary>
+    Points }
 
 public sealed record Unmet(UnmetKind Kind, string Id = "", float Amount = 0);
 
@@ -66,6 +75,8 @@ public static class EventModel
         if (s.Tech < need.Tech) return new(UnmetKind.Tech, Amount: need.Tech);
         if (s.VaultSpace < need.VaultSpace) return new(UnmetKind.VaultSpace, Amount: need.VaultSpace);
         if (s.Crew < need.Crew) return new(UnmetKind.Crew, Amount: need.Crew);
+        if (s.Bunks < need.Bunks) return new(UnmetKind.Bunks, Amount: need.Bunks);
+        if (need.HandOverReady && s.HandOverBlock is { } why) return new(UnmetKind.HandOver, why);
         if (s.Heat < need.MinHeat) return new(UnmetKind.MinHeat, Amount: need.MinHeat);
         if (need.MaxHeat > 0 && s.Heat >= need.MaxHeat) return new(UnmetKind.MaxHeat, Amount: need.MaxHeat);
         if (s.Sector < need.MinSector) return new(UnmetKind.MinSector, Amount: need.MinSector);
@@ -220,6 +231,31 @@ public static class EventModel
         bool both = wanted && stagesStarted >= Math.Max(1, minStage);
         return (both && !warnedBefore, both);
     }
+
+    // ---- Page options (spec 810 to 812)
+
+    /// <summary>Size of one option unit at a tier and heat: base + perTier × (tier − 1) + perHeat × heat. Never below 0.</summary>
+    public static float UnitSize(float unit, float perTier, float perHeat, int tier, float heat) =>
+        Math.Max(0f, unit + perTier * Math.Max(0, tier - 1) + perHeat * heat);
+
+    /// <summary>Whole items (crates, crew, resource amount) for units of an option: units × unit size, rounded half away from zero.</summary>
+    public static int Whole(float units, float unitSize)
+    {
+        if (units < 0 || unitSize < 0 || float.IsNaN(units) || float.IsNaN(unitSize)) throw new ArgumentOutOfRangeException(nameof(units), "units and unit size must not be negative");
+        return (int)MathF.Round(units * unitSize, MidpointRounding.AwayFromZero);
+    }
+
+    /// <summary>A submit's need: needPoints + perHeat × heat.</summary>
+    public static float NeedPoints(float needPoints, float perHeat, float heat) => needPoints + perHeat * heat;
+
+    /// <summary>True when the points reach the need. A small tolerance covers float steps (ten steps of 0.1 give 0.99999).</summary>
+    public static bool Enough(float points, float need) => points >= need - 1e-4f;
+
+    /// <summary>Chance of an option's risk effects: chance per unit × units, kept in 0..1.</summary>
+    public static float RiskChance(float perUnit, float units) => Math.Clamp(perUnit * units, 0f, 1f);
+
+    /// <summary>The offer in percent of a need, for the page's offer line. A need of 0 counts as fully met.</summary>
+    public static int OfferPercent(float points, float need) => need <= 0 ? 100 : (int)MathF.Round(100f * points / need);
 
     /// <summary>True when an event is allowed again: it was never seen, or maxPerRun is 0 (no limit), or it was seen less often than maxPerRun.</summary>
     public static bool UnderRunLimit(int seenCount, int maxPerRun) => maxPerRun <= 0 || seenCount < maxPerRun;

@@ -26,6 +26,7 @@ public static class FactionsArea
         Run.Hooks.JumpHeatKept = run => HeatKept(run, Jumps.PendingKind(run));
         Run.Hooks.Tick += Jumps.OnTick;
         Run.Hooks.SystemEntered += OnSystemEntered;
+        AllyPeace.Register();
         FactionsAutotest.Register();
     }
 

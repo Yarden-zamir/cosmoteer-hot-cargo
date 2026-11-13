@@ -18,6 +18,7 @@ src/HotCargo/
   <Area>/                  one folder for each area: <Area>Area.Register, <Area>Hub.cs (its Tunables and RunState fields), tunables, patches
   Ai/                      enemy AI behaviors (flee, call, regroup, focus) and personalities; TacticsArea registers it, Tactics tunables
   ShipAi/                  player ship tactics: model (ShipAiModel), per-ship state and save hooks (ShipTactics), sim controller, MP input, editor
+  Pursuit/                 the Pursuit director: wave ramp, fleet factor, big event pacer (Pacer), reporting scout, relay blockade, network outage, hacker
   Ui/                      overlay, heat panel, run intro and end panels
   Dev/Autotest.cs          headless test commands
   Telemetry/               session telemetry files (TELEMETRY.md); read-only hooks and patches

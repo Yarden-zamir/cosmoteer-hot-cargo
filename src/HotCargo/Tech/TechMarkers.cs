@@ -43,16 +43,16 @@ public static class TechMarkers
         static void Postfix(ShipIndicatorSource __instance, ref string? __result)
         {
             if (!On) return;
-            string? result = __result;
-            Errors.Guard("tech ship marker", () =>
+            // Spec 872: every ship blip runs this in every frame, so it has no closure. A failure logs once, like Errors.Guard.
+            try
             {
                 int units = ShipUnits(__instance.Ship);
                 if (units <= 0) return;
                 string key = __instance.Ship.IsHumanPlayerShip || __instance.Ship.IsJunk ? "HotCargoTech/MarkerTag" : "HotCargoTech/MarkerHeldTag";
                 string tag = string.Format(Strings.GetText(key), units);
-                result = result is null ? tag : tag + "\n" + result;
-            });
-            __result = result;
+                __result = __result is null ? tag : tag + "\n" + __result;
+            }
+            catch (Exception ex) { Errors.Report("tech ship marker", ex.Message, ex); }
         }
     }
 
@@ -91,8 +91,14 @@ public static class TechMarkers
             if (!On || Node is not Nugget self || self.Sim is not { } sim) return false;
             _near.Clear();
             sim.Nuggets.FindIntersectingWith(new Halfling.Geometry.Circle(self.WorldLocation, ClusterRadius), _near, n => n.ResourceType == Vaults.TechId);
-            if (_near.Any(n => n.UniqueID.CompareTo(self.UniqueID) < 0)) return false;
-            _units = Math.Max(1, _near.Sum(n => n.Quantity));
+            // Loops, not LINQ: this runs for each crate in every frame (spec 872).
+            int units = 0;
+            foreach (var n in _near)
+            {
+                if (n.UniqueID.CompareTo(self.UniqueID) < 0) return false;
+                units += n.Quantity;
+            }
+            _units = Math.Max(1, units);
             return true;
         }
 

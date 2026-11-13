@@ -1,0 +1,38 @@
+# Mission select (spec 800 to 806) in a headless game: kind icons, the chain badge, the filter, and that the filter stays
+# for the next comms window.
+newgame run
+wait 8
+closepanel
+ev_set Enabled false
+godmode on
+chain_force fence_ledger
+chain_tostation
+tostation
+wait 2
+expect ux_badge_chain == 1
+comms chain
+wait 1
+commsmission
+wait 1
+expect ux_list_chain >= 1
+expect ux_list_icons >= 1
+missionfilter Vanilla
+wait 1
+expect ux_list_chain == 0
+missionfilter Chains
+wait 1
+expect ux_list_chain >= 1
+expect ux_list_vanilla == 0
+comms close
+# The filter is a per-player choice of the list kind: the next comms window opens with it.
+comms chain
+wait 1
+commsmission
+wait 1
+expect ux_list_vanilla == 0
+expect ux_list_chain >= 1
+missionfilter All
+wait 1
+expect ux_list_chain >= 1
+comms close
+quit

@@ -8,12 +8,12 @@ ev_set StationEventChance 0
 # No page opens at the start of a run.
 expect ev_pending == 0
 expect ev_seen == 0
-# Arrival: the first-arrival hook opens an Arrival event after the delay.
+# Arrival: the first-arrival hook opens an Arrival event after the delay. The page is random; "answer" closes any page as a player can.
 ev_arrive
 wait 4
 expect ev_pending == 1
 eventview
-choose last
+answer
 expect ev_pending == 0
 # Signal: reaching the POI removes it and opens a Signal event.
 ev_signal
@@ -22,7 +22,7 @@ ev_signal_goto
 wait 2
 expect ev_pending == 1
 eventview
-choose last
+answer
 # Station: the first trade station in a visit rolls once. ev_arrive re-arms the roll.
 ev_set StationEventChance 1
 ev_set ArrivalEventChance 0
@@ -33,6 +33,6 @@ wait 3
 # Some Station event opened (The Fence, The Archive, ...), and the station carries it: its comms show the page (spec 768).
 expect ev_pending == 1
 expect ev_carrier == 1
-choose last
+answer
 expect ev_pending == 0
 quit

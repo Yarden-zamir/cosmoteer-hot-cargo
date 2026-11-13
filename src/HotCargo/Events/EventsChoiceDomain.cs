@@ -31,13 +31,35 @@ internal sealed class EventsChoiceDomain : ISharedChoiceDomain
     public static SharedChoiceInput Pick(int serial, int choice) => new(Name, serial, SharedChoiceAction.Choose, choice);
 }
 
+/// <summary>
+/// Page options as a multiselect domain (spec 810): the options of the pending page while it is open, else closed. Each option's
+/// value is its slider steps. Submit choices read the draft (EventRunner.Picks).
+/// </summary>
+internal sealed class EventsMultiDomain : MultiChoice.IMultiChoiceDomain
+{
+    public const string Name = "events";
+    public static readonly EventsMultiDomain Instance = new();
+
+    string MultiChoice.IMultiChoiceDomain.Name => Name;
+
+    public IReadOnlyList<MultiChoice.MultiOption>? Options(Run run, int serial)
+    {
+        if (run.State.Result != RunResult.Running || run.State.Events.Pending is not { } p || p.Serial != serial) return null;
+        return [.. EventLibrary.Get(p.EventId).Options.Select((o, i) => new MultiChoice.MultiOption(i, o.MinSteps, o.MaxSteps, 1))];
+    }
+}
+
 /// <summary>Frame hook for the event dialog. UI only: it reads sim state and sends inputs, but never changes the sim.</summary>
 [HarmonyPatch(typeof(CareerGameModeManager), nameof(CareerGameModeManager.Update))]
 static class EventFramePatch
 {
+    static double _next;
+
     static void Postfix(CareerGameModeManager __instance)
     {
-        if (Run.Current is not { } run || run.Mode != __instance) return;
+        // Spec 872: the dialog builds its page from sim state, so it updates every HudRefreshSeconds, not in every frame.
+        // Clicks do not wait: the buttons send their input at once.
+        if (Run.Current is not { } run || run.Mode != __instance || !Ux.UxKit.HudDue(ref _next)) return;
         // Errors.Guard logs once, so a broken dialog does not write the log every frame.
         Errors.Guard("event dialog", () => EventDialog.Update(run));
     }

@@ -26,7 +26,6 @@ namespace HotCargo.Relays;
 /// </summary>
 public static class RelaysArea
 {
-    public const string PacingKind = "relay_lockdown";
     public static readonly ID<SimObjectSpawner> GuardTag = new("hc_relay_guard");
 
     public static void Register()
@@ -98,7 +97,7 @@ public static class RelaysArea
         {
             s.Active = new Lockdown { Node = marked, Kind = s.MarkedKind, Since = run.State.GameSeconds };
             s.MarkedNode = null;
-            Pacing.Current.Started(run, PacingKind);
+            Pursuit.Pacer.Started(run, Pursuit.PacedKinds.RelayLockdown);
             string line = Format("Arrive" + s.Active.Kind + "Fmt", Cost(run, s.Active.Kind == LockKind.Fee ? FeeCredits(run) : BribePrice(run)));
             Log.Info($"relays: lockdown starts in {node.Name}: {s.Active.Kind}");
             Run.OnNextFrame(() => UxKit.Guard("relay lockdown line", () => { run.Game.Gui.ShowAreaName(Text("ArriveToast")); UxKit.ChatLine(run.Game, line); }));
@@ -122,7 +121,7 @@ public static class RelaysArea
         foreach (var next in node.Connections.OrderBy(c => c.UniqueID))
         {
             if (run.State.VisitedNodes.Contains(next.UniqueID) || !s.Rolled.Add(next.UniqueID)) continue;
-            if (!Pacing.Current.MayStart(run, PacingKind)) return;
+            if (run.State.SectorIndex < t.MinSector || !Pursuit.Pacer.MayStart(run, Pursuit.PacedKinds.RelayLockdown)) return;
             var rand = new FastRand((ulong)run.Mode.Init.RandSeed ^ 0x5245_4C41_5953UL, (ulong)next.UniqueID.GetHashCode());
             if (rand.Single() >= t.ChancePerSystem) continue;
             var kind = RelaysModel.PickKind(rand.Single(), t.ClosedWeight, t.FeeWeight, t.PiratesWeight, next.ControllingFaction is not null);

@@ -14,9 +14,6 @@ public sealed class RelaysState
     /// <summary>Spec 951, 953: the marked node and its kind. At most one, shown on the galaxy map before the players jump in.</summary>
     [Serialize(Optional = true)] public ObjectID? MarkedNode;
     [Serialize(Optional = true)] public LockKind MarkedKind;
-    /// <summary>Spec 951: lockdowns that the players entered this run, and the sector index of the last one.</summary>
-    [Serialize(Optional = true)] public int Started;
-    [Serialize(Optional = true)] public int? LastSector;
     /// <summary>Spec 954: the lockdown of the node that the players are in, or null.</summary>
     [Serialize(Optional = true)] public Lockdown? Active;
 }

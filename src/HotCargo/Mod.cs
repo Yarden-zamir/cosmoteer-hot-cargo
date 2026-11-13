@@ -40,6 +40,8 @@ public static class Mod
             Relays.RelaysArea.Register();
             Stash.StashArea.Register();
             Diplomacy.DiplomacyArea.Register();
+            // After Hunters: its stage hooks read the ships that the Hunters area just spawned.
+            Pursuit.PursuitArea.Register();
             Telemetry.TelemetryArea.Register();
             Dev.Invariants.Register();
             Dev.Playthrough.Register();

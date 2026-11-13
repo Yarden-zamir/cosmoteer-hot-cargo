@@ -1,0 +1,30 @@
+// The hacker's proxy ship (spec 930): a small neutral ship that hails the players and sells a network outage.
+// It needs an AI to answer comms; the AI stays at its spot (tiny ranges). C# reads this file (Pursuit/Hacker.cs).
+HackerProxy
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_hacker]
+			Distance = [700, 1000]
+			Allegiance = Neutral
+			SuppressLocationAssertions = true
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				Tier = [1, 2]
+				AllowTierRangeExpansion = true
+				Tags = [civilian]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 50
+				TargetAcquireRangeFromOrigin = 100
+				TargetUnacquireRangeFromOrigin = 100
+			}
+		}
+	]
+}

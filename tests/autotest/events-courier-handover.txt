@@ -1,0 +1,61 @@
+# Courier Job hand-over (spec 1100 to 1102): no room refuses the accept; the accept loads a sealed case; the case goes over in the contact's comms.
+newgame run
+wait 8
+ev_set CourierChance 1
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+worlds jumpto hc_trade_hub
+ev_tostation
+wait 2
+expect ev_courier_offers == 1
+# Spec 1119: with the offer selected in the station's comms, the accept button follows the storage at once, without a reselect.
+ev_courier_ui open
+waitfor ev_courier_ui_open == 1 15
+ev_courier_ui tab
+wait 1
+ev_courier_ui select
+wait 1
+expect ev_accept_active == 1
+ev_storage_fill steel
+wait 1
+expect ev_accept_active == 0
+ev_storage_clear steel
+wait 1
+expect ev_accept_active == 1
+ev_courier_ui close
+# Full storage: the accept is refused and the offer stays.
+ev_storage_fill steel
+ev_courier_accept
+expect ev_courier_handover == -2
+expect ev_courier_offers == 1
+ev_storage_clear steel
+# With room, the case is in the hold.
+ev_mark
+ev_courier_accept
+expect ev_courier_offers == 0
+expect ev_res_yarden_zamir.sealed_case_gain == 1
+expect ev_courier_handover == 0
+# The first teleport loads the contact out of stasis, the second one puts the ships next to its live position.
+ev_courier_goto
+pause off
+ev_courier_goto
+pause off
+# Check sight at once: the contact drifts on patrol, and in a cloudy nebula sight is about 120.
+waitfor ev_courier_seen == 1 20
+expect ev_courier_handover == 0
+# The contact's comms offer the hand-over. "Not yet" keeps the case, and the line comes back.
+ev_comms contact Hand over the case.
+expectevent courier_handover
+ev_comms carrier Not yet
+expect ev_courier_handover == 0
+expect ev_res_yarden_zamir.sealed_case_gain == 1
+expectcomms contact Hand over the case. 1
+# The sealed case: it leaves the hold, the job moves on to the pay at the full price, and the line is gone.
+ev_comms contact Hand over the case.
+ev_mark
+ev_comms carrier Hand over the sealed case.
+expect ev_courier_handover == 1
+expect ev_res_yarden_zamir.sealed_case_gain == -1
+expect ev_heat_gain < 1
+expectcomms contact Hand over the case. 0
+quit

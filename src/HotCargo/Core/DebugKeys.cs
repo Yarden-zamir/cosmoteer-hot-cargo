@@ -13,7 +13,7 @@ public static class DebugKeys
     {
         if (run.IsMultiplayer || !run.T.Debug.DebugKeys) return;
         var kb = App.Keyboard;
-        if (kb.HotkeyPressed(ViKey.F9)) run.AddHeat(10f, run.Game.Sim);
+        if (kb.HotkeyPressed(ViKey.F9)) run.AddHeat(10f, run.Game.Sim, ignoreBlock: true);
         if (kb.HotkeyPressed(ViKey.Shift, ViKey.F9)) run.AddHeat(-10f, run.Game.Sim);
         if (kb.HotkeyPressed(ViKey.F10)) run.ForceNextStage(run.Game.Sim);
         Extra?.Invoke(run);

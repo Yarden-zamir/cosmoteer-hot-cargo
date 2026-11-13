@@ -126,7 +126,7 @@ static class RelaysAutotest
         };
 
         Autotest.Fields["rl_marked"] = () => R().State.Relays.MarkedNode is null ? 0 : (int)R().State.Relays.MarkedKind;
-        Autotest.Fields["rl_started"] = () => R().State.Relays.Started;
+        Autotest.Fields["rl_started"] = () => Pursuit.Pacer.Count(R(), Pursuit.PacedKinds.RelayLockdown);
         Autotest.Fields["rl_active"] = () => RelaysArea.ActiveHere(R()) is { } a ? (int)a.Kind : 0;
         Autotest.Fields["rl_blocks"] = () => RelaysArea.Blocks(R()) ? 1 : 0;
         Autotest.Fields["rl_guards"] = () => RelaysArea.ActiveHere(R()) is { } a ? a.Guards.Count(id => RelaysArea.Holds(R().Game.Sim, a, id)) : 0;

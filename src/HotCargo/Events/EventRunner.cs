@@ -149,7 +149,7 @@ public static class EventRunner
     /// Puts a Courier Job into the station's mission list: the Courier generator in spawns.rules spawns the contact far away
     /// and a mission offer at the nearest trade station (the one the players reached).
     /// </summary>
-    static void OfferCourier(SimRoot sim, Ship station)
+    internal static void OfferCourier(SimRoot sim, Ship station)
     {
         EventLibrary.Spawn(CourierSpawn).Generate(sim, sim.Rand, loadInstantly: true, rootLoc: station.DetWorldCenter, addExistingSpawnTags: true);
         Log.Info($"courier job offered at {station.Metadata.PlainShipName}");
@@ -261,8 +261,9 @@ public static class EventRunner
         if (choiceIndex < 0 || choiceIndex >= e.Choices.Length) throw new InvalidOperationException($"event {e.ID} has no choice {choiceIndex}");
         var choice = e.Choices[choiceIndex];
         int money = run.Game.GetPlayerState(playerIndex, deterministic: true).Money;
-        var snapshot = Snap(run, sim, money, p.Tier, p.TechValue);
-        if (EventModel.FirstUnmet(ChoiceNeed(run, choice, p), snapshot) is { } unmet)
+        var snapshot = PageSnap(run, sim, money, p);
+        var picks = choice.IsSubmit ? Picks(run, e, serial) : [];
+        if (ChoiceUnmet(run, choice, p, picks, snapshot) is { } unmet)
         {
             Log.Info($"event choice ignored: {e.ID} choice {choiceIndex + 1} needs {unmet}");
             // UI only, for the player who clicked: the choice did nothing, so say why.
@@ -271,11 +272,17 @@ public static class EventRunner
         }
         var lines = new List<string>();
         PayCost(run, sim, playerIndex, choice.Cost, p, lines);
-        int outcomeIndex = forcedOutcome >= 0 ? forcedOutcome : RollOutcome(run, choice, p.Seed, choiceIndex);
+        foreach (var pick in picks) PayPick(run, sim, playerIndex, pick, p, lines);
+        // Spec 811: a selected Sure option takes the first outcome without a roll.
+        int outcomeIndex = forcedOutcome >= 0 ? forcedOutcome : picks.Any(k => k.Rules.Sure) ? 0 : RollOutcome(run, choice, p.Seed, choiceIndex);
         if (outcomeIndex < 0 || outcomeIndex >= choice.Outcomes.Length) throw new InvalidOperationException($"event {e.ID} choice {choiceIndex + 1} has no outcome {outcomeIndex}");
         var outcome = choice.Outcomes[outcomeIndex];
-        Log.Info($"event choice: {e.ID} choice {choiceIndex + 1} outcome {outcomeIndex + 1} by player {playerIndex}");
+        if (choice.ScaleByPoints) outcome = outcome.Scaled(PointsOf(picks), p.Tier, all: false);
+        Log.Info($"event choice: {e.ID} choice {choiceIndex + 1} outcome {outcomeIndex + 1} by player {playerIndex}"
+            + (picks.Count > 0 ? $", options {string.Join(" ", picks.Select(k => $"{k.Index + 1}x{k.Units:0.##}"))}" : ""));
         s.Pending = null;
+        foreach (var pick in picks) ApplyPick(run, sim, playerIndex, pick, p, lines);
+        if (picks.Count > 0) MultiChoice.MultiChoices.Clear(run, EventsMultiDomain.Name, serial);
         ApplyOutcome(run, sim, playerIndex, outcome, p, lines);
         // Tokens fill after the effects, so a text sees the counts that the choice left.
         string outcomeText = EventText.Fill(outcome.Text, Vaults.CountFleetTech(sim), p);
@@ -298,8 +305,18 @@ public static class EventRunner
     /// </summary>
     public static event Action<Run, SimRoot, int, int, OutcomeRules>? OutcomeChosen;
 
+    /// <summary>Test only (ev_force_outcome): the next outcome roll picks this outcome index. Set on every machine in co-op.</summary>
+    internal static int? ForcedOutcome;
+
     static int RollOutcome(Run run, ChoiceRules choice, ulong seed, int choiceIndex)
     {
+        if (ForcedOutcome is { } forced)
+        {
+            ForcedOutcome = null;
+            if (forced >= choice.Outcomes.Length) throw new InvalidOperationException($"forced outcome {forced + 1} of {choice.Outcomes.Length}");
+            Log.Info($"event roll forced -> outcome {forced + 1}");
+            return forced;
+        }
         var weights = choice.Outcomes.Select(o => EventModel.EffectiveWeight(o.Weight, o.WeightPerHeat, o.WeightPerTech, run.State.Heat, run.State.FleetTech)).ToList();
         float roll = new FastRand(seed, (ulong)choiceIndex + 1).Single();
         int pick = EventModel.PickWeighted(weights, roll);
@@ -333,6 +350,8 @@ public static class EventRunner
         Tech = n.Tech,
         VaultSpace = n.VaultSpace,
         Crew = n.Crew,
+        Bunks = n.Bunks,
+        HandOverReady = n.HandOverReady,
         MinHeat = n.MinHeat,
         MaxHeat = n.MaxHeat,
         MinSector = n.MinSector,
@@ -359,6 +378,13 @@ public static class EventRunner
     public static int CostCredits(Run run, CostRules cost, PendingEvent p) =>
         Credits(run, EventModel.HeatScaledUnits(cost.Money, cost.MoneyPerHeat, p.Heat), 0f, p.Tier, p.TechValue);
 
+    /// <summary>The fleet as a pending page's choices see it: Snap, plus the state of the hand-over on the page's ship (spec 1110).</summary>
+    public static Snapshot PageSnap(Run run, SimRoot sim, int money, PendingEvent p) =>
+        Snap(run, sim, money, p.Tier, p.TechValue) with
+        {
+            HandOverBlock = p.Carrier is { } c && HandOverObjective.ForContact(run, c) is { } h ? h.Blocker(sim) : null,
+        };
+
     /// <summary>The fleet as conditions see it. Money is the given player's; everything else is the whole human fleet in this system.</summary>
     public static Snapshot Snap(Run run, SimRoot sim, int money, int tier, long techValue)
     {
@@ -373,6 +399,7 @@ public static class EventRunner
             Tech = vaults.Sum(g => g.Resources),
             VaultSpace = vaults.Sum(g => g.MaxResources - g.Resources),
             Crew = run.Game.HumanPlayersIndexes.Sum(sim.Crew.CountCrewForPlayer),
+            Bunks = ships.Sum(sh => sh.Crew.RemainingCrewCapacity),
             Heat = run.State.Heat,
             Sector = run.State.SectorIndex,
             Resources = resources,
@@ -382,6 +409,96 @@ public static class EventRunner
             SectorsLeft = run.T.Journey.RunSectorCount - run.State.SectorIndex,
             Wanted = ((Cosmoteer.Modes.Career.CareerSimModeManager)sim.Mode).Wanted.IsLocalPlayerWanted,
         };
+    }
+
+    // ---- Page options (spec 810 to 812)
+
+    /// <summary>A selected option of a page's shared draft: its index (the multiselect option ID), its rules, slider steps and units.</summary>
+    public sealed record OptionPick(int Index, OptionRules Rules, int Steps, float Units);
+
+    /// <summary>What one pick pays: credits from the chooser, crates, crew who leave, crew on hand who stay, and a resource amount.</summary>
+    public readonly record struct Pay(int Money, int Tech, int Crew, int CrewWork, int Resource);
+
+    /// <summary>The selected options of the page with this serial, from the shared draft (values kept in each option's range).</summary>
+    public static List<OptionPick> Picks(Run run, EventRules e, int serial) =>
+        MultiChoice.MultiChoices.Draft(run, EventsMultiDomain.Name, serial)
+            .Where(d => d.Option >= 0 && d.Option < e.Options.Length)
+            .Select(d => new OptionPick(d.Option, e.Options[d.Option], d.Value, d.Value * e.Options[d.Option].StepUnits))
+            .ToList();
+
+    public static float UnitSize(OptionRules o, PendingEvent p) => EventModel.UnitSize(o.Unit, o.UnitPerTier, o.UnitPerHeat, p.Tier, p.Heat);
+
+    public static Pay PayOf(Run run, OptionRules o, float units, PendingEvent p)
+    {
+        float size = UnitSize(o, p);
+        int whole = EventModel.Whole(units, size);
+        return o.Pay switch
+        {
+            PayKind.None => default,
+            PayKind.Money => new Pay(Credits(run, units * size, 0f, p.Tier, p.TechValue), 0, 0, 0, 0),
+            PayKind.Tech => new Pay(0, whole, 0, 0, 0),
+            PayKind.Crew => new Pay(0, 0, whole, 0, 0),
+            PayKind.CrewWork => new Pay(0, 0, 0, whole, 0),
+            PayKind.Resource => new Pay(0, 0, 0, 0, whole),
+            _ => throw new ArgumentOutOfRangeException(nameof(o), o.Pay, null),
+        };
+    }
+
+    public static float PointsOf(IEnumerable<OptionPick> picks) => picks.Sum(k => k.Units * k.Rules.Points);
+
+    /// <summary>
+    /// The first thing a choice lacks, or null. Any choice: its need and sure cost. A submit also: at least one selected option,
+    /// enough points, each selected option's need, and the needs and pays of all selected options on top of the choice's own.
+    /// </summary>
+    public static Unmet? ChoiceUnmet(Run run, ChoiceRules c, PendingEvent p, IReadOnlyList<OptionPick> picks, Snapshot snapshot)
+    {
+        var need = ChoiceNeed(run, c, p);
+        if (!c.IsSubmit) return EventModel.FirstUnmet(need, snapshot);
+        if (picks.Count == 0) return new Unmet(UnmetKind.Points);
+        float needPoints = EventModel.NeedPoints(c.NeedPoints, c.NeedPointsPerHeat, p.Heat);
+        if (!EventModel.Enough(PointsOf(picks), needPoints)) return new Unmet(UnmetKind.Points, Amount: needPoints);
+        foreach (var pick in picks)
+        {
+            // An option's own need adds to its pay, like a choice's need adds to its cost: Need Tech 1 with a crate keeps one crate.
+            var own = ToNeed(run, pick.Rules.Need, p.Tier, p.TechValue);
+            if (EventModel.FirstUnmet(own, snapshot) is { } u) return u;
+            var pay = PayOf(run, pick.Rules, pick.Units, p);
+            var resources = own.Resources.ToList();
+            if (pay.Resource > 0) resources.Add((pick.Rules.Resource, pay.Resource));
+            need = EventModel.Plus(need, own.Money + pay.Money, own.Tech + pay.Tech, own.Crew + pay.Crew + pay.CrewWork, resources);
+        }
+        return EventModel.FirstUnmet(need, snapshot);
+    }
+
+    static void PayPick(Run run, SimRoot sim, int playerIndex, OptionPick pick, PendingEvent p, List<string> lines)
+    {
+        var pay = PayOf(run, pick.Rules, pick.Units, p);
+        if (pay.Money > 0) ChangeMoney(run, playerIndex, -pay.Money, lines);
+        if (pay.Tech > 0) ChangeTech(sim, -pay.Tech, lines);
+        if (pay.Crew > 0) ChangeCrew(sim, -pay.Crew, p.Seed, lines);
+        if (pay.Resource > 0) ChangeResource(sim, pick.Rules.Resource, -pay.Resource, lines);
+    }
+
+    /// <summary>Salt of an option's risk roll, plus the option index, so each option rolls on its own.</summary>
+    const ulong RiskSalt = 0x5249_534B_0000UL;
+
+    /// <summary>An option's effects: per unit (scaled), once, and its risk, rolled from the page seed.</summary>
+    static void ApplyPick(Run run, SimRoot sim, int playerIndex, OptionPick pick, PendingEvent p, List<string> lines)
+    {
+        var o = pick.Rules;
+        if (o.Effect is { } fx) ApplyOptionEffect(run, sim, playerIndex, fx.Scaled(pick.Units, p.Tier, all: true), p, lines);
+        if (o.Once is { } once) ApplyOptionEffect(run, sim, playerIndex, once, p, lines);
+        if (o.Risk is not { } risk) return;
+        float chance = EventModel.RiskChance(o.RiskChance, pick.Units);
+        float roll = new FastRand(p.Seed, RiskSalt + (ulong)pick.Index).Single();
+        Log.Info($"event option {pick.Index + 1} risk roll {roll:0.000} vs {chance:0.000}");
+        if (roll < chance) ApplyOptionEffect(run, sim, playerIndex, risk, p, lines);
+    }
+
+    static void ApplyOptionEffect(Run run, SimRoot sim, int playerIndex, OutcomeRules fx, PendingEvent p, List<string> lines)
+    {
+        if (fx.Text.Length > 0) lines.Add(EventText.Fill(fx.Text, run.State.FleetTech, p));
+        ApplyOutcome(run, sim, playerIndex, fx, p, lines);
     }
 
     // ---- Effects. Each effect adds one XML result line.
@@ -406,6 +523,7 @@ public static class EventRunner
         if (o.Heat != 0) ChangeHeat(run, sim, o.Heat * run.T.Events.HeatScale, lines);
         if (o.Tech != 0) ChangeTech(sim, o.Tech, lines);
         if (o.Crew != 0) ChangeCrew(sim, o.Crew, p.Seed, lines);
+        if (o.CrewLeaves > 0) ChangeCrew(sim, -o.CrewLeaves, p.Seed, lines, killed: false);
         foreach (var r in o.Resources) ChangeResource(sim, r.ID, r.At(p.Tier), lines);
         if (o.HullDamage > 0) DamageHull(sim, o.HullDamage, p.Seed, lines);
         if (o.Reputation != 0) ChangeReputation(run, sim, o.Reputation, p.Tier, lines);
@@ -420,6 +538,10 @@ public static class EventRunner
         }
         foreach (string f in o.ClearFlags) State(run).Flags.Remove(f);
         if (o.Spawn.Length > 0) Spawn(run, sim, o.Spawn, p.Seed);
+        if (o.HandOver) HandOverObjective.Deliver(run, p.Carrier, o.HandOverPay);
+        if (o.ContactTurns != ContactReaction.None) HandOverObjective.React(run, sim, p.Carrier, o.ContactTurns);
+        // UI only: the chat tells every player the result.
+        if (o.Chat && o.Text.Length > 0) Ux.UxKit.ChatLine(run.Game, EventText.Fill(o.Text, run.State.FleetTech, p));
     }
 
     /// <summary>Gains split between the human players like a mission reward. A loss comes from the chooser and stops at 0.</summary>
@@ -491,7 +613,8 @@ public static class EventRunner
         if (done < amount) lines.Add(EventText.NoVaultRoom(amount - done));
     }
 
-    static void ChangeCrew(SimRoot sim, int amount, ulong seed, List<string> lines)
+    /// <summary>killed: false removes crew without the death path (no death stats, no casualty), for crew that leave alive.</summary>
+    static void ChangeCrew(SimRoot sim, int amount, ulong seed, List<string> lines, bool killed = true)
     {
         var ships = Vaults.HumanShips(sim).OrderBy(sh => sh.Metadata.PlayerIndex).ThenBy(sh => sh.UniqueID).ToList();
         int done = 0;
@@ -512,11 +635,11 @@ public static class EventRunner
             {
                 CrewSoul soul = pool[rand.Int32(0, pool.Count - 1)];
                 pool.Remove(soul);
-                soul.Delete(killed: true);
+                soul.Delete(killed);
                 done--;
             }
         }
-        if (done != 0) lines.Add(EventText.Crew(done));
+        if (done != 0) lines.Add(killed ? EventText.Crew(done) : EventText.CrewLeft(-done));
         if (amount > 0 && done < amount) lines.Add(EventText.NoBunk(amount - done));
     }
 

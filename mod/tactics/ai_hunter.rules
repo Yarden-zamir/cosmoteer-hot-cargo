@@ -44,6 +44,10 @@ StrategyModules
 	{
 		Type = HcGrabTech
 	}
+	// Orders from another area (the Pursuit: reporting scouts, blockade ships, spec 911 and 916) above every tactic.
+	{
+		Type = HcOverride
+	}
 	{
 		Type = HcFallBack
 		RepairChecksPerTick = 2

@@ -66,8 +66,8 @@ Reads as: classic FTL beacon. The Sensor Array turns a gamble into a safe gain.
 A dry freighter wants hyperium.
 | Choice | Cost | Outcomes |
 |---|---|---|
-| Give them the fuel | 20 + 5/tier hyperium | 0.4 fame, heat −10 (they send the corporation the wrong way). |
-| Sell at triple price | same | 70 %: 0.8 money. 30 %: 0.8 money, heat +8. |
+| Give them the fuel | option: one share of 20 + 5/tier hyperium | 0.4 fame, heat −10 (they send the corporation the wrong way). |
+| Sell at triple price | option: a quarter to two shares | 70 %: 0.8 money per share. 30 %: the same, heat +8. |
 | Take their cargo | — | 60 %: steel and coil, heat +15. 40 %: 2 raiders, heat +10. |
 | Leave | — | Nothing. |
 
@@ -76,8 +76,7 @@ Reads as: fuel is a currency. Kindness buys heat, greed buys money, piracy buys 
 #### 4. Corporate Checkpoint (Arrival, sector 2+, heat 10+; weight 8 + 0.15 × heat)
 | Choice | Cost / Need | Outcomes |
 |---|---|---|
-| Transmit forged codes | flag `fake_codes` (from the Fence's Ledger chain), hidden without it | Heat −20, flag cleared. |
-| Private fee | 0.6 money | 80 %: heat −10. 20 %: heat +10. |
+| Settle it quietly | options: a private fee (0.6 money), one crate (sure), forged codes (flag `fake_codes` from the Fence's Ledger chain, hidden without it; sure, extra heat −10, flag cleared) | 80 %: heat −10. 20 %: heat +10. A crate or the codes take the good outcome. |
 | Submit to the scan | — | Clean weight 60 − 8 × tech, caught weight 20 + 8 × tech (6 tech: 12 vs 68, so 85 % caught). Caught opens page 4b. |
 | Run the checkpoint | — | 60 %: heat +15. 40 %: heat +10 and a corporate patrol. |
 
@@ -107,8 +106,7 @@ Reads as: an FTL quest chain. A choice in sector 3 pays off in sector 5.
 A rival thief crew, Captain Rook, wants one crate.
 | Choice | Cost / Need | Outcomes |
 |---|---|---|
-| Hand over a crate | 1 tech | Flag `magpies_paid`. |
-| Pay in credits | 1.5 money | Nothing more. |
+| Pay Rook off | options: one crate (keeps the last one; sets flag `magpies_paid`), credits (up to 1.5 money); one crate or 1.5 money pays | Nothing more. |
 | Fake a vault breach | Sensor Array | 60 %: they leave. 40 %: page 7b. |
 | Come and take it | — | The Magpies attack: one fleet at the system tier with the hunter AI (they go for the vault). A "Rival Crew" mission pays a bounty (1 standard mission) when the fleet is gone. |
 
@@ -133,8 +131,7 @@ Reads as: FTL's station under siege. The time limit makes "move on or burn" a re
 #### 10. The Fence (Station, 2+ tech)
 | Choice | Cost | Outcomes |
 |---|---|---|
-| Sell one crate | 1 tech | 0.75 × tech value, heat −20. |
-| Sell two crates | 2 tech | 1.5 × tech value, heat −35. |
+| Sell through the fence | option: 1 to 3 crates (keeps the last one) | Each crate 0.75 × tech value. Heat −20 for the first crate, −15 for each more. |
 | Not today | — | Nothing. |
 
 Reads as: below market price, but the corporation chases the pieces. The heat drop is the product.
@@ -195,9 +192,8 @@ Reads as: high heat has a local price too, not only corporate waves.
 Rook is back with two friends and wants two crates. Paying once made you a mark.
 | Choice | Cost / Need | Outcomes |
 |---|---|---|
-| Pay two crates | 2 tech | The flag renews (the event opens once per run, so this ends it). |
+| Pay Rook | options: 1 or 2 crates (each half the price; renews the flag), credits (up to 2 money); keeps the last crate | The flag renews when crates pay (the event opens once per run, so this ends it). |
 | Hand over a crate that Varga rigged | flag `defector`, 1 tech, hidden without the flag | Rook's ship blows up: 0.5 fame, heat +5, flag cleared. |
-| Pay in credits | 2 money | Nothing more. |
 | Come and take them | — | The Magpies attack: one fleet at the system tier + 1, hunter AI, bounty 1.5 × a standard mission. Flag cleared. |
 
 Reads as: an FTL extortion arc, and a payoff for the Defector chain.
@@ -206,8 +202,7 @@ Reads as: an FTL extortion arc, and a payoff for the Defector chain.
 Miners fleeing a corporate company town. The corporation searches every convoy.
 | Choice | Cost | Outcomes |
 |---|---|---|
-| Take some aboard | — | +2 crew (if bunks are free), 0.3 fame, +1 reputation with the system's faction, heat +10. |
-| Give fuel and food | 15 + 3/tier hyperium | 0.3 fame, +1 reputation. |
+| Help them | options, either or both: 1 to 4 refugees aboard (each +1 crew if a bunk is free, 0.15 fame, +0.5 reputation with the system's faction, heat +5); fuel and food, half a share to two shares of 15 + 3/tier hyperium (each share 0.3 fame, +1 reputation) | The effects of the options. |
 | Sell their position | — | 1 money, heat −15, −0.5 fame, −2 reputation. |
 | Fly on | — | Nothing. |
 
@@ -217,8 +212,8 @@ Reads as: a moral choice with a heat cost on the kind side and a fame and reputa
 The twist: the pirates sell sightings to the corporation, so the toll grows with your heat. A vanilla pirate base wants to be destroyed; this gate wants to be paid, and the price is the bounty on you.
 | Choice | Cost | Outcomes |
 |---|---|---|
-| Pay the toll | 0.3 + 0.01 × heat money (heat 50: 0.8) | Nothing more. |
-| Pay double for a false sighting | 0.6 + 0.02 × heat money | Heat −20. |
+| Pay the toll | options, in tolls: credits (one toll is 0.3 + 0.01 × heat money; heat 50: 0.8), steel (one toll is 30 + 6/tier), crew who join them (2 crew are one toll); one toll | Nothing more. |
+| Pay double for a false sighting | the same options; two tolls | Heat −20. |
 | Run the gate | — | Heat +15, 3 pirates at the system tier (no bounty). |
 
 #### 22. The Buyer's Agent (Arrival, 1 to 2 sectors before the Buyer, 1+ tech; weight 40)
@@ -233,7 +228,7 @@ Reads as: the last hold-or-sell question. Money now buys repairs and escorts for
 
 #### 23. Courier Job (station mission offer)
 Not an event page: a Hot Cargo mission in the station's mission list (spec 85). The first trade station that the players reach in a system offers it with chance `CourierChance` (50 %), once per system.
-- The job: fly a sealed case to a neutral contact ("Quiet Contact", "The Night Ferry", ...) 8,000 to 12,000 away within 7 minutes, then collect the pay at the station.
+- The job: the accept puts a Sealed Case in your hold (it needs a free storage slot). Find the neutral contact ("Quiet Contact", "The Night Ferry", ...) 8,000 to 12,000 away and hail it within 7 minutes: hand the case over. You can open the case in the hold first (select its storage, "Open the case"): it holds corporate access codes to sell at a station, or a tracer beacon that adds heat each minute until you space it. The contact may notice an opened case: it pays less, turns hostile or jumps away. Then collect the pay at the station. A lost case fails the job (spec 1100 to 1104, 1115 to 1118).
 - Pay: 1.25 × a standard mission's money, 0.5 × its fame. A quiet job: good money, little fame, so little heat.
 - Contract terms (economy): free, flat heat 3, trail weight 0.5, informant chance 15 %.
 
@@ -241,9 +236,7 @@ Not an event page: a Hot Cargo mission in the station's mission list (spec 85). 
 A ship event: the vault's coolant line ruptures. Every choice costs something (user decision: at most one Unavoidable event per run, tunable `MaxUnavoidablePerRun`).
 | Choice | Cost / Need | Outcomes |
 |---|---|---|
-| Vent one crate | 1 tech (keeps the last one) | Nothing more. |
-| Send a team in | 2 crew | 60 %: hull damage 15 %. 40 %: −1 crew and hull damage 15 %. Vaults are never damaged. |
-| Emergency coolant from a station tug | 0.5 money | Nothing more. |
+| Stop the leak | options, any mix that reaches one fix: vent one crate (keeps the last one); 1 or 2 crew on hand (each half a fix, hull damage 7.5 %, 20 % to lose one crew); emergency coolant, a quarter to a full 0.5 money | Nothing more. Vaults are never damaged. |
 
 Reads as: FTL's ship fire. The player picks which resource to lose: tech, crew and hull, or money.
 
@@ -251,7 +244,7 @@ Reads as: FTL's ship fire. The player picks which resource to lose: tech, crew a
 From Cosmoteer's Career 2.0 dev blog: a distress signal can be "a broken-down ship needing supplies for repairs or a tow to the nearest shipyard".
 | Choice | Cost / Need | Outcomes |
 |---|---|---|
-| Hand over repair supplies | 25 + 5/tier steel, 5 + 1/tier coil | 0.5 money, 0.3 fame, +0.5 reputation. |
+| Hand over the selected parts | options: steel (shares of 25 + 5/tier), coils (shares of 5 + 1/tier); a share of each, or two of one | 0.5 money, 0.3 fame, +0.5 reputation. |
 | Tow them to the nearest station | Tractor Beam Emitter | A Tow Job mission: pull the freighter (no AI, no drive) to the nearest trade station at least 3,000 away. Pays 1 × standard money, 0.75 × fame and reputation. Fails if the freighter is destroyed. |
 | Strip their cargo | — | Steel, heat +10, −1 reputation. |
 | Leave them | — | Nothing. |
@@ -265,8 +258,7 @@ Vanilla wanted (police of one faction hunt you) stacks with corporate heat. When
 #### 25. A Clean Record (Wanted)
 | Choice | Cost | Outcomes |
 |---|---|---|
-| Pay for a clean record | 0.4 + 0.01 × heat money | Weights 80 vs 20 + 0.2 × heat (at heat 50: 67 % vs 33 %). Good: wanted clears. Bad: sold out, heat +15, still wanted. |
-| Pay with a crate | 1 tech | Wanted clears, heat −5. |
+| Buy the clean record | options: credits (0.4 + 0.01 × heat money), or one crate (keeps the last one; sure, heat −5) | Weights 80 vs 20 + 0.2 × heat (at heat 50: 67 % vs 33 %). Good: wanted clears. Bad: sold out, heat +15, still wanted. A crate takes the good outcome. |
 | Handle it yourself | — | Nothing. |
 
 #### 26. Decoy Run (Wanted)
@@ -321,12 +313,14 @@ Events do not only pop up. Ships carry them and talk:
 - **Hot Cargo lines in vanilla hails.** Stations offer "Sell a crate off the books." Faction ships offer "Ask about hunters nearby." (heat 10+). Once per ship and line.
 
 #### 33. Off the Books (Hail line, trade stations; 2+ tech)
-Sell one crate: 0.85 × tech value, heat −10. Or change your mind.
+Sell 1 to 3 crates (an option; keeps the last one): each 0.85 × tech value and heat −10. Or change your mind.
 
 #### 34. Patrol Chatter (Hail line, faction ships; heat 10+)
 Pay 0.2 money units for patrol logs (heat −8), ask nicely (50 %: heat −4; 50 % + 0.3 × heat: heat +5, they log your question), or never mind.
 
 Hunter demands ("hand over the tech") are the diplomacy area's, through the same comms hook.
+
+Page options (spec 810 to 812): the "options" above are rows of a multiselect page. Players select them and set their amounts, then pick the submit choice. The old choices cost the same for the same result.
 
 All catalog items are implemented.
 

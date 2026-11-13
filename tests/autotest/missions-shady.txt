@@ -1,6 +1,7 @@
 # Shady offer (spec 38-40): the trap rolls on arrival with the heat formula; a sprung trap pays when the ambush is gone.
 newgame run
 wait 8
+pu_set Enabled false
 heat 50
 # Spec 39 defaults: 0.2 + 0.006 x 50.
 expect hc_trap_chance_now >= 0.5

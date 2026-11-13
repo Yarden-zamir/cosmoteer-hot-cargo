@@ -28,6 +28,10 @@ public sealed class UxTunables
     [Serialize(Optional = true)] public bool BuyerMarker = true;
     /// <summary>Pulsing gold tint on Tech Vault parts of your ships.</summary>
     [Serialize(Optional = true)] public bool VaultMarker = true;
+    /// <summary>Mission lists (comms and log): kind icons, chain colors, distance in jumps, risk, a filter and a risk sort, remembered per player.</summary>
+    [Serialize(Optional = true)] public bool MissionSelect = true;
+    /// <summary>Risk sort of the mission lists: a sure trap or informant counts as this much heat, a 50 % chance as half of it.</summary>
+    [Serialize(Optional = true)] public float RiskHeatPerChance = 20f;
     /// <summary>Trade tab: what a tech sale does to the heat rate and the final score, and a note at the Buyer.</summary>
     [Serialize(Optional = true)] public bool TechSaleHint = true;
 
@@ -74,4 +78,9 @@ public sealed class UxTunables
     [Serialize(Optional = true)] public bool PauseOnComms = true;
     /// <summary>The same in multiplayer. Off by default, because one player's comms window pauses every player.</summary>
     [Serialize(Optional = true)] public bool PauseOnCommsMultiplayer;
+    /// <summary>
+    /// Seconds between refreshes of HUD texts that change all the time: heat panel, status overlay, wanted timer.
+    /// Higher costs less on a slow machine; in co-op every machine runs the HUD, and the game runs at the speed of the slowest.
+    /// </summary>
+    [Serialize(Optional = true)] public float HudRefreshSeconds = 0.25f;
 }

@@ -35,7 +35,8 @@ HotCargoUx
 
 	// Run end
 	WinTitle = "TECH DELIVERED"
-	WinButton = "Keep playing"
+	WinButton = "Continue"
+	WinEndRun = "End run"
 	WinScoreFmt = "<gray>SCORE</gray>\n<s48><money>{0}</money></s48>\n<fame_color>{1}</fame_color> tech delivered"
 	ScoreFmt = "Score {0}, {1} tech delivered"
 	WinContinue = "Heat is off. You can keep playing."
@@ -45,7 +46,7 @@ HotCargoUx
 	WaitingForHost = "Waiting for the host to load or quit."
 
 	// Markers
-	BuyerTag = "BUYER"
+	BuyerTag = "<image name='hc_marker_buyer' colored='true'/> BUYER"
 
 	// Galaxy map tooltip
 	MapJumpsFmt = "<fame_color>{0}</fame_color> jumps ({1})"
@@ -93,6 +94,30 @@ HotCargoUx
 	BadgeTechs = "Techs"
 	BadgeMissionsFmt = "{0} missions"
 	BadgeRewardsFmt = "<good>{0} reward ready</good>"
+	BadgeChain = "<image name='hc_mission_HotCargoChain' colored='true'/> Story chain"
+
+	// Mission select (comms missions list and mission log)
+	JumpsFmt = "{0} jumps"
+	JumpsOneFmt = "1 jump"
+	JumpsNoRoute = "no route"
+	RiskTrapFmt = "trap {0:0}%"
+	RiskInformantFmt = "leak {0:0}%"
+	KindVanilla = "Standard mission"
+	KindHotCargo = "Hot Cargo mission"
+	KindChain = "Story chain stage"
+	KindShady = "<bad>Shady offer: high pay, no faction. It can be a trap.</bad>"
+	RiskHeatFmt = "Heat on completion: {0}"
+	RiskTrapTipFmt = "<bad>Trap chance at today's heat: {0:0}%</bad>"
+	RiskInformantTipFmt = "<limited_color>The client may sell your route to hunters: {0:0}%</limited_color>"
+	RiskFeeFmt = "Fee to accept: <money>{0:N0}</money>"
+	SortRisk = "<image name='sort'/> Heat and risk"
+	FilterTip = "Show only some kinds of missions."
+	FilterAll = "All missions"
+	FilterHotCargo = "Hot Cargo"
+	FilterChains = "Story chains"
+	FilterContracts = "Contracts"
+	FilterVanilla = "Standard"
+	FilterNoShady = "No shady offers"
 
 	// Trade tab
 	TechSaleFmt = "<fame_color>Sell {0} tech:</fame_color> heat <bad>+{1:0.0}</bad> → <good>+{2:0.0}</good>/min, score <bad>{3}</bad> <gray>(today's price)</gray>"

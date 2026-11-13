@@ -1,6 +1,7 @@
 # Wanted and hunted (spec 470-472): the warning, the Wanted trigger and the events that clear vanilla wanted.
 newgame run
 wait 8
+pu_set Enabled false
 ev_set WantedEventChance 1
 # Wanted alone stays vanilla: no warning, no event. ("wanted" is the UX test command: the nearest station's faction wants you.)
 wanted
@@ -20,8 +21,9 @@ expectneed clean_record met
 expectneed decoy_run met
 # A Clean Record, paid with a crate: wanted clears.
 event clean_record
+pick 2
 ev_mark
-choose 2 1
+choose 1
 expect ev_wanted == 0
 expect ev_tech_gain == -1
 wait 1

@@ -1,7 +1,8 @@
-# Ship tactics editor screenshots (spec 410). Main slot only (needs graphics).
+# Ship tactics editor screenshots (spec 410, 419). Main slot only (needs graphics).
 render on
 newgame run
 wait 10
+pu_set Enabled false
 ev_set Enabled false
 closepanel
 pause off
@@ -26,9 +27,38 @@ tactics_editor cond 5 ShieldsBelow
 tactics_editor act 5 HoldFire
 wait 2
 screenshot shipai-editor-edited
+# Condition chains (spec 416, 419): AND, NOT and OR terms, a facing row, a Hot Cargo row, and a personal preset.
+tactics_presets_reset
+tactics_editor addterm 1
+tactics_editor cond 1 CarryingTech 2
+tactics_editor not 1 2
+tactics_editor addterm 1
+tactics_editor cond 1 EnemiesAtLeast 3
+tactics_editor param 1 4 3
+tactics_editor or 1 3
+tactics_editor add
+tactics_editor cond 6 CratesWithin
+tactics_editor addterm 6
+tactics_editor cond 6 HuntersInSystem 2
+tactics_editor not 6 2
+tactics_editor act 6 CollectTech
+tactics_editor add
+tactics_editor act 7 Face
+tactics_editor actparam 7 1
+tactics_editor savepreset Tech runner
+wait 2
+screenshot shipai-editor-chains
 tactics_editor close
+tactics_presets_reset
+# Spec 415: Face=1 (+90 degrees) turns the left side of the ship to the target.
+tactics HC1:Always>TargetNearest;Always>CloseIn;Always>Face=1
+waitfor tactics_face == 90 30
+wait 12
+vault focus
+wait 4
+screenshot shipai-face-left
 # The game's own Save Ship path with the picture: the tactics node goes into the .ship.png.
 savedesign shipai_png png
 loaddesign shipai_png
-expect design_rows == 5
+expect design_rows == 3
 quit

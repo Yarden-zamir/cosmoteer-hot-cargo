@@ -3,6 +3,7 @@ codex_reset
 tutorials on
 newgame run
 wait 8
+pu_set Enabled false
 closepanel
 # The run page shows after a few seconds of play. No event page opens at the start, so the events page waits.
 expect hint_hc_run == 1
@@ -13,7 +14,7 @@ ev_set Enabled false
 event the_fence
 wait 1
 expect hint_hc_events == 1
-choose 3 1
+choose 2 1
 # Spec 723: vanilla tutorials wait in the first minutes of a run and while a Hot Cargo page is new. Hot Cargo buttons come first.
 expect hints_unread == 1
 expect codex_vanilla_shown == 0
