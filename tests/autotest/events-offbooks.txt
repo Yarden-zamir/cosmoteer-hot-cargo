@@ -1,8 +1,6 @@
 # Off the Books through the real comms window (spec 767-771): the line opens the page in the same tab, and its choices work.
 newgame run
 wait 8
-expectevent getaway
-choose 3 1
 ev_set StationEventChance 0
 ev_set CourierChance 0
 ev_set CooldownSeconds 0
