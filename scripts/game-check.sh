@@ -32,7 +32,7 @@ WT="$(cd .. && pwd)/check-$PR"
 [[ -e "$WT" ]] && git worktree remove --force "$WT" 2>/dev/null
 git worktree add -q --detach "$WT" "$SHA" || { echo "game-check: no worktree at $SHA"; exit 1; }
 trap 'git worktree remove --force "$WT" 2>/dev/null || true' EXIT
-status pending "game tests running on PR head + origin/main ${HOSTNAME%%.*}"
+status pending "game tests running on the PR head merged with origin/main"
 T0=$SECONDS
 cd "$WT"
 if ! git merge -q --no-edit origin/main > /dev/null 2>&1; then
