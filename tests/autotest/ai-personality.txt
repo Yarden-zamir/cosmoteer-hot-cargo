@@ -41,3 +41,4 @@ expect ai_heavy_kiters == 0
 aiset PersonalitiesEnabled false
 expect ai_heavy_kiters == 0
 quit
+# tier: smoke

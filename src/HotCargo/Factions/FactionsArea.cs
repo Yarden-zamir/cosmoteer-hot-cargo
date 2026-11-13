@@ -22,7 +22,7 @@ public static class FactionsArea
     {
         Run.Hooks.TimeHeatFactor = run =>
             FactionsModel.TimeHeatFactor(ZoneOf(run, run.Game.CurrentMapNode), run.T.Factions.AllyHeatFactor, run.T.Factions.ShelterHeatFactor);
-        Run.Hooks.NotorietyFactor = run => ZoneOf(run, run.Game.CurrentMapNode) == Zone.Ally ? run.T.Factions.AllyNotorietyFactor : 1f;
+        Run.Hooks.NotorietyFactor = run => FactionsModel.NotorietyFactor(ZoneOf(run, run.Game.CurrentMapNode), run.T.Factions.AllyNotorietyFactor);
         Run.Hooks.JumpHeatKept = run => HeatKept(run, Jumps.PendingKind(run));
         Run.Hooks.Tick += Jumps.OnTick;
         Run.Hooks.SystemEntered += OnSystemEntered;

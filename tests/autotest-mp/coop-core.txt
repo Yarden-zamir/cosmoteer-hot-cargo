@@ -167,3 +167,4 @@ codex_restore
 on 1 codex_restore
 
 end
+# tier: smoke

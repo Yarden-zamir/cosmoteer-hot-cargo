@@ -50,3 +50,4 @@ expect tagcount == 9
 enemyscale 1.0
 expect enemyfactor == 1
 quit
+# tier: smoke

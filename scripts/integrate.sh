@@ -10,6 +10,8 @@
 # fix them with a new commit and run "integrate.sh --continue", or undo them with "git reset --hard origin/main".
 # When autotests fail, it names the branches of the batch whose areas own each failed test (autotest-affected.sh rule).
 set -euo pipefail
+# Merge batches run every autotest of the touched areas, not only the smoke tier (tests/TIERS.md).
+export AUTOTEST_TIER=full
 cd "$(dirname "$0")/.."
 ARGS=() AUTOTEST=yes FULL=no CONTINUE=no DETACH=no
 for a in "$@"; do
@@ -115,7 +117,8 @@ if [[ "$AUTOTEST" == yes ]]; then
     scripts/autotest-all.sh 400 2>&1 | tee "$TEST_OUT" || rc=$?
   else
     step "affected autotests"
-    COMMITTED_ONLY=1 scripts/autotest-affected.sh origin/main 2>&1 | tee "$TEST_OUT" || rc=$?
+    # AUTOTEST_MAC=0: the PC suite stays the merge gate until the Mac sim has a track record.
+    AUTOTEST_MAC=0 COMMITTED_ONLY=1 scripts/autotest-affected.sh origin/main 2>&1 | tee "$TEST_OUT" || rc=$?
   fi
   if [[ $rc -ne 0 ]]; then
     FAILED="$(grep '^== failed: ' "$TEST_OUT" | tail -1 || true)"
