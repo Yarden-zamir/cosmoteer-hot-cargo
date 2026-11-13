@@ -87,6 +87,16 @@ public static class SharedChoiceArea
         Autotest.Fields["listen_open"] = () => { ListenIn.Frame(); return ListenIn.OpenWindows().Count(); };
         Autotest.Fields["listen_vote_marks"] = () => Tabs(listening: true).Sum(t => SharedChoicePanel.VoteMarks(t._dialogueButtonsBox.Children));
         Autotest.Fields["comms_vote_marks"] = () => Tabs(listening: false).Sum(t => SharedChoicePanel.VoteMarks(t._dialogueButtonsBox.Children));
+        // listen_speak: opens the real comms window from this machine's own ship to the ship that carries the pending event page.
+        Autotest.Commands["listen_speak"] = _ =>
+        {
+            var run = RequireRun();
+            var sim = run.Game.Sim;
+            var carrier = run.State.Events.Pending?.Carrier is { } id ? sim.Ships[id] : null;
+            var own = Autotest.ActingShip(sim) ?? throw new InvalidOperationException("no own ship");
+            run.Game.Gui.FloatingWindows.AddChild(new Cosmoteer.Modes.Career.Comms.CommWindow(run.Game, own, carrier ?? throw new InvalidOperationException("no live event carrier")));
+            Autotest.Wait(1);
+        };
         // listen_log: logs the open comms channels in the sim and this machine's comms windows with the vanilla call checks.
         Autotest.Commands["listen_log"] = _ =>
         {

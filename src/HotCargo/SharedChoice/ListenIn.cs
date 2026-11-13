@@ -84,7 +84,7 @@ public static class ListenIn
         string speaker = PlayerName(run, hail.CallerPlayer);
         var window = new CommWindow(run.Game, hail.Caller, hail.Callee);
         Windows.Add(window, new Listen(hail.Caller, hail.Callee, speaker));
-        window.TitleText = SharedChoices.Format("ListenTitleFmt", speaker, hail.Callee.Metadata.PlainShipName);
+        window.TitleText = SharedChoices.Format("ListenTitleFmt", hail.Callee.Metadata.PlainShipName);
         run.Game.Gui.FloatingWindows.AddChild(window);
         Log.Info($"listen-in: player {run.Game.LocalPlayerIndex} listens to {speaker} and {hail.Callee.Metadata.PlainShipName}");
     }
@@ -109,7 +109,10 @@ public static class ListenIn
             _bar.NineSlice.Flags = NineSliceFlags.None;
             _bar.Children.LayoutAlgorithm = LayoutAlgorithms.StretchTopToBottom;
             _bar.Children.WidgetPadding = new Vector2(Gap);
-            game.Gui.RootWidget.AddChild(_bar);
+            // Under the floating windows, so an open listen window covers the list.
+            var top = game.Gui.RootWidget.Children;
+            int windows = top.IndexOf(game.Gui.FloatingWindows);
+            if (windows >= 0) top.Insert(windows, _bar); else top.Add(_bar);
             _barGame = game;
             _shown = [];
         }
