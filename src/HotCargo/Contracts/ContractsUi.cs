@@ -1,3 +1,5 @@
+using Cosmoteer;
+using Cosmoteer.Data;
 using System.Runtime.CompilerServices;
 using Cosmoteer.Gui;
 using Cosmoteer.Localization;
@@ -138,6 +140,14 @@ static class ContractsUi
         static void Postfix(CommMissionsTab __instance, Mission m) => Errors.Guard("contract accept button", () =>
         {
             var btn = __instance._acceptBtn;
+            // Spec 1101: an item that the mission gives needs a free storage slot.
+            if (RunOf(m) is { } offerRun && !offerRun.Mode.Missions.ContainsMission(m) && m.Game.Sim is { } sim
+                && Events.MissionCargo.NoRoomFor(sim, m, m.Game.LocalPlayerIndex) is { } item)
+            {
+                btn.TextProvider = new SimpleTextProvider(F("AcceptNoRoomFmt", item.GetResourceRules().NameKey.Text), null);
+                btn.SelfInputActive = false;
+                return;
+            }
             int fee = RunOf(m) is { } run && !run.Mode.Missions.ContainsMission(m) ? ContractBook.Preview(run, m)?.Fee ?? 0 : 0;
             if (fee <= 0)
             {
