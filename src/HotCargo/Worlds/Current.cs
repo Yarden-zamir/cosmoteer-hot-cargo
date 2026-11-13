@@ -132,7 +132,7 @@ internal sealed class CurrentSpawner : SimObjectSpawner
 /// Nebula active effect "HotCargoCurrentPush" (spec 221). Each sim tick, it pushes the live ships in the nebula along the
 /// flow of the system and toward the nearer side of the band (WorldsModel.Push). Stations and the ship types in
 /// IgnoreShipTypes do not drift. The force scales with the ship's mass, so every ship gets the same acceleration.
-/// Loose items (vanilla nuggets: resources and tech crates) float with the current (WorldsModel.ItemDrift).
+/// Loose items (vanilla nuggets: resources and tech crates) get the same push.
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
 [ReflectivePortableHashing(Explicit = true)]
@@ -163,7 +163,8 @@ internal sealed class CurrentPush : NebulaActiveEffectRules
                     t.CurrentFlowSpeed, t.CurrentAccel, t.CurrentSideShare, ship.Nebulas.GetNebulaStrength(nebulaType.ID));
                 if (ax != 0f || ay != 0f) body.ApplyForce(new Vector2(ax, ay) * body.Mass);
             }
-            float damping = sim.Nuggets.Rules.LinearDamping, dt = sim.FixedUpdater.Interval;
+            // Items get the ship rule as a velocity change (their vanilla drag still applies, so they drift slower than ships).
+            float dt = sim.FixedUpdater.Interval;
             for (int i = 0; i < sim.Nuggets.Count; i++)
             {
                 Nugget nugget = sim.Nuggets[i];
@@ -171,8 +172,10 @@ internal sealed class CurrentPush : NebulaActiveEffectRules
                 if (at.DistanceTo(band.Center) > band.Radius) continue;
                 float strength = nebulas.GetInsideStrength(at, nebulaType.ID);
                 if (strength <= 0f) continue;
-                var (dx, dy) = WorldsModel.ItemDrift(flow, Current.Outward(flowVector, band, at), t.CurrentFlowSpeed, t.CurrentSideShare, damping, strength, dt);
-                nugget.LinearVelocity += new Vector2(dx, dy);
+                Vector2 v = nugget.LinearVelocity;
+                var (ax, ay) = WorldsModel.Push(v.X, v.Y, flow, Current.Outward(flowVector, band, at),
+                    t.CurrentFlowSpeed, t.CurrentAccel, t.CurrentSideShare, strength);
+                if (ax != 0f || ay != 0f) nugget.LinearVelocity = v + new Vector2(ax, ay) * dt;
             }
         });
     }

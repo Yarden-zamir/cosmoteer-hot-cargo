@@ -50,9 +50,11 @@ public static class WorldsModel
     }
 
     /// <summary>
-    /// Spec 221: the push of the current on a ship, in units per second squared. Along the flow it is PushAccel.
+    /// Spec 221: the push of the current on a ship or a loose item, in units per second squared. Along the flow it is PushAccel.
     /// Across the flow, toward the outward side, it is PushAccel with the flow speed and the push times sideShare.
-    /// So a drifting ship moves toward the drift velocity flowSpeed × (flow + sideShare × outward) and leaves the band at its side.
+    /// So a drifting object moves toward the drift velocity flowSpeed × (flow + sideShare × outward), at the angle
+    /// atan(sideShare) from the flow, and leaves the band. It leaves at the side when sideShare is above
+    /// (distance to the side) ÷ (distance to the end): 0.4 from the center of a 6000 × 2400 band.
     /// </summary>
     public static (float X, float Y) Push(float vx, float vy, (float X, float Y) flow, (float X, float Y) outward,
         float flowSpeed, float maxAccel, float sideShare, float strength)
@@ -60,20 +62,6 @@ public static class WorldsModel
         float along = PushAccel(vx * flow.X + vy * flow.Y, flowSpeed, maxAccel, strength);
         float across = PushAccel(vx * outward.X + vy * outward.Y, flowSpeed * sideShare, maxAccel * sideShare, strength);
         return (flow.X * along + outward.X * across, flow.Y * along + outward.Y * across);
-    }
-
-    /// <summary>
-    /// Spec 221: the velocity change of a loose item (a vanilla nugget) in the current for one tick. The vanilla drag
-    /// (Nugget.FixedUpdateDynamic: v -= v × damping × dt) pulls an item to rest. This adds damping × drift × dt, so in the
-    /// current the drag pulls the item toward the drift velocity instead: the item floats with the current.
-    /// </summary>
-    public static (float X, float Y) ItemDrift((float X, float Y) flow, (float X, float Y) outward,
-        float flowSpeed, float sideShare, float damping, float strength, float dt)
-    {
-        if (flowSpeed <= 0f || damping <= 0f || strength <= 0f || dt <= 0f) return (0f, 0f);
-        float k = flowSpeed * damping * Math.Min(strength, 1f) * dt;
-        float side = Math.Max(sideShare, 0f);
-        return ((flow.X + outward.X * side) * k, (flow.Y + outward.Y * side) * k);
     }
 
     /// <summary>

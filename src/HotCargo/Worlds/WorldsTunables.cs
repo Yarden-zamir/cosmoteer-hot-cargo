@@ -16,8 +16,9 @@ public sealed class WorldsTunables
     /// <summary>
     /// Spec 221: the sideways part of the drift, as a share of the flow. The current also pushes across the flow, toward the
     /// nearer side of the band, at this share of the flow speed and push, so a drifting ship or item leaves the band. 0 turns it off.
+    /// Above 0.4, drift from the band center leaves at the side (half width 1200 over half length 3000).
     /// </summary>
-    [Serialize(Optional = true)] public float CurrentSideShare = 0.3f;
+    [Serialize(Optional = true)] public float CurrentSideShare = 0.5f;
     /// <summary>Spec 221: draw flow arrows over the current.</summary>
     [Serialize(Optional = true)] public bool CurrentArrows = true;
 
