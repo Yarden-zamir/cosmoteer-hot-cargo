@@ -50,7 +50,7 @@ Three full runs on this Mac (Apple Silicon, 10 cores, 64 GB, .NET 10.0.14), 8 ru
 | core | core | mp:core |
 | diplomacy | diplomacy-friends, diplomacy-hunters | diplomacy-surrender, mp:diplomacy |
 | events | events-abandoned, events-batch2, events-courier, events-hail, events-outcomes, events-research, events-save, events-tow, events-triggers, events-unavoidable, events-wanted | mp:events |
-| factions | factions-combat-jump, factions-jumps, factions-prices, factions-zones | mp:factions |
+| factions | factions-combat-jump, factions-jumps, factions-peace, factions-prices, factions-zones | mp:factions |
 | hunters | hunters-spawn, hunters-tactics, hunters-waves | - |
 | journey | journey-jump, journey-run | - |
 | mechanics | mechanics-holdout, mechanics-listening, mechanics-offers, mechanics-placement, mechanics-prototype, mechanics-salvage, mechanics-save, mechanics-survey-mining | - |

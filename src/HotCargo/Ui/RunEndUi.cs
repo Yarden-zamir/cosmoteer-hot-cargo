@@ -36,7 +36,9 @@ public static class RunEndUi
             var st = run.State;
             string body = $"<s24>{st.EndReason}</s24>\n\n{UxKit.Format("WinScoreFmt", st.Score.ToString("N0"), st.DeliveredUnits)}\n\n" +
                           $"{StatsLine(run)}\n<gray>{UxKit.Text("WinContinue")}</gray>" + RunModes.RunModesArea.WinLines(run);
-            CenterPanel.Show(run.Game, UxKit.Text("WinTitle"), WidgetRules.Instance.GoodTextColor, body, UxKit.Text("WinButton"));
+            // "End run" leaves to the main menu like the game-over screen's quit, so only the host (or a single player) gets it.
+            (string, Action)? end = run.Game.NetManager.IsHost ? (UxKit.Text("WinEndRun"), () => Halfling.App.Director.PopState(run.Game)) : null;
+            CenterPanel.Show(run.Game, UxKit.Text("WinTitle"), WidgetRules.Instance.GoodTextColor, body, UxKit.Text("WinButton"), primary: end);
         }
         else
         {

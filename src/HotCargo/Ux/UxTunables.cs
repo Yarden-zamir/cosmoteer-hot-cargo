@@ -28,6 +28,10 @@ public sealed class UxTunables
     [Serialize(Optional = true)] public bool BuyerMarker = true;
     /// <summary>Pulsing gold tint on Tech Vault parts of your ships.</summary>
     [Serialize(Optional = true)] public bool VaultMarker = true;
+    /// <summary>Mission lists (comms and log): kind icons, chain colors, distance in jumps, risk, a filter and a risk sort, remembered per player.</summary>
+    [Serialize(Optional = true)] public bool MissionSelect = true;
+    /// <summary>Risk sort of the mission lists: a sure trap or informant counts as this much heat, a 50 % chance as half of it.</summary>
+    [Serialize(Optional = true)] public float RiskHeatPerChance = 20f;
     /// <summary>Trade tab: what a tech sale does to the heat rate and the final score, and a note at the Buyer.</summary>
     [Serialize(Optional = true)] public bool TechSaleHint = true;
 

@@ -85,12 +85,12 @@ Chains
 			{
 				ID = extract
 				Title = "Extraction"
-				Text = "Destroy the escorts of the transport that carries Sabine Okafor, within 7 min.\nDo not break the transport."
-				Mission = ChainCarefulTarget
+				Text = "Destroy the escorts of the transport that carries Sabine Okafor, within 7 min.\nThen hail the transport and bring her aboard."
+				Mission = ChainExtraction
 				Terms { AcceptFee = 0.3; FlatHeat = 8; TrailWeight = 1.5; InformantChance = 10% }
 				Results
 				[
-					{ On = success; Next = debrief; Story = "You pulled Sabine Okafor off a corporate transport."; Effects { Text = "The escorts are scrap. The transport opens its airlock, and a woman in a corporate uniform floats across with one bag." } }
+					{ On = success; Next = debrief; Story = "You pulled Sabine Okafor off a corporate transport."; Effects { Text = "Okafor watches the empty transport drift away. Her hands have not stopped shaking." } }
 					{ On = lost; Reputation = -0.5; Story = "The transport broke apart with Okafor aboard."; Effects { Text = "The transport's reactor goes, and Okafor with it. The corporation will call it piracy."; Heat = 10 } }
 					{ On = timeout; Story = "Okafor's escorts called it in, and the window closed."; Effects { Text = "The transport jumps out with its escorts. A corporate alert follows you."; Heat = 15 } }
 					{ On = fail; Story = "You never went for Okafor." }
@@ -328,7 +328,7 @@ Chains
 			{
 				ID = recorder
 				Title = "The Black Box"
-				Text = "Recover the flight recorder from a dead corporate hunter.\nA security drone guards the wreck, one tier tougher."
+				Text = "Salvage the flight recorder from a dead corporate hunter, and bring it to the broker.\nA security drone guards the wreck, one tier tougher."
 				Mission = ChainBlackBox
 				Terms { AcceptFee = 0.2; FlatHeat = 5; TrailWeight = 1; InformantChance = 10% }
 				Results

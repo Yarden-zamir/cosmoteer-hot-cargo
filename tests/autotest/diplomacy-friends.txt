@@ -107,6 +107,8 @@ dip_log merc
 # a real option: after its help offer is used, it keeps the vanilla behavior (spec 560).
 dip_set MercChance 0
 dip_set HoldChanceBase 5
+# Outside corporate ally space: there the ally faction takes no hire contract (spec 1150, test factions-peace).
+fa_roles other -
 dip_spawn ally 300
 wait 2
 expect dip_answers == 1

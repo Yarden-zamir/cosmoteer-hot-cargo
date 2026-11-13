@@ -205,6 +205,19 @@ public static class ShipAiArea
             var have = Sim().Ships.HumanPlayerShips.OrderBy(s => s.UniqueID).Select(s => ShipTactics.Of(s)?.Text ?? "").ToList();
             Autotest.Check(have.Contains(want), $"a human ship has tactics '{want}' (have: {string.Join(" | ", have)})");
         };
+        // tactics_snapshot: records the rows and the Auto switch of every human ship that has tactics. Run it with "mp", so every
+        // machine records at the same sim tick. A later resync or load must bring them back (tactics_snapshot_* fields).
+        Autotest.Commands["tactics_snapshot"] = _ =>
+        {
+            _snapshot = Sim().Ships.HumanPlayerShips.Where(s => ShipTactics.Of(s) is not null)
+                .ToDictionary(s => s.UniqueID, s => (ShipTactics.Of(s)!.Text, ShipTactics.Of(s)!.Auto));
+            Log.Info($"AUTOTEST tactics snapshot: {string.Join(" | ", _snapshot.Select(kv => $"{kv.Key} auto={kv.Value.Auto} {kv.Value.Text}"))}");
+        };
+        // Ships of the snapshot that are live human ships now with the same rows and Auto switch.
+        Autotest.Fields["tactics_snapshot_kept"] = () => SnapshotShips().Count(x => x.Same);
+        // Ships of the snapshot that are live human ships now with other rows or another Auto switch. A ship that the fight
+        // destroyed or made a wreck is not counted: the check does not depend on which ships survive.
+        Autotest.Fields["tactics_snapshot_changed"] = () => SnapshotShips().Count(x => !x.Same);
         // expecttactics <preset name|clear|HC1:...>: the test ship has exactly these rows.
         Autotest.Commands["expecttactics"] = arg =>
         {
@@ -305,6 +318,21 @@ public static class ShipAiArea
             Log.Info($"AUTOTEST TACTICS {arg}: ship={ship.Metadata.PlainShipName} auto={t?.Auto} waiting={t?.Waiting} target={t?.TargetRow} move={t?.MoveRow} " +
                      $"matched={t?.Matched} cmd={ship.Commands.CurConfirmedCommand?.GetType().Name} health={HunterOrders.HealthFraction(ship):0.00} text='{t?.Text}'");
         };
+    }
+
+    static Dictionary<Cosmoteer.Game.ObjectID, (string Text, bool Auto)>? _snapshot;
+
+    static IEnumerable<(Ship Ship, bool Same)> SnapshotShips()
+    {
+        var snap = _snapshot ?? throw new InvalidOperationException("no tactics_snapshot yet");
+        foreach (var ship in Sim().Ships.HumanPlayerShips.OrderBy(s => s.UniqueID))
+            if (snap.TryGetValue(ship.UniqueID, out var want))
+            {
+                var t = ShipTactics.Of(ship);
+                bool same = t is not null && t.Text == want.Text && t.Auto == want.Auto;
+                if (!same) Log.Info($"AUTOTEST tactics snapshot: {ship.UniqueID} has auto={t?.Auto} '{t?.Text}', was auto={want.Auto} '{want.Text}'");
+                yield return (ship, same);
+            }
     }
 
     static List<HashSet<PartKind>> AimedParts()
