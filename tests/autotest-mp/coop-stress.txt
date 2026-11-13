@@ -1,0 +1,33 @@
+# Co-op session: performance measure (spec 870 to 873). A heavy fight: the Strike stage with repeat waves, personalities, teams and
+# cover among rocks, 60 wrecks, events and diplomacy hails on. selfprof and frameprof run on both machines (SELFPROF and FRAMEPROF lines).
+# See coop-core.txt for "on 1" and steps.
+mphost {PORT}
+mpstart 2
+mp godmode on
+mp maxhunters 16
+mp strikeinterval 20
+mp airocks 10 900
+mp wrecks 60
+mp aispawn pirates 4
+mp aispawn monolith 4
+mp aispawn imperium 3
+mp heat 100
+
+step telemetry.stress
+selfprof on
+on 1 selfprof on
+wait 20
+selfprof reset
+on 1 selfprof reset
+frameprof on
+on 1 frameprof on
+wait 90
+selfprof report coop
+frameprof report coop
+on 1 selfprof report client
+on 1 frameprof report client
+telestats
+expect desyncs == 0
+expect selfprof_pct_tick < 25
+
+end

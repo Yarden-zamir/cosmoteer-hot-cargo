@@ -36,6 +36,7 @@ internal sealed class ShipTactics
     [Serialize(Optional = true)] public bool Waiting;
     [Serialize(Optional = true)] public int TargetRow = -1;
     [Serialize(Optional = true)] public int MoveRow = -1;
+    [Serialize(Optional = true)] public int FacingRow = -1;
     /// <summary>Bit i = row i matched in the last decision. Weapon modes come from it (ShipAiModel.WeaponAct).</summary>
     [Serialize(Optional = true)] public int Matched;
     [Serialize(Optional = true)] public ObjectID? Target;
@@ -43,6 +44,20 @@ internal sealed class ShipTactics
     [Serialize(Optional = true)] public Vector2? Anchor;
     /// <summary>The last command that the tactics gave. Only this command is ever removed by the tactics.</summary>
     [Serialize(Optional = true)] public CommandID? Issued;
+
+    /// <summary>Spec 418: the term memory of the last decision, in term order (ShipAiModel.TermMemory as two lists).</summary>
+    [Serialize(Optional = true)] public List<bool> MemoryOn = [];
+    [Serialize(Optional = true)] public List<double> MemorySince = [];
+
+    public TermMemory[]? Memory
+    {
+        get => MemoryOn.Count == 0 || MemoryOn.Count != MemorySince.Count ? null : MemoryOn.Zip(MemorySince, (on, since) => new TermMemory(on, since)).ToArray();
+        set
+        {
+            MemoryOn = value?.Select(m => m.On).ToList() ?? [];
+            MemorySince = value?.Select(m => m.Since).ToList() ?? [];
+        }
+    }
 
     List<TacticRow>? _rows;
     public IReadOnlyList<TacticRow> Rows => _rows ??= ShipAiModel.Decode(Text);
@@ -68,7 +83,8 @@ internal sealed class ShipTactics
         iHash.AddHash(Auto ? 1 : 0);
         iHash.AddHash(Waiting ? 1 : 0);
         iHash.AddHash(Matched);
-        iHash.AddHash(TargetRow * 100 + MoveRow);
+        iHash.AddHash(TargetRow * 10000 + MoveRow * 100 + FacingRow);
+        for (int i = 0; i < MemoryOn.Count; i++) iHash.AddHash(MemoryOn[i] ? 1 : 0);
         iHash.AddHash((int)(NextTick.Seconds * 10));
     }
 
