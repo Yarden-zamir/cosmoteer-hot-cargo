@@ -18,9 +18,13 @@ public static class TunablesFile
     /// <summary>Error text of the last failed read, or null after a good read.</summary>
     public static string? LastError { get; private set; }
 
-    public sealed record Loaded(Tunables Values, string Hash);
+    /// <summary>Valid tunables, their short hash and the file bytes that they come from (the multiplayer input sends the bytes).</summary>
+    public sealed record Loaded(Tunables Values, string Hash, byte[] Bytes);
 
-    /// <summary>Reads the file. Returns null and sets LastError when the file is missing or invalid.</summary>
+    /// <summary>
+    /// Reads the file. Returns null and sets LastError when the file is missing or invalid.
+    /// A bad file is a player input error, not a mod bug: it logs as INFO, and the overlay shows LastError (spec 53).
+    /// </summary>
     public static Loaded? Read()
     {
         try
@@ -34,7 +38,7 @@ public static class TunablesFile
         catch (Exception ex)
         {
             LastError = ex.Message;
-            Log.Error("tunables read failed", ex);
+            Log.Info($"tunables rejected: {ex.Message}");
             return null;
         }
     }
@@ -47,9 +51,6 @@ public static class TunablesFile
         LastError = null;
     }
 
-    /// <summary>Reads the file bytes or null when the file is missing. For the host's tunables input in multiplayer.</summary>
-    public static byte[]? ReadBytes() => File.Exists(FilePath) ? File.ReadAllBytes(FilePath) : null;
-
     /// <summary>Parses and validates the content of a tunables file. Throws when it is invalid.</summary>
     public static Loaded Parse(byte[] bytes)
     {
@@ -57,8 +58,11 @@ public static class TunablesFile
         var values = App.ObjectTextSerializer.Read<Tunables>(new OTFile(stream))
             ?? throw new InvalidDataException("tunables.rules is empty");
         Validate(values);
-        return new Loaded(values, Convert.ToHexString(SHA256.HashData(bytes))[..8]);
+        return new Loaded(values, Convert.ToHexString(SHA256.HashData(bytes))[..8], bytes);
     }
+
+    /// <summary>Counts the file as read without reading it, so only a later write counts as a change.</summary>
+    public static void MarkSeen() => _lastWrite = File.Exists(FilePath) ? File.GetLastWriteTimeUtc(FilePath) : default;
 
     /// <summary>True once per changed file write. Call once per frame.</summary>
     public static bool ChangedSinceLastRead()

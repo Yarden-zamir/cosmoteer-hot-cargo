@@ -31,10 +31,6 @@ public static class TunableTiming
 {
     static readonly Dictionary<string, Applies> Exceptions = new()
     {
-        ["HeatTunables.HeatCarryOverFraction"] = Applies.NextSystem,
-        ["FactionsTunables.RelayWatchedHeatCut"] = Applies.NextSystem,
-        ["FactionsTunables.RelayClearHeatCut"] = Applies.NextSystem,
-        ["FactionsTunables.BlindHeatCut"] = Applies.NextSystem,
         ["TechTunables.StartingTechUnits"] = Applies.NewRun,
         ["TechTunables.StartingResearch"] = Applies.NewRun,
         ["JourneyTunables.RunSectorCount"] = Applies.NextSystem,
@@ -59,17 +55,12 @@ public static class TunableTiming
         ["MissionTunables.ShadyTrapSurvivalReward"] = Applies.NextOffer,
         ["MissionTunables.EscortHeatChange"] = Applies.NextOffer,
         ["MissionTunables.EscortRouteShare"] = Applies.NextOffer,
-        ["EventsTunables.ArrivalEventChance"] = Applies.NextSystem,
         ["EventsTunables.ArrivalDelaySeconds"] = Applies.NextSystem,
-        ["EventsTunables.StationEventChance"] = Applies.NextSystem,
-        ["EventsTunables.CourierChance"] = Applies.NextSystem,
         ["EventsTunables.PauseOnEvent"] = Applies.NextUse,
         ["EventsTunables.RelicEnabled"] = Applies.NewRun,
         ["EventsTunables.RelicMinSector"] = Applies.NewRun,
         ["ChainsTunables.StationChance"] = Applies.NextSystem,
         ["ChainsTunables.MaxNewChainsPerSystem"] = Applies.NextSystem,
-        ["BalanceTunables.StationFuelPerMillion"] = Applies.NextSpawn,
-        ["BalanceTunables.StationFuelMinimum"] = Applies.NextSpawn,
         ["ChainsTunables.LaterDelaySeconds"] = Applies.NextSystem,
         ["ChainsTunables.StoryLines"] = Applies.NextUse,
         ["ContractsTunables.FeeChance"] = Applies.NextOffer,

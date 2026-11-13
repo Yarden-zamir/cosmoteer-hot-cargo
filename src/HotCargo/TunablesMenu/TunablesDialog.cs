@@ -52,6 +52,8 @@ internal sealed class TunablesDialog : DialogBase
         public required Label Name;
         public required string Search;
         public required Action<object?> Show;
+        /// <summary>The value that the control shows, as text. For the test commands.</summary>
+        public required Func<string> Shown;
         public required Func<string, string?> Enter;
         public required Button Reset;
     }
@@ -164,6 +166,9 @@ internal sealed class TunablesDialog : DialogBase
     void OnFrame()
     {
         if (Run.Current != _run) { Close(); return; }
+        // The game mode's frame hook does not run while this window covers a paused game, so the window watches the file too (spec 52).
+        if (_canEdit && !_run.HostTunablesPending && TunablesFile.ChangedSinceLastRead()) _run.ReloadTunables();
+        TuneRequest.Poll(_run);
         if (TunablesEditor.CurrentHash(_run) != _shownHash) Refresh();
     }
 
@@ -271,7 +276,7 @@ internal sealed class TunablesDialog : DialogBase
         name.TextRenderer.OversizeMode = OversizeMode.Shrink;
         line.AddChild(name);
 
-        var (control, show, enter) = Control(f, path);
+        var (control, show, shown, enter) = Control(f, path);
         control.PercentileRect = new Rect(39f, 0f, 46f, 100f);
         control.SelfInputActive = _canEdit;
         line.AddChild(control);
@@ -294,7 +299,7 @@ internal sealed class TunablesDialog : DialogBase
         string label = TunableDocs.Label(f.Name);
         var row = new Row
         {
-            Path = path, Field = f, Box = box, Name = name, Reset = reset, Enter = enter,
+            Path = path, Field = f, Box = box, Name = name, Reset = reset, Enter = enter, Shown = shown,
             Search = $"{path} {label} {TunableDocs.Describe(f)}".ToLowerInvariant(),
             // A value that differs from its default shows its name highlighted. A list item without a default counts as changed.
             Show = value =>
@@ -309,14 +314,14 @@ internal sealed class TunablesDialog : DialogBase
     }
 
     /// <summary>The control for one value: a check box, a drop list (enums and stage names) or a text field.</summary>
-    (Widget Control, Action<object?> Show, Func<string, string?> Enter) Control(FieldInfo f, string path)
+    (Widget Control, Action<object?> Show, Func<string> Shown, Func<string, string?> Enter) Control(FieldInfo f, string path)
     {
         Type type = path.EndsWith(']') ? TunablePath.ElementType(f.FieldType)! : f.FieldType;
         if (type == typeof(bool))
         {
             var check = new ToggleButton(ToggleButton.Style.Check) { Height = 32f };
             check.SelectionChanged += (_, _) => { if (!_showing) Commit(() => TunablesEditor.Set(_run, path, check.IsSelected ? "true" : "false")); };
-            return (check, v => check.IsSelected = v is true, text =>
+            return (check, v => check.IsSelected = v is true, () => check.IsSelected ? "true" : "false", text =>
             {
                 check.IsSelected = (bool)TunablesEditor.Parse(typeof(bool), text);
                 return Error;
@@ -336,7 +341,8 @@ internal sealed class TunablesDialog : DialogBase
             {
                 if (!_showing && e.Widget is SelectableButton b && items.TryGetValue(b, out string? value)) Commit(() => TunablesEditor.Set(_run, path, value));
             };
-            return (drop, v => drop.SelectedWidget = items.FirstOrDefault(kv => kv.Value == (v as string ?? v?.ToString())).Key, text =>
+            return (drop, v => drop.SelectedWidget = items.FirstOrDefault(kv => kv.Value == (v as string ?? v?.ToString())).Key,
+                () => drop.SelectedWidget is SelectableButton b && items.TryGetValue(b, out string? shown) ? shown : "", text =>
             {
                 var item = items.FirstOrDefault(kv => kv.Value == text).Key ?? throw new InvalidOperationException($"'{text}' is not a choice of {path}");
                 drop.SelectedWidget = item;
@@ -353,7 +359,7 @@ internal sealed class TunablesDialog : DialogBase
             App.Input.InputFilter = filter;
             if (enter) field.FocusController.RelinquishFocus();
         });
-        return (field, v => { if (!field.FocusController.IsFocused) field.Text = TunablesEditor.Format(v); }, text =>
+        return (field, v => { if (!field.FocusController.IsFocused) field.Text = TunablesEditor.Format(v); }, () => field.Text, text =>
         {
             field.Text = text;
             Commit(() => TunablesEditor.Set(_run, path, text));
