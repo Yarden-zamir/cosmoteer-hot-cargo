@@ -9,7 +9,7 @@ aiset FleeEnabled false
 aiset CallEnabled false
 auto_build Escort player yarden_zamir.computer@-1,1,1 cosmoteer.laser_blaster_small@0,0 yarden_zamir.targeted_reactor@-1,3 cosmoteer.thruster_small@-1,5 cosmoteer.thruster_small@0,5 cosmoteer.thruster_small@0,-2,2 cosmoteer.thruster_small@-3,1,1 cosmoteer.thruster_small@-3,3,1 cosmoteer.thruster_small@1,0,3 cosmoteer.thruster_small@1,3,3
 waitfor auto_manned == 1 10
-tactics_ship 1
+tactics_ship Escort
 tactics EscortDrone
 tacticsauto on
 waitfor tactics_move_row == 3 20

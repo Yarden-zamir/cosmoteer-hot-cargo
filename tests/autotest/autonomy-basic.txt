@@ -14,8 +14,8 @@ waitfor auto_control == 1 10
 waitfor auto_manned == 1 10
 expect auto_crewed_parts == 1
 # A new autonomous ship gets Auto on with no rows.
-tactics_ship 1
-expect tactics_auto == 1
+tactics_ship Drone
+waitfor tactics_auto == 1 10
 expect tactics_rows == 0
 # The targeted reactor refills the batteries of the parts next to it.
 auto_drain
@@ -34,6 +34,7 @@ tactics_editor open
 tactics_editor recall off
 tactics_editor close
 # Without a working Computer the ship has no command and mans nothing; it is still the player's until it loses more.
+godmode off
 auto_kill yarden_zamir.computer
 waitfor auto_control == 0 10
 waitfor auto_manned == 0 10
