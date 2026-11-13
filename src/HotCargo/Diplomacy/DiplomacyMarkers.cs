@@ -33,10 +33,16 @@ static class DiplomacyMarkers
     internal static string? Label(Run run, Cosmoteer.Ships.Ship ship)
     {
         var s = run.State.Diplomacy;
+        var id = ship.UniqueID;
+        // Spec 872: every ship blip asks in every frame, so a ship without a label allocates nothing.
+        int held = 0;
+        foreach (var h in s.Held) if (h.Ship == id) held += h.Units;
+        Hire? hire = null;
+        foreach (var h in s.Hires) if (h.Ship == id) { hire = h; break; }
+        if (held == 0 && hire is null && !s.Mercs.Contains(id)) return null;
         var parts = new List<string>();
-        int held = s.Held.Where(h => h.Ship == ship.UniqueID).Sum(h => h.Units);
         if (held > 0) parts.Add(DipText.Format("LabelHoldsFmt", held));
-        if (s.Hires.FirstOrDefault(h => h.Ship == ship.UniqueID) is { } hire)
+        if (hire is not null)
             parts.Add(hire.Fleeing ? DipText.Text("LabelQuitting")
                 : DipText.Format("LabelHiredFmt", TimeSpan.FromSeconds(Math.Max(0, hire.Until - run.State.GameSeconds)).ToString(@"m\:ss")));
         else if (s.Mercs.Contains(ship.UniqueID)) parts.Add(DipText.Text("LabelMerc"));

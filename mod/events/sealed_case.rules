@@ -67,3 +67,20 @@ StackSprites
 StackReceiveMediaEffects = &/COMMON_EFFECTS/ProcessorDeliver
 StackPickupMediaEffects = &/COMMON_EFFECTS/ProcessorPickup
 NuggetPickupMediaEffects = &/COMMON_EFFECTS/NuggetPickup
+
+// Context actions (spec 1111): buttons on a storage part that holds a case. No dialog: the case opens in the hold.
+// Usually corporate codes; the tracer weighs more as heat rises, like the old "Open it first" choice (60 / 40 + 0.3 x heat).
+HotCargoActions
+[
+	{
+		ID = open
+		NameKey = "HotCargoItems/OpenCase"
+		ToolTipKey = "HotCargoItems/OpenCaseTip"
+		Becomes = yarden_zamir.opened_case
+		Contents
+		[
+			{ Resource = yarden_zamir.access_codes; Weight = 60; MessageKey = "HotCargoItems/OpenedCodesFmt" }
+			{ Resource = yarden_zamir.tracer_beacon; Weight = 40; WeightPerHeat = 0.3; MessageKey = "HotCargoItems/OpenedTracerFmt" }
+		]
+	}
+]

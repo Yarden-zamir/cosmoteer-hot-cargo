@@ -28,9 +28,9 @@ Fields not listed in the "Not now" column apply Now.
 | Contracts | `FeeChance`, `FeeMin`, `FeeMax`, `PaidBonusFactor`, `MoneyRoundTo`, `RivalPairChance`, `InformantShare`, `InformantChanceMin`, `InformantChanceMax`, `InformantDelayMin`, `InformantDelayMax`, `ExcludedCategories`, `Metatypes`: next mission offers | The terms of an offer are saved within a second of its first scan (spec 100). Fixed in this change: `RivalsEnabled` off now also stops the rival groups that offers got before the switch. The trail, `InformantHeat` and `InformantShips` apply now. |
 | Chains | `StationChance`, `MaxNewChainsPerSystem`, `LaterDelaySeconds`: next new system. `StoryLines`: next time it shows | `Enabled` and `PageTriggerDistance` apply now. |
 | SharedChoice | (none) | `VoteTimeoutSeconds` applies to open votes at once: the timeout counts from the first vote. |
-| Worlds | `PassWaveDistance`: next spawned ships. `ArrivalLine`, `ArrivalLineDelaySeconds`: next new system | Before a run is active (the first system of a new career), sim code uses the defaults (spec 227). |
+| Worlds | `PassWaveDistance`: next spawned ships. `ArrivalLine`, `ArrivalLineDelaySeconds`: next new system | Before a run is active (the first system of a new career), sim code uses the defaults (spec 227). `CurrentSideShare` (0.5, at once): the share of the current's push and flow speed that goes across the flow toward the nearer side of the band, so drifting ships and items leave it; above 0.4, drift from the band center leaves at the side; 0 turns it off. The band size is a rules value (`mod/worlds/sysgen_worlds.rules`, new systems). |
 | Factions | (none) | The jump heat cuts are read at each jump. The roles, zone factors, fence premium, price factors and refusal values apply at once, also to offers that exist (their money reward is computed when it shows and when it pays) and to an open comms window. |
-| Ux | `RunIntro`: new runs only. `StageAlertSeconds`, `CommsStayOnMap`, `MissionSelect`, `PauseOnComms`, `PauseOnCommsMultiplayer`: next time it shows | All other switches apply on the next frame. Known limit: in an open event window, the dialogue key numbers keep their state until the page changes. |
+| Ux | `RunIntro`: new runs only. `StageAlertSeconds`, `CommsStayOnMap`, `MissionSelect`, `PauseOnComms`, `PauseOnCommsMultiplayer`: next time it shows | All other switches apply on the next frame. `HudRefreshSeconds` applies at the next HUD refresh. Known limit: in an open event window, the dialogue key numbers keep their state until the page changes. |
 | Diplomacy | (none) | Chances and prices apply to the next choice and the open dialogue, the pay-off chances and `PayChanceCap` too. `BluffShare` and the pay-off slider ranges apply to the open dialogue (a draft value outside the new range snaps into it). `HandOverHeatDrop` applies to the next wave that leaves. `HunterSurrenderMoneyShare` applies to the next surrender. Hail and mercenary rolls happen once per ship, so a ship that rolled keeps its result; ships that did not roll yet use the new value. A running hire keeps its end time. |
 | Onboarding | (none) | `VanillaTutorialDelaySeconds` counts run time, so a loaded run that is older than the delay does not hold vanilla tutorials. |
 | RunModes | `Combat`, `Economy`, `Crew` rows: `HunterShips`, `HunterTiers`: next spawned ships. `ContractFees`: next mission offers | `HeatRate`, `TechValue` and `StrikeMusic` apply now. A change of the vanilla difficulty level in the game settings follows the same timing (spec 680). |
@@ -54,6 +54,21 @@ A value stays delayed only when an earlier change would be wrong or would break 
 - Rules content (parts, missions, archetype weights, `FinalSectorTier`, the galaxy size): needs a game restart (spec 54).
 - A new co-op run starts with the defaults. The host's file arrives as an input on the first frame, so the starting vault and the first system's offers use the defaults (spec 60). Later changes of the host's file reach every machine (spec 850). A client's file has no effect.
 - Test commands that change a tunable in place (`ev_set`, `sc_set`, `ux`, `onboarding`, `contract_set`, `mech_set`, `aiset`, `buyer sectors`, `maxhunters`, `tacticlog`): a later menu change or file reload replaces the tunables and drops those edits. Tests that mix the two set every value through the menu.
+
+## A slow co-op client
+
+Co-op runs in lockstep: every machine runs every sim tick, so the game runs at the speed of the slowest machine (spec 42). The host's tunables apply on every machine. When one player's game stutters, the host changes these values in the settings menu, from the top down. Numbers: test `telemetry-stress` (about 230 ships), Hot Cargo time on one machine.
+
+| Setting | Effect | Cost it saves |
+|---|---|---|
+| Enemy ships per extra player (new career screen) | Lower: fewer hostile ships with 3 or more players (spec 330). | Ship count drives most of the vanilla sim and draw time. The largest saving. |
+| `Hunters.MaxLiveHunters` | Lower: fewer hunters at once (scaled with the player count, spec 334). | Fewer ships, as above. |
+| `Ux.HudRefreshSeconds` | Raise from 0.25 to 0.5 or 1: HUD texts and the event window refresh less often (spec 872). | Small; the HUD costs well under 0.1 ms per frame at 0.25. |
+| `Tech.TechMarkers`, `Ux.EdgeLabels`, `Ux.StationBadges`, `Ux.DamagePings` | Off: no tech tag on blips, no edge label alignment, no comms badges, no hit pings. | Each runs in every frame, for every ship blip or own ship: about 0.1 to 0.2 µs each. |
+| `Worlds.CurrentArrows` | Off: no flow arrows over a current. | Under 1 µs per frame. |
+| `Invariants.Enabled` | Off: no rule checks (spec 1000). | About 6 µs per sim tick. Keep it on: playtests need its ERROR lines. |
+
+The slow player also lowers the vanilla graphics settings on their own machine (resolution, effects, frame limit). These are not tunables and change only that machine.
 
 ## Screenshots
 

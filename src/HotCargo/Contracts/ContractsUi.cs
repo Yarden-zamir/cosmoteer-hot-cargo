@@ -1,5 +1,8 @@
 using Cosmoteer;
 using Cosmoteer.Data;
+using Cosmoteer.Game;
+using Cosmoteer.Game.Gui;
+using Cosmoteer.Ships;
 using System.Runtime.CompilerServices;
 using Cosmoteer.Gui;
 using Cosmoteer.Localization;
@@ -136,31 +139,53 @@ static class ContractsUi
         });
     }
 
-    /// <summary>The accept button names the fee, and it does not react when the player cannot pay. The accept input checks again.</summary>
-    [HarmonyPatch(typeof(CommMissionsTab), "OnMissionSelected")]
-    static class AcceptButtonPatch
+    /// <summary>
+    /// The accept button names the fee, and it does not react when the player cannot pay or has no room for the mission's item.
+    /// It updates every frame while the tab shows, so it follows money and storage changes (spec 1119). The accept input checks again.
+    /// </summary>
+    [HarmonyPatch]
+    internal static class AcceptButtonPatch
     {
-        static void Postfix(CommMissionsTab __instance, Mission m) => Errors.Guard("contract accept button", () =>
+        /// <summary>Test only: the missions tab that the game built last.</summary>
+        internal static WeakReference<CommMissionsTab>? LastTab;
+
+        [HarmonyPostfix, HarmonyPatch(typeof(CommMissionsTab), MethodType.Constructor, typeof(ScrollBox), typeof(GameRoot), typeof(Ship), typeof(Ship))]
+        static void Built(CommMissionsTab __instance) => Errors.Guard("contract accept button", () =>
         {
-            var btn = __instance._acceptBtn;
-            // Spec 1101: an item that the mission gives needs a free storage slot.
-            if (RunOf(m) is { } offerRun && !offerRun.Mode.Missions.ContainsMission(m) && m.Game.Sim is { } sim
-                && Events.MissionCargo.NoRoomFor(sim, m, m.Game.LocalPlayerIndex) is { } item)
+            var tab = __instance;
+            LastTab = new(tab);
+            tab._acceptBtn.BeforeInputWhileActive((_, _) => Errors.Guard("contract accept button", () =>
             {
-                btn.TextProvider = new SimpleTextProvider(F("AcceptNoRoomFmt", item.GetResourceRules().NameKey.Text), null);
-                btn.SelfInputActive = false;
-                return;
-            }
-            int fee = RunOf(m) is { } run && !run.Mode.Missions.ContainsMission(m) ? ContractBook.Preview(run, m)?.Fee ?? 0 : 0;
-            if (fee <= 0)
-            {
-                btn.TextProvider = Strings.KeyString("CommWindow/AcceptMission");
-                btn.SelfInputActive = true;
-                return;
-            }
-            bool canPay = m.Game.LocalPlayerMoney >= fee;
-            btn.TextProvider = new SimpleTextProvider(F(canPay ? "AcceptPayFmt" : "AcceptCannotPayFmt", fee), null);
-            btn.SelfInputActive = canPay;
+                if (tab._missionsPanel.SelectedMission is { } selected) Refresh(tab._acceptBtn, selected);
+            }));
         });
+
+        [HarmonyPostfix, HarmonyPatch(typeof(CommMissionsTab), "OnMissionSelected")]
+        static void Selected(CommMissionsTab __instance, Mission m) => Errors.Guard("contract accept button", () => Refresh(__instance._acceptBtn, m));
+
+        static void Refresh(Button btn, Mission m)
+        {
+            var (text, active) = State(m);
+            btn.SelfInputActive = active;
+            if (text is null)
+            {
+                if (btn.TextProvider is not KeyString { Key: "CommWindow/AcceptMission" }) btn.TextProvider = Strings.KeyString("CommWindow/AcceptMission");
+            }
+            else if (btn.TextProvider?.Text != text) btn.TextProvider = new SimpleTextProvider(text, null);
+        }
+
+        /// <summary>The button text (null: the vanilla text) and whether it reacts.</summary>
+        static (string? Text, bool Active) State(Mission m)
+        {
+            var run = RunOf(m);
+            bool offer = run is not null && !run.Mode.Missions.ContainsMission(m);
+            // Spec 1101: an item that the mission gives needs a free storage slot.
+            if (offer && m.Game.Sim is { } sim && Events.MissionCargo.NoRoomFor(sim, m, m.Game.LocalPlayerIndex) is { } item)
+                return (F("AcceptNoRoomFmt", item.GetResourceRules().NameKey.Text), false);
+            int fee = offer ? ContractBook.Preview(run!, m)?.Fee ?? 0 : 0;
+            if (fee <= 0) return (null, true);
+            bool canPay = m.Game.LocalPlayerMoney >= fee;
+            return (F(canPay ? "AcceptPayFmt" : "AcceptCannotPayFmt", fee), canPay);
+        }
     }
 }

@@ -46,6 +46,11 @@ internal sealed class PersonalityStrategy(PersonalityStrategyRules rules) : AISt
     [Serialize(Optional = true)] byte _weakSides, _strongSide;
     // Log only: the traits at the last log line. Not sim state.
     uint _loggedBits = uint.MaxValue;
+    // Cache of Traits, not sim state: a fresh computation gives the same value. It holds for one sim tick, one player index
+    // and one tunables object, and a new measure clears it. ShipAI ticks run one after another (not a parallel bucket).
+    int _traitsTick = -1, _traitsPlayer;
+    TacticsTunables? _traitsTunables;
+    TraitSet _traits;
 
     ShipProfile Stored => new(_accel, _turn, _range, _armor, _shields, _radius, new SideProfile(_weakSides, _strongSide));
 
@@ -75,6 +80,7 @@ internal sealed class PersonalityStrategy(PersonalityStrategyRules rules) : AISt
                 (p.Acceleration, p.Turn, p.Range, p.Armor, p.Shields, p.Radius, p.Sides.Weak, p.Sides.Strong);
             _measured = true;
             _measuredAt = now;
+            _traitsTick = -1;
         }
         if (t.PersonalitiesEnabled)
         {
@@ -162,10 +168,19 @@ internal sealed class PersonalityStrategy(PersonalityStrategyRules rules) : AISt
 
     /// <summary>
     /// Spec 361-363. The traits that the ship uses now. None without a personality.
-    /// Limit: computed on every call, without a cache; group checks (pincer, bait, team) call it for each ally. It is a few small
-    /// lists and some arithmetic. Revisit with a per-tick cache if AI ticks show up in a profile of a fight with many hostile ships.
+    /// Every tactic gate and every group check (pincer, bait, team) asks it for each ally in each AI tick, so a ship with this module
+    /// caches the result for the sim tick (spec 870).
     /// </summary>
-    public static TraitSet Traits(Ship ship, TacticsTunables t) =>
+    public static TraitSet Traits(Ship ship, TacticsTunables t)
+    {
+        if (ship.AI?.GetStrategyModule<PersonalityStrategy>() is not { _measured: true } m) return ComputeTraits(ship, t);
+        int tick = HunterOrders.Sim(ship).Tick, player = ship.Metadata.PlayerIndex;
+        if (m._traitsTick != tick || m._traitsPlayer != player || !ReferenceEquals(m._traitsTunables, t))
+            (m._traits, m._traitsTick, m._traitsPlayer, m._traitsTunables) = (ComputeTraits(ship, t), tick, player, t);
+        return m._traits;
+    }
+
+    static TraitSet ComputeTraits(Ship ship, TacticsTunables t) =>
         Weights(Group(ship), ship.UniqueID, t) is { } weights ? PersonalityModel.Choose(weights, Scores(ship, t), t.PersonalityThreshold) : TraitSet.None;
 
     /// <summary>Spec 362. Measures the build from the operational thrusters, the parts and the weapons.</summary>

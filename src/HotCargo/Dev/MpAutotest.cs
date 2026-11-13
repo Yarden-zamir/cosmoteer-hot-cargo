@@ -42,6 +42,9 @@ public static class MpAutotest
     /// <summary>Port for the networking start of mphost. Null keeps the game's port (35862 or --port).</summary>
     internal static int? Port;
 
+    /// <summary>Players of the last mpstart; mprestart waits for the same count.</summary>
+    static int _players = 2;
+
     /// <summary>5 s at 30 sim ticks a second: a short co-op step still gets a state comparison.</summary>
     const int StateLogTicks = 150;
 
@@ -71,7 +74,7 @@ public static class MpAutotest
         Autotest.Commands["mphost"] = arg => Host(int.Parse(arg, CultureInfo.InvariantCulture));
         Autotest.Commands["mpjoin"] = Join;
         Autotest.Commands["mpready"] = Ready;
-        Autotest.Commands["mpstart"] = arg => Start(arg.Length > 0 ? int.Parse(arg, CultureInfo.InvariantCulture) : 2);
+        Autotest.Commands["mpstart"] = arg => Start(_players = arg.Length > 0 ? int.Parse(arg, CultureInfo.InvariantCulture) : 2);
         Autotest.Commands["mp"] = arg => RequireMpGame().NetManager.EnqueueInput(new AutotestInput(arg));
         // mplobby (host): ends the game for all players and returns everyone to the game setup screen, with the connections kept.
         Autotest.Commands["mplobby"] = _ =>
@@ -106,9 +109,20 @@ public static class MpAutotest
         {
             var mp = RequireMpGame().NetManager as BaseMPManager ?? throw new InvalidOperationException("no MP manager");
             if (mp.IsHost) return;
-            // A client starts it, as a client does when its integrity hash differs from the host's.
+            // The first client starts it, as a client does when its integrity hash differs from the host's. The host passes the call on
+            // to every client, so each client expects the resync first. With 3 or more players another client can be a few ticks behind
+            // and get the call before its sim reaches this input, so the first client waits 2 s of real time.
             ExpectResync = true;
-            mp._onOutOfSyncRpc(default);
+            if (RequireMpGame().LocalPlayerIndex != 1) return;
+            double at = App.Clock.Time.Seconds + 2;
+            EventHandler<EventArgs>? start = null;
+            start = (_, _) =>
+            {
+                if (App.Clock.Time.Seconds < at) return;
+                App.Director.FrameEnded -= start;
+                Errors.Guard("mpresync_client", () => mp._onOutOfSyncRpc(default));
+            };
+            App.Director.FrameEnded += start;
         };
         // mp mpmark <n>: sets a test counter inside the sim on every machine. The other machine waits with "waitfor mpmark >= n".
         Autotest.Commands["mpmark"] = arg => _mark = int.Parse(arg, CultureInfo.InvariantCulture);
@@ -168,7 +182,7 @@ public static class MpAutotest
         {
             var host = RequireMpGame().NetManager as MPHostManager ?? throw new InvalidOperationException("mprestart is for the host");
             host.Abort();
-            Autotest.WaitFor(() => Setup() is not null && Autotest.Game is null, 60, "the game setup screen", () => Start(2));
+            Autotest.WaitFor(() => Setup() is not null && Autotest.Game is null, 60, "the game setup screen", () => Start(_players));
         };
 
         // tunablesfile <rules text>: replaces the slot's tunables.rules, before mphost or mid-run (a live file change). Test slots only; deploy restores the repo file.
