@@ -34,29 +34,34 @@ public static class Playthrough
 
     internal static void Register()
     {
-        // pt_goto station|mission|relay: a right click order. The ship flies on its own; "waitfor pt_near == 1" waits for the arrival.
+        // pt_goto station|mission|relay <timeout seconds>: a right click order, again every 20 seconds until the ship is near (pt_near).
+        // A far station is in stasis, so its size is a guess; a person clicks again when it is in view.
         Autotest.Commands["pt_goto"] = arg =>
         {
-            var ship = TechAutotest.PlayerShip();
-            _target = arg switch
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length != 2) throw new InvalidOperationException("pt_goto needs: station|mission|relay <timeout seconds>");
+            string where = parts[0];
+            _target = where switch
             {
-                "station" => PickStation(ship),
+                "station" => PickStation(TechAutotest.PlayerShip()),
                 "mission" => () => (_mission ?? throw new InvalidOperationException("no accepted mission")).GetClosestObjective(out _)?.GetAreaLocation(Game()),
                 "relay" => () => new Circle(Relay().DetWorldCenter, 600f),
-                _ => throw new InvalidOperationException("pt_goto needs: station | mission | relay"),
+                _ => throw new InvalidOperationException("pt_goto needs: station|mission|relay <timeout seconds>"),
             };
-            var to = _target() ?? throw new InvalidOperationException($"no location for {arg}");
-            // A point on the near edge of the target, so the ship stops next to a station instead of on it.
-            var dir = (ship.DetWorldCenter - to.Center).Normalize();
-            var at = to.Center + dir * (to.Radius + ship.WorldBoundingRadius + 100f);
-            if (arg == "mission") at = to.Center;
-            var move = new MoveCommand(ship, ship.Commands.AllocLocalCommandID(), at, null, CollisionAvoidanceFlags.All, isTentative: false);
-            Game().NetManager.EnqueueInput(new MPEnqueueCommandsInput(move, append: false, playLocalSound: false));
-            Log.Info($"AUTOTEST playthrough: {ship.Name} ordered to {arg} at {at}, {ship.DetWorldCenter.DistanceTo(at):0} away");
+            double next = 0;
+            Autotest.WaitFor(() =>
+            {
+                if (Near()) return true;
+                double now = Halfling.App.Clock.Time.Seconds;
+                if (now >= next)
+                {
+                    next = now + 20;
+                    GoTo(where);
+                }
+                return false;
+            }, double.Parse(parts[1], CultureInfo.InvariantCulture), $"the ship to reach the {where}");
         };
-        // 1 when the player ship is within 500 of the pt_goto target.
-        Autotest.Fields["pt_near"] = () =>
-            _target?.Invoke() is { } c && TechAutotest.PlayerShip().DetWorldBoundingCircle.DistanceTo(in c) < 500f ? 1 : 0;
+        Autotest.Fields["pt_near"] = () => Near() ? 1 : 0;
         Autotest.Commands["pt_accept"] = _ => Accept();
         // 0 none, 1 in progress, 2 completed, 3 failed or expired.
         Autotest.Fields["pt_mission"] = () => _mission?.Completion switch
@@ -102,14 +107,15 @@ public static class Playthrough
         };
         Autotest.Fields["pt_ready"] = () => TechAutotest.PlayerShip().Ftl.IsReadyToJump ? 1 : 0;
         // pt_fight <timeout seconds>: right clicks the mission's nearest live target ship, again every 20 seconds as it moves,
-        // until the mission ends. A target in stasis or out of sight gets a move order to the objective area instead.
+        // until no fight step is left: the mission ended, or only a step such as ReceiveRewards is left (pt_collect).
+        // A target in stasis or out of sight gets a move order to the objective area instead.
         Autotest.Commands["pt_fight"] = arg =>
         {
             double next = 0;
             Autotest.WaitFor(() =>
             {
                 var m = _mission ?? throw new InvalidOperationException("no accepted mission");
-                if (m.Completion != CompletionState.InProgress) return true;
+                if (m.Completion != CompletionState.InProgress || !FightLeft(m)) return true;
                 double now = Halfling.App.Clock.Time.Seconds;
                 if (now >= next)
                 {
@@ -119,6 +125,10 @@ public static class Playthrough
                 return false;
             }, double.Parse(arg, CultureInfo.InvariantCulture), "the mission to end");
         };
+        // pt_collect: the "receive payment" button in the comms window of the picked station (CommMissionsTab.MPMissionPaymentInput).
+        // A vanilla bounty ends with a ReceiveRewards step after its target dies.
+        Autotest.Commands["pt_collect"] = _ =>
+            Game().NetManager.EnqueueInput(new CommMissionsTab.MPMissionPaymentInput(Station(), _mission ?? throw new InvalidOperationException("no accepted mission")));
         Autotest.Commands["pt_status"] = arg => Status(arg);
         // pt_watch <real seconds>: a status line at that interval, so a failed wait shows what the ship did. It only reads.
         Autotest.Commands["pt_watch"] = arg =>
@@ -127,7 +137,8 @@ public static class Playthrough
             Halfling.App.Director.FrameEnded += (_, _) =>
             {
                 double now = Halfling.App.Clock.Time.Seconds;
-                if (now < next || Run.Current is null) return;
+                // No acting ship during a jump (between systems) or after the ship is lost: nothing to report.
+                if (now < next || Run.Current is not { Game.Sim: { } sim } || Autotest.ActingShip(sim) is null) return;
                 next = now + every;
                 Errors.Guard("playthrough watch", () => Status("watch"));
             };
@@ -162,6 +173,33 @@ public static class Playthrough
         Log.Info($"AUTOTEST playthrough: {order.GetType().Name} {where}");
     }
 
+    /// <summary>One move order to the pt_goto target: a point on its near edge, so the ship stops next to a station instead of on it.</summary>
+    static void GoTo(string where)
+    {
+        var ship = TechAutotest.PlayerShip();
+        var to = _target?.Invoke() ?? throw new InvalidOperationException($"no location for {where}");
+        var dir = (ship.DetWorldCenter - to.Center).Normalize();
+        var at = where == "mission" ? to.Center : to.Center + dir * (to.Radius + ship.WorldBoundingRadius + 100f);
+        var move = new MoveCommand(ship, ship.Commands.AllocLocalCommandID(), at, null, CollisionAvoidanceFlags.All, isTentative: false);
+        Game().NetManager.EnqueueInput(new MPEnqueueCommandsInput(move, append: false, playLocalSound: false));
+        Log.Info($"AUTOTEST playthrough: {ship.Name} ordered to {where} at {at}, {ship.DetWorldCenter.DistanceTo(at):0} away");
+    }
+
+    /// <summary>
+    /// The player ship is close enough to trade with the pt_goto target. Vanilla drops a trade transfer without a message when the ship
+    /// edges are farther apart than LoseHomeShipWarningDistance (MPMoveResourcesInput.Execute). 100 less as a margin; GoTo stops 100 from the edge.
+    /// </summary>
+    static bool Near() => _target?.Invoke() is { } c
+        && TechAutotest.PlayerShip().DetWorldBoundingCircle.DistanceTo(in c) < GameApp.Rules.Crew.LoseHomeShipWarningDistance - 100f;
+
+    /// <summary>True while a fight step of the mission is not over, also one that a later step of a sequence holds.</summary>
+    static bool FightLeft(Mission m)
+    {
+        var fights = new List<DefeatShipsObjective>();
+        m.GetObjectives(fights);
+        return fights.Any(o => o.Completion == CompletionState.InProgress);
+    }
+
     static Cosmoteer.Game.GameRoot Game() => Autotest.RequireRun().Game;
 
     static ObjectID? _stationId;
@@ -184,7 +222,8 @@ public static class Playthrough
             .OrderBy(s => s.DetWorldCenter.DistanceTo(ship.DetWorldCenter)).Cast<MetaSpaceStation?>().FirstOrDefault()
             ?? throw new InvalidOperationException("no operating station with missions in this system");
         _stationId = station.StationID;
-        return () => PickedStation() is var s ? new Circle(s.DetWorldCenter, s.PhysicalShip?.WorldBoundingRadius ?? 400f) : null;
+        // A station in stasis has no hull to measure: 400 is a guess until it is live.
+        return () => PickedStation() is var s ? s.PhysicalShip?.DetWorldBoundingCircle ?? new Circle(s.DetWorldCenter, 400f) : null;
     }
 
     static int Stored(string resource) =>
@@ -257,6 +296,19 @@ public static class Playthrough
         Log.Info($"AUTOTEST playthrough: buy {resource}: queued {units - left} of {units} ({sources.Count} station sources, {sinks.Count} ship sinks)");
     }
 
+    static IEnumerable<ObjectiveTargetShip> TargetShips()
+    {
+        if (_mission is null) return [];
+        var objectives = new List<DefeatShipsObjective>();
+        _mission.GetObjectives(objectives, activeOnly: false);
+        return objectives.SelectMany(o => o.TargetShips);
+    }
+
+    /// <summary>Logs only. A killed target has id 0 and alive=False: vanilla clears the ship ID (ObjectiveTargetShip.OnTargetShipChanged).</summary>
+    static string TargetState(SimRoot sim) => string.Join("; ", TargetShips().Select(t =>
+        $"id={t.ShipID} node={(t.MapNodeID.Equals(sim.MapNode.UniqueID) ? "here" : t.MapNodeID.ToString())} alive={t.IsAlive} live={t.TargetShip is not null} " +
+        $"spawner={t.TargetSpawner?.GetType().Name ?? "none"} stasis={sim.Stasis[t.ShipID]?.GetType().Name ?? "none"} at={t.Location?.ToString() ?? "none"}"));
+
     static void Status(string label)
     {
         var run = Autotest.RequireRun();
@@ -267,6 +319,6 @@ public static class Playthrough
                  $"mission={_mission?.MetatypeID} {_mission?.Completion} target={(_mission?.GetClosestObjective(out float d) is null ? "none" : $"{d:0}")} " +
                  $"hostiles={run.Game.Sim.Ships.Count(s => s.IsEnemiesWith(ship) && !s.IsJunk)} " +
                  $"nearest hostile={run.Game.Sim.Ships.Where(s => s.IsEnemiesWith(ship) && !s.IsJunk).Select(s => s.DetWorldCenter.DistanceTo(ship.DetWorldCenter)).DefaultIfEmpty(-1).Min():0} " +
-                 $"order={ship.Commands.ConfirmedCommands.FirstOrDefault()?.GetType().Name}");
+                 $"order={ship.Commands.ConfirmedCommands.FirstOrDefault()?.GetType().Name} targets=[{TargetState(run.Game.Sim)}]");
     }
 }
