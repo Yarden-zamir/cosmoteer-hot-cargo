@@ -80,6 +80,19 @@ public static class EventsArea
             else run.Game.NetManager.EnqueueInput(EventsChoiceDomain.Pick(p.Serial, choice));
             Autotest.Wait(2);
         };
+        // answer: answers a page that the test did not pick (a random trigger), as a player does. A plain last choice is taken.
+        // A last choice that submits options (spec 811, Vault Coolant Leak) first gets the first option the player can select, at
+        // its full amount. A page with no option to select fails: in play it could not be closed.
+        Autotest.Commands["answer"] = _ =>
+        {
+            var page = CurrentView() ?? throw new InvalidOperationException("no event page");
+            var last = page.Choices[^1];
+            if (!last.Submit) { Autotest.Inject([$"choose {last.Index + 1}"]); return; }
+            var option = page.Options.FirstOrDefault(o => o.Active)
+                ?? throw new InvalidOperationException($"CHECK FAILED: {EventView.Plain(page.Title)} has no option to select, so its submit cannot close it");
+            string steps = option.Slider is { } slider ? $" {slider.Max}" : "";
+            Autotest.Inject([$"pick {option.Id + 1}{steps}", $"choose {last.Index + 1}"]);
+        };
         Autotest.Commands["expectevent"] = arg =>
         {
             string actual = RequireRun().State.Events.Pending?.EventId ?? "none";
