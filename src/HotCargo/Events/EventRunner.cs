@@ -428,6 +428,7 @@ public static class EventRunner
         }
         foreach (string f in o.ClearFlags) State(run).Flags.Remove(f);
         if (o.Spawn.Length > 0) Spawn(run, sim, o.Spawn, p.Seed);
+        if (o.HandOver) HandOverObjective.Deliver(run, p.Carrier);
     }
 
     /// <summary>Gains split between the human players like a mission reward. A loss comes from the chooser and stops at 0.</summary>

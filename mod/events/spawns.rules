@@ -285,6 +285,7 @@ Drone
 
 // Courier Job (spec 85). C# runs this at the first trade station that the players reach in a system; the root is that station.
 // It spawns the contact 8,000 to 12,000 away and puts the offer into the nearest trade station's mission list (that station).
+// The accept loads a sealed case into the hold (spec 1101); the job is to hand it over in the contact's comms (spec 1102).
 Courier
 {
 	Spawners
@@ -348,10 +349,23 @@ Courier
 							SubObjectives
 							[
 								{
-									Type = GotoShip
-									DestinationShipTag = { Mode=Latest; Tag=hc_courier_contact; }
-									DestinationShipAreaTag = { Mode=Latest; Tag=hc_courier_area; }
-									GetTierFromTierField = true
+									Type = Sequential
+									SubObjectives
+									[
+										// Find the contact: the marker shows its area until a player ship sees it.
+										{
+											Type = GotoShip
+											DestinationShipTag = { Mode=Latest; Tag=hc_courier_contact; }
+											DestinationShipAreaTag = { Mode=Latest; Tag=hc_courier_area; }
+											GetTierFromTierField = true
+										}
+										// Hand the case over in the contact's comms (events.rules, courier_handover). The accept loads the case.
+										{
+											Type = HotCargoHandOver
+											ResourceType = yarden_zamir.sealed_case
+											ContactShipTag = { Mode=Latest; Tag=hc_courier_contact; }
+										}
+									]
 								}
 							]
 						}

@@ -856,6 +856,40 @@ Events
 		]
 	}
 
+	// Courier Job hand-over (spec 1102): the line shows on the job's contact while the fleet holds the sealed case.
+	// The cost takes the case; HandOver completes the job's hand-over objective.
+	{
+		ID = courier_handover
+		Trigger = Hail
+		HailTarget = Contact
+		HailLine = "Hand over the sealed case."
+		MaxPerRun = 0
+		Need { Resources = [{ ID = yarden_zamir.sealed_case; Amount = 1 }] }
+		Title = "The Hand-Over"
+		Text = "A hatch opens, and a gloved hand waits for the case. \"You didn't open it. Right?\""
+		Choices
+		[
+			{
+				Text = "Hand it over."
+				Cost { Resources = [{ ID = yarden_zamir.sealed_case; Amount = 1 }] }
+				Outcomes [ { Text = "The hatch closes. Your pay waits at the station."; HandOver = true } ]
+			}
+			{
+				Text = "Open it first, then hand it over."
+				Cost { Resources = [{ ID = yarden_zamir.sealed_case; Amount = 1 }] }
+				Outcomes
+				[
+					{ Weight = 60; Text = "Corporate access codes. The contact pays extra to keep you quiet, and the corporation notices the leak."; Money = 0.5; Heat = 8; HandOver = true }
+					{ Weight = 40; WeightPerHeat = 0.3; Text = "The seal was a tracer, and it calls home the moment it breaks."; Heat = 15; HandOver = true }
+				]
+			}
+			{
+				Text = "Not yet."
+				Outcomes [ { Text = "\"Don't make me wait long.\"" } ]
+			}
+		]
+	}
+
 	// ---- Station
 
 	{

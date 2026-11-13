@@ -38,6 +38,8 @@ public enum HailTarget
     Station,
     /// <summary>Faction ships that are not stations and not hostile.</summary>
     FactionShip,
+    /// <summary>The contact of an open hand-over (HotCargoHandOver, spec 1102). The line stays while the hand-over is open.</summary>
+    Contact,
 }
 
 /// <summary>A computed offer that an event page carries (spec 760-762). Its contents come from the tech tree when the page opens.</summary>
@@ -151,6 +153,8 @@ public sealed class OutcomeRules
     [Serialize(Optional = true)] public string Next = "";
     [Serialize(Optional = true)] public string[] SetFlags = [];
     [Serialize(Optional = true)] public string[] ClearFlags = [];
+    /// <summary>Completes the open hand-over whose contact carries this page (spec 1102). Put the item in the choice Cost.</summary>
+    [Serialize(Optional = true)] public bool HandOver;
     /// <summary>On a chain page (mod/chains/pages.rules): the result that this outcome gives the chain stage. Empty elsewhere.</summary>
     [Serialize(Optional = true)] public string ChainResult = "";
 }

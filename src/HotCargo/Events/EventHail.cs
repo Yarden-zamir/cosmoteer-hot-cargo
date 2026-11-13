@@ -77,10 +77,12 @@ public static class EventHail
     {
         var s = run.State.Events;
         if (!run.T.Events.Enabled || EventLibrary.LoadError is not null || s.Pending is not null || run.State.Result != RunResult.Running) return [];
-        if (TargetOf(callee, caller) is not { } target) return [];
+        // The contact of an open hand-over shows its line until the hand-over ends, so a "not yet" can come back (spec 1102).
+        HailTarget? target = HandOverObjective.ForContact(run, callee.UniqueID) is not null ? HailTarget.Contact : TargetOf(callee, caller);
+        if (target is null) return [];
         var snap = EventRunner.Snap(run, sim, run.Game.GetPlayerState(caller.Metadata.PlayerIndex, deterministic: true).Money, run.CurrentTier, EventRunner.CurrentTechValue(run));
         return EventLibrary.InOrder
-            .Where(e => e.Trigger == EventTrigger.Hail && e.HailTarget == target && !s.HailUsed.Contains(UseKey(e.ID, callee.UniqueID)))
+            .Where(e => e.Trigger == EventTrigger.Hail && e.HailTarget == target && (target == HailTarget.Contact || !s.HailUsed.Contains(UseKey(e.ID, callee.UniqueID))))
             .Where(e => EventRunner.Eligible(run, e, snap))
             .ToList();
     }
@@ -94,7 +96,7 @@ public static class EventHail
         if (caller is null) return;
         var e = Lines(run, sim, caller, callee).FirstOrDefault(x => x.ID == eventId);
         if (e is null) { Log.Info($"hail line {eventId} ignored: not offered by {callee.Metadata.PlainShipName} now"); return; }
-        run.State.Events.HailUsed.Add(UseKey(e.ID, shipId));
+        if (e.HailTarget != HailTarget.Contact) run.State.Events.HailUsed.Add(UseKey(e.ID, shipId));
         EventRunner.Open(run, sim, e, lead: "", carrier: shipId);
     }
 }
