@@ -1,7 +1,9 @@
 using System.Globalization;
+using Cosmoteer.Game;
 using Cosmoteer.Modes.Career;
 using Cosmoteer.Ships;
 using Cosmoteer.Simulation;
+using Cosmoteer.Simulation.Stasis;
 using Halfling.Geometry;
 using HotCargo.Core;
 using HotCargo.Dev;
@@ -12,6 +14,7 @@ namespace HotCargo.Hunters;
 public static class HunterArea
 {
     static double _markedDistance;
+    static readonly HashSet<ObjectID> _taken = [];
 
     public static void Register()
     {
@@ -45,6 +48,45 @@ public static class HunterArea
         Autotest.Fields["huntersattacking"] = () =>
             HunterSpawner.Hunters(Sim()).Count(h => h.Commands.CurConfirmedCommand is Cosmoteer.Ships.Commands.AttackCommand);
 
+        // takehunters: the players take over every live hunter, like the capture claim (mech_capture_claim): it becomes a wreck,
+        // then a ship of the first player. It keeps the hunter tag. Test only.
+        Autotest.Commands["takehunters"] = _ =>
+        {
+            var sim = Sim();
+            int player = Autotest.RequireRun().Game.HumanPlayersIndexes[0];
+            foreach (var h in HunterSpawner.Hunters(sim).ToList())
+            {
+                sim.Mode.SetReducedShipAllegiance(h, Cosmoteer.PlayerIndexes.Junk, -1);
+                h.Metadata.PlayerIndex = player;
+                _taken.Add(h.UniqueID);
+                Log.Info($"AUTOTEST players took over hunter {h.Metadata.PlainShipName} id={h.UniqueID}");
+            }
+        };
+        // Hunter-tagged ships that the players own: all of them, and the ones that "takehunters" did not take (spec 1002: must be 0).
+        Autotest.Fields["hunterstaken"] = () => HumanHunterShips().Count();
+        Autotest.Fields["huntersjoined"] = () => HumanHunterShips().Count(s => !_taken.Contains(s.UniqueID));
+        // Player indexes of the hunters, live and in stasis (spec 1003: 1 when hunters exist).
+        Autotest.Fields["huntersides"] = () => HunterSpawner.SideIndexes(Sim(), (CareerSimModeManager)Sim().Mode).Count;
+        Autotest.Fields["hunterstasis"] = () => SimQueries.TaggedShips(Sim(), HunterSpawner.HunterTag).Count(h => h.Live is null);
+        // stasishunters: moves every live hunter far from the fleet and into stasis, with the calls of the stasis manager
+        // (SimStasisManager, ships that leave the live area). Test only.
+        Autotest.Commands["stasishunters"] = _ =>
+        {
+            var sim = Sim();
+            Vector2 center = FleetCenter(sim);
+            foreach (var h in HunterSpawner.Hunters(sim).ToList())
+            {
+                Autotest.Teleport(h, center + Vector2.FromAngle(center.DirectionTo(h.DetWorldCenter)) * (sim.Rules.StasisLiveRange * 4f));
+                // False: the ship's own spawner took it into stasis (StasisShipSpawner.StasisHandler).
+                if (h.OnEnteringStasis())
+                {
+                    sim.Ships.Remove(h, dispose: false, handleLostShip: false);
+                    sim.Stasis.AddStasisSpawner(new SimStasisManager.SerializedStasisShip(h, sim));
+                }
+                Log.Info($"AUTOTEST hunter {h.Metadata.PlainShipName} id={h.UniqueID} in stasis");
+            }
+        };
+
         Autotest.Fields["hunterwaves"] = () => HunterSpawner.WavesSpawned;
         // strikeinterval <seconds>: sets Hunters.StrikeWaveIntervalSeconds for this run. Test only.
         // maxhunters <count>: sets Hunters.MaxLiveHunters for this run. Test only.
@@ -75,6 +117,8 @@ public static class HunterArea
     }
 
     static SimRoot Sim() => Autotest.RequireRun().Game.Sim;
+
+    static IEnumerable<Ship> HumanHunterShips() => Sim().Ships.Where(s => s.HasTag(HunterSpawner.HunterTag) && s.IsHumanPlayerShip);
 
     static Vector2 FleetCenter(SimRoot sim) => SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no human ships");
 
