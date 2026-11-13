@@ -11,7 +11,7 @@ worlds always
 worlds jumpto hc_mining_belt
 pause off
 worlds type hc_mining_belt
-expect worlds_belt_rocks >= 1500
+expect worlds_belt_rocks >= 900
 expect worlds_passes >= 3
 expect worlds_pass_rocks == 0
 expect worlds_offers_pass >= 1

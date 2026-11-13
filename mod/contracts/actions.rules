@@ -1,25 +1,55 @@
 	// Spec 105: smaller star systems and fewer missions per system, for shorter in-system travel and a faster run.
-	// Gameplay spawns move in to about 70% of the vanilla radius, and counts drop with the area (about half).
-	// Scenery (suns, planets, nebulas, the fog radius) keeps the vanilla size.
+	// Distances, gaps and counts follow contracts/system_scale.rules (the rules for each kind of value are there).
 	// These change the shared sector rules, so they apply to every map size while the mod is on.
-	// Stations keep the vanilla ring ([4000, 11000], at least 7500 from the sun). A ring of [4000, 9000] put hunter waves
-	// where they were lost within a second in the test seed. Revisit with the Hunters area to bring stations closer.
+	// The trade stations move in with the gates, so the gates stay outside the station ring.
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_trade_stations.rules>/SubSpawners/0"
+		Overrides
+		{
+			Distance = &<contracts/system_scale.rules>/TradeStationDistance
+			MinDistanceFromTags = [[sun, "max((&<contracts/system_scale.rules>/Scale) * 7500, (&<contracts/system_scale.rules>/SunClearance))"]]
+		}
+	}
 	{
 		Action = Overrides
 		OverrideIn = "<modes/career/sectors/sysgen_trade_stations.rules>/SubSpawners/1"
-		Overrides { Count = [2, 3] } // was [2, 4] stations outside the starting system
+		Overrides
+		{
+			Count = [2, 3] // was [2, 4] stations outside the starting system: fewer missions, not the area
+			Distance = &<contracts/system_scale.rules>/TradeStationDistance
+			MinDistanceFromTags = [[sun, "max((&<contracts/system_scale.rules>/Scale) * 7500, (&<contracts/system_scale.rules>/SunClearance))"]]
+		}
 	}
 	{
 		Action = Overrides
 		OverrideIn = "<modes/career/sectors/sysgen_military_stations.rules>/BaseMilitaryStation"
-		// The station gaps shrink with the radius: with the vanilla 6000 from any station in [0, 14000], military stations and
-		// the Joint Strike stronghold (missions/sysgen_hotcargo.rules inherits this spawner) rarely found a place.
-		Overrides { Distance = [0, 14000]; MinDistanceFromTags = [[sun, 7500], [station, 4500], [ftl_gate, 2500]]; } // was [0, 20000], station 6000, gate 3000
+		// The Joint Strike stronghold (missions/sysgen_hotcargo.rules) and the Deep Space lair (worlds/sysgen_worlds.rules) inherit this spawner.
+		Overrides
+		{
+			Distance = [0, "(&<contracts/system_scale.rules>/Scale) * 20000"]
+			MinDistanceFromTags
+			[
+				[sun, "max((&<contracts/system_scale.rules>/Scale) * 7500, (&<contracts/system_scale.rules>/SunClearance))"]
+				[station, "(&<contracts/system_scale.rules>/Scale) * 6000"]
+				[ftl_gate, "(&<contracts/system_scale.rules>/Scale) * 3000"]
+			]
+		}
 	}
 	{
 		Action = Overrides
 		OverrideIn = "<modes/career/sectors/sysgen_bounties.rules>"
-		Overrides { Count = [2, 4]; Distance = [0, 13000]; } // was 99 (as many as fit) in [0, 19000]
+		Overrides
+		{
+			Count = [2, 4] // was 99 (as many as fit): fewer missions, not the area
+			Distance = [0, "(&<contracts/system_scale.rules>/Scale) * 19000"]
+			MinDistanceFromTags
+			[
+				[sun, "max((&<contracts/system_scale.rules>/Scale) * 6000, (&<contracts/system_scale.rules>/SunClearance))"]
+				[station, "(&<contracts/system_scale.rules>/Scale) * 4000"]
+				[bounty, "(&<contracts/system_scale.rules>/Scale) * 6000"]
+			]
+		}
 	}
 	{
 		Action = Overrides
@@ -29,45 +59,123 @@
 	{
 		Action = Overrides
 		OverrideIn = "<modes/career/sectors/sysgen_ftl_gates.rules>"
-		Overrides { Distance = [13500, 16000] } // was [18750, 22500]
+		Overrides { Distance = &<contracts/system_scale.rules>/GateDistance }
 	}
+	// Pirates.
 	{
 		Action = Overrides
 		OverrideIn = "<modes/career/sectors/sysgen_wanderers.rules>/SubSpawners/0"
-		Overrides { Count = [9, 11]; Distance = [0, 13000]; } // pirates, was [14, 16] in [0, 18000]
+		Overrides
+		{
+			Count = ["max(1, round(14 * (&<contracts/system_scale.rules>/Area), 0))", "max(1, round(16 * (&<contracts/system_scale.rules>/Area), 0))"]
+			Distance = [0, "(&<contracts/system_scale.rules>/Scale) * 18000"]
+			MinDistanceFromTags
+			[
+				[sun, "max((&<contracts/system_scale.rules>/Scale) * 6000, (&<contracts/system_scale.rules>/SunClearance))"]
+				[station, "(&<contracts/system_scale.rules>/Scale) * 2000"]
+				[pirate, "(&<contracts/system_scale.rules>/Scale) * 4500"]
+			]
+		}
 	}
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_wanderers.rules>/SubSpawners/0/AI"
+		Overrides { PatrolRadius = "(&<contracts/system_scale.rules>/Scale) * 7500" }
+	}
+	// Faction wanderers. Their patrol radius is their spawn distance (vanilla rules), so it follows.
 	{
 		Action = Overrides
 		OverrideIn = "<modes/career/sectors/sysgen_wanderers.rules>/SubSpawners/1"
-		Overrides { Count = [9, 11]; Distance = [0, 13000]; } // faction wanderers, was [14, 16] in [0, 18000]
+		Overrides
+		{
+			Count = ["max(1, round(14 * (&<contracts/system_scale.rules>/Area), 0))", "max(1, round(16 * (&<contracts/system_scale.rules>/Area), 0))"]
+			Distance = [0, "(&<contracts/system_scale.rules>/Scale) * 18000"]
+			MinDistanceFromTags = [[sun, "max((&<contracts/system_scale.rules>/Scale) * 6000, (&<contracts/system_scale.rules>/SunClearance))"], [station, 500]]
+		}
 	}
+	// One belt.
 	{
 		Action = Overrides
 		OverrideIn = "<modes/career/sectors/sysgen_asteroids.rules>/SubSpawners/0"
-		Overrides { Distance = [9500, 12000] } // one belt, was [11000, 15000]
+		Overrides { Distance = ["(&<contracts/system_scale.rules>/Scale) * 11000", "(&<contracts/system_scale.rules>/Scale) * 15000"] }
 	}
+	// Several belts (supernova systems).
 	{
 		Action = Overrides
 		OverrideIn = "<modes/career/sectors/sysgen_asteroids.rules>/SubSpawners/1"
-		Overrides { Distance = [5000, 14000] } // several belts, was [5000, 20000]
+		Overrides
+		{
+			Distance = ["(&<contracts/system_scale.rules>/Scale) * 5000", "(&<contracts/system_scale.rules>/Scale) * 20000"]
+			MinDistanceFromSiblingOrbits = "(&<contracts/system_scale.rules>/Scale) * 2000"
+		}
 	}
+	// Belt rocks: a belt orbit is Scale times as long, and the band keeps its width, so the count drops by Scale.
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_asteroids.rules>/AsteroidBelt/SubSpawners/0"
+		Overrides { Count = ["round(750 * (&<contracts/system_scale.rules>/Scale), 0)", "round(900 * (&<contracts/system_scale.rules>/Scale), 0)"] }
+	}
+	// Asteroid fields.
 	{
 		Action = Overrides
 		OverrideIn = "<modes/career/sectors/sysgen_asteroids.rules>/SubSpawners/2"
-		Overrides { Count = [3, 4]; Distance = [0, 11000]; } // asteroid fields, was [4, 6] in [0, 15000]
+		Overrides
+		{
+			Count = ["max(1, round(4 * (&<contracts/system_scale.rules>/Area), 0))", "max(1, round(6 * (&<contracts/system_scale.rules>/Area), 0))"]
+			Distance = [0, "(&<contracts/system_scale.rules>/Scale) * 15000"]
+			MinDistanceFromTags
+			[
+				[sun, "max((&<contracts/system_scale.rules>/Scale) * 6000, (&<contracts/system_scale.rules>/SunClearance))"]
+				[station, "(&<contracts/system_scale.rules>/Scale) * 3000"]
+				[asteroid_field, 600]
+			]
+		}
 	}
+	// Loose asteroids. They keep the vanilla sun gap (3850, just past the heat).
 	{
 		Action = Overrides
 		OverrideIn = "<modes/career/sectors/sysgen_asteroids.rules>/SubSpawners/3"
-		Overrides { Count = [80, 100]; Distance = [0, 14000]; } // loose asteroids, was [125, 150] in [0, 19000]
+		Overrides
+		{
+			Count = ["round(125 * (&<contracts/system_scale.rules>/Area), 0)", "round(150 * (&<contracts/system_scale.rules>/Area), 0)"]
+			Distance = [0, "(&<contracts/system_scale.rules>/Scale) * 19000"]
+		}
 	}
 	{
 		Action = Overrides
 		OverrideIn = "<modes/career/sectors/sysgen_misc_discoverables.rules>"
-		Overrides { Count = [10, 12]; Distance = [0, 16000]; } // was [17, 20] in [0, 25000]
+		Overrides
+		{
+			Count = ["max(1, round(17 * (&<contracts/system_scale.rules>/Area), 0))", "max(1, round(20 * (&<contracts/system_scale.rules>/Area), 0))"]
+			Distance = [0, "(&<contracts/system_scale.rules>/Scale) * 25000"]
+			MinDistanceFromTags
+			[
+				[sun, "max((&<contracts/system_scale.rules>/Scale) * 6000, (&<contracts/system_scale.rules>/SunClearance))"]
+				[station, "(&<contracts/system_scale.rules>/Scale) * 3000"]
+				[ftl_gate, "(&<contracts/system_scale.rules>/Scale) * 3000"]
+				[ftl_beacon, "(&<contracts/system_scale.rules>/Scale) * 1500"]
+				[misc_discoverable, "(&<contracts/system_scale.rules>/Scale) * 6000"]
+				[asteroid, 100]
+			]
+		}
 	}
 	{
 		Action = Overrides
 		OverrideIn = "<modes/career/sectors/sysgen_ftl_beacons.rules>/SubSpawners/0"
-		Overrides { Count = 20; Distance = [0, 14000]; } // was 30 in [0, 20000]
+		Overrides
+		{
+			Count = "max(1, round(30 * (&<contracts/system_scale.rules>/Area), 0))"
+			Distance = [0, "(&<contracts/system_scale.rules>/Scale) * 20000"]
+			MinDistanceFromSiblings = "(&<contracts/system_scale.rules>/Scale) * 7500"
+			MinDistanceFromTags
+			[
+				[sun, "max((&<contracts/system_scale.rules>/Scale) * 4500, (&<contracts/system_scale.rules>/SunClearance))"]
+				[station, "(&<contracts/system_scale.rules>/Scale) * 7500"]
+				[ftl_gate, "(&<contracts/system_scale.rules>/Scale) * 7500"]
+				[asteroid, 100]
+				[bounty, "(&<contracts/system_scale.rules>/Scale) * 1500"]
+				[misc_discoverable, "(&<contracts/system_scale.rules>/Scale) * 1500"]
+				[rare_asteroid, "(&<contracts/system_scale.rules>/Scale) * 1500"]
+			]
+		}
 	}
