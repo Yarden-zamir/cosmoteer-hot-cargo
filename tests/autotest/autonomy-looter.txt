@@ -20,6 +20,7 @@ waitfor auto_station_dist <= 400 300
 waitfor tactics_trade_row == 1 30
 waitfor auto_money_gain > 0 30
 waitfor auto_cargo == 0 30
-# 24 items were dropped and 20 fit: it goes back for the rest.
-waitfor tactics_move_row == 2 30
+# After the sale it leaves the station: back to the rest of the loot (row 2) when its team still sees it, else to the crewed
+# ship (row 3). Loot is only seen at short range, so which one depends on the map.
+waitfor tactics_move_row >= 2 30
 quit
