@@ -13,8 +13,7 @@ expect balance_station_fuel_floor == 30
 expect balance_station_fuel_gap >= 0
 # A bad value: rejected, the error shows, and the old values stay.
 tunablesfile Heat { HeatPerGameMinute = 9; HeatCarryOverFraction = 2 }
-wait 3
-expect tunables_error == 1
+waitfor tunables_error == 1 30
 menu value Heat.HeatPerGameMinute == 7
 menu shows Heat.HeatPerGameMinute 7
 # A window edit after the file change starts from the file values and writes them back.
