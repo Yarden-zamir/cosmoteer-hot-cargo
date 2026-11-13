@@ -13,7 +13,7 @@ namespace HotCargo.SharedChoice;
 /// <summary>
 /// Hover markers of shared choices (spec 601, 602). UI only: no MP input, no sim state.
 /// It uses an unreliable RPC on a sub-channel of the game's MP connection, like the cursor RPC of creative mode, so hovers
-/// skip the input queue and the lockstep. Dialogs call Report each frame from their frame hooks; after them the machine sends its hover
+/// skip the input queue and the lockstep. Dialogs call Report from their frame hooks; after them the machine sends its hover
 /// when it changed (at most every PresenceSendSeconds) and repeats it as a heartbeat. A marker goes away
 /// PresenceExpirySeconds after the last update from that player.
 /// </summary>
@@ -35,6 +35,7 @@ public static class Presence
     static RpcActionInvoker<string, int, int>? _send;
     static readonly Dictionary<MessengerID, Hover> Remote = new();
     static Target _want = Target.None;
+    static double _wantAt = double.MinValue;
     static Target _sent = Target.None;
     static double _sentAt = double.MinValue;
 
@@ -44,8 +45,16 @@ public static class Presence
     /// <summary>Hover messages that this machine sent, for the autotest check of the send rate.</summary>
     internal static int Sent;
 
-    /// <summary>Call each frame while a shared choice page shows, with the hovered option or -1. The last call in a frame wins.</summary>
-    public static void Report(string domain, int serial, int option) => _want = new(domain, serial, ForcedOption ?? option);
+    /// <summary>
+    /// Call while a shared choice page shows, with the hovered option or -1, at least every Ux.HudRefreshSeconds (spec 872). The last call wins.
+    /// A report holds for 2 × HudRefreshSeconds; after that the page counts as closed. Limit: a closed page's hover
+    /// stays for up to that time. Revisit if a page needs to report less often.
+    /// </summary>
+    public static void Report(string domain, int serial, int option)
+    {
+        _want = new(domain, serial, ForcedOption ?? option);
+        _wantAt = App.Clock.Time.Seconds;
+    }
 
     /// <summary>The hovers of the other players on a page, in a stable order.</summary>
     public static IReadOnlyList<Hover> Others(Run run, string domain, int serial)
@@ -69,10 +78,10 @@ public static class Presence
 
     static void Flush()
     {
-        var want = _want;
-        _want = Target.None;
         if (Run.Current is not { IsMultiplayer: true } run || !Attach(run.Game) || _send is null) return;
         double now = App.Clock.Time.Seconds;
+        // Flush runs once or more per frame (once per input tick in co-op); a report holds between the dialog's updates.
+        var want = now - _wantAt <= Math.Max(2 * run.T.Ux.HudRefreshSeconds, 0.1) ? _want : Target.None;
         var t = run.T.SharedChoice;
         bool changed = want != _sent;
         if (!changed && want.Option < 0) return;
