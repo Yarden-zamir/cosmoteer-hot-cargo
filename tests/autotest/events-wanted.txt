@@ -21,8 +21,9 @@ expectneed clean_record met
 expectneed decoy_run met
 # A Clean Record, paid with a crate: wanted clears.
 event clean_record
+pick 2
 ev_mark
-choose 2 1
+choose 1
 expect ev_wanted == 0
 expect ev_tech_gain == -1
 wait 1

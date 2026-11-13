@@ -39,7 +39,9 @@ static void Run()
         Out.Line($"ships in rules: {rules.Ships.Length}");
         return;
     }
-    Boot.FixedStepClock();
+    // Co-op runs (scripts/autotest-mac-mp.sh) keep the real-time clock: network requests and lockstep timing read the game
+    // clock, and the fixed step runs it many times faster than the other process and the network.
+    if (Environment.GetEnvironmentVariable("MAC_SIM_REALTIME") != "1") Boot.FixedStepClock();
     var sw = System.Diagnostics.Stopwatch.StartNew();
     // The log decides, like on the PC: an exception after AUTOTEST DONE (shutdown, for example a cancelled stasis preload
     // in StasisDoodadSpawner.CancelPreload) is no failure. An exception during the script leaves no AUTOTEST DONE.

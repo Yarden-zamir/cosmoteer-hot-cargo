@@ -303,7 +303,8 @@ static class TechAutotest
     static Ship? _station;
 
     /// <summary>
-    /// The station that tostation picked, else the trading ship nearest to the first human ship. Throws when the system has none.
+    /// The station that tostation picked, else the nearest trading station, else the nearest trade ship. Throws when the system has none.
+    /// A station comes first: a trade ship flees from hunters, so a trade with it can wait forever (co-op session factions.prices).
     /// The pick stays fixed, because a trade ship that docks next to the player can come closer than the station center.
     /// </summary>
     internal static Ship NearestStation()
@@ -312,7 +313,8 @@ static class TechAutotest
         if (_station is { IsDisposed: false } picked && picked.Sim == ship.Sim) return picked;
         return Active().Game.Sim.Ships.AllShips
             .Where(s => s != ship && s.AI?.WillTradeWith(ship) == true)
-            .OrderBy(s => s.WorldCenter.DistanceSquaredTo(ship.WorldCenter))
+            .OrderBy(s => s.TryGetSpecialComponent<Cosmoteer.Ships.Special.SpaceStation>(out _) ? 0 : 1)
+            .ThenBy(s => s.WorldCenter.DistanceSquaredTo(ship.WorldCenter))
             .FirstOrDefault() ?? throw new InvalidOperationException("no trading station in this system");
     }
 

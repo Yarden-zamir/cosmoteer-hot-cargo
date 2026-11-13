@@ -76,11 +76,17 @@ public static class EventHail
     public static List<EventRules> Lines(Run run, SimRoot sim, Ship caller, Ship callee)
     {
         var s = run.State.Events;
-        if (!run.T.Events.Enabled || EventLibrary.LoadError is not null || s.Pending is not null || run.State.Result != RunResult.Running) return [];
-        if (TargetOf(callee, caller) is not { } target) return [];
+        if (EventLibrary.LoadError is not null || s.Pending is not null || run.State.Result != RunResult.Running) return [];
+        // The contact of an active hand-over shows its own page's line until the hand-over ends, so a "not yet" can come back (spec 1102).
+        // A mission step, so it works with random events turned off.
+        var handOver = HandOverObjective.ForContact(run, callee.UniqueID);
+        if (handOver is null && !run.T.Events.Enabled) return [];
+        HailTarget? target = handOver is not null ? HailTarget.Contact : TargetOf(callee, caller);
+        if (target is null) return [];
         var snap = EventRunner.Snap(run, sim, run.Game.GetPlayerState(caller.Metadata.PlayerIndex, deterministic: true).Money, run.CurrentTier, EventRunner.CurrentTechValue(run));
         return EventLibrary.InOrder
-            .Where(e => e.Trigger == EventTrigger.Hail && e.HailTarget == target && !s.HailUsed.Contains(UseKey(e.ID, callee.UniqueID)))
+            .Where(e => e.Trigger == EventTrigger.Hail && e.HailTarget == target)
+            .Where(e => handOver is not null ? e.ID == handOver.Page : !s.HailUsed.Contains(UseKey(e.ID, callee.UniqueID)))
             .Where(e => EventRunner.Eligible(run, e, snap))
             .ToList();
     }
@@ -94,7 +100,7 @@ public static class EventHail
         if (caller is null) return;
         var e = Lines(run, sim, caller, callee).FirstOrDefault(x => x.ID == eventId);
         if (e is null) { Log.Info($"hail line {eventId} ignored: not offered by {callee.Metadata.PlainShipName} now"); return; }
-        run.State.Events.HailUsed.Add(UseKey(e.ID, shipId));
+        if (e.HailTarget != HailTarget.Contact) run.State.Events.HailUsed.Add(UseKey(e.ID, shipId));
         EventRunner.Open(run, sim, e, lead: "", carrier: shipId);
     }
 }
@@ -121,7 +127,11 @@ public sealed class EventHailProvider : IHailProvider
             page.AddText($"<b>{view.Title}</b>\n{view.Body}");
             // Shared choices: the comms tab shows co-op hovers and votes, and sends the shared choice input with this page's serial.
             page.Shared = (EventsChoiceDomain.Name, p.Serial);
-            foreach (var c in view.Choices) page.AddChoice(c.Text, c.Index, active: c.Enabled);
+            // Spec 810: the page's options as toggle rows of the shared draft, above the choices.
+            if (view.Options.Count > 0) page.Multi = (EventsMultiDomain.Name, p.Serial);
+            foreach (var o in view.Options)
+                page.AddRow(new HailRow("ev" + o.Id, o.Text, o.Id, o.Slider, o.Active, o.Tooltip, Toggle: true, Selected: o.Selected, Value: o.Value));
+            foreach (var c in view.Choices) page.AddChoice(c.Text, c.Index, active: c.Enabled, submit: c.Submit);
             return;
         }
         foreach (var e in EventHail.Lines(run, sim, caller, callee))

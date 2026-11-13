@@ -177,9 +177,9 @@ mp pu_set Enabled false
 mp godmode off
 mp ev_set Enabled false
 mp tech_set LossGraceSeconds 600
-# Starting vaults are at full health: 4 units for each player.
+# Starting vaults are at full health: 4 units for each player. The tech count updates in the first sim tick of the new run.
+waitfor tech == 8 15
 expect vaultminhealth == 3000
-expect tech == 8
 expect vaultunits == 8
 expect mytech == 4
 on 1 expect vaultminhealth == 3000
@@ -244,6 +244,8 @@ step journey.buyer-win
 # A new run: the Buyer appears, the client flies to it and sells tech from its own machine, and the run is won on both.
 mprestart
 mp pu_set Enabled false
+# The loss steps before turned godmode off. Without it, ships near the Buyer can destroy the client's vaults before the sale.
+mp godmode on
 mp ev_set Enabled false
 mp buyer spawn
 waitfor buyers == 1 30

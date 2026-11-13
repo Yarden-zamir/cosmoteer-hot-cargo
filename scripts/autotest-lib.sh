@@ -24,7 +24,30 @@ lock_is_stale() {
 # Writes this shell's pid into a lock folder in one rename, so a reader never sees an empty pid file.
 lock_write_pid() { echo $$ > "$1/pid.tmp" && mv -f "$1/pid.tmp" "$1/pid"; }
 
-slot_lock() { echo "/tmp/hot_cargo_slot_${1#t}.lock"; }
+# Folder of the PC slot locks. Only scripts/test-slot-locks.sh changes it, so its dummy takers never touch live locks.
+LOCK_DIR="${HOT_CARGO_LOCK_DIR:-/tmp}"
+slot_lock() { echo "$LOCK_DIR/hot_cargo_slot_${1#t}.lock"; }
+
+# Removes the lock folders in "$@" whose owner is gone. One cleaner at a time (a mutex folder): two cleaners that judge the
+# same old lock stale could otherwise remove the new lock that a third taker made in between. A cleaner holds the mutex for
+# a moment only, so a mutex older than 30 s is left by a killed cleaner and is removed.
+# Limit: two takers that both find such a dead mutex can still race on its removal; it needs a killed cleaner first.
+clean_stale_locks() {
+  local mutex="$LOCK_DIR/hot_cargo_lock_cleanup.lock" l
+  if ! mkdir "$mutex" 2>/dev/null; then
+    if (( $(date +%s) - $(stat -f %m "$mutex" 2>/dev/null || date +%s) > 30 )); then rm -rf "$mutex"; fi
+    return 0
+  fi
+  for l in "$@"; do if [[ -d "$l" ]] && lock_is_stale "$l"; then rm -rf "$l"; fi; done
+  rm -rf "$mutex"
+}
+
+# Takes a lock folder for this shell: mkdir, the owner, then the pid. It counts only when the pid landed and reads back as
+# this shell's pid; otherwise another taker's cleanup removed the folder in between, and the lock is not ours.
+try_lock() {
+  mkdir "$1" 2>/dev/null || return 1
+  { echo "$REPO_ROOT" > "$1/owner" && lock_write_pid "$1" && [[ "$(cat "$1/pid" 2>/dev/null)" == "$$" ]]; } 2>/dev/null
+}
 
 # While the player's own game runs (slot main), tests use at most HOT_CARGO_SLOTS_WHILE_PLAYING slots (default 4), so
 # the player's game keeps its frame rate. The check is cached for 60 s in a shared file, so it costs one PC call a minute.
@@ -55,48 +78,45 @@ take_one_slot() {
     # cannot starve the others. The main worktree (the integrator) has no cap.
     if [[ "$(basename "$REPO_ROOT")" != main && ${HOT_CARGO_SLOTS_PER_AGENT:-0} -gt 0 ]]; then
       local mine=0 l
-      for l in /tmp/hot_cargo_slot_[0-9]*.lock; do [[ "$(cat "$l/owner" 2>/dev/null)" == "$REPO_ROOT" ]] && mine=$((mine + 1)); done
+      for l in "$LOCK_DIR"/hot_cargo_slot_[0-9]*.lock; do [[ "$(cat "$l/owner" 2>/dev/null)" == "$REPO_ROOT" ]] && mine=$((mine + 1)); done
       if [[ $mine -ge ${HOT_CARGO_SLOTS_PER_AGENT:-0} ]]; then sleep 5; continue; fi
     fi
-    for lock in /tmp/hot_cargo_slot_[0-9]*.lock; do
-      if lock_is_stale "$lock"; then rm -rf "$lock"; fi
-    done
+    clean_stale_locks "$LOCK_DIR"/hot_cargo_slot_[0-9]*.lock
     # Only the numbered slot locks count; the co-op pair lock is a queue, not a slot.
-    busy="$(ls -d /tmp/hot_cargo_slot_[0-9]*.lock 2>/dev/null | wc -l | tr -d ' ')"
+    busy="$(ls -d "$LOCK_DIR"/hot_cargo_slot_[0-9]*.lock 2>/dev/null | wc -l | tr -d ' ')"
     if [[ $busy -ge $limit ]]; then sleep 2; continue; fi
-    for ((i = 1; i <= SLOTS; i++)); do
+    # Only slot numbers up to the limit, so mkdir enforces the limit: two takers that both counted one free slot cannot both
+    # take a slot. The busy count above covers higher slots that are still held after the limit went down.
+    for ((i = 1; i <= limit && i <= SLOTS; i++)); do
       lock="$(slot_lock "t$i")"
-      if mkdir "$lock" 2>/dev/null; then echo "$REPO_ROOT" > "$lock/owner"; lock_write_pid "$lock"; echo "t$i"; return; fi
-      if lock_is_stale "$lock"; then rm -rf "$lock"; fi
+      if try_lock "$lock"; then echo "t$i"; return; fi
     done
     sleep 2
   done
 }
 
-# Takes N slots and prints their names. Two-slot takers (co-op tests) queue on one global lock and then hold each slot
-# as it frees up. Only one taker at a time holds some slots while it waits for more, so they cannot deadlock, and
-# single-slot tests that grab every freed slot cannot starve a co-op test.
+# Takes N slots and prints their names: all N or none. Two-slot takers (co-op tests) queue on one global lock and then
+# hold each slot as it frees up, so single-slot tests that grab every freed slot cannot starve a co-op test. Only one taker
+# at a time holds some slots while it waits for more, so they cannot deadlock.
+# The queue lock and the slots it collects are held at most HOT_CARGO_PAIR_WAIT seconds (default 600) in total, counted
+# from taking the queue lock. Then the taker gives everything back and lines up again, so it never blocks every co-op test.
+# HOT_CARGO_PAIR_POLL and HOT_CARGO_PAIR_RETRY (seconds, default 5 and 30) only shorten scripts/test-slot-locks.sh.
 take_slots() {
-  local want="${1:-1}" got=() pair=/tmp/hot_cargo_slot_pair.lock s
+  local want="${1:-1}" got=() pair="$LOCK_DIR/hot_cargo_slot_pair.lock" s deadline
   if [[ "$want" -eq 1 ]]; then take_one_slot; return; fi
   while :; do
-    until mkdir "$pair" 2>/dev/null; do
-      if lock_is_stale "$pair"; then rm -rf "$pair"; continue; fi
-      sleep 5
+    until try_lock "$pair"; do
+      clean_stale_locks "$pair"
+      sleep "${HOT_CARGO_PAIR_POLL:-5}"
     done
-    lock_write_pid "$pair"
+    deadline=$(( $(date +%s) + ${HOT_CARGO_PAIR_WAIT:-600} ))
     got=()
-    while [[ ${#got[@]} -lt "$want" ]]; do
-      # The first slot waits as long as needed; later slots wait at most HOT_CARGO_PAIR_WAIT seconds (default 600).
-      # Then the taker gives its slots and the queue back and lines up again, so it never blocks every co-op test.
-      if [[ ${#got[@]} -eq 0 ]]; then got+=("$(take_one_slot)"); continue; fi
-      if s="$(take_one_slot "$(( $(date +%s) + ${HOT_CARGO_PAIR_WAIT:-600} ))")"; then got+=("$s"); else break; fi
-    done
+    while [[ ${#got[@]} -lt "$want" ]] && s="$(take_one_slot "$deadline")"; do got+=("$s"); done
     if [[ ${#got[@]} -eq "$want" ]]; then rm -rf "$pair"; echo "${got[*]}"; return; fi
     for s in "${got[@]}"; do rm -rf "$(slot_lock "$s")"; done
     rm -rf "$pair"
-    echo "co-op test: no second slot within ${HOT_CARGO_PAIR_WAIT:-600} s; lining up again" >&2
-    sleep 30
+    echo "co-op test: no $want slots within ${HOT_CARGO_PAIR_WAIT:-600} s; lining up again" >&2
+    sleep "${HOT_CARGO_PAIR_RETRY:-30}"
   done
 }
 take_slot() { take_slots 1; }

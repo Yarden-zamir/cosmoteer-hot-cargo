@@ -1,0 +1,65 @@
+# Ship tactics, Hot Cargo hooks (spec 413 to 418): condition chains with NOT, tech crates and the crew collect order,
+# heat stage, hunters, a hunter that holds our tech, facing, the Strike timer and the loss timer.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+shipai Log on
+aiset FleeEnabled false
+aiset CallEnabled false
+aiset RegroupEnabled false
+tech_set LossGraceSeconds 600
+tactics_strings
+# Old text reads as before. A chain: crates near AND NOT hunters in the system -> collect; else hold position.
+tactics HC1:CratesWithin=3000&!HuntersInSystem>CollectTech;Always>HoldPosition
+expecttactics HC1:CratesWithin=3000&!HuntersInSystem>CollectTech;Always>HoldPosition
+expect tactics_terms == 3
+tacticsauto on
+wait 3
+expect tactics_move_row == 1
+# Crates next to the ship: the ship collects them with its crew, and the fleet has all its tech again.
+expect tech == 8
+tech drop 3
+waitfor tactics_move_row == 0 10
+waitfor techcrates == 0 120
+waitfor tech == 8 60
+waitfor tactics_move_row == 1 10
+# Heat 55 starts stage 1 (Warning), which brings hunters. Stage 2 is not reached and there are no crates, so only the OR term holds: hunters in the system.
+tactics HC1:HeatStageAtLeast=2&CratesWithin=3000|HuntersInSystem>HoldPosition;Always>RetreatRepair
+wait 3
+expect tactics_move_row == 1
+heat 55
+waitfor hunters >= 1 30
+waitfor tactics_move_row == 0 10
+# A hunter takes tech from crates: the enemy that holds our tech is the target.
+tech_set HunterGrabChance 1
+tech drophunter 2
+waitfor hunterheld == 2 120
+tactics HC1:EnemyHoldsTech>TargetTechHolder;Always>TargetNearest;Always>CloseIn
+waitfor tactics_target_row == 0 60
+tactics_log holder
+# Facing: the attack order turns the left side to the target (+90 degrees from the nose), then the stern.
+tactics HC1:Always>TargetNearest;Always>CloseIn;Always>Face=1
+waitfor tactics_facing_row == 2 30
+waitfor tactics_face == 90 10
+tactics HC1:Always>TargetNearest;Always>CloseIn;!EnemiesAtLeast=50>Face=3
+waitfor tactics_face == 180 10
+# Without a facing row the attack order gets a fresh vanilla rotation.
+tactics HC1:Always>TargetNearest;Always>CloseIn
+waitfor tactics_face == -999 10
+# Strike timer: at full heat in the last stage, the next Strike wave is near when its interval is short.
+strikeinterval 900
+heat 100
+tactics HC1:StrikeWithin=60>HoldPosition;Always>RetreatRepair
+wait 3
+expect tactics_move_row == 1
+strikeinterval 30
+waitfor tactics_move_row == 0 10
+# Loss timer: all tech gone from the vaults starts it.
+tactics HC1:LossTimerRunning>HoldPosition;Always>RetreatRepair
+wait 3
+expect tactics_move_row == 1
+tech remove 8
+waitfor losstimer == 1 10
+waitfor tactics_move_row == 0 10
+quit

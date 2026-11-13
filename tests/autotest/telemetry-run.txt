@@ -8,7 +8,7 @@ pu_set Enabled false
 shieldplayers on
 # System 1: an event, a contract, a sale, an escort, mission fame and heat up to Warning.
 event the_fence
-choose 3
+choose 2
 hc_generate all
 wait 3
 contract_money 200000

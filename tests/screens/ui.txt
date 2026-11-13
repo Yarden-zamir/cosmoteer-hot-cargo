@@ -1,0 +1,54 @@
+# UI pass (spec 41): the mission list with kind icons, risk and the filter, event options, and the win panel buttons.
+# Main slot only (needs graphics): scripts/screens.sh tests/screens/ui.txt <out-dir>
+render on
+newgame run
+wait 8
+closepanel
+wait 1
+uxpick 3
+wait 1
+uxpick 1
+ev_set Enabled false
+godmode on
+chain_force fence_ledger
+chain_tostation
+tostation
+wait 2
+hc_generate all
+wait 2
+comms chain
+wait 1
+commsmission
+wait 1
+commsselect Chain
+wait 1
+screenshot ui-01-missions
+missionfilter HotCargo
+wait 1
+screenshot ui-02-filter
+missionfilter All
+comms close
+heat 40
+event the_fence
+wait 2
+pick 1 2
+wait 2
+screenshot ui-03-fence
+choose last
+wait 2
+uxpick 1
+wait 1
+event toll_gate
+wait 2
+pick 1 2
+pick 3 2
+wait 2
+screenshot ui-04-toll
+choose last
+wait 2
+uxpick 1
+wait 1
+win
+wait 3
+screenshot ui-05-win
+quit
