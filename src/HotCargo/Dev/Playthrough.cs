@@ -101,10 +101,12 @@ public static class Playthrough
         // pt_repair <timeout seconds>: the repair-all button of the build window (BuildToolbox.OnRepairAllClicked: repair damaged parts,
         // rebuild destroyed ones), then the trade window for the resources that it costs. A person repairs at the station before a long
         // flight: a ship with shot thrusters crawls. Ends when no repair or rebuild is left. Every 20 seconds, a resource of the
-        // repair that the ship has run out of, with no buy on its way, is bought again (RepairTopUp units).
+        // repair that the ship has run out of, with no buy on its way, is bought again (RepairTopUp units), after a move order back
+        // to the station if the ship AI chased an attacker away.
         Autotest.Commands["pt_repair"] = arg =>
         {
             double timeout = double.Parse(arg, CultureInfo.InvariantCulture);
+            _target = _station ?? throw new InvalidOperationException("no picked station; run pt_goto station first");
             var ship = TechAutotest.PlayerShip();
             if (!ship.NeedsPhysicalRepairs)
             {
@@ -132,7 +134,8 @@ public static class Playthrough
                 double now = Halfling.App.Clock.Time.Seconds;
                 if (now < next) return false;
                 next = now + 20;
-                foreach (var r in resources.Where(r => Stored(r) == 0 && !BuyPending(r))) Buy(r, RepairTopUp);
+                if (!Near()) GoTo("station");
+                else foreach (var r in resources.Where(r => Stored(r) == 0 && !BuyPending(r))) Buy(r, RepairTopUp);
                 return false;
             }, timeout, "the crew to repair the ship");
         };
