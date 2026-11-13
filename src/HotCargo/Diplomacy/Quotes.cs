@@ -17,30 +17,17 @@ public static class Quotes
 {
     static DiplomacyTunables T(Run run) => run.T.Diplomacy;
 
-    public static float HandOver(Run run, SimRoot sim, int player, Ship hunter, int units)
-    {
-        var t = T(run);
-        int stock = Situation.VaultTech(sim);
-        return DiplomacyModel.HandOverChance(units, stock, Situation.Concentration(run, sim, player, units), Situation.Leverage(run, sim, hunter),
-            t.HandOverChanceMin, t.HandOverChanceMax, t.HandOverVisiblePenalty, t.HandOverPerLeverage);
-    }
+    /// <summary>Units that the bluff hands over now: BluffShare of the vault tech, at least 1, never all. 0 when the stock is too small.</summary>
+    public static int BluffUnits(Run run, SimRoot sim) => DiplomacyModel.BluffUnits(Situation.VaultTech(sim), T(run).BluffShare);
 
-    public static float Bluff(Run run, SimRoot sim, int player, int units)
+    /// <summary>Spec 565. 0 when the stock is too small to bluff.</summary>
+    public static float Bluff(Run run, SimRoot sim, int player)
     {
         var t = T(run);
+        int units = BluffUnits(run, sim);
+        if (units == 0) return 0f;
         return DiplomacyModel.BluffChance(units, Situation.VaultTech(sim), Situation.Concentration(run, sim, player, units), t.BluffChanceBase, t.BluffPerShare, t.BluffVisiblePenalty);
     }
-
-    /// <summary>Most other hunters in the area for a deal: the tunable × co-op enemy scaling.</summary>
-    public static int DealMaxOthers(Run run, SimRoot sim) => Scaling.EnemyScale.Cap(T(run).DealMaxOtherHunters, sim);
-
-    public static float Deal(Run run, SimRoot sim, Ship hunter, int units)
-    {
-        var t = T(run);
-        return DiplomacyModel.DealChance(Situation.OtherHunters(run, sim, hunter), DealMaxOthers(run, sim), units, Situation.VaultTech(sim), t.DealChanceAlone, t.DealShareMin);
-    }
-
-    public static int DealPrice(Run run, int units) => (int)Math.Round(units * run.TechValue() * T(run).DealPriceFactor);
 
     public static float DemandSurrender(Run run, SimRoot sim, int player, Ship ai)
     {
@@ -121,69 +108,70 @@ public static class Quotes
 
     public static int MercPrice(Run run, int minutes) => Money(run, T(run).MercRateUnits * minutes);
 
-    // ---- Punishment (spec 594 to 597)
+    // ---- Pay them off (spec 594 to 597)
 
-    /// <summary>Steps of the money and bribe sliders: 0 to this, each step a twentieth of the most money.</summary>
-    public const int PunishMoneySteps = 20;
+    /// <summary>Steps of the money slider: 1 to this, each step a twentieth of the most money.</summary>
+    public const int PayMoneySteps = 20;
 
-    /// <summary>Crew the players can send to cryo jail now: every human ship keeps one, at most PunishCrewMax.</summary>
-    public static int PunishCrewAvailable(Run run, SimRoot sim)
+    /// <summary>Crew the players can send to cryo jail now: every human ship keeps one, at most PayCrewMax.</summary>
+    public static int PayCrewAvailable(Run run, SimRoot sim)
     {
         int crew = run.Game.HumanPlayersIndexes.Sum(sim.Crew.CountCrewForPlayer);
         int ships = Vaults.HumanShips(sim).Count();
-        return Math.Clamp(crew - ships, 0, Math.Max(0, T(run).PunishCrewMax));
+        return Math.Clamp(crew - ships, 0, Math.Max(0, T(run).PayCrewMax));
     }
 
-    /// <summary>The options of the punishment page. Crew shows only when a crew member can go.</summary>
-    public static IReadOnlyList<MultiOption> PunishOptions(Run run, SimRoot sim)
+    /// <summary>
+    /// The rows of the pay-off offer. Tech stops at all but one unit, so a pay-off never ends the run (spec 564 is removed).
+    /// A row shows only when it can offer something.
+    /// </summary>
+    public static IReadOnlyList<MultiOption> PayOptions(Run run, SimRoot sim)
     {
-        var options = new List<MultiOption>
-        {
-            new((int)PunishOption.Talk, 0, 0, 1),
-            new((int)PunishOption.Money, 0, PunishMoneySteps, 1),
-            new((int)PunishOption.Bribe, 0, PunishMoneySteps, 1),
-        };
-        int crew = PunishCrewAvailable(run, sim);
-        if (crew >= 1) options.Add(new((int)PunishOption.Crew, 1, crew, 1));
+        var options = new List<MultiOption>();
+        int stock = Situation.VaultTech(sim);
+        if (stock >= 2) options.Add(new((int)PayOption.Tech, 1, stock - 1, 1));
+        options.Add(new((int)PayOption.Money, 1, PayMoneySteps, 1));
+        int crew = PayCrewAvailable(run, sim);
+        if (crew >= 1) options.Add(new((int)PayOption.Crew, 1, crew, 1));
         return options;
     }
 
-    /// <summary>Credits that the money or bribe option costs at a slider value. Other options cost no money.</summary>
-    public static int PunishCredits(Run run, PunishOption option, int value) => option switch
-    {
-        PunishOption.Money => Money(run, T(run).PunishMoneyMaxUnits * value / PunishMoneySteps),
-        PunishOption.Bribe => Money(run, T(run).PunishBribeMaxUnits * value / PunishMoneySteps),
-        _ => 0,
-    };
+    /// <summary>Credits that a row costs at a slider value. Only the money row costs money.</summary>
+    public static int PayCredits(Run run, PayOption option, int value) =>
+        option == PayOption.Money ? Money(run, T(run).PayMoneyMaxUnits * value / PayMoneySteps) : 0;
 
-    /// <summary>The chance that one option adds at a slider value.</summary>
-    public static float PunishChance(Run run, SimRoot sim, PunishOption option, int value)
+    /// <summary>Most other hunters near the hailed one before a pay-off has no chance: the tunable × co-op enemy scaling.</summary>
+    public static int PayMaxOthers(Run run, SimRoot sim) => Scaling.EnemyScale.Cap(T(run).PayMaxOtherHunters, sim);
+
+    /// <summary>The factor that other hunters near the hailed one put on the whole offer.</summary>
+    public static float PayCrowd(Run run, SimRoot sim, Ship hunter) => DiplomacyModel.Crowd(Situation.OtherHunters(run, sim, hunter), PayMaxOthers(run, sim));
+
+    /// <summary>The chance that one row adds at a slider value, before the crowd factor and the cap.</summary>
+    public static float PayPart(Run run, SimRoot sim, PayOption option, int value)
     {
         var t = T(run);
-        switch (option)
+        return option switch
         {
-            case PunishOption.Talk: return t.PunishTalkChance;
-            case PunishOption.Money: return MultiChoiceModel.Scaled(value, 0, PunishMoneySteps, t.PunishMoneyChance);
-            case PunishOption.Bribe:
-            {
-                int others = Math.Max(0, HunterSpawner.Hunters(sim).Count() - 1);
-                int max = Scaling.EnemyScale.Cap(t.PunishBribeMaxOtherHunters, sim);
-                float crowd = others > max ? 0f : 1f - others / (float)(max + 1);
-                return MultiChoiceModel.Scaled(value, 0, PunishMoneySteps, t.PunishBribeChance) * crowd;
-            }
-            case PunishOption.Crew: return Math.Max(0, value) * t.PunishCrewChancePer;
-            default: throw new ArgumentOutOfRangeException(nameof(option), option, null);
-        }
+            PayOption.Tech => Situation.VaultTech(sim) is var stock and > 0 ? t.PayTechChance * Math.Clamp(value, 0, stock) / stock : 0f,
+            PayOption.Money => MultiChoiceModel.Scaled(value, 0, PayMoneySteps, t.PayMoneyChance),
+            PayOption.Crew => Math.Max(0, value) * t.PayCrewChancePer,
+            _ => throw new ArgumentOutOfRangeException(nameof(option), option, null),
+        };
     }
 
-    /// <summary>The combined chance of a draft: the sum of its options, capped at PunishChanceCap.</summary>
-    public static float PunishCombined(Run run, SimRoot sim, IReadOnlyList<Pick> picks) =>
-        MultiChoiceModel.Combine(picks.Select(p => PunishChance(run, sim, (PunishOption)p.Option, p.Value)), T(run).PunishChanceCap);
-
-    /// <summary>The value text right of an option slider: credits for money and bribe, a count for crew.</summary>
-    public static string PunishValueText(Run run, PunishOption option, int value) => option switch
+    /// <summary>Spec 594: chance = min(PayChanceCap, crowd × the sum of the selected rows).</summary>
+    public static float PayOff(Run run, SimRoot sim, Ship hunter, IReadOnlyList<Pick> picks)
     {
-        PunishOption.Crew => DipText.Format("CrewFmt", value),
-        _ => Cosmoteer.Extensions.ToXmlCostString(PunishCredits(run, option, value)),
+        float crowd = PayCrowd(run, sim, hunter);
+        return MultiChoiceModel.Combine(picks.Select(p => crowd * PayPart(run, sim, (PayOption)p.Option, p.Value)), T(run).PayChanceCap);
+    }
+
+    /// <summary>The value text right of a row slider: tech of the stock, credits, or a crew count.</summary>
+    public static string PayValueText(Run run, SimRoot sim, PayOption option, int value) => option switch
+    {
+        PayOption.Tech => DipText.Format("UnitsFmt", value, Situation.VaultTech(sim)),
+        PayOption.Money => Cosmoteer.Extensions.ToXmlCostString(PayCredits(run, option, value)),
+        PayOption.Crew => DipText.Format("CrewFmt", value),
+        _ => throw new ArgumentOutOfRangeException(nameof(option), option, null),
     };
 }
