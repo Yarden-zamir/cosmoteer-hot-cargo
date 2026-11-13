@@ -59,6 +59,7 @@ public static class TunableTiming
         ["MissionTunables.ShadyRewardFactor"] = Applies.NextOffer,
         ["MissionTunables.ShadyTrapSurvivalReward"] = Applies.NextOffer,
         ["MissionTunables.EscortHeatChange"] = Applies.NextOffer,
+        ["MissionTunables.EscortRouteShare"] = Applies.NextOffer,
         ["EventsTunables.ArrivalEventChance"] = Applies.NextSystem,
         ["EventsTunables.ArrivalDelaySeconds"] = Applies.NextSystem,
         ["EventsTunables.StationEventChance"] = Applies.NextSystem,
