@@ -140,7 +140,7 @@ To see more events fast, put `Events { ArrivalEventChance = 1  StationEventChanc
 
 ## Co-op (two players)
 
-The co-op autotests (`tests/autotest-mp/`) cover sync, the host's tunables, events, a sale, a loss, a win, missions, save, load and resync. Only two people can check the points below.
+The co-op autotest sessions (`tests/autotest-mp/`) cover sync (a hash of the whole run state), the host's tunables, events, a sale, a loss, a win, missions, save, load and resync. Only two people can check the points below.
 
 Before you start:
 
@@ -217,7 +217,7 @@ The autotests cover the archetype mix on the map, the hazard tooltip, the curren
 
 ## Ship tactics (spec 400-412)
 
-The autotests `shipai-basic`, `shipai-save` and the co-op test `shipai` cover row order, most conditions and actions, saves, designs and sync. These checks need a person.
+The autotests `shipai-basic`, `shipai-save` and the co-op steps `shipai.*` (`tests/autotest-mp/coop-core.txt`) cover row order, most conditions and actions, saves, designs and sync. These checks need a person.
 
 1. Select your ship and press Ctrl+K, or click the "AI" button in the ships card. Does the window fit the game's look? Are the drop lists easy to read?
 2. Apply each preset with Auto on and fight a Hunt stage (F10 with debug keys). Does each preset behave the way its name says? Which one feels useless?
