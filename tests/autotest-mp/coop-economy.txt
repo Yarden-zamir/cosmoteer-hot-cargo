@@ -1,4 +1,4 @@
-# Co-op session: events (who pays, late clicks, money split), comms, research trade, shared choices, contracts, factions prices,
+# Co-op session: events (who pays, late clicks, money split), comms, research trade, shared choices, contracts, factions prices and peace,
 # wanted, trade and loss. See coop-core.txt for "client:", "as 1", "on 1" and steps.
 # Events stay on until events.wanted (its trigger needs them). A run has no start event (#22): steps open named events.
 mphost {PORT}
@@ -288,6 +288,23 @@ on 1 fa_blind on
 waitfor fa_blind == 1 30
 on 1 fa_blind off
 waitfor fa_blind == 0 30
+
+step factions.peace
+# Spec 1150: the enemy check reads sim state only, so the peace in ally space runs the same on both machines. The controller's
+# ships fought the hunters of factions.prices in neutral space; now that faction is the ally, and both sides drop those fights.
+mp fa_roles here other
+waitfor fa_zone == 1 30
+on 1 waitfor fa_zone == 1 30
+waitfor hunters >= 1 60
+mp hunternear 0 600
+mp dip_spawn ally 400
+mp fa_peace_watch ally
+wait 20
+expect hunters >= 1
+expect fa_peace_allyhits == 0
+expect fa_peace_hunterhits == 0
+on 1 expect fa_peace_allyhits == 0
+on 1 expect fa_peace_hunterhits == 0
 
 step tech.trade-loss
 # Spec 17, 443, 1011: a new run. Each player's starter ship has 4 vaults and half of the tech (4 + 4); each player sells from
