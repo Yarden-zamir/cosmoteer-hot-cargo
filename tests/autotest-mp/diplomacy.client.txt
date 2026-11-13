@@ -6,13 +6,10 @@ mp spawnstage Warning
 waitfor hunters >= 1 30
 mp dip_near hunters
 wait 2
-dip handover hunter 2
-waitfor dip_vaulttech == 6 30
-waitfor dip_punishment == 1 30
-dip_pick talk
+dip_pick hunter tech 2
 waitfor dip_picks >= 2 60
-dip_punish submit
-waitfor dip_punishment == 0 30
+dip_payoff hunter
+waitfor dip_vaulttech == 6 30
 waitfor hunters == 0 60
 mp dip_spawn friend 250
 wait 3

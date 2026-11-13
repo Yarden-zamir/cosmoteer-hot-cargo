@@ -20,7 +20,7 @@ Chains
 			{
 				ID = courier
 				Title = "Quiet Freight"
-				Text = "Mara Quell keeps the books for half the fences in this sector. One of her freighters must reach the outer jump point, and she hears the route is watched. Get it there in one piece, and Mara will remember your hull number for the right reasons."
+				Text = "Escort Mara Quell's freighter to the outer jump point.\nThe route is watched."
 				Mission = ChainEscort
 				Terms { AcceptFee = 0; FlatHeat = 3; TrailWeight = 1; InformantChance = 5% }
 				Results
@@ -64,7 +64,7 @@ Chains
 			{
 				ID = collectors
 				Title = "Debt Collectors"
-				Text = "Mara sold your debt to people who collect. Their ships wait at her station, and they know what you carry."
+				Text = "Destroy the debt collectors at Mara's station.\nThey know what you carry."
 				Mission = ChainStationRaid
 				Where = Return
 				Results
@@ -85,12 +85,12 @@ Chains
 			{
 				ID = extract
 				Title = "Extraction"
-				Text = "A corporate transport carries Sabine Okafor, a logistics officer who wants out. Her escorts do not know that. Destroy the escorts and do not break the transport. You have seven minutes before somebody misses her."
+				Text = "Destroy the escorts of the transport that carries Sabine Okafor, within 7 min.\nThen hail the transport and bring her aboard."
 				Mission = ChainExtraction
 				Terms { AcceptFee = 0.3; FlatHeat = 8; TrailWeight = 1.5; InformantChance = 10% }
 				Results
 				[
-					{ On = success; Next = debrief; Story = "You pulled Sabine Okafor off a corporate transport."; Effects { Text = "The escorts are scrap. The transport opens its airlock, and a woman in a corporate uniform floats across with one bag." } }
+					{ On = success; Next = debrief; Story = "You pulled Sabine Okafor off a corporate transport."; Effects { Text = "Okafor watches the empty transport drift away. Her hands have not stopped shaking." } }
 					{ On = lost; Reputation = -0.5; Story = "The transport broke apart with Okafor aboard."; Effects { Text = "The transport's reactor goes, and Okafor with it. The corporation will call it piracy."; Heat = 10 } }
 					{ On = timeout; Story = "Okafor's escorts called it in, and the window closed."; Effects { Text = "The transport jumps out with its escorts. A corporate alert follows you."; Heat = 15 } }
 					{ On = fail; Story = "You never went for Okafor." }
@@ -120,7 +120,7 @@ Chains
 			{
 				ID = depot
 				Title = "Okafor's Depot"
-				Text = "Okafor's old schedules put a corporate supply depot in this system: two defense platforms and a guard ship. Take it apart."
+				Text = "Destroy the corporate supply depot and its guards."
 				Mission = ChainDepot
 				Where = Arrival
 				AfterSectors = 0
@@ -133,7 +133,7 @@ Chains
 			{
 				ID = vengeance
 				Title = "Okafor's Friends"
-				Text = "Sabine Okafor had friends in the fleet. They know who sold her, and they have found you."
+				Text = "Destroy Okafor's friends from the fleet.\nThey know who sold her."
 				Mission = ChainAmbush
 				Where = Arrival
 				AfterSectors = 2
@@ -155,7 +155,7 @@ Chains
 			{
 				ID = race
 				Title = "Salvage Race"
-				Text = "A corporate cargo pod drifted loose in this system, full of processors. The station pays well for them, and Captain Rook's Magpies are already on their way. Haul three processors to the station before the Magpies strip the pod."
+				Text = "Haul 3 processors from the corporate pod to the station.\nRook's Magpies race you for it."
 				Mission = ChainSalvageRace
 				Terms { FlatHeat = 2; TrailWeight = 1; RivalGroup = "magpies"; InformantChance = 0 }
 				Results
@@ -196,7 +196,7 @@ Chains
 			{
 				ID = ambush
 				Title = "Take It Back"
-				Text = "Rook's ships are still in the system with your processors in their holds. She expects you to run. Take them apart."
+				Text = "Destroy Rook's ships. Your processors are in their holds."
 				Mission = ChainAmbush
 				Where = Arrival
 				AfterSectors = 0
@@ -219,7 +219,7 @@ Chains
 			{
 				ID = ore
 				Title = "Reactor Shielding"
-				Text = "The station's reactor shielding is cracking, and the corporation stopped the repair shipments when the station refused to report you. Station master Ilse Brandt needs iron, fast. Mine it or buy it, but get it here within fifteen minutes."
+				Text = "Bring iron to Ilse Brandt's station within 15 min.\nMine it or buy it."
 				Mission = ChainMine
 				Terms { AcceptFee = 0; FlatHeat = 0; TrailWeight = 0.5; InformantChance = 0 }
 				Results
@@ -250,7 +250,7 @@ Chains
 			{
 				ID = inspection
 				Title = "Corporate Inspection"
-				Text = "The corporation sent inspectors to Brandt's station to ask about the ship she hid. They brought guns, and they are still here."
+				Text = "Drive the corporate inspectors off Brandt's station.\nThey brought guns."
 				Mission = ChainStationRaid
 				Where = Return
 				Results
@@ -272,7 +272,7 @@ Chains
 			{
 				ID = patrol
 				Title = "Clear the Lane"
-				Text = "Commander Hale needs raiders cleared from the station's approach lane, and her own ships are busy elsewhere. She does not ask what you carry. Yet."
+				Text = "Clear the raiders from Commander Hale's approach lane."
 				Mission = ChainClearRaiders
 				Terms { AcceptFee = 0; FlatHeat = 4; TrailWeight = 1; InformantChance = 5% }
 				Results
@@ -294,7 +294,7 @@ Chains
 			{
 				ID = convoy
 				Title = "Navy Tender"
-				Text = "Hale's supply tender must reach the outer jump point, and raiders have been watching the route. Get it there, and the corporation's request disappears for good."
+				Text = "Escort Hale's supply tender to the outer jump point.\nRaiders watch the route."
 				Mission = ChainEscort
 				Terms { AcceptFee = 0; FlatHeat = 0; TrailWeight = 0.5; InformantChance = 0 }
 				Results
@@ -307,7 +307,7 @@ Chains
 			{
 				ID = reported
 				Title = "Hale's Report"
-				Text = "Commander Hale passed your hull number to the corporation, and a hunter team now waits at her station."
+				Text = "Destroy the hunter team at Hale's station.\nShe sold your hull number."
 				Mission = ChainStationRaid
 				Where = Return
 				Results
@@ -328,7 +328,7 @@ Chains
 			{
 				ID = recorder
 				Title = "The Black Box"
-				Text = "A corporate hunter died near this station last week, and its flight recorder still transmits. A security drone guards the wreck, one tier tougher than anything else here. The station's broker wants the recorder. So might you."
+				Text = "Salvage the flight recorder from a dead corporate hunter, and bring it to the broker.\nA security drone guards the wreck, one tier tougher."
 				Mission = ChainBlackBox
 				Terms { AcceptFee = 0.2; FlatHeat = 5; TrailWeight = 1; InformantChance = 10% }
 				Results
@@ -362,7 +362,7 @@ Chains
 			{
 				ID = courier
 				Title = "Courier Run"
-				Text = "The recorder's routes put a corporate courier in this system with prototype parts in its hold. Kill the escorts and leave the courier whole: the cargo is worth more than the wreck."
+				Text = "Destroy the corporate courier's escorts. Keep the courier whole."
 				Mission = ChainCourierHit
 				Where = Arrival
 				AfterSectors = 0
@@ -376,7 +376,7 @@ Chains
 			{
 				ID = sting
 				Title = "The Sting"
-				Text = "The corporation agreed to meet you for the recorder. Too quickly. Their ships are here, and they did not come to talk."
+				Text = "Destroy the corporate ships at the meeting point.\nThey came for the recorder, not to talk."
 				Mission = ChainAmbush
 				Where = Arrival
 				AfterSectors = 1

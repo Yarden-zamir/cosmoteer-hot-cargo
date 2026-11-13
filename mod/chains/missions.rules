@@ -425,7 +425,7 @@ ChainSalvageRace
 					SynchronizeAllegiance = true
 					AI
 					{
-						Type = HotCargoHunter
+						Type = Normal
 						ChanceToConsiderSurrenderingToPlayer = 0
 						PatrolRadius = 600
 						TargetAcquireRangeFromOrigin = 2500
@@ -583,7 +583,7 @@ ChainBlackBox
 					}
 					AI
 					{
-						Type = HotCargoHunter
+						Type = Normal
 						ChanceToConsiderSurrenderingToPlayer = 0
 						PatrolRadius = 600
 						TargetAcquireRangeFromOrigin = 2500

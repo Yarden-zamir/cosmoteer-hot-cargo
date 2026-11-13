@@ -1,4 +1,5 @@
 using System.Globalization;
+using Cosmoteer.Modes.Career;
 using Cosmoteer.Modes.Career.Comms;
 using Cosmoteer.Modes.Career.Missions;
 using Cosmoteer.Ships.Special;
@@ -6,6 +7,8 @@ using Cosmoteer.Simulation;
 using HotCargo.Core;
 using HotCargo.Dev;
 using HotCargo.Tech;
+using HotCargo.Ux;
+using Halfling.Gui;
 
 namespace HotCargo.Contracts;
 
@@ -23,6 +26,7 @@ public static class ContractsArea
     static int _markedMoney;
     static float _markedHeat;
     static int _bonusGiven;
+    static int _rivalsAtStation;
 
     static Run R() => Autotest.RequireRun();
     static SimRoot Sim() => R().Game.Sim ?? throw new InvalidOperationException("no sim");
@@ -76,7 +80,7 @@ public static class ContractsArea
                         "paid" => t.Fee > 0,
                         "free" => t.Fee == 0 && t.FlatHeat == 0 && t.RivalGroup.Length == 0,
                         "flatheat" => t.FlatHeat > 0,
-                        "rival" => ContractBook.RivalOf(run, sim, m) is not null,
+                        "rival" => ContractBook.RivalsOf(run, sim, m).Count > 0,
                         "informant" => t.InformantChance > 0,
                         "discreet" => t.InformantChance == 0 && t.RivalGroup.Length == 0,
                         _ => throw new InvalidOperationException($"unknown filter '{filter}'"),
@@ -146,6 +150,62 @@ public static class ContractsArea
             ContractBook.Find(run, Picked())!.RivalGroup = group;
             ContractBook.Find(run, other)!.RivalGroup = group;
         };
+        // contract_rival_group <n>: puts the picked offer and n-1 other contract offers in one rival group, offers of other stations first.
+        Autotest.Commands["contract_rival_group"] = arg =>
+        {
+            int n = int.Parse(arg, CultureInfo.InvariantCulture);
+            var run = R();
+            var sim = Sim();
+            var offers = ContractBook.Offers(sim);
+            var mine = offers.First(o => o.Mission == Picked()).List;
+            MissionList simList = ((CareerSimModeManager)sim.Mode).SimGlobalAvailableMissions, gameList = run.Mode.GameGlobalAvailableMissions;
+            var group = offers.Where(o => o.Mission != Picked() && ContractBook.Find(run, o.Mission) is not null)
+                .OrderBy(o => o.List == mine ? 2 : o.List == simList || o.List == gameList ? 1 : 0)
+                .Take(n - 1).Select(o => o.Mission).Append(Picked()).ToList();
+            if (group.Count < n) throw new InvalidOperationException($"only {group.Count} contract offers in this system");
+            foreach (var m in group) ContractBook.Find(run, m)!.RivalGroup = $"test-{Picked().MissionID}";
+        };
+        // contract_rival_check: every offer of the picked offer's rival group names every other offer of the group in its contract terms,
+        // with "at <station>" when another station offers the rival. The shown lines have no raw tags.
+        Autotest.Commands["contract_rival_check"] = _ =>
+        {
+            var run = R();
+            var sim = Sim();
+            string g = ContractBook.Find(run, Picked())?.RivalGroup ?? "";
+            Autotest.Check(g.Length > 0, "the picked offer has a rival group");
+            var group = ContractBook.Offers(sim).Where(o => ContractBook.Find(run, o.Mission)?.RivalGroup == g).ToList();
+            var stations = SpaceStation.GetStations(sim, onlyOperating: false).Where(s => s.GetProvidedMissions() is not null)
+                .ToDictionary(s => s.GetProvidedMissions()!, s => s.PhysicalShip?.Metadata.PlainShipName ?? s.Spawner?.ObjectName ?? "?");
+            _rivalsAtStation = 0;
+            foreach (var (m, list) in group)
+            {
+                var shown = ContractsUi.Lines(run, m).Select(l => MissionTitle.Plain(l.Text)).ToList();
+                foreach (string line in shown) Autotest.Check(!line.Contains('<'), $"no raw tag in \"{line}\"");
+                foreach (var (o, other) in group)
+                {
+                    if (o == m) continue;
+                    bool elsewhere = other != list && stations.ContainsKey(other);
+                    string want = elsewhere ? $"\"{MissionTitle.Plain(o)}\" at {stations[other]}" : $"\"{MissionTitle.Plain(o)}\"";
+                    Autotest.Check(shown.Any(l => l.Contains(want)), $"{m.MetatypeID} {m.MissionID} names its rival as {want}");
+                    if (elsewhere) _rivalsAtStation++;
+                }
+            }
+            Log.Info($"AUTOTEST rival group {g}: {group.Count} offers, {_rivalsAtStation} rival lines name a station");
+        };
+        // contract_title_check: the picked offer's title has markup. The offer details title renders it, and the new mission banner shows it without tags.
+        Autotest.Commands["contract_title_check"] = _ =>
+        {
+            var m = Picked();
+            var game = R().Game;
+            Autotest.Check(m.Name.Text.Contains('<'), $"the picked title has markup: {m.Name.Text}");
+            var panel = new MissionsPanel.MissionInfoPanel(m);
+            Autotest.Check(panel._name.TextRenderer.XmlFormatting, "the offer details title renders XML");
+            ((CareerGameModeManager)game.Mode).DoNewMissionAnimation(m);
+            string plain = MissionTitle.Plain(m).ToUpper();
+            var banner = game.Gui.RootWidget.Children.OfType<Label>().Select(l => l.Text ?? "").FirstOrDefault(t => MissionTitle.Plain(t) == plain);
+            Autotest.Check(banner is not null && !banner.Contains('<'), $"the new mission banner shows no tags: {banner}");
+        };
+        Autotest.Fields["contract_rivals_at_station"] = () => _rivalsAtStation;
         Autotest.Commands["value_mark"] = _ => _markedValue = R().TechValue();
         // Logs terms statistics of the saved offers in this system.
         Autotest.Commands["contract_stats"] = label =>

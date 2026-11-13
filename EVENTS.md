@@ -15,12 +15,11 @@ FTL-style choice events for the Hot Cargo run. Spec requirements 67 to 87 (`spec
 
 | Trigger | When | Limits |
 |---|---|---|
-| Start | `StartDelaySeconds` (3 s) after a new run starts. | Once per run. Signals and stations wait for it. |
 | Arrival | `ArrivalDelaySeconds` (6 s) after the first arrival in a system, with chance `ArrivalEventChance` (60 %). | Cooldown, per-system cap. |
 | Signal | A player ship comes within `SignalTriggerDistance` (900) of a signal POI ("?" icon). The POI goes away. | None: the player chose to go there. 1 to 2 signals spawn in 80 % of systems. |
 | Station | The first trade station that a player ship comes within `StationTriggerDistance` (1,500) of, once per system visit, with chance `StationEventChance` (50 %). | Cooldown, per-system cap. The Buyer station never triggers it. |
 
-- Cooldown: Arrival and Station events wait `CooldownSeconds` (120 game s) after the last triggered event of any kind.
+- Cooldown: Arrival and Station events wait `CooldownSeconds` (120 game s) after the last triggered event of any kind, and after the start of a run. No event opens at the start of a run.
 - Per-system cap: `MaxEventsPerSystem` (2) Arrival and Station events per system, all visits together.
 - A trigger picks one eligible event by weight. Eligible means: the trigger matches, the event has not reached `MaxPerRun` (default 1), and its `Need` is met.
 - Only one event page waits at a time. A trigger does nothing while a page waits.
@@ -51,15 +50,8 @@ Odds are at the default weights. "Sector" is the sector index (1 to 8). All numb
 
 ### Implemented
 
-#### 1. Clean Getaway? (Start, sector 1)
-The intro: the lab alarms fade, six tagged crates in the vault.
-| Choice | Cost | Outcome |
-|---|---|---|
-| Buy forged transponder codes | 0.5 money | Flag `fake_codes`: a hidden option at the Corporate Checkpoint. |
-| Sell one crate to the fence | 1 tech | 1.2 × tech value. |
-| Keep every crate | — | Nothing. |
-
-Reads as: the run's first decision. Cash now, a trick for later, or the full score.
+#### 1. Clean Getaway? (removed)
+Removed after a playtest: a popup at the start of a run confused players. The forged codes (flag `fake_codes`) now come only from the Fence's Ledger chain (CHAINS.md).
 
 #### 2. Distress Beacon (Arrival, any sector)
 | Choice | Need | Outcomes |
@@ -84,7 +76,7 @@ Reads as: fuel is a currency. Kindness buys heat, greed buys money, piracy buys 
 #### 4. Corporate Checkpoint (Arrival, sector 2+, heat 10+; weight 8 + 0.15 × heat)
 | Choice | Cost / Need | Outcomes |
 |---|---|---|
-| Transmit forged codes | flag `fake_codes`, hidden without it | Heat −20, flag cleared. |
+| Transmit forged codes | flag `fake_codes` (from the Fence's Ledger chain), hidden without it | Heat −20, flag cleared. |
 | Private fee | 0.6 money | 80 %: heat −10. 20 %: heat +10. |
 | Submit to the scan | — | Clean weight 60 − 8 × tech, caught weight 20 + 8 × tech (6 tech: 12 vs 68, so 85 % caught). Caught opens page 4b. |
 | Run the checkpoint | — | 60 %: heat +15. 40 %: heat +10 and a corporate patrol. |

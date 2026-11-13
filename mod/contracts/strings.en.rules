@@ -21,7 +21,8 @@ HotCargoContracts
 	TrailTipFmt = "Open contracts leave a trail. Up to {0} stay quiet. Each one above that adds {1} heat/min until you finish or drop it."
 
 	RivalFmt = "Rival: taking this cancels \"{0}\""
-	RivalTip = "Rival clients. Take one job and the other offer is gone."
+	RivalAtFmt = "Rival: taking this cancels \"{0}\" at {1}"
+	RivalTip = "Rival clients. Take one job and the other offers are gone."
 
 	InformantFmt = "Informant risk {0}%: the client may sell you out"
 	InformantTip = "Some clients sell your position to the corporation. If this one does, heat jumps and hunters come for you."

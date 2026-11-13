@@ -2,10 +2,6 @@
 # techs unlock on both with no desync.
 mphost {PORT}
 mpstart 2
-waitfor ev_pending == 1 30
-expectevent getaway
-choose 3
-waitfor ev_pending == 0 30
 ev_researched_mark
 mp event research_trade
 waitfor ev_pending == 1 20

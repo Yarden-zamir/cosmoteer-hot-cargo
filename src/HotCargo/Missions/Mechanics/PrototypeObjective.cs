@@ -34,7 +34,7 @@ namespace HotCargo.Missions.Mechanics;
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
 [SerialDerivedType(TypeName = "HotCargoPrototype")]
-internal sealed class PrototypeObjective : Objective
+internal sealed class PrototypeObjective : Objective, IMissionMarkers
 {
     public static readonly ID<PartRules> CoreId = new("yarden_zamir.prototype_core");
 
@@ -69,6 +69,8 @@ internal sealed class PrototypeObjective : Objective
     [Serialize] public float RecoverRange { get; private set; }
     [Serialize] public int Tier { get; private set; }
     [Serialize(Optional = true)] public ObjectID? AreaPoiId { get; private set; }
+
+    IEnumerable<ObjectID> IMissionMarkers.MarkerIds => AreaPoiId is { } id ? [id] : [];
     /// <summary>Cell of the core part in its ship. Null until the core is on the hull.</summary>
     [Serialize(Optional = true)] public IntVector2? CoreCell { get; private set; }
     [Serialize(Optional = true)] public Vector2? LastCoreLocation { get; private set; }
