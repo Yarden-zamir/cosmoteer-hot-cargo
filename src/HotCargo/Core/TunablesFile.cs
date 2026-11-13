@@ -65,6 +65,9 @@ public static class TunablesFile
     public static void MarkSeen() => _lastWrite = File.Exists(FilePath) ? File.GetLastWriteTimeUtc(FilePath) : default;
 
     /// <summary>True once per changed file write. Call once per frame.</summary>
+    /// <summary>The next ChangedSinceLastRead checks the file at once. For autotests: the headless sim runs faster than the real-time poll.</summary>
+    internal static void PollNow() => _nextPoll = DateTime.MinValue;
+
     public static bool ChangedSinceLastRead()
     {
         if (DateTime.UtcNow < _nextPoll) return false;
