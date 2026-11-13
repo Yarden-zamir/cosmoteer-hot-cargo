@@ -95,6 +95,33 @@ wait 3
 expect ev_res_steel_gain == 30
 on 1 expect ev_res_steel_gain == 30
 
+step listen.event
+# Spec 1131 to 1137: the host talks to a ship that carries an event page. The client sees one listen button, listens and votes.
+# In first pick mode the vote is advisory: both pages show it and the page stays. The host picks; both machines see the result,
+# and the client's listen window closes after the host's channel.
+mp event broken_down
+waitfor ev_carrier == 1 20
+on 1 expect listen_hails == 0
+ev_open carrier
+on 1 waitfor listen_hails == 1 30
+on 1 listen 1
+on 1 expect listen_open == 1
+on 1 listen_click Strip their cargo
+waitfor sc_votes == 1 30
+on 1 waitfor sc_votes == 1 30
+expect ev_pending == 1
+expect comms_vote_marks == 1
+on 1 expect listen_vote_marks == 1
+ev_mark
+on 1 ev_mark
+comms_click Strip their cargo
+waitfor ev_pending == 0 30
+on 1 waitfor ev_pending == 0 30
+expect ev_res_steel_gain == 30
+on 1 expect ev_res_steel_gain == 30
+dip_close
+on 1 waitfor listen_open == 0 30
+
 step events.off-books
 # Spec 74, 771 (#12): the host sells a crate off the books through the real comms window. The line opens the page in the same
 # tab, and the choice works. The sale reaches the client's sim.

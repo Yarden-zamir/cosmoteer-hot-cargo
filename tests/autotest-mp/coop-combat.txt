@@ -64,6 +64,27 @@ wait 3
 counttag hc_ev_toll
 expect tagcount == 6
 
+step listen.hunter
+# Spec 1131 to 1137 in vote mode: the host talks to a hunter and the client listens. Both vote to fight; the vote is unanimous on
+# both machines. The client's listen window closes after the host's channel.
+mp sc_reset
+votemode on
+waitfor sc_votemode == 1 10
+dip_near hunter0
+dip_open hunter0
+on 1 waitfor listen_hails == 1 30
+on 1 listen 1
+on 1 listen_click Come and take it
+waitfor comms_vote_marks == 1 30
+on 1 waitfor listen_vote_marks == 1 30
+comms_click Come and take it
+waitfor sc_decided_reason == 1 30
+on 1 waitfor sc_decided_reason == 1 30
+votemode off
+waitfor sc_votemode == 0 10
+dip_close
+on 1 waitfor listen_open == 0 30
+
 step missions.escort
 # Offers and sides, then the escort: the freighter steers to the jump point when a player is near, and arrival completes it.
 mp hc_generate all

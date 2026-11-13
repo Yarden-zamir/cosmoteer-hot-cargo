@@ -1,6 +1,6 @@
 ## 32. Shared choices in co-op
 
-A shared choice is a dialog page that decides for all players: event pages and chain pages so far. Code: `src/HotCargo/SharedChoice`. A new dialog (for example diplomacy hails) registers its pages as an `ISharedChoiceDomain` and uses `SharedChoicePanel`.
+A shared choice is a dialog page that decides for all players: event pages and chain pages so far. Code: `src/HotCargo/SharedChoice`. A new dialog (for example diplomacy hails) registers its pages as an `ISharedChoiceDomain` and uses `SharedChoicePanel`. Players that listen in on a hail (section 47) vote too; in first pick mode their votes are advisory (requirement 1136).
 
 600. Single player has no change: the first pick decides, and the dialog shows no co-op bar.
 601. **Presence.** In co-op, when a player hovers an option, every other player sees that option framed in the player's color and the player's name on its right. The color comes from the player's place in the voter order (requirement 603), so every machine shows the same color. A digit key (UX, requirement V15) picks at once, so it shows as a vote or a pick, not as a hover.

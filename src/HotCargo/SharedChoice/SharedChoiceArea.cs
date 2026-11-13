@@ -59,20 +59,26 @@ public static class SharedChoiceArea
         return tabs;
     }
 
+    static void Click(bool listening, string text)
+    {
+        string where = listening ? "listen window" : "own comms window";
+        var tab = Tabs(listening).FirstOrDefault() ?? throw new InvalidOperationException($"no open {where}");
+        var buttons = tab._currentDialogue?.Buttons ?? throw new InvalidOperationException($"the {where} shows no page");
+        int index = buttons.FindIndex(b => EventView.Plain(b.Text).Contains(text, StringComparison.Ordinal));
+        if (index < 0) throw new InvalidOperationException($"no button with '{text}' in the {where}; buttons: {string.Join(" | ", buttons.Select(b => EventView.Plain(b.Text)))}");
+        if (!tab._dialogueButtonsBox.Children[index].SelfInputActive) throw new InvalidOperationException($"button '{text}' is disabled in the {where}");
+        tab.ButtonPressed(index);
+        Autotest.Wait(1);
+    }
+
     static void AddListenAutotest()
     {
         // Listen-in (spec 1131 to 1138). listen <n>: clicks the n-th listen button. listen_click <text>: clicks the button of the
         // listen window whose plain text contains the text, like a player (a vote).
         Autotest.Commands["listen"] = arg => { ListenIn.Toggle(RequireRun(), int.Parse(arg, CultureInfo.InvariantCulture) - 1); ListenIn.Frame(); };
-        Autotest.Commands["listen_click"] = text =>
-        {
-            var tab = Tabs(listening: true).FirstOrDefault() ?? throw new InvalidOperationException("no open listen window");
-            var buttons = tab._currentDialogue?.Buttons ?? throw new InvalidOperationException("the listen window shows no page");
-            int index = buttons.FindIndex(b => EventView.Plain(b.Text).Contains(text, StringComparison.Ordinal));
-            if (index < 0) throw new InvalidOperationException($"no button with '{text}' in the listen window; buttons: {string.Join(" | ", buttons.Select(b => EventView.Plain(b.Text)))}");
-            if (!tab._dialogueButtonsBox.Children[index].SelfInputActive) throw new InvalidOperationException($"button '{text}' is disabled in the listen window");
-            tab.ButtonPressed(index);
-        };
+        // comms_click <text>: the same in the player's own comms window.
+        Autotest.Commands["listen_click"] = text => Click(listening: true, text);
+        Autotest.Commands["comms_click"] = text => Click(listening: false, text);
         // Listen buttons that show on this machine, open listen windows (after one frame of each), and option buttons with votes
         // shown in listen windows and in the player's own comms windows.
         Autotest.Fields["listen_hails"] = () => ListenIn.ShownCount;
