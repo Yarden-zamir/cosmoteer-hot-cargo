@@ -5,9 +5,9 @@ Tags = [hc_event_signal, hc_group_signal, poi_unknown]
 DoodadType = cosmoteer.poi_unknown
 SpawnChance = 80%
 Count = [1, 2]
-// Inside the gate ring of the smaller systems (spec 105; was 19000).
-Distance = [3000, 13500]
-MinDistanceFromTags = [[sun, 6000], [station, 4000], [bounty, 3000], [misc_discoverable, 2000], [hc_event_signal, 7000]]
+// Like the vanilla bounties at the system scale (spec 105, contracts/system_scale.rules).
+Distance = ["(&<../contracts/system_scale.rules>/Scale) * 3000", "(&<../contracts/system_scale.rules>/Scale) * 19000"]
+MinDistanceFromTags = [[sun, "max((&<../contracts/system_scale.rules>/Scale) * 6000, (&<../contracts/system_scale.rules>/SunClearance))"], [station, "(&<../contracts/system_scale.rules>/Scale) * 4000"], [bounty, "(&<../contracts/system_scale.rules>/Scale) * 3000"], [misc_discoverable, "(&<../contracts/system_scale.rules>/Scale) * 2000"], [hc_event_signal, "(&<../contracts/system_scale.rules>/Scale) * 7000"]]
 MinDistanceFromNebulas = [[ion_storm, 1000]]
 SuppressLocationAssertions = true
 HideIfUnexplored = true

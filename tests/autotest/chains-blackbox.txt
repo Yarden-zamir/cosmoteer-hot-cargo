@@ -5,11 +5,14 @@ wait 8
 ev_set ArrivalEventChance 0
 ev_set StationEventChance 0
 godmode
+# Chains that started by themselves can have enemies near this station; remove them so only this chain's ships fight here.
+chain_kill
 chain_force black_box
 chain_tostation
 chain_accept
 expect chain_accepted == 1
-chain_goto
+# Go to this chain's wreck: other chains that started by themselves can have hc_ch_enemy ships too.
+chain_goto hc_ch_wreck
 chain_kill
 wait 2
 expect ev_handover == 0

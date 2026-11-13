@@ -13,8 +13,8 @@ mp pu_set Enabled false
 
 step scaling.generation
 # Spec 330 to 336: the host's value reaches the client. Both machines generate the first system with factor 2:
-# pirate wanderers are [9, 11] (mod/contracts/actions.rules), so 18 to 22. The state hash compares the ship counts.
-# With 3 players the factor is 1 + (2 - 1) x 2 = 3 (spec 331), so 27 to 33.
+# pirate wanderers are round([14, 16] x Area) = 4 at SystemScale 0.5 (mod/contracts/actions.rules), so 8. The state hash compares the ship counts.
+# With 3 players the factor is 1 + (2 - 1) x 2 = 3 (spec 331), so 12.
 expect enemysetting == 2
 @2p expect enemyfactor == 2
 @3p expect enemyfactor == 3
@@ -22,8 +22,8 @@ on 1 expect enemysetting == 2
 @2p on 1 expect enemyfactor == 2
 @3p on 1 expect enemyfactor == 3
 counttag pirate
-@2p expect tagcount >= 18
-@3p expect tagcount >= 27
+@2p expect tagcount >= 8
+@3p expect tagcount >= 12
 
 step diplomacy.payoff
 # Spec 587 (#25): the client ticks tech on the hunter page, and the draft is shared, so the host adds money to it. The client

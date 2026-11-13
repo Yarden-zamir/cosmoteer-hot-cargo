@@ -14,11 +14,12 @@ Buyer
 			// Journey/Buyer.cs uses this index to tell a sale to the Buyer from a sale to a normal station.
 			Allegiance = Neutral
 			RememberResourcesAndCrew = true
-			Distance = [5000, 10000]
-			// Bounty targets are hostile: the 2 to 4 bounties of a smaller system (spec 105) sit in [0, 13000], so one could wait right
+			// Anywhere between the sun heat and the gate ring (spec 105, contracts/system_scale.rules).
+			Distance = ["(&<../contracts/system_scale.rules>/SunClearance)", "(&<../contracts/system_scale.rules>/GateDistance/0)"]
+			// Bounty targets are hostile: the 2 to 4 bounties of a smaller system (spec 105) share this ring, so one could wait right
 			// next to the Buyer. Only the ships keep their tag after system generation, and a ship in stasis counts as a point.
 			// No asteroid gap: in a supernova system the belts can cover this whole ring, and then the Buyer would not spawn.
-			MinDistanceFromTags = [[sun, 5000], [station, 3000], [ftl_gate, 2000], [bounty_ship, 3000]]
+			MinDistanceFromTags = [[sun, "(&<../contracts/system_scale.rules>/SunClearance)"], [station, 3000], [ftl_gate, 2000], [bounty_ship, 3000]]
 			NameGenerator
 			{
 				Type = NameList
