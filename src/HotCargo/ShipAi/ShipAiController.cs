@@ -206,8 +206,9 @@ internal static class ShipAiController
 
     /// <summary>
     /// Spec 415: the vanilla attack rotation options. With a rotation target, the ship's world rotation is the direction to the target
-    /// plus Rotation (BaseFollowCommand.GetWorldRotation, FollowAngleRelative). The nose is rotation 0; y points down on screen,
-    /// so +90° puts the target on the left side.
+    /// plus Rotation (BaseFollowCommand.GetWorldRotation, FollowAngleRelative). The nose points at the ship rotation plus the design's
+    /// FlightDirection (Ship.WorldFlightDirection), so Rotation = nose offset − FlightDirection. y points down on screen, so a nose
+    /// offset of +90° puts the target on the left side.
     /// </summary>
     static void Face(AttackCommand ac, Side side)
     {
@@ -221,7 +222,7 @@ internal static class ShipAiController
         };
         ac.RotationMode = FollowRotationMode.FollowAngleRelative;
         ac.RotationTarget = ac.Target;
-        ac.Rotation = new Direction(offset);
+        ac.Rotation = new Direction(offset - (float)ac.Ship.FlightDirection);
     }
 
     /// <summary>

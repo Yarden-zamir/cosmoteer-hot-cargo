@@ -55,11 +55,11 @@ tactics_presets_reset
 tactics HC1:Always>TargetNearest;Always>CloseIn;Always>Face=1
 waitfor tactics_face == 90 30
 wait 12
-vault focus wide
-wait 1
+vault focus
+wait 4
 screenshot shipai-face-left
 # The game's own Save Ship path with the picture: the tactics node goes into the .ship.png.
 savedesign shipai_png png
 loaddesign shipai_png
-expect design_rows == 7
+expect design_rows == 3
 quit

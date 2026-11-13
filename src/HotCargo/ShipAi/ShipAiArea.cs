@@ -158,9 +158,10 @@ public static class ShipAiArea
         };
         Autotest.Fields["tactics_editor"] = () => TacticsEditor.IsOpen ? 1 : 0;
         Autotest.Fields["tactics_facing_row"] = () => Tactics().FacingRow;
-        // The facing of the tactics attack order: the rotation offset in whole degrees, 0 to 359, while it has a rotation target, else -999.
+        // The facing of the tactics attack order: the nose offset from the target (rotation plus FlightDirection) in whole degrees,
+        // 0 to 359, while it has a rotation target, else -999.
         Autotest.Fields["tactics_face"] = () => TestShip().Commands.CurConfirmedCommand is AttackCommand { RotationTarget: not null, Rotation: { } r }
-            ? ((int)MathF.Round((float)r * 180f / MathF.PI) % 360 + 360) % 360 : -999;
+            ? ((int)MathF.Round(((float)r + (float)TestShip().FlightDirection) * 180f / MathF.PI) % 360 + 360) % 360 : -999;
         Autotest.Fields["tactics_terms"] = () => ShipTactics.Of(TestShip())?.Rows.Sum(r => r.Terms.Length) ?? 0;
         Autotest.Fields["tactics_presets"] = () => TacticsPresets.Load().Count;
         // tactics_presets_reset: deletes this slot's personal preset file, so a test starts without presets. Test only.
