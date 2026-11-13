@@ -92,7 +92,7 @@ public static class MpAutotest
         Autotest.Commands["mpmark"] = arg => _mark = int.Parse(arg, CultureInfo.InvariantCulture);
         Autotest.Fields["mpmark"] = () => _mark;
 
-        // tunablesfile <rules text>: replaces the slot's tunables.rules, before mphost. Test slots only; deploy restores the repo file.
+        // tunablesfile <rules text>: replaces the slot's tunables.rules, before mphost or mid-run (a live file change). Test slots only; deploy restores the repo file.
         Autotest.Commands["tunablesfile"] = arg => File.WriteAllText(TunablesFile.FilePath, arg);
         // mpchoose <serial> <choice number>: sends an event choice for any page serial, like a click on a page that another player
         // already answered. The sim must ignore a serial that is not the pending page.

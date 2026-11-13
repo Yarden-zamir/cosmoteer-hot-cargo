@@ -138,4 +138,55 @@ public class PersonalityModelTests
         Assert.Equal(PersonalityModel.CoverPhase.Hide, PersonalityModel.NextCoverPhase(PersonalityModel.CoverPhase.Hide, 5.9, 8, 6));
         Assert.Equal(PersonalityModel.CoverPhase.Peek, PersonalityModel.NextCoverPhase(PersonalityModel.CoverPhase.Hide, 6, 8, 6));
     }
+
+    /// <summary>A grid of w × h part cells with weight 1, armor (weight 3) in the listed columns.</summary>
+    static float[,] Grid(int w, int h, params int[] armorColumns)
+    {
+        var g = new float[w, h];
+        for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+                g[x, y] = armorColumns.Contains(x) ? 3f : 1f;
+        return g;
+    }
+
+    static readonly int[] NoWeapons = new int[SideProfile.Directions];
+
+    [Fact]
+    public void Cockpit_at_the_back_makes_the_back_weak_and_the_armored_front_strong()
+    {
+        // Flight to +X (direction 0). Cockpit at the back edge (x 0), armor in the front column (x 4).
+        var sides = PersonalityModel.Sides(Grid(5, 3, 4), 0, 0, [new CellRect(0, 1, 1, 1)], NoWeapons, flight: 0, weakCover: 4, weaponWeight: 1);
+        Assert.True(sides.IsWeak(4));
+        Assert.False(sides.IsWeak(0));
+        Assert.Equal(0, sides.Strong);
+        var b = new BuildScores(Agility: 1, Turn: 1, Range: 1, Protection: 0, Size: 0, Sides: sides, Flight: 0);
+        Assert.True(b.WeakBack);
+        Assert.False(b.NoGuardedSide);
+        Assert.Equal(0f, PersonalityModel.Fit(Trait.Kite, b));
+        Assert.True(PersonalityModel.Fit(Trait.Bait, b) > 0f);
+    }
+
+    [Fact]
+    public void Buried_cockpit_has_no_weak_side_and_no_vulnerable_part_means_no_weak_side()
+    {
+        var buried = PersonalityModel.Sides(Grid(7, 7, 0, 6), 0, 0, [new CellRect(3, 3, 1, 1)], NoWeapons, flight: 2, weakCover: 3, weaponWeight: 1);
+        Assert.Equal(0, buried.Weak);
+        var none = PersonalityModel.Sides(Grid(3, 3), 0, 0, [], NoWeapons, flight: 2, weakCover: 3, weaponWeight: 1);
+        Assert.Equal(0, none.Weak);
+        Assert.Equal(2, none.Strong); // ties go to the flight direction
+    }
+
+    [Fact]
+    public void Weapons_pick_between_guarded_sides_and_an_exposed_ship_has_no_guarded_side()
+    {
+        var weapons = new int[SideProfile.Directions];
+        weapons[4] = 3;
+        var sides = PersonalityModel.Sides(Grid(7, 7), 0, 0, [new CellRect(3, 3, 1, 1)], weapons, flight: 0, weakCover: 2, weaponWeight: 1);
+        Assert.Equal(4, sides.Strong);
+        var bare = PersonalityModel.Sides(Grid(1, 1), 0, 0, [new CellRect(0, 0, 1, 1)], NoWeapons, flight: 0, weakCover: 1, weaponWeight: 1);
+        Assert.Equal(0xFF, bare.Weak);
+        Assert.Equal(0f, PersonalityModel.Fit(Trait.Bait, new BuildScores(1, 1, 1, 0, 0, bare)));
+        Assert.Equal(4, SideProfile.Index(MathF.PI));
+        Assert.Equal(6, SideProfile.Index(-MathF.PI / 2));
+    }
 }

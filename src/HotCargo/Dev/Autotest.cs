@@ -288,7 +288,7 @@ public static class Autotest
         };
         Commands["expect"] = arg =>
         {
-            // expect <field> <op> <value>, for example: expect heat >= 30
+            // expect <field> <op> <value>, for example: expect heat >= 30. The value can be another field: expect stages == stagecount
             var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length != 3) throw new InvalidOperationException("expect needs: field op value");
             double actual = Field(parts[0]);
@@ -330,6 +330,7 @@ public static class Autotest
     {
         ["heat"] = () => RequireRun().State.Heat,
         ["stages"] = () => RequireRun().State.StagesStarted,
+        ["stagecount"] = () => RequireRun().T.Heat.Stages.Length,
         ["sector"] = () => RequireRun().State.SectorIndex,
         ["tech"] = () => RequireRun().State.FleetTech,
         ["seconds"] = () => RequireRun().State.GameSeconds,
@@ -346,7 +347,7 @@ public static class Autotest
 
     static bool Compare(double actual, string op, string value)
     {
-        double expected = double.Parse(value, CultureInfo.InvariantCulture);
+        double expected = Fields.TryGetValue(value, out var field) ? field() : double.Parse(value, CultureInfo.InvariantCulture);
         return op switch
         {
             ">=" => actual >= expected, "<=" => actual <= expected, ">" => actual > expected,

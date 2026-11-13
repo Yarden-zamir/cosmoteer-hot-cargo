@@ -24,7 +24,7 @@ waitfor tactics_move_row == 0 10
 waitfor techcrates == 0 120
 waitfor tech == 8 60
 waitfor tactics_move_row == 1 10
-# Heat stage: stage 2 (Patrol) brings hunters. The OR term holds: no crates, but hunters in the system.
+# Heat 55 starts stage 1 (Warning), which brings hunters. Stage 2 is not reached and there are no crates, so only the OR term holds: hunters in the system.
 tactics HC1:HeatStageAtLeast=2&CratesWithin=3000|HuntersInSystem>HoldPosition;Always>RetreatRepair
 wait 3
 expect tactics_move_row == 1

@@ -38,6 +38,13 @@ public sealed class Run
         /// <summary>Share of the heat that stays after the system switch that runs now (spec 28). The Factions area sets it per jump kind (spec 650).</summary>
         public static Func<Run, float> JumpHeatKept = run => run.T.Heat.HeatCarryOverFraction;
 
+        /// <summary>Runs in each UI frame of the run. UI only: change the sim only through MP inputs or the single-player tunables path.</summary>
+        public static event Action<Run>? Frame;
+        /// <summary>Runs after new tunables replace the old ones: in the host's MP input on every machine, or at the single-player reload.</summary>
+        public static event Action<Run>? TunablesApplied;
+
+        internal static void RaiseFrame(Run r) => Each(Frame, h => h(r));
+        internal static void RaiseTunablesApplied(Run r) => Each(TunablesApplied, h => h(r));
         internal static void RaiseRunEnded(Run r) => Each(RunEnded, h => h(r));
         internal static void RaiseStageStarted(Run r, SimRoot s, int i) => Each(StageStarted, h => h(r, s, i));
         internal static void RaiseStrikeWave(Run r, SimRoot s) => Each(StrikeWave, h => h(r, s));
@@ -65,8 +72,17 @@ public sealed class Run
     /// <summary>A new multiplayer run waits for the host to send its tunables (TunablesInput). Local, not saved.</summary>
     internal bool HostTunablesPending;
 
-    /// <summary>The host sent its file and the input has not executed yet. The settings menu waits, so its edit does not start from the defaults.</summary>
-    internal bool HostTunablesInFlight;
+    /// <summary>Host only: the last tunables that the host sent and that did not execute yet. The settings menu shows and edits these. Local, not saved.</summary>
+    internal TunablesFile.Loaded? HostSent;
+
+    /// <summary>
+    /// Host only: tunables inputs sent and not executed yet (TunablesInput).
+    /// Limit: this assumes that the host's own inputs always execute. Revisit if a resync can drop them.
+    /// </summary>
+    internal int HostSendsInFlight;
+
+    /// <summary>The tunables that the next change starts from: the host's last sent values while they travel, else the values in effect.</summary>
+    internal (Tunables Values, string Hash) LatestTunables => HostSent is { } s ? (s.Values, s.Hash) : (T, State.TunablesHash);
 
     Run(GameRoot game, CareerGameModeManager mode, RunState state)
     {
@@ -100,6 +116,8 @@ public sealed class Run
             if (file is not null) { state.Tunables = file.Values; state.TunablesHash = file.Hash; }
             else state.TunablesHash = "defaults";
         }
+        // A loaded co-op game keeps the tunables of its save (spec 60): only a later write of the host's file changes them.
+        if (mode.Game.NetManager.IsMultiplayer) TunablesFile.MarkSeen();
         var run = new Run(mode.Game, mode, state) { HostTunablesPending = newRun && mode.Game.NetManager.IsMultiplayer };
         Current = run;
         // Validates the vanilla tier table now, so that a data problem shows at game start and not mid-run.
@@ -272,15 +290,19 @@ public sealed class Run
         if (reached != State.StagesStarted) Log.Info($"tunables: stages started {State.StagesStarted} -> {reached} for the new thresholds");
         State.StagesStarted = reached;
         Log.Info($"tunables in effect: {file.Hash}");
+        Hooks.RaiseTunablesApplied(this);
     }
 
-    /// <summary>Single player only: swaps in new tunables from the file.</summary>
+    /// <summary>
+    /// The file changed (spec 52, 60): single player applies it at once, the multiplayer host sends it to every machine.
+    /// Clients ignore their file. A bad file keeps the values in effect (spec 53). The same values as the latest ones do nothing.
+    /// </summary>
     internal void ReloadTunables()
     {
-        if (IsMultiplayer) return;
-        var file = TunablesFile.Read();
-        if (file is null) return;
-        ApplyTunables(file);
+        if (IsMultiplayer && !Game.NetManager.IsHost) return;
+        if (TunablesFile.Read() is not { } file || file.Hash == LatestTunables.Hash) return;
+        if (IsMultiplayer) TunablesInput.Send(this, file);
+        else ApplyTunables(file);
         Game.Gui.ShowAreaName("Hot Cargo tunables reloaded");
     }
 }

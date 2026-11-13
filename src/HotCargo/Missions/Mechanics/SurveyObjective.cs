@@ -29,7 +29,7 @@ namespace HotCargo.Missions.Mechanics;
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
 [SerialDerivedType(TypeName = "HotCargoSurvey")]
-internal sealed class SurveyObjective : Objective
+internal sealed class SurveyObjective : Objective, IMissionMarkers
 {
     [ReflectiveSerialization(Explicit = true)]
     [SerialDerivedType(TypeName = "HotCargoSurvey")]
@@ -56,6 +56,8 @@ internal sealed class SurveyObjective : Objective
 
     [Serialize] public ObjectID NodeId { get; private set; }
     [Serialize] public List<SurveyMarker> Markers { get; private set; }
+
+    IEnumerable<ObjectID> IMissionMarkers.MarkerIds => Markers.Select(m => m.PoiId);
     [Serialize] public float ScanRadius { get; private set; }
     [Serialize] public int Tier { get; private set; }
 

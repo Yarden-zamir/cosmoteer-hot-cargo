@@ -7,8 +7,6 @@ pause off
 wait 2
 closepanel
 wait 1
-uxpick 1
-wait 2
 menu escape
 wait 1.5
 screenshot menu-escape

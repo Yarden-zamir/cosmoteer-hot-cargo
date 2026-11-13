@@ -2,10 +2,6 @@
 # the same page (same serial) does nothing, so the choice applies once on both machines.
 mphost {PORT}
 mpstart 2
-waitfor ev_pending == 1 30
-expectevent getaway
-choose 3
-waitfor ev_pending == 0 30
 mp ev_set StationEventChance 0
 mp event broken_down
 waitfor ev_carrier == 1 20
@@ -15,6 +11,15 @@ waitfor ev_pending == 0 90
 mpchoose 2 3
 wait 3
 expect ev_res_steel_gain == 30
+# The host sells a crate off the books through the real comms window: the line opens the page in the same tab, the choice works.
+ev_open station
+ev_click station Sell a crate off the books
+expectevent off_books
+ev_mark
+ev_click station Sell one crate
+waitfor ev_pending == 0 20
+expect ev_tech_gain == -1
+expect ev_money_gain > 0
 expect desyncs == 0
 waitfor mpconnected == 0 240
 quit

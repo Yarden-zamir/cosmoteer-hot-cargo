@@ -1,0 +1,23 @@
+# Spec 441, 1016: vaults built into each vanilla starter design: 4 inside the hull, crew paths kept.
+# A design with a used bay loses that bay; one without keeps it. After the power-up time the ship still matches its blueprint, so the saved picture shows the ship. Headless, no save.
+newgame run
+wait 8
+vaultbuild vanilla 0
+expect vaultsbuiltindesign == 4
+expect storagekept == 0
+expect designmatches == 1
+vaultbuild vanilla 1
+expect vaultsbuiltindesign == 4
+expect designmatches == 1
+vaultbuild vanilla 2
+expect vaultsbuiltindesign == 4
+expect designmatches == 1
+vaultbuild vanilla 3
+expect vaultsbuiltindesign == 4
+expect designmatches == 1
+# No vault may go on a storage bay: the grabbed bay goes back, and the 4 vaults go on corridor tiles. The design keeps its storage.
+vaultbuild vanilla 0 nobay
+expect vaultsbuiltindesign == 4
+expect storagekept == 1
+expect designmatches == 1
+quit

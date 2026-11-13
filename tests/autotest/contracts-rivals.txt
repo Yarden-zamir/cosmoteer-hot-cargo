@@ -1,0 +1,22 @@
+# Contract rivals (spec 103, 106): every offer of a rival group names every other one, with its station when another station offers it.
+# Mission titles with markup (a chain stage): the offer details title, the new mission banner and the contract lines show no raw tags.
+newgame run
+wait 8
+hc_generate all
+wait 3
+expect contract_offers >= 6
+contract_money 500000
+godmode
+chain_force fence_ledger
+contract_pick any HotCargoChain
+contract_title_check
+contract_rival_group 3
+contract_rival_check
+expect contract_rivals_at_station >= 1
+# Accepting the chain stage dismisses both rivals.
+contract_terms fee 0
+contract_terms informant 0
+contract_accept
+expect contract_accepted == 1
+expect contract_rival_offered == 0
+quit
