@@ -7,6 +7,6 @@
 26. Heat multiplier = `HeatMultiplierByUnits[fleet tech count]`. Default table for 0 to 8 units: `[0.25, 0.4, 0.52, 0.64, 0.76, 0.88, 1.0, 1.1, 1.2]`. A count above the table uses the last entry.
 27. Heat does not increase while the game is paused. Game speed changes the rate, as it does for all game time.
 28. When the players enter another system, a share of the heat stays: a jump removes the cut of its kind (requirement 650). A switch to a system where own ships wait, without a jump, keeps `HeatCarryOverFraction` (default 0.25).
-29. Heat stays in the range 0 to 100.
+29. Heat stays in the range 0 to 100. During a network outage every heat gain is blocked and losses still apply (requirement 921).
 
 With defaults and 8 units held, the players enter a sector with about 25 heat (requirement 28). Each typical mission adds about 5.8 heat from fame and about 2.7 heat from its contract (flat heat and informants), and time adds about 1.37 heat per minute. So a sector reaches the top stage after about 6.4 missions in about 18.5 minutes, or after about 55 minutes with no missions. BALANCE.md has the full heat budget.

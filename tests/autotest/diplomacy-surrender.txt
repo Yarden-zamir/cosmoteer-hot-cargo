@@ -2,6 +2,7 @@
 # a hunter's own surrender offer, and the players' surrender to a normal enemy.
 newgame run
 wait 8
+pu_set Enabled false
 ev_set Enabled false
 godmode on
 aiset FleeEnabled false

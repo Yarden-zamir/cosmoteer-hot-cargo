@@ -34,10 +34,10 @@ internal sealed class HuntStasis(HuntStasisRules rules) : AIStasisModule
 
     public override bool StasisUpdate(SimRoot sim, StasisSpawner spawner, AIParameters? parameters, Time interval)
     {
-        var target = SimQueries.NearestHumanShip(sim, spawner.Location);
-        if (target is null) return false;
+        var goal = HunterOrders.StasisGoal(sim, spawner.ReservedObjectID) ?? SimQueries.NearestHumanShip(sim, spawner.Location)?.DetWorldCenter;
+        if (goal is not { } to) return false;
         float speed = parameters?.StasisSpeed ?? rules.DefaultStasisSpeed;
-        spawner.MoveTowards(target.DetWorldCenter, speed, sim, interval, rules.AvoidableDoodadTags, nebulaPathfinding: true, ref _avoidState, rules.AvoidableDoodadBuffer);
+        spawner.MoveTowards(to, speed, sim, interval, rules.AvoidableDoodadTags, nebulaPathfinding: true, ref _avoidState, rules.AvoidableDoodadBuffer);
         return true;
     }
 }
