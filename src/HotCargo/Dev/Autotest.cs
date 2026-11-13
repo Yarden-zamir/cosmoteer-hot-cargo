@@ -345,8 +345,12 @@ public static class Autotest
         Commands["save"] = arg =>
         {
             var game = Game ?? throw new InvalidOperationException("no game");
-            game.SaveAs((string)(Paths.SavedGamesFolder / $"HotCargoTest_{arg}.savedgame"));
-            Wait(2);
+            // The game blocks saving for a moment (GameSaveHandler.IsGameSavingBlocked), for example while a ship breaks up. A player waits too.
+            WaitFor(() => !game.IsGameSavingBlocked, 30, "game saving to be allowed", () =>
+            {
+                game.SaveAs((string)(Paths.SavedGamesFolder / $"HotCargoTest_{arg}.savedgame"));
+                Wait(2);
+            });
         };
         Commands["load"] = arg =>
         {
