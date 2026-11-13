@@ -52,3 +52,4 @@ expect huntershostile == 1
 wait 10
 expect huntersattacking >= 1
 quit
+# tier: smoke

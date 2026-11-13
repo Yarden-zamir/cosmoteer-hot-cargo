@@ -50,3 +50,4 @@ choose 3
 expectstage end
 expect chain_story >= 3
 quit
+# tier: smoke

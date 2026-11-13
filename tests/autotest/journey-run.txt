@@ -45,3 +45,4 @@ heat -100
 wait 10
 expect heat == 0
 quit
+# tier: smoke

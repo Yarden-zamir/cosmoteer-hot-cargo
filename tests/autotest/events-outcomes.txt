@@ -72,3 +72,4 @@ event odd_merchant
 choose last
 expect ev_pending == 0
 quit
+# tier: smoke

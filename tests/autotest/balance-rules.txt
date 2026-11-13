@@ -48,3 +48,4 @@ expect balance_station_fuel_gap >= 0
 # Spec 303: two sectors in, the cap is start tier + 2.
 expect balance_peak_tier_cap == 3
 quit
+# tier: smoke

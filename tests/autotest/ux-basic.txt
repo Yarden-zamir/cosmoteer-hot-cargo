@@ -58,3 +58,4 @@ expect ux_ship_alerts >= 1
 expect lost == 1
 expect ux_loss_centered == 1
 quit
+# tier: smoke
