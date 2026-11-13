@@ -6,8 +6,8 @@
 #        HEAD_REF=<ref> uses the changes of that ref in place of HEAD (no uncommitted changes); integrate.sh uses it
 #        with LIST_ONLY=1 to tell which branch of a batch touches a failed test.
 # --detach: run the suite detached (see autotest-all.sh).
-# Runner: single-player tests run on this Mac (scripts/autotest-mac.sh), co-op tests and tests with the line
-# "# runner: pc" on the PC (scripts/autotest-all.sh), both at the same time.
+# Runner: tests run on this Mac (scripts/autotest-mac.sh; co-op sessions as two sim processes on 127.0.0.1), and tests with
+# the line "# runner: pc" on the PC (scripts/autotest-all.sh), both at the same time.
 #   AUTOTEST_MAC=0 runs every test on the PC. integrate.sh sets it: the PC suite stays the merge gate.
 #   Without the game files on the Mac (scripts/pull-game.sh), every test runs on the PC.
 # Rule, derived from the folder names (no list to keep up to date):
@@ -113,7 +113,8 @@ if [[ "$FULL" == yes ]]; then
 fi
 MAC=() PC=()
 for t in "${TESTS[@]}"; do
-  if [[ "$t" != mp:* ]] && ! grep -qx '# runner: pc' "tests/autotest/$t.txt"; then MAC+=("$t"); else PC+=("$t"); fi
+  if [[ "$t" == mp:* ]]; then f="tests/autotest-mp/${t#mp:}.txt"; else f="tests/autotest/$t.txt"; fi
+  if ! grep -qx '# runner: pc' "$f"; then MAC+=("$t"); else PC+=("$t"); fi
 done
 echo "== on the Mac: ${MAC[*]:-none}"
 echo "== on the PC: ${PC[*]:-none}"
