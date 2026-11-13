@@ -25,7 +25,7 @@ ev_courier_goto
 pause off
 ev_courier_goto
 pause off
-wait 5
+# Check sight at once: the contact drifts on patrol, and in a cloudy nebula sight is about 120.
 waitfor ev_courier_seen == 1 20
 expect ev_courier_handover == 0
 # The contact's comms offer the hand-over. "Not yet" keeps the case, and the line comes back.

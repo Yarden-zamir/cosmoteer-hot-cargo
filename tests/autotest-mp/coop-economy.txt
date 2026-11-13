@@ -110,7 +110,7 @@ on 1 waitfor ev_res_yarden_zamir.sealed_case_gain == 1 30
 mp ev_courier_goto
 wait 3
 mp ev_courier_goto
-waitfor ev_courier_seen == 1 30
+waitfor ev_courier_seen == 1 20
 on 1 ev_comms contact Hand over the sealed case.
 waitfor ev_carrier == 1 20
 on 1 ev_comms carrier Hand it over.

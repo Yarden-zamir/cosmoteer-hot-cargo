@@ -23,8 +23,9 @@ ev_courier_goto
 pause off
 ev_courier_goto
 pause off
+# Check sight at once: the contact drifts on patrol, and in a cloudy nebula sight is about 120.
+waitfor ev_courier_seen == 1 20
 wait 5
 log contact
 expect ev_paused == 0
-waitfor ev_courier_seen == 1 20
 quit

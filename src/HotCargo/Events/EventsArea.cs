@@ -321,8 +321,9 @@ public static class EventsArea
             var sim = RequireSim();
             var contact = CourierContact(sim);
             Log.Info($"AUTOTEST courier contact {contact.Id} live={contact.Live is not null} at {contact.Location}");
-            // Ship sight is short (a small control room sees 400), so the ships stop just outside the contact's hull.
-            float offset = (contact.Live?.WorldBoundingRadius ?? 300f) + 150f;
+            // Ship sight is short (a small control room sees 400), and a cloudy nebula cuts it to 30 % (about 120). The contact can spawn
+            // in one, so the ships stop 40 outside its hull: then it is in sight in every nebula.
+            float offset = (contact.Live?.WorldBoundingRadius ?? 300f) + 40f;
             foreach (var s in sim.Ships.HumanPlayerSignificantShips.ToList())
             {
                 Autotest.Teleport(s, contact.Location + new Halfling.Geometry.Vector2(offset + s.WorldBoundingRadius, 0));
