@@ -5,29 +5,31 @@ waitfor ev_pending == 1 30
 # The event window opens after the run intro closes (GUI only).
 closepanel
 wait 1
-hover 3
+hover 2
 # The host saw the hover.
 waitfor mpmark >= 1 60
 hover off
 waitfor sc_votemode == 1 60
-vote 3
+vote 2
 waitfor sc_decided_reason == 1 60
-expect sc_decided_choice == 3
+expect sc_decided_choice == 2
 # Timeout round.
 waitfor ev_pending == 1 60
 ev_mark
-vote 2
+pick 1 2
+expectoption 1 selected
+vote 1
 waitfor sc_decided_reason == 3 60
-expect sc_decided_choice == 2
+expect sc_decided_choice == 1
 expect ev_tech_gain == -2
 # Force round. A pick in vote mode does nothing; the vote counts.
 waitfor ev_pending == 1 60
-choose 1
+choose 2
 wait 3
 expect ev_pending == 1
-vote 3
+vote 2
 waitfor sc_decided_reason == 4 60
-expect sc_decided_choice == 3
+expect sc_decided_choice == 2
 expect ev_pending == 0
 expect desyncs == 0
 quit

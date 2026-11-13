@@ -4,6 +4,7 @@ newgame run
 wait 8
 # Sell one crate, so the vault has room for the chain's tech reward.
 event the_fence
+pick 1
 choose 1 1
 ev_set Enabled false
 chain_force black_box

@@ -10,26 +10,26 @@ waitfor ev_pending == 1 30
 closepanel
 wait 1
 expectevent the_fence
-# Presence: the client hovers choice 3. It reaches the host through the hover RPC, not through the sim.
+# Presence: the client hovers choice 2. It reaches the host through the hover RPC, not through the sim.
 waitfor sc_hovers >= 1 30
-expect sc_hover_choice == 3
+expect sc_hover_choice == 2
 mp mpmark 1
 waitfor sc_hovers == 0 30
 votemode on
 waitfor sc_votemode == 1 10
 # Unanimous: both vote "Not today".
-vote 3
+vote 2
 waitfor sc_decided_reason == 1 60
-expect sc_decided_choice == 3
+expect sc_decided_choice == 2
 expect ev_pending == 0
-# Timeout: host 3, client 2. A tie after 10 game seconds goes to the lowest choice (2, sell two crates).
+# Timeout: host 2, client 1 with two crates selected (spec 810). A tie after 10 game seconds goes to the lowest choice (1, sell).
 mp sc_set VoteTimeoutSeconds 10
 mp event the_fence
 waitfor ev_pending == 1 10
 ev_mark
-vote 3
+vote 2
 waitfor sc_decided_reason == 3 60
-expect sc_decided_choice == 2
+expect sc_decided_choice == 1
 expect ev_tech_gain == -2
 # Host force: only the client votes; the host decides now.
 mp sc_set VoteTimeoutSeconds 0
@@ -38,7 +38,7 @@ waitfor ev_pending == 1 10
 waitfor sc_votes >= 1 60
 forcevote
 waitfor sc_decided_reason == 4 30
-expect sc_decided_choice == 3
+expect sc_decided_choice == 2
 expect ev_pending == 0
 expect desyncs == 0
 waitfor mpconnected == 0 240

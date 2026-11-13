@@ -3,6 +3,9 @@ mpjoin 127.0.0.1:{PORT}
 mpready
 waitfor ev_pending == 1 30
 expectevent toll_gate
+# The toll is a multiselect page (spec 810): 4 steps of credits make one toll.
+pick 1 4
+expectoption 1 selected
 ev_mark
 choose 1
 waitfor ev_result >= 1 30
