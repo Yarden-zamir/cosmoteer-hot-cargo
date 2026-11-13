@@ -3,7 +3,8 @@ mpjoin 127.0.0.1:{PORT}
 mpready
 waitfor mpmark >= 1 120
 mp rl_guardsnear
-wait 3
+waitfor rl_live >= 1 15
+wait 2
 rl_pick money price
 waitfor rl_picks >= 1 30
 waitfor rl_blocks == 0 90

@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text;
 using Cosmoteer.GalaxyMap;
+using Cosmoteer.Game;
+using Cosmoteer.Simulation;
 using Cosmoteer.Ships;
 using HotCargo.Core;
 using HotCargo.Dev;
@@ -50,13 +52,17 @@ static class RelaysAutotest
         };
         // rl_toguard: single player. Moves the player ship next to the first live guard.
         Autotest.Commands["rl_toguard"] = _ => MoveNear(FirstGuard());
-        // rl_guardsnear: moves every guard next to the acting player's ship. Sim safe, so co-op tests run it under "mp".
+        // rl_guardsnear: moves every guard next to the acting player's ship, also guards in stasis (they wake there).
+        // Sim safe, so co-op tests run it under "mp".
         Autotest.Commands["rl_guardsnear"] = _ =>
         {
             var run = R();
-            var me = Autotest.ActingShip(run.Game.Sim) ?? throw new InvalidOperationException("no acting ship");
-            foreach (var id in RelaysArea.ActiveHere(run)?.Guards ?? [])
-                if (RelaysArea.Guard(run.Game.Sim, id) is { } g) Autotest.Teleport(g, Autotest.ClearSpotNear(run.Game.Sim, me.DetWorldCenter, 900f, g.WorldBoundingRadius));
+            var sim = run.Game.Sim;
+            var me = Autotest.ActingShip(sim) ?? throw new InvalidOperationException("no acting ship");
+            var guards = RelaysArea.ActiveHere(run)?.Guards ?? [];
+            foreach (var id in guards)
+                if (RelaysArea.Guard(sim, id) is { } g) Autotest.Teleport(g, Autotest.ClearSpotNear(sim, me.DetWorldCenter, 900f, g.WorldBoundingRadius));
+            foreach (var s in GuardsInStasis(sim, guards)) s.Location = Autotest.ClearSpotNear(sim, me.DetWorldCenter, 900f, 150f);
         };
         // rl_pay: the shared choice that pays the fee at the nearest fee station.
         Autotest.Commands["rl_pay"] = _ =>
@@ -90,8 +96,10 @@ static class RelaysAutotest
         Autotest.Commands["rl_killguards"] = _ =>
         {
             var run = R();
-            foreach (var id in RelaysArea.ActiveHere(run)?.Guards ?? [])
+            var guards = RelaysArea.ActiveHere(run)?.Guards ?? [];
+            foreach (var id in guards)
                 if (RelaysArea.Guard(run.Game.Sim, id) is { } g) run.Game.Sim.Ships.Remove(g, dispose: true, handleLostShip: false);
+            foreach (var s in GuardsInStasis(run.Game.Sim, guards)) run.Game.Sim.Stasis.RemoveStasisSpawner(s);
         };
         // rl_page: logs the text, rows and buttons of the first guard's page (or the fee station's page).
         Autotest.Commands["rl_page"] = _ =>
@@ -119,7 +127,8 @@ static class RelaysAutotest
         Autotest.Fields["rl_started"] = () => R().State.Relays.Started;
         Autotest.Fields["rl_active"] = () => RelaysArea.ActiveHere(R()) is { } a ? (int)a.Kind : 0;
         Autotest.Fields["rl_blocks"] = () => RelaysArea.Blocks(R()) ? 1 : 0;
-        Autotest.Fields["rl_guards"] = () => RelaysArea.ActiveHere(R())?.Guards.Count(id => RelaysArea.Guard(R().Game.Sim, id) is not null) ?? 0;
+        Autotest.Fields["rl_guards"] = () => RelaysArea.ActiveHere(R()) is { } a ? a.Guards.Count(id => RelaysArea.Holds(R().Game.Sim, a, id)) : 0;
+        Autotest.Fields["rl_live"] = () => RelaysArea.ActiveHere(R())?.Guards.Count(id => RelaysArea.Guard(R().Game.Sim, id) is not null) ?? 0;
         Autotest.Fields["rl_bribefailed"] = () => RelaysArea.ActiveHere(R())?.BribeFailed == true ? 1 : 0;
         Autotest.Fields["rl_picks"] = () => R().State.MultiChoice.Drafts.Where(d => d.Domain == RelayMultiDomain.Name).Sum(d => d.Picks.Count);
         Autotest.Fields["rl_ready"] = () => R().Game.PlayersReadyToJump.Count;
@@ -149,6 +158,9 @@ static class RelaysAutotest
         R().Mode.GetMapNodeText(node, sb);
         return sb.ToString();
     }
+
+    static List<Cosmoteer.Simulation.Stasis.StasisSpawner> GuardsInStasis(SimRoot sim, List<ObjectID> guards) =>
+        sim.Stasis.Where(s => guards.Contains(s.ReservedObjectID)).OrderBy(s => s.ReservedObjectID).ToList();
 
     static Ship FirstGuard()
     {

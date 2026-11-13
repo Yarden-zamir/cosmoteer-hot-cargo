@@ -35,4 +35,6 @@ public sealed class Lockdown
     [Serialize(Optional = true)] public bool GuardsSpawned;
     /// <summary>Spec 959: a bribe failed, so the pirates take no further offer.</summary>
     [Serialize(Optional = true)] public bool BribeFailed;
+    /// <summary>Spec 958: a bribe was taken, so every guard keeps a truce, also one that comes out of stasis later.</summary>
+    [Serialize(Optional = true)] public bool Bribed;
 }

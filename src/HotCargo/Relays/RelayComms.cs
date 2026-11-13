@@ -209,10 +209,9 @@ internal static class Bribes
                 left -= ship.Resources.RemoveResources(Resource(p.Option).ID, left);
             }
         }
-        var career = (CareerSimModeManager)sim.Mode;
-        var anyShip = ships.FirstOrDefault() ?? throw new InvalidOperationException("bribe without a human ship");
-        foreach (var id in a.Guards)
-            if (RelaysArea.Guard(sim, id) is { } g) career.AddTruce(g, anyShip, Halfling.Timing.Time.FromSeconds(3600));
+        if (ships.Count == 0) throw new InvalidOperationException("bribe without a human ship");
+        a.Bribed = true;
+        RelaysArea.TruceGuards(sim, a);
         RelaysArea.Open(run, a, RelaysArea.Text("BribeYes"));
         return true;
     }

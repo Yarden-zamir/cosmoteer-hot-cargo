@@ -24,6 +24,7 @@ dip_fillfuel
 rl_here pirates
 waitfor rl_guards >= 2 10
 rl_guardsnear
+waitfor rl_live >= 1 15
 wait 2
 rl_pick money price
 wait 1

@@ -8,6 +8,9 @@ godmode on
 rl_here pirates
 waitfor rl_guards >= 2 10
 expect rl_blocks == 1
+# The guards spawn at the relay, often in stasis far from the fleet: bring them close first.
+rl_guardsnear
+waitfor rl_live >= 1 15
 rl_toguard
 wait 3
 contract_money 100000
@@ -30,6 +33,9 @@ rl_set BribeUnits 0.01
 dip_fillfuel
 rl_here pirates
 waitfor rl_guards >= 2 10
+# The guards spawn at the relay, often in stasis far from the fleet: bring them close first.
+rl_guardsnear
+waitfor rl_live >= 1 15
 rl_toguard
 wait 3
 expect rl_resources > 0
@@ -57,6 +63,9 @@ ev_set Enabled false
 godmode on
 rl_here pirates
 waitfor rl_guards >= 2 10
+# The guards spawn at the relay, often in stasis far from the fleet: bring them close first.
+rl_guardsnear
+waitfor rl_live >= 1 15
 rl_toguard
 wait 3
 rl_set BribeMinShare 0.99

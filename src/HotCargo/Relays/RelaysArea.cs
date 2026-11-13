@@ -72,7 +72,9 @@ public static class RelaysArea
     {
         if (!run.PressureActive || run.Game.Sim != sim) return;
         Enter(run);
-        if (ActiveHere(run) is { Open: false } a) Update(run, sim, a);
+        if (ActiveHere(run) is not { } a) return;
+        if (!a.Open) Update(run, sim, a);
+        else if (a.Bribed) TruceGuards(sim, a);
     }
 
     /// <summary>Once for each node that the players are in: start or end lockdowns, then roll the neighbours.</summary>
@@ -150,7 +152,7 @@ public static class RelaysArea
             case LockKind.Pirates when !a.GuardsSpawned:
                 SpawnGuards(run, sim, a);
                 break;
-            case LockKind.Pirates when a.Guards.Count > 0 && !a.Guards.Any(id => Guard(sim, id) is not null):
+            case LockKind.Pirates when a.Guards.Count > 0 && !a.Guards.Any(id => Holds(sim, a, id)):
                 Open(run, a, Text("GuardsGone"));
                 break;
         }
@@ -169,6 +171,23 @@ public static class RelaysArea
         var ship = sim.Ships[id];
         if (ship is null || !ship.ExistsInSim(sim) || ship.IsJunk) return null;
         return ((CareerSimModeManager)sim.Mode).GetTruce(ship) is null ? ship : null;
+    }
+
+    /// <summary>
+    /// Spec 957: a guard still holds the relay: live with no truce, or in stasis. The guards spawn at the relay, often far from the fleet,
+    /// so they start in stasis. After a bribe a guard in stasis does not hold: it gets its truce when it comes out.
+    /// </summary>
+    internal static bool Holds(SimRoot sim, Lockdown a, ObjectID id) =>
+        Guard(sim, id) is not null || (!a.Bribed && sim.Stasis.IsObjectIDInStasis(id));
+
+    /// <summary>Spec 958: every live guard without a truce gets one. Runs at the bribe and on each tick after it.</summary>
+    internal static void TruceGuards(SimRoot sim, Lockdown a)
+    {
+        if (a.Guards.Select(id => Guard(sim, id)).OfType<Ship>().ToList() is not { Count: > 0 } open) return;
+        var career = (CareerSimModeManager)sim.Mode;
+        var anyShip = Vaults.HumanShips(sim).OrderBy(s => s.UniqueID).FirstOrDefault();
+        if (anyShip is null) return;
+        foreach (var g in open) career.AddTruce(g, anyShip, Halfling.Timing.Time.FromSeconds(3600));
     }
 
     /// <summary>Spec 957: the guards spawn from mod/relays/guards.rules next to the relay nearest to the fleet. The group count goes through the co-op scaling.</summary>
