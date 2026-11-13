@@ -37,6 +37,12 @@ public sealed class Run
         public static Func<Run, float> NotorietyFactor = _ => 1f;
         /// <summary>Share of the heat that stays after the system switch that runs now (spec 28). The Factions area sets it per jump kind (spec 650).</summary>
         public static Func<Run, float> JumpHeatKept = run => run.T.Heat.HeatCarryOverFraction;
+        /// <summary>True while every heat gain is blocked; losses still apply (spec 921). Set by the Pursuit area: the network outage.</summary>
+        public static Func<Run, bool> HeatGainsBlocked = _ => false;
+        /// <summary>Runs inside AddHeat for each gain that HeatGainsBlocked dropped. Arguments: run, the dropped amount.</summary>
+        public static event Action<Run, float>? HeatGainBlocked;
+        /// <summary>Factor on StrikeWaveIntervalSeconds (spec 30). Set by the Pursuit area: longer early in the run (spec 901).</summary>
+        public static Func<Run, float> StrikeWaveIntervalFactor = _ => 1f;
 
         /// <summary>Runs in each UI frame of the run. UI only: change the sim only through MP inputs or the single-player tunables path.</summary>
         public static event Action<Run>? Frame;
@@ -51,6 +57,7 @@ public sealed class Run
         internal static void RaiseSystemEntered(Run r, bool first) => Each(SystemEntered, h => h(r, first));
         internal static void RaiseNewRunStarted(Run r) => Each(NewRunStarted, h => h(r));
         internal static void RaiseTick(Run r, SimRoot s, double dt) => Each(Tick, h => h(r, s, dt));
+        internal static void RaiseHeatGainBlocked(Run r, float amount) => Each(HeatGainBlocked, h => h(r, amount));
 
         /// <summary>Calls each handler on its own, so a failure in one area does not skip the hooks of the other areas.</summary>
         static void Each<T>(T? hooks, Action<T> call) where T : Delegate
@@ -182,9 +189,17 @@ public sealed class Run
     public float StandardMissionFamePaid(int tier) =>
         GameData.StandardMissionFame(tier) * Mode.EconDifficulty.FameRewardFactor * T.Journey.RewardScale;
 
-    /// <summary>Adds heat and starts any stages it crosses. Call only from simulation logic (or single-player debug keys).</summary>
-    public void AddHeat(float amount, SimRoot sim)
+    /// <summary>
+    /// Adds heat and starts any stages it crosses. Call only from simulation logic (or single-player debug keys).
+    /// A gain is dropped while Hooks.HeatGainsBlocked is true (spec 921), except with ignoreBlock (debug keys and test commands).
+    /// </summary>
+    public void AddHeat(float amount, SimRoot sim, bool ignoreBlock = false)
     {
+        if (amount > 0 && !ignoreBlock && Hooks.HeatGainsBlocked(this))
+        {
+            Hooks.RaiseHeatGainBlocked(this, amount);
+            return;
+        }
         float before = State.Heat;
         State.Heat = HeatModel.Clamp(State.Heat + amount);
         // Spec 19: notoriety sums every real heat gain. It never goes down, so the tech value only ratchets up.
@@ -204,7 +219,7 @@ public sealed class Run
     public void ForceNextStage(SimRoot sim)
     {
         if (State.StagesStarted >= T.Heat.Stages.Length) { Hooks.RaiseStrikeWave(this, sim); return; }
-        AddHeat(Math.Max(0f, T.Heat.Stages[State.StagesStarted].Heat - State.Heat), sim);
+        AddHeat(Math.Max(0f, T.Heat.Stages[State.StagesStarted].Heat - State.Heat), sim, ignoreBlock: true);
     }
 
     bool AtStrike => T.Heat.Stages.Length > 0 && State.StagesStarted == T.Heat.Stages.Length && State.Heat >= HeatModel.MaxHeat;
@@ -216,7 +231,7 @@ public sealed class Run
     {
         if (!AtStrike) { State.SecondsSinceStrikeWave = 0; return; }
         State.SecondsSinceStrikeWave += dt;
-        if (State.SecondsSinceStrikeWave < T.Hunters.StrikeWaveIntervalSeconds) return;
+        if (State.SecondsSinceStrikeWave < T.Hunters.StrikeWaveIntervalSeconds * Hooks.StrikeWaveIntervalFactor(this)) return;
         State.SecondsSinceStrikeWave = 0;
         Log.Info("strike wave");
         Hooks.RaiseStrikeWave(this, sim);

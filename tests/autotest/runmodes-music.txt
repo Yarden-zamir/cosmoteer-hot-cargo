@@ -1,6 +1,7 @@
 # Run modes, Strike music (spec 688). The battle layers play only at the last heat stage. The log names the playing track.
 newgame run
 wait 8
+pu_set Enabled false
 ev_set Enabled false
 godmode on
 expect musicbattle >= 0

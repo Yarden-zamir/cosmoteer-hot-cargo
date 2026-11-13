@@ -1,6 +1,7 @@
 using Cosmoteer;
 using Cosmoteer.Data;
 using Cosmoteer.Factions;
+using Cosmoteer.Game;
 using Cosmoteer.Generators.Simulation;
 using Cosmoteer.Modes.Career;
 using Cosmoteer.Ships;
@@ -22,6 +23,18 @@ public static class HunterSpawner
 {
     public const string AiId = "HotCargoHunter";
     public static readonly ID<SimObjectSpawner> HunterTag = new("hc_hunter");
+
+    /// <summary>
+    /// Spec 901, 902: changes the ship count of a stage response before the difficulty factors. Set by the Pursuit area.
+    /// Sim logic: it may roll sim.Rand. Arguments: run, sim, ships.
+    /// </summary>
+    public static Func<Run, SimRoot, int, int> ScaleShips = (_, _, ships) => ships;
+
+    /// <summary>
+    /// The ships of the last group that SpawnWave spawned, in spawn order. Set inside the sim tick, so a Run.Hooks.StageStarted handler
+    /// that runs after this area's handler reads the same list on every machine. Not saved.
+    /// </summary>
+    public static IReadOnlyList<ObjectID> LastSpawned { get; private set; } = [];
 
     /// <summary>Waves spawned since game start. For autotest fields only; not sim state.</summary>
     public static int WavesSpawned { get; private set; }
@@ -98,11 +111,12 @@ public static class HunterSpawner
             ? Math.Max(run.CurrentTier, route)
             : run.CurrentTier;
 
-    /// <summary>Ships and tier of a stage response at the current run progress. Spec 682: the difficulty factors. Spec 305: the route tier floor.</summary>
-    static (int Ships, int Tier) Plan(Run run, StageResponse r)
+    /// <summary>Ships and tier of a stage response at the current run progress. ScaleShips (the Pursuit factors) first, then
+    /// the difficulty factors (spec 682). Spec 305: the route tier floor.</summary>
+    static (int Ships, int Tier) Plan(Run run, SimRoot sim, StageResponse r)
     {
         float progress = WaveModel.Progress(run.State.SectorIndex, run.T.Journey.RunSectorCount);
-        int ships = run.Pressure().Ships(WaveModel.ShipCount(r.ShipCount, r.EarlyScale, progress));
+        int ships = run.Pressure().Ships(ScaleShips(run, sim, WaveModel.ShipCount(r.ShipCount, r.EarlyScale, progress)));
         int tier = BaseTier(run) + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + RunModes.Difficulty.ExtraHunterTiers(run);
         return (ships, tier);
     }
@@ -120,7 +134,7 @@ public static class HunterSpawner
         {
             var waves = stage.ToList();
             if (run.T.Hunters.Stages.FirstOrDefault(s => s.Name == stage.Key) is not { } r) { replanned.AddRange(waves); continue; }
-            var (ships, tier) = Plan(run, r);
+            var (ships, tier) = Plan(run, run.Game.Sim, r);
             int[] groups = WaveModel.SplitWaves(ships, r.Waves);
             for (int j = 0; j < waves.Count; j++)
             {
@@ -141,7 +155,7 @@ public static class HunterSpawner
     {
         if (sim != run.Game.Sim) return;
         var r = Response(run, stageName);
-        var (ships, tier) = Plan(run, r);
+        var (ships, tier) = Plan(run, sim, r);
         int[] groups = WaveModel.SplitWaves(ships, r.Waves);
         var later = Enumerable.Range(1, groups.Length - 1).Select(i => new PendingWave
         {
@@ -158,6 +172,7 @@ public static class HunterSpawner
     internal static void SpawnWave(Run run, SimRoot sim, int wanted, int tier, string stageName, bool firstOfStage)
     {
         string reason = $"stage {stageName}";
+        LastSpawned = [];
         if (sim != run.Game.Sim) return;
         if (sim.Mode is not CareerSimModeManager career) throw new InvalidOperationException("hunters need a career simulation");
         var t = run.T.Hunters;
@@ -175,6 +190,7 @@ public static class HunterSpawner
         int maxLive = Scaling.EnemyScale.Cap(t.MaxLiveHunters, sim);
         int count = Math.Min(scaled, Math.Max(0, maxLive - Hunters(sim).Count()));
         if (count < scaled) Log.Info($"hunters: {reason} capped at {count} of {scaled} ships by MaxLiveHunters {maxLive}");
+        var spawnedIds = new List<ObjectID>(count);
         for (int i = 0; i < count; i++)
         {
             var ship = PickShip(sim, t, tier);
@@ -192,9 +208,11 @@ public static class HunterSpawner
             _ = spawned.Renderer.AnimateFtlJumpIn(spawned.WorldFlightDirection);
             Dev.Invariants.HunterSpawned(spawned);
             int fuel = EnsureFuel(run, spawned, t.MinFuel);
+            spawnedIds.Add(spawned.UniqueID);
             Log.Info($"hunters: {reason} spawned {spawned.Metadata.PlainShipName} tier {ship.SpawnTier ?? ship.Tier} " +
                      $"(wanted {tier}) at {loc.DistanceTo(in fleetCenter):0} from the fleet, player index {allegiance}, fuel {fuel}");
         }
+        LastSpawned = spawnedIds;
         WavesSpawned++;
         ShowAlert(run, firstOfStage ? Ux.UxKit.StageText(stageName) : Ux.UxKit.Text("StageGeneric"));
     }

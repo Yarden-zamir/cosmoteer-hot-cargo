@@ -1,0 +1,35 @@
+# Hacker (spec 930 to 934): the proxy hails, offers an outage for half a ship's value, the paid outage is not a natural one, then he leaves.
+# Ironman: a career without Ironman allows debt (vanilla AllowDebt), so only Ironman turns the pay button off without the money.
+rm_ironman_newgame pursuit_hacker
+wait 8
+ev_set Enabled false
+godmode on
+pu_set ScoutChance 0
+pu_set BlockadeChance 0
+pu_hacker
+wait 1
+expect pu_hacker == 1
+expect pu_count_hacker == 1
+expect pu_hacker_price == 30000
+pu_hacker_near 400
+wait 3
+# Without the money the pay button is off.
+pu_setmoney 1000
+pu_hacker_page
+expect pu_hacker_buttons == 1
+pu_setmoney 50000
+pu_hacker_page
+expect pu_hacker_buttons == 2
+pu_hacker_open
+wait 2
+dip_close
+pu_money
+pu_hacker_pick pay
+wait 2
+expect pu_moneyspent == 30000
+expect pu_outage >= 230
+expect pu_count_outage == 0
+expect pu_hacker_done == 1
+waitfor pu_hacker == 0 20
+log end
+quit

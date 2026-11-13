@@ -1,6 +1,7 @@
 # Events in ship comms (spec 767-771): a ship hails and carries the page, players hail first (Hot Cargo lines), attacking the ship.
 newgame run
 wait 8
+pu_set Enabled false
 ev_set StationEventChance 0
 ev_set CourierChance 0
 ev_set CooldownSeconds 0
