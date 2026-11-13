@@ -20,6 +20,11 @@
 	ToAdd = &<missions/mechanics/helion_ore.rules>
 }
 {
+	Action = Add
+	AddTo = "<resources/resources.rules>/Resources"
+	ToAdd = &<missions/mechanics/prototype_core_cargo.rules>
+}
+{
 	Action = AddMany
 	AddTo = "<ships/asteroid/asteroid.rules>/Asteroid/Parts"
 	ManyToAdd

@@ -31,6 +31,24 @@ internal sealed class EventsChoiceDomain : ISharedChoiceDomain
     public static SharedChoiceInput Pick(int serial, int choice) => new(Name, serial, SharedChoiceAction.Choose, choice);
 }
 
+/// <summary>
+/// Page options as a multiselect domain (spec 810): the options of the pending page while it is open, else closed. Each option's
+/// value is its slider steps. Submit choices read the draft (EventRunner.Picks).
+/// </summary>
+internal sealed class EventsMultiDomain : MultiChoice.IMultiChoiceDomain
+{
+    public const string Name = "events";
+    public static readonly EventsMultiDomain Instance = new();
+
+    string MultiChoice.IMultiChoiceDomain.Name => Name;
+
+    public IReadOnlyList<MultiChoice.MultiOption>? Options(Run run, int serial)
+    {
+        if (run.State.Result != RunResult.Running || run.State.Events.Pending is not { } p || p.Serial != serial) return null;
+        return [.. EventLibrary.Get(p.EventId).Options.Select((o, i) => new MultiChoice.MultiOption(i, o.MinSteps, o.MaxSteps, 1))];
+    }
+}
+
 /// <summary>Frame hook for the event dialog. UI only: it reads sim state and sends inputs, but never changes the sim.</summary>
 [HarmonyPatch(typeof(CareerGameModeManager), nameof(CareerGameModeManager.Update))]
 static class EventFramePatch

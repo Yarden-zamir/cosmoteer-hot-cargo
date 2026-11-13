@@ -1,0 +1,41 @@
+# Hunters never join the players (playtest 2026-11-13, spec 33, 1002, 1003). The players take over a hunter ship, then new
+# hunters arrive: none of them has a human index, and all are enemies of the players. A wave that arrives while the other hunters
+# wait in stasis joins their side.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+spawnstage Warning
+wait 1
+expect hunters == 1
+takehunters
+wait 1
+expect hunterstaken == 1
+# Before the fix, these hunters copied the index of the taken ship and joined the players' fleet.
+spawnstage Hunt
+wait 1
+hunters after-takeover
+expect hunters >= 1
+expect huntersjoined == 0
+expect hunterindices == 1
+expect huntershostile == 1
+# The hunters leave the live area. The next wave takes their index.
+stasishunters
+wait 1
+expect hunters == 0
+expect hunterstasis >= 1
+spawnstage Warning
+wait 1
+hunters after-stasis
+expect hunters >= 1
+expect huntersides == 1
+expect huntershostile == 1
+expect huntersjoined == 0
+save takeover
+wait 3
+load takeover
+wait 2
+expect huntersides == 1
+expect huntersjoined == 0
+expect huntershostile == 1
+quit

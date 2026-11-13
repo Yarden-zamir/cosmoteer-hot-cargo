@@ -145,6 +145,12 @@ wait 5
 expect worlds_flow_speed > 2
 on 1 expect worlds_ship_in_current > 0.5
 on 1 expect worlds_flow_speed > 2
+# A crate dropped in the current floats with it on both machines (the item push is sim state, in the integrity hash).
+mp tech_set LossGraceSeconds 600
+mp tech drop 1
+wait 6
+expect worlds_item_flow_speed > 5
+on 1 expect worlds_item_flow_speed > 5
 
 step tech.coop-count
 # Spec 65, 442, 449, in a new run: each player holds a different amount, a vault is destroyed, the client's ship becomes a

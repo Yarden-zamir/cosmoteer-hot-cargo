@@ -33,6 +33,61 @@ public class WorldsModelTests
     }
 
     [Fact]
+    public void Outward_points_across_the_flow_to_the_nearer_side()
+    {
+        // Flow east: the band sides are north (-Y) and south (+Y).
+        Assert.Equal((0f, 1f), WorldsModel.Outward(1f, 0f, 500f, 300f));
+        Assert.Equal((0f, -1f), WorldsModel.Outward(1f, 0f, -500f, -300f));
+        var (x, y) = WorldsModel.Outward(1f, 0f, 700f, 0f);
+        Assert.Equal(1f, MathF.Abs(y)); // on the axis: still a side, never zero
+        Assert.Equal(0f, x);
+    }
+
+    [Fact]
+    public void Push_holds_at_the_drift_velocity_and_never_brakes()
+    {
+        (float X, float Y) flow = (1f, 0f), outward = (0f, 1f);
+        var (ax, ay) = WorldsModel.Push(0f, 0f, flow, outward, 45f, 9f, 0.5f, 1f);
+        Assert.Equal(9f, ax, 4);
+        Assert.Equal(4.5f, ay, 4);
+        var (sx, sy) = WorldsModel.Push(45f, 45f * 0.5f, flow, outward, 45f, 9f, 0.5f, 1f);
+        Assert.Equal(0f, sx, 4);
+        Assert.Equal(0f, sy, 4);
+        Assert.Equal((0f, 0f), WorldsModel.Push(80f, 30f, flow, outward, 45f, 9f, 0.5f, 1f));
+        Assert.Equal(0f, WorldsModel.Push(0f, 0f, flow, outward, 45f, 9f, 0f, 1f).Y); // no side share: no side push
+        Assert.Equal((0f, 0f), WorldsModel.ItemPush(20f, 5f, flow, outward, 45f, 9f, 0.5f, 0f, 0.5f)); // outside the cloud: vanilla drag only
+    }
+
+    /// <summary>
+    /// A ship (no drag, Push) and a loose item (the vanilla nugget drag of Nugget.FixedUpdateDynamic, ItemPush) that only drift,
+    /// from the center of a 6000 × 2400 band on its axis, leave it at the near side, before the end, in bounded time.
+    /// The cloud strength fades to 0.05 near the side, like the soft cloud edge.
+    /// </summary>
+    [Theory]
+    [InlineData(0f)]
+    [InlineData(0.5f)]
+    public void Push_drives_a_drifting_object_out_at_the_near_side(float damping)
+    {
+        bool item = damping > 0f;
+        (float X, float Y) flow = (1f, 0f);
+        const float halfLength = 3000f, halfWidth = 1200f, dt = 0.05f;
+        float px = 0f, py = 0f, vx = 0f, vy = 0f, t = 0f;
+        while (MathF.Abs(px) < halfLength && MathF.Abs(py) < halfWidth)
+        {
+            var outward = WorldsModel.Outward(flow.X, flow.Y, px, py);
+            float strength = MathF.Abs(py) < halfWidth - 300f ? 1f : 0.05f;
+            var (ax, ay) = item
+                ? WorldsModel.ItemPush(vx, vy, flow, outward, 45f, 9f, 0.5f, strength, damping)
+                : WorldsModel.Push(vx, vy, flow, outward, 45f, 9f, 0.5f, strength);
+            vx += ax * dt - vx * damping * dt;
+            vy += ay * dt - vy * damping * dt;
+            px += vx * dt; py += vy * dt; t += dt;
+            Assert.True(t < 120f, $"a drifting object leaves the band (at {px:0}, {py:0} after {t:0} s)");
+        }
+        Assert.True(MathF.Abs(py) >= halfWidth, $"it leaves at the side, not the end (at {px:0}, {py:0} after {t:0} s)");
+    }
+
+    [Fact]
     public void Heat_depth_runs_from_the_edge_to_the_kill_radius()
     {
         Assert.Equal(0f, WorldsModel.HeatDepth(5000f, 1500f, 3750f));

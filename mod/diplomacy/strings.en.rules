@@ -79,8 +79,8 @@ HotCargoDiplomacy
 	HireFleeFmt = "<b>{0}:</b> <i>\"Too hot for us! We're out.\"</i>"
 
 	// Ship marker labels
-	LabelHoldsFmt = "<fame_color>HOLDS {0} TECH</fame_color>"
-	LabelHiredFmt = "<fame_color>HIRED {0}</fame_color>"
-	LabelQuitting = "<limited_color>QUITTING</limited_color>"
-	LabelMerc = "<gray>MERCENARY</gray>"
+	LabelHoldsFmt = "<fame_color><image name='hc_marker_held' colored='true'/> HOLDS {0} TECH</fame_color>"
+	LabelHiredFmt = "<fame_color><image name='hc_marker_hired' colored='true'/> HIRED {0}</fame_color>"
+	LabelQuitting = "<limited_color><image name='hc_marker_hired' colored='true'/> QUITTING</limited_color>"
+	LabelMerc = "<gray><image name='hc_marker_hired' colored='true'/> MERCENARY</gray>"
 }

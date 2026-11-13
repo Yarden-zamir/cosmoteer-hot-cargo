@@ -1,0 +1,80 @@
+// Tracer Beacon (spec 1116): it adds heat each minute while it is in a player ship. "Space it" destroys it; so does a hit on its storage.
+// Sprites are the vanilla processor sprites with a tint.
+ID = yarden_zamir.tracer_beacon
+NameKey = "HotCargoItems/TracerBeacon"
+PluralNameKey = "HotCargoItems/TracerBeaconPlural"
+DescriptionKey = "HotCargoItems/TracerBeaconDesc"
+// Never traded at a station; 1, not 0, because some vanilla code divides by it.
+BuyPrice = 1
+MaxPerNugget = 1
+MaxStackSize = 1
+// Shares the processor key, so storage parts get no extra supply job.
+FlexGridPriorityKey = "flex_grid_processor"
+FlexGridDefaultPriority = 1
+// A hit on its storage always destroys the beacon (drop rate 0).
+DropRates
+{
+	StorageDestroyed = 0%
+	StorageSalvaged = 100%
+	CrewKilled = 100%
+}
+Rarity = Unique
+
+TINT = [255, 60, 200]
+
+Icon
+{
+	Texture
+	{
+		File = "./Data/resources/processor/icon.png"
+		MipLevels = max
+	}
+	Size = [64, 64]
+	VertexColor = &~/TINT
+}
+
+Overlay
+{
+	Texture
+	{
+		File = "./Data/resources/processor/overlay.png"
+		SampleMode = Linear
+		MipLevels = max
+	}
+	Size = [1, 1]
+	VertexColor = &~/TINT
+}
+
+NuggetSprite
+{
+	File = "./Data/resources/processor/processor.png"
+	NormalsFile = "./Data/resources/processor/processor_normals.png"
+	Size = [1, 1]
+	Offset = [.25+6/64, 0]
+	UVRotation = 1
+	VertexColor = &~/TINT
+}
+
+StackSprites
+[
+	{
+		File = "./Data/resources/processor/processor_stack_1.png"
+		Size = [1, 1]
+		VertexColor = &~/TINT
+	}
+]
+
+StackReceiveMediaEffects = &/COMMON_EFFECTS/ProcessorDeliver
+StackPickupMediaEffects = &/COMMON_EFFECTS/ProcessorPickup
+NuggetPickupMediaEffects = &/COMMON_EFFECTS/NuggetPickup
+
+// Spec 1116: the way to dump the beacon.
+HotCargoActions
+[
+	{
+		ID = space
+		NameKey = "HotCargoItems/SpaceTracer"
+		ToolTipKey = "HotCargoItems/SpaceTracerTip"
+		MessageKey = "HotCargoItems/SpacedTracerFmt"
+	}
+]

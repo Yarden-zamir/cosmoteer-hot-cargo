@@ -5,7 +5,7 @@ closepanel
 expect runlog_sector == 1
 # An event choice.
 event the_fence
-choose 3 1
+choose 2 1
 expect runlog_event == 1
 ev_set Enabled false
 # A new sector. Jump before any fight; combat blocks the jump.

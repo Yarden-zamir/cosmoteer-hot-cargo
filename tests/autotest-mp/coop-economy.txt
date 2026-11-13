@@ -1,4 +1,4 @@
-# Co-op session: events (who pays, late clicks, money split), comms, research trade, shared choices, contracts, factions prices,
+# Co-op session: events (who pays, late clicks, money split), comms, research trade, shared choices, contracts, factions prices and peace,
 # wanted, trade and loss. See coop-core.txt for "client:", "as 1", "on 1" and steps.
 # Events stay on until events.wanted (its trigger needs them). A run has no start event (#22): steps open named events.
 mphost {PORT}
@@ -15,6 +15,9 @@ waitfor ev_pending == 1 10
 expectevent toll_gate
 ev_mark
 on 1 ev_mark
+# The toll is a page option (spec 810): 4 steps of credits make one toll. The client's draft is shared, so the host sees it.
+on 1 pick 1 4
+expectoption 1 selected
 as 1 choose 1
 waitfor ev_answered == 1 30
 expect ev_money_gain == 0
@@ -40,7 +43,9 @@ mp event clean_record
 wait 2
 expectevent clean_record
 ev_mark
-as 1 choose 2
+# The crate is a page option (spec 810): the client selects it in the shared draft, then submits.
+on 1 pick 2
+as 1 choose 1
 waitfor ev_wanted == 0 30
 expect ev_pending == 0
 expect ev_tech_gain == -1
@@ -51,12 +56,29 @@ mp event the_fence
 waitfor ev_pending == 1 10
 ev_mark
 on 1 ev_mark
+pick 1
+expectoption 1 selected
 choose 1
 waitfor ev_answered == 1 30
 expect ev_tech_gain == -1
 expect ev_money_gain > 0
 on 1 expect ev_money_gain > 0
 on 1 expect ev_pending == 0
+
+step events.options-draft
+# Spec 810, 592: the client selects two crates on the Fence page, the host sees the same shared draft and submits it,
+# and both machines sell the same two crates. The two crates come first, so the later steps keep their tech.
+mp tech add 2
+mp event the_fence
+waitfor ev_pending == 1 10
+ev_mark
+on 1 ev_mark
+on 1 pick 1 2
+expectoption 1 selected
+choose 1
+waitfor ev_answered == 1 30
+expect ev_tech_gain == -2
+on 1 expect ev_tech_gain == -2
 
 step events.hail
 # Spec 771: a freighter carries the page. The client chooses in its comms window; the host's late click on the same page does nothing.
@@ -84,12 +106,57 @@ ev_open station
 ev_click station Sell a crate off the books
 expectevent off_books
 ev_mark
-ev_click station Sell one crate
+pick 1
+expectoption 1 selected
+ev_click station Sell the crates
 waitfor ev_pending == 0 20
 expect ev_tech_gain == -1
 expect ev_money_gain > 0
 mp ev_set Enabled false
 on 1 waitfor ev_tech_gain == -1 30
+
+step events.courier
+# Spec 1100 to 1104: the host accepts a Courier Job and both machines see the sealed case in the host's hold. The client hands it
+# over in the contact's comms; the case leaves the hold on both machines. Hand-over lines work with random events off.
+mp ev_set StationEventChance 0
+mp ev_set ArrivalEventChance 0
+mp ev_tostation
+wait 3
+mp ev_courier_offer
+waitfor ev_courier_offers >= 1 20
+ev_mark
+on 1 ev_mark
+ev_courier_accept
+waitfor ev_courier_handover == 0 20
+expect ev_res_yarden_zamir.sealed_case_gain == 1
+on 1 waitfor ev_res_yarden_zamir.sealed_case_gain == 1 30
+# The first teleport loads the contact out of stasis, the second one puts the ships next to its live position.
+mp ev_courier_goto
+wait 3
+mp ev_courier_goto
+waitfor ev_courier_seen == 1 20
+on 1 ev_comms contact Hand over the case.
+waitfor ev_carrier == 1 20
+on 1 ev_comms carrier Hand over the sealed case.
+waitfor ev_courier_handover == 1 30
+expect ev_res_yarden_zamir.sealed_case_gain == 0
+on 1 waitfor ev_res_yarden_zamir.sealed_case_gain == 0 30
+
+step items.open-case
+# Spec 1111 to 1115: the client opens a sealed case in its own hold with the item action (a real MP input from its machine).
+# Both machines see the opened case and the codes (forced on both).
+mp item_force 1
+ev_mark
+on 1 ev_mark
+as 1 item_give yarden_zamir.sealed_case
+waitfor ev_res_yarden_zamir.sealed_case_gain == 1 20
+on 1 waitfor ev_res_yarden_zamir.sealed_case_gain == 1 30
+on 1 item_action yarden_zamir.sealed_case open
+waitfor ev_res_yarden_zamir.access_codes_gain == 1 30
+expect ev_res_yarden_zamir.opened_case_gain == 1
+expect ev_res_yarden_zamir.sealed_case_gain == 0
+on 1 waitfor ev_res_yarden_zamir.access_codes_gain == 1 30
+on 1 waitfor ev_res_yarden_zamir.opened_case_gain == 1 30
 
 step events.research-trade
 # Spec 760 to 763: the offer is built the same on both machines, the client trades from its own machine, the techs unlock on both.
@@ -106,14 +173,14 @@ expect ev_researched_gain >= 1
 on 1 expect ev_researched_gain >= 1
 
 step sharedchoice.hover
-# Spec 600 and later. Presence: the client hovers choice 3. It reaches the host through the hover RPC, not through the sim.
+# Spec 600 and later. Presence: the client hovers choice 2. It reaches the host through the hover RPC, not through the sim.
 # The fence needs 2 tech; earlier steps spent some.
 mp tech add 4
 mp event the_fence
 waitfor ev_pending == 1 10
-on 1 hover 3
+on 1 hover 2
 waitfor sc_hovers >= 1 30
-expect sc_hover_choice == 3
+expect sc_hover_choice == 2
 on 1 hover off
 waitfor sc_hovers == 0 30
 
@@ -122,24 +189,27 @@ step sharedchoice.unanimous
 mp sc_reset
 votemode on
 waitfor sc_votemode == 1 10
-vote 3
-as 1 vote 3
-@3p as 2 vote 3
+vote 2
+as 1 vote 2
+@3p as 2 vote 2
 waitfor sc_decided_reason == 1 60
-expect sc_decided_choice == 3
+expect sc_decided_choice == 2
 expect ev_pending == 0
 
 step sharedchoice.timeout
-# Host 3, client 2 (a second client does not vote). A tie after 10 game seconds goes to the lowest choice (2, sell two crates).
+# Host 2, client 1 with two crates selected (spec 810); a second client does not vote. A tie after 10 game seconds goes to
+# the lowest choice (1, sell).
 mp sc_reset
 mp sc_set VoteTimeoutSeconds 10
 mp event the_fence
 waitfor ev_pending == 1 10
 ev_mark
-vote 3
-as 1 vote 2
+on 1 pick 1 2
+expectoption 1 selected
+vote 2
+as 1 vote 1
 waitfor sc_decided_reason == 3 60
-expect sc_decided_choice == 2
+expect sc_decided_choice == 1
 expect ev_tech_gain == -2
 
 step sharedchoice.force
@@ -148,14 +218,14 @@ mp sc_reset
 mp sc_set VoteTimeoutSeconds 0
 mp event the_fence
 waitfor ev_pending == 1 10
-on 1 choose 1
+on 1 choose 2
 on 1 wait 3
 expect ev_pending == 1
-as 1 vote 3
+as 1 vote 2
 waitfor sc_votes >= 1 60
 forcevote
 waitfor sc_decided_reason == 4 30
-expect sc_decided_choice == 3
+expect sc_decided_choice == 2
 expect ev_pending == 0
 votemode off
 waitfor sc_votemode == 0 10
@@ -207,6 +277,23 @@ on 1 fa_blind on
 waitfor fa_blind == 1 30
 on 1 fa_blind off
 waitfor fa_blind == 0 30
+
+step factions.peace
+# Spec 1150: the enemy check reads sim state only, so the peace in ally space runs the same on both machines. The controller's
+# ships fought the hunters of factions.prices in neutral space; now that faction is the ally, and both sides drop those fights.
+mp fa_roles here other
+waitfor fa_zone == 1 30
+on 1 waitfor fa_zone == 1 30
+waitfor hunters >= 1 60
+mp hunternear 0 600
+mp dip_spawn ally 400
+mp fa_peace_watch ally
+wait 20
+expect hunters >= 1
+expect fa_peace_allyhits == 0
+expect fa_peace_hunterhits == 0
+on 1 expect fa_peace_allyhits == 0
+on 1 expect fa_peace_hunterhits == 0
 
 step tech.trade-loss
 # Spec 17, 443, 1011: a new run. Each player's starter ship has 4 vaults and a share of the tech (4 + 4, or 3 + 3 + 2 with

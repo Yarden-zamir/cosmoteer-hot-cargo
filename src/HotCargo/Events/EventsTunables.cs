@@ -17,6 +17,8 @@ public sealed class EventsTunables
     [Serialize(Optional = true)] public float StationTriggerDistance = 1500f;
     /// <summary>Chance, once per system for the run, that the first trade station a player ship comes near offers a Courier Job.</summary>
     [Serialize(Optional = true)] public float CourierChance = 0.5f;
+    /// <summary>Heat that each Tracer Beacon in a player ship adds once a minute (spec 1116).</summary>
+    [Serialize(Optional = true)] public float TracerHeatPerMinute = 3f;
     [Serialize(Optional = true)] public float SignalTriggerDistance = 900f;
     /// <summary>Arrival and Station events wait this many game seconds after the last triggered event. A new run starts it. Signal events ignore it but start it.</summary>
     [Serialize(Optional = true)] public float CooldownSeconds = 120f;
