@@ -52,8 +52,8 @@ Checked and true to the text: Convoy Duty, Joint Strike, Drone Siege, Sunside Or
 - Hand it to the station's broker in comms. The navigator keeps a copy, so the Playback page sells or uses the copy.
 
 ### 4. Prototype Retrieval (P2)
-- The lift puts a `Prototype Core` item into the lifting ship's storage (the part already exists as rules; add a resource of the same name). No room: the lift waits.
-- Deliver it at the broker station. A destroyed storage drops it; the mission fails if it is destroyed or left behind when the players jump.
+- The lift puts a Prototype Core item (`yarden_zamir.prototype_core_cargo`) into the nearest player ship with room. No room: the lift waits.
+- Hand it to the broker in the station's comms; haggling is the small risk. A lost core fails the mission.
 
 ### 5. Repossession (P2)
 - After the capture, bring the freighter within 800 of the station (the Salvage Rights tow check). The station takes the ship.
@@ -82,5 +82,6 @@ Checked and true to the text: Convoy Duty, Joint Strike, Drone Siege, Sunside Or
 | 1 | Fixed: `events-courier-handover`, `events-courier-lost`, co-op `courier` |
 | 2 | Fixed: `chains-extraction` |
 | 3 | Fixed: `chains-blackbox` |
-| 4-12 | Open |
+| 4 | Fixed: `mechanics-prototype` |
+| 5-12 | Open |
 | 13 | Checked, no change |

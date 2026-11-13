@@ -942,6 +942,39 @@ Events
 		]
 	}
 
+	// Prototype Retrieval hand-over (spec 1108): the broker at the station takes the core. Haggling risks a tip-off.
+	{
+		ID = prototype_broker
+		Trigger = Hail
+		HailTarget = Contact
+		HailLine = "Hand over the prototype core."
+		MaxPerRun = 0
+		Need { Resources = [{ ID = yarden_zamir.prototype_core_cargo; Amount = 1 }] }
+		Title = "Prototype Retrieval: The Broker"
+		Text = "The broker runs a scanner over the core twice. \"Intact. Good. My client will be pleased.\""
+		Choices
+		[
+			{
+				Text = "Hand it over."
+				Cost { Resources = [{ ID = yarden_zamir.prototype_core_cargo; Amount = 1 }] }
+				Outcomes [ { Text = "The core goes into a shielded crate. Your pay waits at the station."; HandOver = true } ]
+			}
+			{
+				Text = "Haggle. The core is worth more than that."
+				Cost { Resources = [{ ID = yarden_zamir.prototype_core_cargo; Amount = 1 }] }
+				Outcomes
+				[
+					{ Weight = 50; Text = "The broker sighs and adds to the price."; Money = 0.5; HandOver = true }
+					{ Weight = 50; WeightPerHeat = 0.2; Text = "The broker pays, then sells your hull number to the corporation for the difference."; Heat = 10; HandOver = true }
+				]
+			}
+			{
+				Text = "Not yet."
+				Outcomes [ { Text = "\"Don't take it far.\"" } ]
+			}
+		]
+	}
+
 	// ---- Station
 
 	{

@@ -188,6 +188,15 @@ Prototype
 									CarrierTag = { Mode=Latest; Tag=hc_proto_carrier; }
 									AreaTag = { Mode=Latest; Tag=hc_proto_area; }
 									RecoverRange = 400
+									CargoResource = yarden_zamir.prototype_core_cargo
+								}
+								// Hand the core to the broker in the station's comms (events.rules, prototype_broker).
+								{
+									Type = HotCargoHandOver
+									ResourceType = yarden_zamir.prototype_core_cargo
+									GiveOnAccept = false
+									ContactShipTag = { Mode=Nearest; Tag=trade_station; }
+									Page = prototype_broker
 								}
 								{
 									Type = ReceiveRewards

@@ -240,6 +240,13 @@ public static class EventsArea
             if (target == default) throw new InvalidOperationException($"no ship tagged {arg}");
             MoveNextTo(RequireSim(), target.Location, target.Live?.WorldBoundingRadius + 150f ?? 600f);
         };
+        // ev_contact_goto: moves the fleet next to the contact of the first open hand-over (live or in stasis). Test only.
+        Autotest.Commands["ev_contact_goto"] = _ =>
+        {
+            var h = OpenHandOvers().FirstOrDefault() ?? throw new InvalidOperationException("no open hand-over");
+            var at = h.Contact.Location ?? throw new InvalidOperationException("the hand-over contact is not in this system");
+            MoveNextTo(RequireSim(), at, h.Contact.TargetShip?.WorldBoundingRadius + 300f ?? 1200f);
+        };
         // ev_take <tag> <resource>: moves the resource out of the live tagged ship's storage into the fleet, as crew carrying
         // salvage would. Fails when the ship holds none. Test only.
         Autotest.Commands["ev_take"] = arg =>

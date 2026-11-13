@@ -32,6 +32,8 @@ HotCargoMechanics
 
 	PrototypeCore = "Prototype Core"
 	PrototypeCoreIcon = "Prototype Core"
+	PrototypeCorePlural = "Prototype Cores"
+	CoreNoRoom = "<bad>No free storage for the core. Make room to lift it.</bad>"
 	PrototypeCoreDesc = "A sealed corporate prototype. It does nothing for you, but someone pays well to get it back intact."
 	HelionOre = "Helion Ore"
 	HelionOrePlural = "Helion Ore"

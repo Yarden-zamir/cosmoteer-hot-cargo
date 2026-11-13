@@ -8,7 +8,7 @@ DescriptionKey = "HotCargoEventMissions/SealedCaseDesc"
 BuyPrice = 1
 MaxPerNugget = 1
 MaxStackSize = 1
-// Shares the processor key, so storage parts get no extra "Supply Sealed Case" job.
+// Shares the processor key, so storage parts get no extra supply job.
 FlexGridPriorityKey = "flex_grid_processor"
 FlexGridDefaultPriority = 1
 // A hit on its storage destroys the case half of the time; otherwise it drifts loose and the crew can pick it up.

@@ -8,6 +8,7 @@ using Cosmoteer.Localization;
 using Cosmoteer.Modes.Career;
 using Cosmoteer.Modes.Career.Missions;
 using Cosmoteer.Modes.Career.Missions.Objectives;
+using Cosmoteer.Resources;
 using Cosmoteer.Ships;
 using Cosmoteer.Ships.Parts;
 using Cosmoteer.Simulation;
@@ -26,7 +27,8 @@ namespace HotCargo.Missions.Mechanics;
 /// Rules type "HotCargoPrototype" (spec 133): a pirate ship carries a Prototype Core part. Recover it intact.
 /// The core goes onto the carrier's hull the first time the carrier is live after the players accept (ships in stasis have no parts).
 /// Recovered: the ship that holds the core surrenders to the players (they hand the core over at once), or it is a wreck or a
-/// player ship and a human ship is within RecoverRange of the core. The crew then lift the core out (the part goes away).
+/// player ship and a human ship is within RecoverRange of the core. The crew then lift the core out: the part goes away, and with a
+/// CargoResource the nearest human ship with room gets one unit of it (spec 1108). With no room anywhere, the lift waits.
 /// Failed: the core part is destroyed, or the ship that holds it is gone.
 /// When the carrier breaks apart, the core moves to a new ship with the same cell; the objective follows it.
 /// </summary>
@@ -47,6 +49,8 @@ internal sealed class PrototypeObjective : Objective
         [Serialize(Optional = true), PortableHash] public SpawnedObjectSearch? AreaTag;
         [Serialize(Optional = true), PortableHash] public float RecoverRange = 400f;
         [Serialize(Optional = true), PortableHash] public int TierOffset;
+        /// <summary>The item that the lifted core becomes in the hold (spec 1108). A hand-over step after this one delivers it.</summary>
+        [Serialize(Optional = true), PortableHash] public ID<ResourceRules>? CargoResource;
 
         public override Objective? CreateObjectiveImpl(SimRoot sim, Mission mission, Rand rand, SpawnedObjectCollection objects, Vector2 loc, out bool invalid)
         {
@@ -56,7 +60,7 @@ internal sealed class PrototypeObjective : Objective
             if (AreaTag is not null && !objects.TryFindObject(AreaTag, loc, rand, out area)) { invalid = true; return null; }
             ObjectID id = carrier!.UniqueID ?? throw new InvalidOperationException($"carrier tag {CarrierTag} found an object without an ID");
             int tier = Math.Max(1, ((CareerSimModeManager)sim.Mode).TierFields.GetTier(carrier.Location.Center) + TierOffset);
-            return new PrototypeObjective(new HullRef(sim, id), RecoverRange, tier) { AreaPoiId = area?.UniqueID };
+            return new PrototypeObjective(new HullRef(sim, id), RecoverRange, tier) { AreaPoiId = area?.UniqueID, CargoResource = CargoResource };
         }
     }
 
@@ -68,6 +72,9 @@ internal sealed class PrototypeObjective : Objective
     /// <summary>Cell of the core part in its ship. Null until the core is on the hull.</summary>
     [Serialize(Optional = true)] public IntVector2? CoreCell { get; private set; }
     [Serialize(Optional = true)] public Vector2? LastCoreLocation { get; private set; }
+    [Serialize(Optional = true)] public ID<ResourceRules>? CargoResource { get; private set; }
+    /// <summary>Display only: the last lift found no free storage.</summary>
+    bool _noRoom;
 
     public override string ScriptTypeName => "HotCargoPrototype";
 
@@ -120,8 +127,8 @@ internal sealed class PrototypeObjective : Objective
     public override void GetDisplayLinesImpl(List<DisplayLine> lines, GameRoot game, CompletionState parentState) =>
         lines.Add(new DisplayLine
         {
-            Text = Completion == CompletionState.Failed
-                ? Strings.KeyString("HotCargoMechanics/CoreLost")
+            Text = Completion == CompletionState.Failed ? Strings.KeyString("HotCargoMechanics/CoreLost")
+                : _noRoom && Completion == CompletionState.InProgress ? Strings.KeyString("HotCargoMechanics/CoreNoRoom")
                 : Strings.KeyStringFmt("HotCargoMechanics/CoreFmt", Holder.XmlName(game)),
             State = Completion,
             CanFocus = CanFocusDisplayLine,
@@ -152,6 +159,18 @@ internal sealed class PrototypeObjective : Objective
         {
             if (!holder.IsJunk && !holder.IsHumanPlayerShip) return;
             if (!sim.Ships.HumanPlayerSignificantShips.Any(s => s != holder && MechanicsModel.Gap(s.DetWorldCenter.DistanceTo(at), s.DetWorldBoundingCircle.Radius, 0f) <= RecoverRange)) return;
+        }
+        if (CargoResource is { } item)
+        {
+            var into = sim.Ships.HumanPlayerSignificantShips.Where(s => s != holder)
+                .OrderBy(s => s.DetWorldCenter.DistanceSquaredTo(at)).ThenBy(s => s.UniqueID)
+                .FirstOrDefault(s => s.Resources.GetBestReceivingSink(item, 1, MPValueType.Confirmed, out _, includeAnticipatedDeliveries: false, externalDelivery: false,
+                    excludeDeconstructionQueued: false, ignoreAllowManualReceiveToggles: true, excludeConstructionSinks: true) is not null);
+            bool noRoom = into is null;
+            if (noRoom != _noRoom) { _noRoom = noRoom; OnDisplayLinesChanged(); }
+            if (into is null) return;
+            if (into.Resources.AddResources(item, 1, excludeConstructionSinks: true) != 1) throw new InvalidOperationException($"{into.Metadata.PlainShipName} did not take {item}");
+            Log.Info($"prototype core loaded into {into.Metadata.PlainShipName}");
         }
         Log.Info($"prototype core recovered from {holder.Metadata.PlainShipName} (surrendered={surrendered}, junk={holder.IsJunk}, player={holder.Metadata.PlayerIndex})");
         holder.Parts.RemovePart(core, PartsManager.CrewAction.None, destroyed: false, removeDoors: true);
