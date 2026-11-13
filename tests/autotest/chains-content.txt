@@ -2,8 +2,6 @@
 # its mission with the "lost" result.
 newgame run
 wait 8
-expectevent getaway
-choose 3 1
 ev_set Enabled false
 godmode
 eventviewall

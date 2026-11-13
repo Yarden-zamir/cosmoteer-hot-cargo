@@ -4,7 +4,7 @@ wait 8
 closepanel
 expect runlog_sector == 1
 # An event choice.
-expectevent getaway
+event the_fence
 choose 3 1
 expect runlog_event == 1
 ev_set Enabled false
@@ -15,11 +15,11 @@ expect runlog_sector == 2
 ev_tostation
 tostation
 # A heat stage.
-heat 30
+stage
 wait 2
 expect runlog_stage == 1
-# Vault damage that destroys tech: 60 % passes the half-health step (spec 442).
-vault damage 0.6
+# A destroyed vault (spec 65, 731): its tech drops as crates or burns, and the run log says so.
+vault destroy
 wait 1
 expect runlog_loss >= 1
 # A tech sale at a station.

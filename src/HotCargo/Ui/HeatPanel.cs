@@ -37,6 +37,9 @@ sealed class HeatPanel : LayoutBox
     /// <summary>Stage alerts shown since start. For autotests.</summary>
     internal static int AlertsShown;
 
+    /// <summary>The tech line as the panel last showed it. For autotests.</summary>
+    internal static string TechText = "";
+
     ObjectID? _node;
     int _seenStages = -1;
     double _alertUntil;
@@ -119,7 +122,7 @@ sealed class HeatPanel : LayoutBox
             _ => StatusLine(s, t.Heat, run.TimeHeatPerMinute(s.FleetTech) + Contracts.ContractBook.TrailPerMinute(run, Contracts.ContractBook.OpenWeight(run))),
         };
         long value = run.TechValue();
-        _tech.Text = LossTimer.PanelLine(run) ?? UxKit.Format("TechFmt", s.FleetTech, value.ToString("N0"));
+        _tech.Text = TechText = LossTimer.PanelLine(run) ?? UxKit.Format("TechFmt", s.FleetTech, value.ToString("N0")) + TechSplit(run, s.FleetTech);
         string? contracts = Contracts.ContractsUi.HeatPanelLine(run);
         _contracts.SelfActive = contracts is not null;
         _contracts.Text = contracts ?? "";
@@ -130,6 +133,24 @@ sealed class HeatPanel : LayoutBox
             _debug.Text = run.IsMultiplayer
                 ? $"<gray>tunables {s.TunablesHash} (mp, no reload)</gray>"
                 : $"<gray>heat {s.Heat:0.0}  x{mult:0.00}  tunables {s.TunablesHash}  F9/F10</gray>";
+    }
+
+    /// <summary>
+    /// Spec 449: where the tech is, under the total. Inside the total: the local player's share in co-op (when others hold some too)
+    /// and the units in derelict ships. Outside it: crates in space and tech that hunters hold. Empty when the total says it all.
+    /// </summary>
+    static string TechSplit(Run run, int total)
+    {
+        var sim = run.Game.Sim;
+        var (mine, derelict) = Vaults.Split(sim, run.Game.LocalPlayerIndex);
+        int crates = Vaults.CrateUnits(sim);
+        int hunters = run.State.Tech.HunterHeld.Sum(h => h.Units);
+        var parts = new List<string>(4);
+        if (run.IsMultiplayer && mine != total) parts.Add(UxKit.Format("TechYouFmt", mine));
+        if (derelict > 0) parts.Add(UxKit.Format("TechDerelictFmt", derelict));
+        if (crates > 0) parts.Add(UxKit.Format("TechCratesFmt", crates));
+        if (hunters > 0) parts.Add(UxKit.Format("TechHuntersFmt", hunters));
+        return parts.Count == 0 ? "" : $"\n<gray>{string.Join(", ", parts)}</gray>";
     }
 
     /// <summary>ratePerMinute: time heat plus the contract trail (spec 24, 101).</summary>

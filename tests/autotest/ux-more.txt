@@ -3,12 +3,13 @@
 newgame run
 wait 8
 expect active == 1
-# The start event waits until the run intro closes.
+# An event page waits until the run intro closes.
+event the_fence
 expect ux_event_open == 0
 closepanel
 wait 1
 expect ux_event_open == 1
-# The start event window stays open until the end of the test: its choice can move the ship.
+# The event window stays open until the end of the test.
 expect ev_pending == 1
 # Only the gold key number shows: no choice text starts with its number.
 expect ux_event_text_numbers == 0
@@ -69,7 +70,7 @@ wanted
 wait 2
 wantedline
 expect ux_wanted_line > 0
-# Key 1 picks the first option of the start event, which is still open.
+# Key 1 picks the first option of the event, which is still open.
 expect ev_pending == 1
 uxpick 1
 wait 2

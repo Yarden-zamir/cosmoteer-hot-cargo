@@ -1,0 +1,28 @@
+# Off the Books through the real comms window (spec 767-771): the line opens the page in the same tab, and its choices work.
+newgame run
+wait 8
+ev_set StationEventChance 0
+ev_set CourierChance 0
+ev_set CooldownSeconds 0
+save offbooks
+# 1. Sell one crate: tech drops by 1, money rises, the page closes.
+ev_open station
+ev_click station Sell a crate off the books
+expectevent off_books
+ev_mark
+ev_click station Sell one crate
+expect ev_tech_gain == -1
+expect ev_money_gain > 0
+expect ev_pending == 0
+# 2. Changed my mind: the page closes with no change.
+load offbooks
+wait 3
+ev_open station
+ev_click station Sell a crate off the books
+expectevent off_books
+ev_mark
+ev_click station Changed my mind
+expect ev_pending == 0
+expect ev_tech_gain == 0
+expect ev_money_gain == 0
+quit

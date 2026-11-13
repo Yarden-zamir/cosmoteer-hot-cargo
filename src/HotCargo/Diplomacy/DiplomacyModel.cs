@@ -40,14 +40,6 @@ public static class DiplomacyModel
         return sums.Count == 0 ? 0f : Math.Min(1f, sums.Values.Max() / (float)stock);
     }
 
-    /// <summary>Hand over <paramref name="units"/> of <paramref name="stock"/>. All units is the top chance; 1 unit of many the bottom.</summary>
-    public static float HandOverChance(int units, int stock, float concentration, float leverage, float min, float max, float visiblePenalty, float perLeverage)
-    {
-        if (units <= 0 || units > stock) throw new ArgumentOutOfRangeException(nameof(units));
-        float share = stock == 1 ? 1f : (units - 1) / (float)(stock - 1);
-        return Clamp01(min + (max - min) * share - visiblePenalty * concentration + perLeverage * leverage);
-    }
-
     /// <summary>"That's all we have": works more often for a big share and when the rest is spread out.</summary>
     public static float BluffChance(int units, int stock, float concentration, float baseChance, float perShare, float visiblePenalty)
     {
@@ -55,15 +47,20 @@ public static class DiplomacyModel
         return Clamp01(baseChance + perShare * units / stock - visiblePenalty * concentration);
     }
 
-    /// <summary>Pay instead of tech. Alone: full chance. More other hunters than the limit: none. Linear between, times the share paid for.</summary>
-    public static float DealChance(int otherHunters, int maxOthers, int units, int stock, float alone, float shareMin)
+    /// <summary>
+    /// Spec 594: how much more hunters around make a pay-off harder. 1 alone, falling linearly, 0 with more other hunters than the limit.
+    /// </summary>
+    public static float Crowd(int otherHunters, int maxOthers)
     {
         if (otherHunters < 0 || maxOthers < 0) throw new ArgumentOutOfRangeException(nameof(otherHunters));
-        if (units <= 0 || units > stock) throw new ArgumentOutOfRangeException(nameof(units));
-        if (otherHunters > maxOthers) return 0f;
-        float crowd = 1f - otherHunters / (float)(maxOthers + 1);
-        float share = stock == 1 ? 1f : shareMin + (1f - shareMin) * (units - 1) / (stock - 1);
-        return Clamp01(alone * crowd * share);
+        return otherHunters > maxOthers ? 0f : 1f - otherHunters / (float)(maxOthers + 1);
+    }
+
+    /// <summary>The bluff gives a fixed share of the stock: at least 1 unit, never all. 0 when the stock is too small to bluff.</summary>
+    public static int BluffUnits(int stock, float share)
+    {
+        if (stock < 0 || float.IsNaN(share)) throw new ArgumentOutOfRangeException(nameof(stock));
+        return stock < 2 ? 0 : Math.Clamp((int)MathF.Round(stock * share), 1, stock - 1);
     }
 
     /// <summary>Inputs of the players' demand that an enemy surrenders.</summary>

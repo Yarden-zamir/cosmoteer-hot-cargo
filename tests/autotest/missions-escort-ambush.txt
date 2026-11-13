@@ -1,0 +1,34 @@
+# Escort ambush (spec 36): no raiders before the trip. At EscortAmbushAt (0.3) of the route they spawn ahead of the freighter,
+# attack it, and it takes fire. Completion removes the marker; leftover raiders stay.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+hc_generate escort
+hc_accept escort
+expect hc_escort_raiders == 0
+hc_escort_goto
+pause off
+wait 3
+# Just before the ambush point. The freighter flies on and springs the ambush itself.
+hc_escort_advance 0.25
+pause off
+waitfor hc_escort_raiders >= 2 60
+hc_escort_diag ambush
+expect hc_raiders_vs_escort >= 2
+expect hc_raiders_vs_player >= 2
+# The freighter outruns the parked players in about 45 s and goes into stasis. Join it again before each wait.
+hc_escort_goto
+waitfor hc_raiders_on_escort >= 1 45
+hc_escort_goto
+# The raiders spawn EscortAmbushLead ahead; in some layouts they first hit the freighter about 55 s later.
+waitfor hc_escort_health < 100 90
+hc_escort_diag hit
+expect hc_escort_done == 0
+hc_escort_goto
+hc_escort_arrive
+wait 3
+expect hc_escort_done == 1
+expect hc_escort_marker == 0
+expect hc_escort_raiders >= 1
+quit

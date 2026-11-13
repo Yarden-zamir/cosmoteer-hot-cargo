@@ -10,7 +10,7 @@ expect menu_readonly == 0
 # Through the menu, not ev_set: a menu change replaces the tunables, so an earlier in-place test edit would be lost.
 menu set Events.Enabled off
 menu set Heat.HeatPerGameMinute 45
-menu set Hunters.Stages[0].ShipCount 2
+menu set Hunters.Stages[0].ShipCount 4
 menu close
 waitfor heatperminute == 45 30
 menu file has HeatPerGameMinute = 45
@@ -18,7 +18,7 @@ menu file has HeatCarryOverFraction = 0.5
 menu value Heat.HeatCarryOverFraction == 0.5
 # Barrier: the client saw the values and checked that its window is read-only.
 waitfor mpmark >= 1 120
-# The changed Warning response spawns 2 hunters on both machines.
+# The changed Warning response spawns 4 x EarlyScale 0.5 = 2 hunters in sector 1 on both machines.
 mp stage
 waitfor hunters >= 2 30
 wait 20
