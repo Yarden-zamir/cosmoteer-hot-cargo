@@ -1,9 +1,8 @@
 # Co-op page options, client side.
 mpjoin 127.0.0.1:{PORT}
 mpready
-waitfor ev_pending == 1 30
-waitfor ev_pending == 0 60
 waitfor mpmark >= 1 60
+waitfor ev_pending == 1 30
 expectevent the_fence
 ev_mark
 pick 1 2

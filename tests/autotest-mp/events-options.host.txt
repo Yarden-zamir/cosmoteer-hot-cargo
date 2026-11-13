@@ -2,10 +2,6 @@
 # shared draft and submits it, and both machines sell the same two crates.
 mphost {PORT}
 mpstart 2
-waitfor ev_pending == 1 30
-expectevent getaway
-choose 3
-waitfor ev_pending == 0 30
 mp event the_fence
 waitfor ev_pending == 1 10
 mp mpmark 1

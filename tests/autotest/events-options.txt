@@ -2,8 +2,6 @@
 # carried page. The existing event tests cover the other converted events.
 newgame run
 wait 8
-expectevent getaway
-choose 3 1
 ev_set StationEventChance 0
 ev_set CourierChance 0
 ev_set CooldownSeconds 0
