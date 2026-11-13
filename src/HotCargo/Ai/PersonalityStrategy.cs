@@ -1,6 +1,7 @@
 using Cosmoteer;
 using Cosmoteer.Data;
 using Cosmoteer.Factions;
+using Cosmoteer.Game;
 using Cosmoteer.Game.Multiplayer;
 using Cosmoteer.Ships;
 using Cosmoteer.Ships.AI;
@@ -97,19 +98,27 @@ internal sealed class PersonalityStrategy(PersonalityStrategyRules rules) : AISt
     };
 
     /// <summary>Personality group of a ship: "hunters" for the hunter AI, its faction ID, or "pirates" for other ships.</summary>
-    public static string Group(Ship ship) =>
-        AiGate.IsHunterAi(ship) ? Hunters : FactionRules.GetFaction(ship.Metadata.PlayerIndex)?.ID.ToString() ?? Pirates;
+    public static string Group(Ship ship) => AiGate.IsHunterAi(ship) ? Hunters : GroupOf(ship.Metadata.PlayerIndex);
 
-    static ulong Seed(Ship ship) => (uint)ship.UniqueID;
+    /// <summary>Personality group of a ship without the hunter AI, from its allegiance: its faction ID, or "pirates".</summary>
+    public static string GroupOf(int playerIndex) => FactionRules.GetFaction(playerIndex)?.ID.ToString() ?? Pirates;
+
+    static ulong Seed(ObjectID shipId) => (uint)shipId;
 
     /// <summary>The ship's personality: a weighted roll among the switched-on personalities of its group. Null when none matches.</summary>
-    public static Personality? Pick(Ship ship, TacticsTunables t)
+    public static Personality? Pick(Ship ship, TacticsTunables t) => Pick(Group(ship), ship.UniqueID, t);
+
+    /// <summary>The personality from the group and ship ID only, so it works for a ship in stasis too.</summary>
+    public static Personality? Pick(string group, ObjectID shipId, TacticsTunables t)
     {
-        string group = Group(ship);
         var options = t.Personalities.Where(p => p.Groups.Contains(group) && !t.PersonalitiesOff.Contains(p.Name)).ToList();
-        int index = PersonalityModel.PickWeighted(options.Select(p => p.Chance).ToList(), PersonalityModel.Unit(Seed(ship), PersonalityModel.PickSlot));
+        int index = PersonalityModel.PickWeighted(options.Select(p => p.Chance).ToList(), PersonalityModel.Unit(Seed(shipId), PersonalityModel.PickSlot));
         return index < 0 ? null : options[index];
     }
+
+    /// <summary>Spec 361. The jittered trait weights (index = Trait value) from the group and ship ID, or null without a personality.</summary>
+    public static float[]? Weights(string group, ObjectID shipId, TacticsTunables t) =>
+        Pick(group, shipId, t) is { } personality ? PersonalityModel.Jittered(personality.Weights.ToArray(), personality.Jitter, Seed(shipId)) : null;
 
     /// <summary>The saved build profile, or a live measure when the ship had no AI tick yet. Both read only sim state.</summary>
     public static ShipProfile Profile(Ship ship, TacticsTunables t) =>
@@ -156,12 +165,8 @@ internal sealed class PersonalityStrategy(PersonalityStrategyRules rules) : AISt
     /// Limit: computed on every call, without a cache; group checks (pincer, bait, team) call it for each ally. It is a few small
     /// lists and some arithmetic. Revisit with a per-tick cache if AI ticks show up in a profile of a fight with many hostile ships.
     /// </summary>
-    public static TraitSet Traits(Ship ship, TacticsTunables t)
-    {
-        if (Pick(ship, t) is not { } personality) return TraitSet.None;
-        var weights = PersonalityModel.Jittered(personality.Weights.ToArray(), personality.Jitter, Seed(ship));
-        return PersonalityModel.Choose(weights, Scores(ship, t), t.PersonalityThreshold);
-    }
+    public static TraitSet Traits(Ship ship, TacticsTunables t) =>
+        Weights(Group(ship), ship.UniqueID, t) is { } weights ? PersonalityModel.Choose(weights, Scores(ship, t), t.PersonalityThreshold) : TraitSet.None;
 
     /// <summary>Spec 362. Measures the build from the operational thrusters, the parts and the weapons.</summary>
     public static ShipProfile Measure(Ship ship, TacticsTunables t)
