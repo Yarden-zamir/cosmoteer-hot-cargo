@@ -10,6 +10,8 @@
 # fix them with a new commit and run "integrate.sh --continue", or undo them with "git reset --hard origin/main".
 # When autotests fail, it names the branches of the batch whose areas own each failed test (autotest-affected.sh rule).
 set -euo pipefail
+# Merge batches run every autotest of the touched areas, not only the smoke tier (tests/TIERS.md).
+export AUTOTEST_TIER=full
 cd "$(dirname "$0")/.."
 ARGS=() AUTOTEST=yes FULL=no CONTINUE=no DETACH=no
 for a in "$@"; do

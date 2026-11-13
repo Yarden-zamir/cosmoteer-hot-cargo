@@ -1,7 +1,10 @@
-# Archetypes in the smaller systems (spec 105, 229): real system generation places each archetype mission and keeps the
-# archetype objects clear of stations and gates. "worlds always" makes every archetype mission group spawn.
+# Worlds (spec 105, 220, 221, 225, 229): every archetype is on the run map and the start is basic; the tooltip shows the hazard.
+# Real system generation places each archetype mission and keeps the archetype objects clear of stations and gates.
+# "worlds always" makes every archetype mission group spawn. A trade hub has a current band and the Hot Cargo missions of the basic sector.
 newgame run
 wait 8
+worlds map
+worlds hazard
 ev_set Enabled false
 godmode on
 worlds always
@@ -24,6 +27,13 @@ expect worlds_offers_sundive >= 1
 worlds clearance
 worlds jumpto hc_trade_hub
 pause off
+worlds type hc_trade_hub
+expect worlds_hc_sector == 1
 expect worlds_current_tris >= 4
+worlds hazard
 worlds clearance
+# Archetypes inherit the basic sector, so the spawners that other areas add to it run here too.
+hc_generate escort
+expect hc_offers_escort >= 1
 quit
+# tier: smoke

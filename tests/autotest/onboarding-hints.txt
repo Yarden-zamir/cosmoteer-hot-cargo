@@ -91,3 +91,4 @@ lose
 wait 1
 expect runlog_lost == 1
 quit
+# tier: smoke

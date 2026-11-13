@@ -14,6 +14,10 @@
 # - Anything else (Core, shared UI, root files, a folder with no tests of its own) runs the full suite.
 #   Core is shared: every area builds on it, so its own "core" test alone is not enough.
 # The "core" smoke test always runs.
+# Tiers (tests/TIERS.md): AUTOTEST_TIER=smoke (default) or full. integrate.sh uses full for merge batches.
+# - smoke: an area runs only its tests with the line "# tier: smoke" (all of them when it has none), and every co-op test
+#   of the area (they guard co-op determinism). "Full suite" runs every smoke test: single player, and co-op with the line.
+# - full: the rules above without the filter.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 DETACH=()
@@ -27,13 +31,24 @@ CHANGED="$( { git diff --name-only "$BASE"..."${HEAD_REF:-HEAD}"
   if [[ "${COMMITTED_ONLY:-}" != 1 && -z "$HEAD_REF" ]]; then git diff --name-only HEAD; git ls-files --others --exclude-standard; fi; } | sort -u)"
 TESTS=("core")
 FULL=no
+TIER="${AUTOTEST_TIER:-smoke}"
+[[ "$TIER" == smoke || "$TIER" == full ]] || { echo "AUTOTEST_TIER must be smoke or full (got '$TIER')" >&2; exit 2; }
+smoke() { grep -qx '# tier: smoke' "$1"; }
 add() { local x; for x in "${TESTS[@]}"; do [[ "$x" == "$1" ]] && return; done; TESTS+=("$1"); }
 
 # Adds the tests of an area; returns 1 when the area has none.
 add_area() {
   local area found=1 f
   area="$(tr '[:upper:]' '[:lower:]' <<<"$1")"
-  for f in tests/autotest/"$area"-*.txt; do [[ -f "$f" ]] && { add "$(basename "$f" .txt)"; found=0; }; done
+  local smoke_only=no
+  if [[ "$TIER" == smoke ]]; then
+    for f in tests/autotest/"$area"-*.txt; do if [[ -f "$f" ]] && smoke "$f"; then smoke_only=yes; fi; done
+  fi
+  for f in tests/autotest/"$area"-*.txt; do
+    [[ -f "$f" ]] || continue
+    found=0
+    if [[ "$smoke_only" == no ]] || smoke "$f"; then add "$(basename "$f" .txt)"; fi
+  done
   for f in tests/autotest-mp/"$area"*.host.txt; do [[ -f "$f" ]] && add "mp:$(basename "$f" .host.txt)"; done
   return $found
 }
@@ -58,6 +73,12 @@ while IFS= read -r path; do
   esac
 done <<<"$CHANGED"
 
+if [[ "$FULL" == yes && "$TIER" == smoke ]]; then
+  FULL=no
+  for f in tests/autotest/*.txt; do if smoke "$f"; then add "$(basename "$f" .txt)"; fi; done
+  for f in tests/autotest-mp/*.host.txt; do if smoke "$f"; then add "mp:$(basename "$f" .host.txt)"; fi; done
+  echo "== shared code changed: every smoke test"
+fi
 if [[ "$FULL" == yes ]]; then
   echo "== shared code changed: full suite"
   [[ "${LIST_ONLY:-}" == 1 ]] && exit 0

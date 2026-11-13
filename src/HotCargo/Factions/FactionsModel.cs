@@ -36,6 +36,9 @@ public static class FactionsModel
         _ => 1f,
     };
 
+    /// <summary>Spec 642: notoriety grows faster only in corporate ally space; shelter keeps the normal rate.</summary>
+    public static float NotorietyFactor(Zone zone, float allyFactor) => zone == Zone.Ally ? allyFactor : 1f;
+
     /// <summary>
     /// A price times a factor, rounded up, so a markup never rounds a price down. The product is first rounded to 3 decimals,
     /// so float noise in the factor (1.6f is 1.60000002) does not round 10 × 1.6 up to 17.

@@ -33,12 +33,7 @@ expect fa_zone == 0
 fa_rep 600
 expect fa_zone == 2
 expect fa_timefactor == 0.6
-fa_mark
-wait 20
-expect fa_rateratio >= 0.97
-expect fa_rateratio <= 1.03
-expect fa_notorietyratio >= 0.99
-expect fa_notorietyratio <= 1.01
+# The rate and notoriety factors of each zone are unit tests (FactionsModelTests); the ally measurement above proves the tick uses them.
 # Spec 660: the station chain offers of this system are marked.
 expect fa_markershere >= 1
 fa_tooltip
