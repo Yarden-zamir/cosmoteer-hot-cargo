@@ -11,6 +11,9 @@
     <!-- Reference assemblies of WinForms/WPF. GameAssemblies turns them into runnable stubs: Cosmoteer.dll has WinForms types (Gui/ErrorBox). -->
     <WindowsDesktopRefVersion>10.0.15</WindowsDesktopRefVersion>
     <NoWarn>$(NoWarn);CS0436</NoWarn>
+    <!-- The game DLLs lose their ReadyToRun code (GameAssemblies), so the JIT compiles everything. Full optimization at once,
+         with no tier-0 code and no background re-JIT: 8 parallel runs 26 % faster, one run 27 s to 21 s (docs/mac-sim-spike.md). -->
+    <TieredCompilation>false</TieredCompilation>
   </PropertyGroup>
   <ItemGroup>
     <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute"><_Parameter1>CosmoteerBin</_Parameter1><_Parameter2>$([System.IO.Path]::GetFullPath($(CosmoteerBin)))</_Parameter2></AssemblyAttribute>
