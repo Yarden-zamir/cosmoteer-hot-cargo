@@ -5,6 +5,8 @@ ev_set CooldownSeconds 0
 ev_set ArrivalEventChance 1
 ev_set ArrivalDelaySeconds 1
 ev_set StationEventChance 0
+# No unavoidable page: Vault Coolant Leak has only a submit (spec 811), so "choose last" cannot answer it. events-unavoidable covers it.
+ev_set MaxUnavoidablePerRun 0
 # No page opens at the start of a run.
 expect ev_pending == 0
 expect ev_seen == 0
