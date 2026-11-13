@@ -26,6 +26,15 @@ public class EventModelTests
     }
 
     [Fact]
+    public void Hand_over_need_reports_the_blocker_text()
+    {
+        Assert.Null(EventModel.FirstUnmet(new Need { HandOverReady = true }, Fleet));
+        var blocked = Fleet with { HandOverBlock = "Take your crew off it first" };
+        Assert.Equal(new Unmet(UnmetKind.HandOver, "Take your crew off it first"), EventModel.FirstUnmet(new Need { HandOverReady = true }, blocked));
+        Assert.Null(EventModel.FirstUnmet(new Need(), blocked));
+    }
+
+    [Fact]
     public void Each_need_kind_reports_its_first_failure()
     {
         Assert.Equal(UnmetKind.Money, EventModel.FirstUnmet(new Need { Money = 10_001 }, Fleet)?.Kind);
