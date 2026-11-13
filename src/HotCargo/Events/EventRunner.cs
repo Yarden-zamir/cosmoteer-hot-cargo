@@ -149,7 +149,7 @@ public static class EventRunner
     /// Puts a Courier Job into the station's mission list: the Courier generator in spawns.rules spawns the contact far away
     /// and a mission offer at the nearest trade station (the one the players reached).
     /// </summary>
-    static void OfferCourier(SimRoot sim, Ship station)
+    internal static void OfferCourier(SimRoot sim, Ship station)
     {
         EventLibrary.Spawn(CourierSpawn).Generate(sim, sim.Rand, loadInstantly: true, rootLoc: station.DetWorldCenter, addExistingSpawnTags: true);
         Log.Info($"courier job offered at {station.Metadata.PlainShipName}");
@@ -261,7 +261,7 @@ public static class EventRunner
         if (choiceIndex < 0 || choiceIndex >= e.Choices.Length) throw new InvalidOperationException($"event {e.ID} has no choice {choiceIndex}");
         var choice = e.Choices[choiceIndex];
         int money = run.Game.GetPlayerState(playerIndex, deterministic: true).Money;
-        var snapshot = Snap(run, sim, money, p.Tier, p.TechValue);
+        var snapshot = PageSnap(run, sim, money, p);
         var picks = choice.IsSubmit ? Picks(run, e, serial) : [];
         if (ChoiceUnmet(run, choice, p, picks, snapshot) is { } unmet)
         {
@@ -340,6 +340,8 @@ public static class EventRunner
         Tech = n.Tech,
         VaultSpace = n.VaultSpace,
         Crew = n.Crew,
+        Bunks = n.Bunks,
+        HandOverReady = n.HandOverReady,
         MinHeat = n.MinHeat,
         MaxHeat = n.MaxHeat,
         MinSector = n.MinSector,
@@ -366,6 +368,13 @@ public static class EventRunner
     public static int CostCredits(Run run, CostRules cost, PendingEvent p) =>
         Credits(run, EventModel.HeatScaledUnits(cost.Money, cost.MoneyPerHeat, p.Heat), 0f, p.Tier, p.TechValue);
 
+    /// <summary>The fleet as a pending page's choices see it: Snap, plus the state of the hand-over on the page's ship (spec 1110).</summary>
+    public static Snapshot PageSnap(Run run, SimRoot sim, int money, PendingEvent p) =>
+        Snap(run, sim, money, p.Tier, p.TechValue) with
+        {
+            HandOverBlock = p.Carrier is { } c && HandOverObjective.ForContact(run, c) is { } h ? h.Blocker(sim) : null,
+        };
+
     /// <summary>The fleet as conditions see it. Money is the given player's; everything else is the whole human fleet in this system.</summary>
     public static Snapshot Snap(Run run, SimRoot sim, int money, int tier, long techValue)
     {
@@ -380,6 +389,7 @@ public static class EventRunner
             Tech = vaults.Sum(g => g.Resources),
             VaultSpace = vaults.Sum(g => g.MaxResources - g.Resources),
             Crew = run.Game.HumanPlayersIndexes.Sum(sim.Crew.CountCrewForPlayer),
+            Bunks = ships.Sum(sh => sh.Crew.RemainingCrewCapacity),
             Heat = run.State.Heat,
             Sector = run.State.SectorIndex,
             Resources = resources,
@@ -503,6 +513,7 @@ public static class EventRunner
         if (o.Heat != 0) ChangeHeat(run, sim, o.Heat * run.T.Events.HeatScale, lines);
         if (o.Tech != 0) ChangeTech(sim, o.Tech, lines);
         if (o.Crew != 0) ChangeCrew(sim, o.Crew, p.Seed, lines);
+        if (o.CrewLeaves > 0) ChangeCrew(sim, -o.CrewLeaves, p.Seed, lines, killed: false);
         foreach (var r in o.Resources) ChangeResource(sim, r.ID, r.At(p.Tier), lines);
         if (o.HullDamage > 0) DamageHull(sim, o.HullDamage, p.Seed, lines);
         if (o.Reputation != 0) ChangeReputation(run, sim, o.Reputation, p.Tier, lines);
@@ -517,6 +528,7 @@ public static class EventRunner
         }
         foreach (string f in o.ClearFlags) State(run).Flags.Remove(f);
         if (o.Spawn.Length > 0) Spawn(run, sim, o.Spawn, p.Seed);
+        if (o.HandOver) HandOverObjective.Deliver(run, p.Carrier);
     }
 
     /// <summary>Gains split between the human players like a mission reward. A loss comes from the chooser and stops at 0.</summary>
@@ -588,7 +600,8 @@ public static class EventRunner
         if (done < amount) lines.Add(EventText.NoVaultRoom(amount - done));
     }
 
-    static void ChangeCrew(SimRoot sim, int amount, ulong seed, List<string> lines)
+    /// <summary>killed: false removes crew without the death path (no death stats, no casualty), for crew that leave alive.</summary>
+    static void ChangeCrew(SimRoot sim, int amount, ulong seed, List<string> lines, bool killed = true)
     {
         var ships = Vaults.HumanShips(sim).OrderBy(sh => sh.Metadata.PlayerIndex).ThenBy(sh => sh.UniqueID).ToList();
         int done = 0;
@@ -609,11 +622,11 @@ public static class EventRunner
             {
                 CrewSoul soul = pool[rand.Int32(0, pool.Count - 1)];
                 pool.Remove(soul);
-                soul.Delete(killed: true);
+                soul.Delete(killed);
                 done--;
             }
         }
-        if (done != 0) lines.Add(EventText.Crew(done));
+        if (done != 0) lines.Add(killed ? EventText.Crew(done) : EventText.CrewLeft(-done));
         if (amount > 0 && done < amount) lines.Add(EventText.NoBunk(amount - done));
     }
 

@@ -297,7 +297,9 @@ CarefulObjective
 	]
 }
 
-ChainCarefulTarget
+// Extraction (The Quiet Defector, spec 1105): the careful fight, then the pickup in the transport's comms (events.rules, okafor_pickup),
+// then the pay at the station. Okafor joins as crew in the pickup.
+ChainExtraction
 {
 	Spawners
 	[
@@ -311,6 +313,12 @@ ChainCarefulTarget
 					SubObjectives
 					[
 						&~/CarefulObjective
+						{
+							Type = HotCargoHandOver
+							ContactShipTag = { Mode=Latest; Tag=hc_ch_cargo; }
+							Page = okafor_pickup
+							LineKey = "HotCargoEventMissions/OkaforPickupFmt"
+						}
 						{
 							Type = ReceiveRewards
 						}
@@ -546,6 +554,21 @@ ChainBlackBox
 				{
 					ScaleFactor = 1000
 				}
+				// The recorder sits in a junk capsule beside the wreck (spec 1107); the hand-over objective puts it there. Salvage the
+				// capsule, and crew carry the recorder home.
+				{
+					Type = Ships
+					Tags = [hc_ch_recorder]
+					Distance = [150, 300]
+					Allegiance = Junk
+					SuppressLocationAssertions = true
+					RememberPhysicalState = true
+					RememberResourcesAndCrew = true
+					ShipCriteria
+					{
+						Tags = [storage_pod]
+					}
+				}
 				: ~/LightRaiders
 				{
 					Count = 1
@@ -583,6 +606,15 @@ ChainBlackBox
 							TargetAreaTag = { Mode=Latest; Tag=hc_ch_poi; }
 							AutoDiscoverTargetArea = true
 							AllowSurrender = false
+						}
+						// Recover the recorder from the capsule, then hand it to the station's broker in comms (events.rules, blackbox_broker).
+						{
+							Type = HotCargoHandOver
+							ResourceType = yarden_zamir.flight_recorder
+							GiveOnAccept = false
+							SourceShipTag = { Mode=Latest; Tag=hc_ch_recorder; }
+							ContactShipTag = { Mode=Nearest; Tag=station; }
+							Page = blackbox_broker
 						}
 						{
 							Type = ReceiveRewards

@@ -11,6 +11,7 @@ public class EventModelTests
         Tech = 3,
         VaultSpace = 1,
         Crew = 4,
+        Bunks = 1,
         Heat = 40,
         Sector = 3,
         Resources = new Dictionary<string, int> { ["hyperium"] = 25 },
@@ -25,12 +26,23 @@ public class EventModelTests
     }
 
     [Fact]
+    public void Hand_over_need_reports_the_blocker_text()
+    {
+        Assert.Null(EventModel.FirstUnmet(new Need { HandOverReady = true }, Fleet));
+        var blocked = Fleet with { HandOverBlock = "Take your crew off it first" };
+        Assert.Equal(new Unmet(UnmetKind.HandOver, "Take your crew off it first"), EventModel.FirstUnmet(new Need { HandOverReady = true }, blocked));
+        Assert.Null(EventModel.FirstUnmet(new Need(), blocked));
+    }
+
+    [Fact]
     public void Each_need_kind_reports_its_first_failure()
     {
         Assert.Equal(UnmetKind.Money, EventModel.FirstUnmet(new Need { Money = 10_001 }, Fleet)?.Kind);
         Assert.Equal(UnmetKind.Tech, EventModel.FirstUnmet(new Need { Tech = 4 }, Fleet)?.Kind);
         Assert.Equal(UnmetKind.VaultSpace, EventModel.FirstUnmet(new Need { VaultSpace = 2 }, Fleet)?.Kind);
         Assert.Equal(UnmetKind.Crew, EventModel.FirstUnmet(new Need { Crew = 5 }, Fleet)?.Kind);
+        Assert.Equal(UnmetKind.Bunks, EventModel.FirstUnmet(new Need { Bunks = 2 }, Fleet)?.Kind);
+        Assert.Null(EventModel.FirstUnmet(new Need { Bunks = 1 }, Fleet));
         Assert.Equal(UnmetKind.MinHeat, EventModel.FirstUnmet(new Need { MinHeat = 41 }, Fleet)?.Kind);
         Assert.Equal(UnmetKind.MaxHeat, EventModel.FirstUnmet(new Need { MaxHeat = 40 }, Fleet)?.Kind);
         Assert.Equal(UnmetKind.MinSector, EventModel.FirstUnmet(new Need { MinSector = 4 }, Fleet)?.Kind);

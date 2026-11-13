@@ -40,7 +40,7 @@ public static class EventView
     {
         var e = EventLibrary.Get(p.EventId);
         int money = run.Game.GetPlayerState(localPlayer, deterministic: false).Money;
-        var snapshot = EventRunner.Snap(run, sim, money, p.Tier, p.TechValue);
+        var snapshot = EventRunner.PageSnap(run, sim, money, p);
         var picks = EventRunner.Picks(run, e, p.Serial);
         var choices = new List<ChoiceView>();
         for (int i = 0; i < e.Choices.Length; i++)

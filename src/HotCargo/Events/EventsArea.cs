@@ -42,6 +42,7 @@ public static class EventsArea
         Run.Hooks.NewRunStarted += EventRunner.OnNewRun;
         Run.Hooks.SystemEntered += EventRunner.OnSystemEntered;
         Run.Hooks.Tick += EventRunner.OnTick;
+        Run.Hooks.Tick += MissionCargo.OnTick;
         Run.Hooks.NewRunStarted += Abandoned.OnNewRun;
         Ui.CommsHail.Providers.Add(new EventHailProvider());
         Run.Hooks.SystemEntered += Abandoned.OnSystemEntered;
@@ -231,25 +232,139 @@ public static class EventsArea
         };
         // ev_sector <n>: sets the sector index without a jump (headless games cannot finish a jump). Test only.
         Autotest.Commands["ev_sector"] = arg => RequireRun().State.SectorIndex = Int(arg);
-        // Courier Job (spec 85): offers in station lists, accept the first, fly to the contact, and its GotoShip state.
+        // Courier Job (spec 85, 1100 to 1103): offers in station lists, accept the first, fly to the contact, and the hand-over state.
         Autotest.Fields["ev_courier_offers"] = () => CourierOffers(RequireSim()).Count();
+        // ev_courier_offer: the nearest live trade station offers a Courier Job now, without the roll. Run it with "mp" in co-op tests.
+        Autotest.Commands["ev_courier_offer"] = _ =>
+        {
+            var sim = RequireSim();
+            var at = SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no player ships");
+            var station = sim.Ships.Where(s => s.HasTag(new ID<SimObjectSpawner>("trade_station"))).OrderBy(s => s.DetWorldCenter.DistanceSquaredTo(at)).ThenBy(s => s.UniqueID).FirstOrDefault()
+                ?? throw new InvalidOperationException("no live trade station");
+            EventRunner.OfferCourier(sim, station);
+        };
+        // Accepts through the game's own accept input, as the comms window does, so the accept gate and the cargo load run (spec 1101).
         Autotest.Commands["ev_courier_accept"] = _ =>
         {
-            var (list, mission) = CourierOffers(RequireSim()).FirstOrDefault();
-            if (mission is null) throw new InvalidOperationException("no Courier Job offer in this system");
-            list.RemoveMission(mission);
-            RequireRun().Mode.Missions.AddMission(mission, track: true);
+            var mission = CourierOffers(RequireSim()).Select(o => o.Mission).FirstOrDefault()
+                ?? throw new InvalidOperationException("no Courier Job offer in this system");
+            var station = Cosmoteer.Ships.Special.SpaceStation.GetStations(RequireSim(), onlyOperating: false)
+                .FirstOrDefault(s => s.GetProvidedMissions()?.ContainsMission(mission) == true).PhysicalShip
+                ?? throw new InvalidOperationException("the Courier Job's station is not live");
+            RequireRun().Game.NetManager.EnqueueInput(new Cosmoteer.Modes.Career.Comms.CommMissionsTab.MPAcceptMissionInput(
+                Cosmoteer.Modes.Career.Comms.CommMissionsTab.MissionSourceType.Ship, station, mission));
+            Autotest.Wait(2);
+        };
+        // 1: the Courier Job's hand-over is done, 0: open, -1: failed, -2: no Courier Job in the log.
+        Autotest.Fields["ev_courier_handover"] = () =>
+        {
+            var mission = RequireRun().Mode.Missions.LastOrDefault(m => m.MetatypeID.Equals(CourierType));
+            if (mission is null) return -2;
+            var found = new List<HandOverObjective>();
+            mission.GetObjectives(found);
+            return found.Single().Completion switch { CompletionState.Completed => 1, CompletionState.Failed => -1, _ => 0 };
+        };
+        // 1: the latest hand-over objective in the log (any mission) is done, 0: open, -1: failed, -2: none.
+        Autotest.Fields["ev_handover"] = () =>
+        {
+            var found = new List<HandOverObjective>();
+            foreach (Mission m in RequireRun().Mode.Missions) m.GetObjectives(found);
+            return found.LastOrDefault()?.Completion switch { null => -2, CompletionState.Completed => 1, CompletionState.Failed => -1, _ => 0 };
+        };
+        // ev_crew_remove <n>: takes n crew off the human ships (lowest ship ID first), so bunks are free. Test only.
+        Autotest.Commands["ev_crew_remove"] = arg =>
+        {
+            var souls = Tech.Vaults.HumanShips(RequireSim()).OrderBy(sh => sh.UniqueID).SelectMany(sh => sh.Crew.Assigned)
+                .Where(c => c.CarriedResource.Quantity == 0).Take(Int(arg)).ToList();
+            foreach (var soul in souls) soul.Delete(killed: false);
+            Autotest.Wait(1);
+        };
+        // ev_goto <tag>: moves the fleet next to the first ship with the tag, live or in stasis. Test only.
+        Autotest.Commands["ev_goto"] = arg =>
+        {
+            var target = SimQueries.TaggedShips(RequireSim(), new ID<SimObjectSpawner>(arg.Trim())).FirstOrDefault();
+            if (target == default) throw new InvalidOperationException($"no ship tagged {arg}");
+            MoveNextTo(RequireSim(), target.Location, target.Live?.WorldBoundingRadius + 150f ?? 600f);
+        };
+        // ev_contact_goto: moves the fleet next to the contact of the first open hand-over (live or in stasis). Test only.
+        Autotest.Commands["ev_contact_goto"] = _ =>
+        {
+            var h = OpenHandOvers().FirstOrDefault() ?? throw new InvalidOperationException("no open hand-over");
+            var at = h.Contact.Location ?? throw new InvalidOperationException("the hand-over contact is not in this system");
+            MoveNextTo(RequireSim(), at, h.Contact.TargetShip?.WorldBoundingRadius + 300f ?? 1200f);
+        };
+        // ev_deliver_ship: moves the delivered ship of the first open hand-over next to its contact, and the fleet beside it. Test only.
+        Autotest.Commands["ev_deliver_ship"] = _ =>
+        {
+            var h = OpenHandOvers().FirstOrDefault(o => o.DeliveredShipId is not null) ?? throw new InvalidOperationException("no open hand-over with a ship to deliver");
+            var ship = RequireSim().Ships[h.DeliveredShipId!.Value] ?? throw new InvalidOperationException("the ship to deliver is not live; run ev_goto on it first");
+            var at = h.Contact.Location ?? throw new InvalidOperationException("the hand-over contact is not in this system");
+            // The contact can be in stasis (no size known): 900 from its center clears a trade station and stays within DeliveryRadius.
+            float offset = h.Contact.TargetShip?.WorldBoundingRadius + 300f ?? 900f;
+            Autotest.Teleport(ship, at + new Vector2(offset + ship.WorldBoundingRadius, 0));
+            MoveNextTo(RequireSim(), at, offset + 2 * ship.WorldBoundingRadius + 200f);
+            // A contact that was in stasis loads now; place the ship again against its real hull.
+            Autotest.WaitFor(() => h.Contact.TargetShip is not null, 15, "the hand-over contact is live", () =>
+            {
+                var contact = h.Contact.TargetShip!;
+                Autotest.Teleport(ship, contact.WorldCenter + new Vector2(contact.WorldBoundingRadius + ship.WorldBoundingRadius + 300f, 0));
+                Autotest.Wait(2);
+            });
+        };
+        // ev_delivered_crew <n>: n > 0 puts n player crew on the delivered ship (it must be a player ship); 0 takes them all off. Test only.
+        Autotest.Commands["ev_delivered_crew"] = arg =>
+        {
+            var h = OpenHandOvers().FirstOrDefault(o => o.DeliveredShipId is not null) ?? throw new InvalidOperationException("no open hand-over with a ship to deliver");
+            var ship = RequireSim().Ships[h.DeliveredShipId!.Value] ?? throw new InvalidOperationException("the ship to deliver is not live");
+            int n = Int(arg);
+            if (n > 0) { if (ship.Crew.CreateCrewsAtRandomParts(n) != n) throw new InvalidOperationException($"{ship.Metadata.PlainShipName} has no room for {n} crew"); }
+            else foreach (var soul in ship.Crew.Assigned.ToList()) soul.Delete(killed: false);
+            Autotest.Wait(1);
+        };
+        // ev_take <tag> <resource>: moves the resource out of the live tagged ship's storage into the fleet, as crew carrying
+        // salvage would. Fails when the ship holds none. Test only.
+        Autotest.Commands["ev_take"] = arg =>
+        {
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var tag = new ID<SimObjectSpawner>(parts[0]);
+            // Junk too (a salvage capsule): TaggedShips leaves wrecks out.
+            Ship? Live() => RequireSim().Ships.Where(sh => sh.HasTag(tag)).OrderBy(sh => sh.UniqueID).FirstOrDefault();
+            // A ship that a teleport brought into range leaves stasis a few ticks later.
+            Autotest.WaitFor(() => Live() is not null, 15, $"a live ship tagged {parts[0]}", () => Take(Live()!, new ID<Cosmoteer.Resources.ResourceRules>(parts[1])));
+        };
+        static void Take(Ship source, ID<Cosmoteer.Resources.ResourceRules> rid)
+        {
+            var sim = RequireSim();
+            int taken = source.Resources.RemoveResources(rid, 100);
+            if (taken == 0) throw new InvalidOperationException($"{source.Metadata.PlainShipName} holds no {rid}");
+            int left = taken;
+            foreach (var ship in Tech.Vaults.HumanShips(sim).OrderBy(sh => sh.UniqueID)) left -= ship.Resources.AddResources(rid, left, excludeConstructionSinks: true);
+            if (left > 0) throw new InvalidOperationException($"no fleet storage for {left} {rid}");
+            Autotest.Wait(1);
+        }
+        // ev_storage_fill <resource>: fills every human ship's storage with the resource. ev_storage_clear <resource>: takes all of it out. Test only.
+        Autotest.Commands["ev_storage_fill"] = arg =>
+        {
+            var rid = new ID<Cosmoteer.Resources.ResourceRules>(arg.Trim());
+            foreach (var ship in Tech.Vaults.HumanShips(RequireSim()))
+                while (ship.Resources.AddResources(rid, 100, excludeConstructionSinks: true) > 0) { }
+            Autotest.Wait(1);
+        };
+        Autotest.Commands["ev_storage_clear"] = arg =>
+        {
+            var rid = new ID<Cosmoteer.Resources.ResourceRules>(arg.Trim());
+            foreach (var ship in Tech.Vaults.HumanShips(RequireSim()))
+                while (ship.Resources.RemoveResources(rid, 100) > 0) { }
             Autotest.Wait(1);
         };
         Autotest.Commands["ev_courier_goto"] = _ =>
         {
             var sim = RequireSim();
-            var contacts = SimQueries.TaggedShips(sim, CourierContactTag);
-            if (contacts.Count == 0) throw new InvalidOperationException("no courier contact in this system");
-            var contact = contacts[0];
+            var contact = CourierContact(sim);
             Log.Info($"AUTOTEST courier contact {contact.Id} live={contact.Live is not null} at {contact.Location}");
-            // Ship sight is short (a small control room sees 400), so the ships stop just outside the contact's hull.
-            float offset = (contact.Live?.WorldBoundingRadius ?? 300f) + 150f;
+            // Ship sight is short (a small control room sees 400), and a cloudy nebula cuts it to 30 % (about 120). The contact can spawn
+            // in one, so the ships stop 40 outside its hull: then it is in sight in every nebula.
+            float offset = (contact.Live?.WorldBoundingRadius ?? 300f) + 40f;
             foreach (var s in sim.Ships.HumanPlayerSignificantShips.ToList())
             {
                 Autotest.Teleport(s, contact.Location + new Halfling.Geometry.Vector2(offset + s.WorldBoundingRadius, 0));
@@ -260,17 +375,9 @@ public static class EventsArea
         Autotest.Fields["ev_courier_seen"] = () =>
         {
             var run = RequireRun();
-            var contacts = SimQueries.TaggedShips(RequireSim(), CourierContactTag);
-            if (contacts.Count == 0 || contacts[0].Live is not { } ship) return -1;
+            if (CourierContact(RequireSim()).Live is not { } ship) return -1;
             int team = run.Game.GetPlayerState(run.Game.LocalPlayerIndex, deterministic: true).Team;
             return ship.IsWithinSightOfTeam(team) ? 1 : 0;
-        };
-        Autotest.Fields["ev_courier_reached"] = () =>
-        {
-            var mission = RequireRun().Mode.Missions.LastOrDefault(m => m.MetatypeID.Equals(CourierType)) ?? throw new InvalidOperationException("no accepted Courier Job");
-            var found = new List<Cosmoteer.Modes.Career.Missions.Objectives.GotoShipObjective>();
-            foreach (var o in mission.Objectives) o.GetObjectives(found);
-            return found.Single().Completion == CompletionState.Completed ? 1 : 0;
         };
         // Reputation with the faction that controls the system, for the Reputation outcome effect.
         Autotest.Fields["ev_rep"] = () =>
@@ -483,6 +590,24 @@ public static class EventsArea
                     if (m.MetatypeID.Equals(CourierType)) yield return (list, m);
     }
 
+    /// <summary>The contact of the accepted Courier Job, else the first contact in the system. A system can hold two (a rolled and a forced offer).</summary>
+    static SimQueries.TaggedShip CourierContact(SimRoot sim)
+    {
+        var contacts = SimQueries.TaggedShips(sim, CourierContactTag);
+        if (contacts.Count == 0) throw new InvalidOperationException("no courier contact in this system");
+        var accepted = HandOverObjective.Open(RequireRun()).Select(o => (Cosmoteer.Game.ObjectID?)o.Contact.ShipID).FirstOrDefault();
+        if (accepted is not { } id) return contacts[0];
+        int i = contacts.FindIndex(c => c.Id == id);
+        return i >= 0 ? contacts[i] : throw new InvalidOperationException($"the accepted job's contact {id} is not in this system");
+    }
+
+    static IEnumerable<HandOverObjective> OpenHandOvers()
+    {
+        var found = new List<HandOverObjective>();
+        foreach (Mission m in RequireRun().Mode.Missions) m.GetObjectives(found);
+        return found.Where(o => o.Completion == CompletionState.InProgress);
+    }
+
     static TowObjective? _lastTow;
 
     /// <summary>The latest tow objective in the mission log, or the last one seen: a completed mission leaves the log when it pays.</summary>
@@ -503,7 +628,7 @@ public static class EventsArea
         return EventView.Current(run, RequireSim(), run.Game.LocalPlayerIndex, lastResultShown: int.MaxValue);
     }
 
-    /// <summary>The ship a comms test talks to: carrier (the pending page's ship), station (nearest trade station), faction (nearest faction ship).</summary>
+    /// <summary>The ship a comms test talks to: carrier (the pending page's ship), contact (the Courier Job's contact), station (nearest trade station), faction (nearest faction ship).</summary>
     static Ship CommsTarget(string which)
     {
         var sim = RequireSim();
@@ -511,9 +636,11 @@ public static class EventsArea
         Ship? found = which switch
         {
             "carrier" => RequireRun().State.Events.Pending?.Carrier is { } id ? sim.Ships[id] : null,
+            // The contact of an open hand-over in the log (any mission, its turn or not), else the Courier Job's contact.
+            "contact" => OpenHandOvers().FirstOrDefault() is { } h ? h.Contact.TargetShip : CourierContact(sim).Live,
             "station" => sim.Ships.Where(s => EventHail.TargetOf(s, caller) == HailTarget.Station).MinBy(s => s.DetWorldCenter.DistanceSquaredTo(caller.DetWorldCenter)),
             "faction" => sim.Ships.Where(s => EventHail.TargetOf(s, caller) == HailTarget.FactionShip).MinBy(s => s.DetWorldCenter.DistanceSquaredTo(caller.DetWorldCenter)),
-            _ => throw new InvalidOperationException($"unknown comms target '{which}' (carrier, station, faction)"),
+            _ => throw new InvalidOperationException($"unknown comms target '{which}' (carrier, contact, station, faction)"),
         };
         return found ?? throw new InvalidOperationException($"no live {which} ship for comms");
     }

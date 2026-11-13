@@ -36,6 +36,8 @@ public enum HailTarget
     Station,
     /// <summary>Faction ships that are not stations and not hostile.</summary>
     FactionShip,
+    /// <summary>The contact of an open hand-over (HotCargoHandOver, spec 1102). The line stays while the hand-over is open.</summary>
+    Contact,
 }
 
 /// <summary>A computed offer that an event page carries (spec 760-762). Its contents come from the tech tree when the page opens.</summary>
@@ -75,6 +77,10 @@ public sealed class NeedRules
     [Serialize(Optional = true)] public int Tech;
     [Serialize(Optional = true)] public int VaultSpace;
     [Serialize(Optional = true)] public int Crew;
+    /// <summary>Free crew bunks (spec 1106), for a choice that brings someone aboard.</summary>
+    [Serialize(Optional = true)] public int Bunks;
+    /// <summary>The page's hand-over is ready (spec 1110), for a choice that hands over a ship.</summary>
+    [Serialize(Optional = true)] public bool HandOverReady;
     [Serialize(Optional = true)] public float MinHeat;
     [Serialize(Optional = true)] public float MaxHeat;
     [Serialize(Optional = true)] public int MinSector;
@@ -140,6 +146,8 @@ public sealed class OutcomeRules
     [Serialize(Optional = true)] public bool ClearWanted;
     [Serialize(Optional = true)] public int Tech;
     [Serialize(Optional = true)] public int Crew;
+    /// <summary>Crew that leave the ship alive (a passenger handed on, spec 1109): removed without the death path.</summary>
+    [Serialize(Optional = true)] public int CrewLeaves;
     [Serialize(Optional = true)] public ResourceAmount[] Resources = [];
     /// <summary>Fraction of max health taken from a few random parts of the biggest player ship. Parts keep 1 health. Vaults are skipped.</summary>
     [Serialize(Optional = true)] public float HullDamage;
@@ -149,6 +157,8 @@ public sealed class OutcomeRules
     [Serialize(Optional = true)] public string Next = "";
     [Serialize(Optional = true)] public string[] SetFlags = [];
     [Serialize(Optional = true)] public string[] ClearFlags = [];
+    /// <summary>Completes the open hand-over whose contact carries this page (spec 1102). Put the item in the choice Cost.</summary>
+    [Serialize(Optional = true)] public bool HandOver;
     /// <summary>On a chain page (mod/chains/pages.rules): the result that this outcome gives the chain stage. Empty elsewhere.</summary>
     [Serialize(Optional = true)] public string ChainResult = "";
 

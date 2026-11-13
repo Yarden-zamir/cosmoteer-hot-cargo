@@ -228,7 +228,7 @@ Reads as: the last hold-or-sell question. Money now buys repairs and escorts for
 
 #### 23. Courier Job (station mission offer)
 Not an event page: a Hot Cargo mission in the station's mission list (spec 85). The first trade station that the players reach in a system offers it with chance `CourierChance` (50 %), once per system.
-- The job: fly a sealed case to a neutral contact ("Quiet Contact", "The Night Ferry", ...) 8,000 to 12,000 away within 7 minutes, then collect the pay at the station.
+- The job: the accept puts a Sealed Case in your hold (it needs a free storage slot). Find the neutral contact ("Quiet Contact", "The Night Ferry", ...) 8,000 to 12,000 away and hail it within 7 minutes: hand the case over, or open it first (more pay and heat, or a tracer). Then collect the pay at the station. A lost case fails the job (spec 1100 to 1104).
 - Pay: 1.25 × a standard mission's money, 0.5 × its fame. A quiet job: good money, little fame, so little heat.
 - Contract terms (economy): free, flat heat 3, trail weight 0.5, informant chance 15 %.
 

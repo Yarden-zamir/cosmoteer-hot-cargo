@@ -34,6 +34,8 @@ public static class EventText
     public static string Crew(int amount) =>
         (amount > 0 ? W.GoodTextColor : W.BadTextColor).FormatWithXml($"{Signed(amount)} crew");
 
+    public static string CrewLeft(int amount) => W.BadTextColor.FormatWithXml(amount == 1 ? "1 crew left the ship" : $"{amount} crew left the ship");
+
     public static string Resource(ID<ResourceRules> id, int amount)
     {
         var r = GameApp.Rules.GetResourceRules(id);
@@ -125,6 +127,7 @@ public static class EventText
         UnmetKind.Tech => $"Needs {(int)u.Amount} Stolen Tech in vaults",
         UnmetKind.VaultSpace => $"Needs room for {(int)u.Amount} in Tech Vaults",
         UnmetKind.Crew => $"Needs {(int)u.Amount} crew",
+        UnmetKind.Bunks => (int)u.Amount == 1 ? "Needs a free bunk" : $"Needs {(int)u.Amount} free bunks",
         UnmetKind.MinHeat => $"Needs heat {u.Amount:0} or more",
         UnmetKind.MaxHeat => $"Only below heat {u.Amount:0}",
         UnmetKind.MinSector => $"Needs sector {u.Amount:0}",
@@ -134,6 +137,7 @@ public static class EventText
         UnmetKind.Flag or UnmetKind.NotFlag or UnmetKind.FlagAge => "Not available",
         UnmetKind.MinSectorsLeft or UnmetKind.MaxSectorsLeft => "Not available here",
         UnmetKind.NotWanted => "Only while wanted",
+        UnmetKind.HandOver => u.Id,
         UnmetKind.Points => u.Amount <= 0 ? "Select an option first" : "Offer more",
         _ => throw new ArgumentOutOfRangeException(nameof(u), u.Kind, null),
     };

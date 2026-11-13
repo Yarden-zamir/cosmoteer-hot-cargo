@@ -859,6 +859,148 @@ Events
 		]
 	}
 
+	// Courier Job hand-over (spec 1102): the line shows on the job's contact while the fleet holds the sealed case.
+	// The cost takes the case; HandOver completes the job's hand-over objective.
+	{
+		ID = courier_handover
+		Trigger = Hail
+		HailTarget = Contact
+		HailLine = "Hand over the sealed case."
+		MaxPerRun = 0
+		Need { Resources = [{ ID = yarden_zamir.sealed_case; Amount = 1 }] }
+		Title = "The Hand-Over"
+		Text = "A hatch opens, and a gloved hand waits for the case. \"You didn't open it. Right?\""
+		Choices
+		[
+			{
+				Text = "Hand it over."
+				Cost { Resources = [{ ID = yarden_zamir.sealed_case; Amount = 1 }] }
+				Outcomes [ { Text = "The hatch closes. Your pay waits at the station."; HandOver = true } ]
+			}
+			{
+				Text = "Open it first, then hand it over."
+				Cost { Resources = [{ ID = yarden_zamir.sealed_case; Amount = 1 }] }
+				Outcomes
+				[
+					{ Weight = 60; Text = "Corporate access codes. The contact pays extra to keep you quiet, and the corporation notices the leak."; Money = 0.5; Heat = 8; HandOver = true }
+					{ Weight = 40; WeightPerHeat = 0.3; Text = "The seal was a tracer, and it calls home the moment it breaks."; Heat = 15; HandOver = true }
+				]
+			}
+			{
+				Text = "Not yet."
+				Outcomes [ { Text = "\"Don't make me wait long.\"" } ]
+			}
+		]
+	}
+
+	// Extraction pickup (The Quiet Defector, spec 1105): the transport's comms, after its escorts are gone. HandOver ends the pickup step.
+	{
+		ID = okafor_pickup
+		Trigger = Hail
+		HailTarget = Contact
+		HailLine = "Get Okafor out."
+		MaxPerRun = 0
+		Title = "The Quiet Defector: The Airlock"
+		Text = "The escorts are scrap. Sabine Okafor waits at the transport's airlock in a pressure suit. \"Get me out before they wipe the logs.\""
+		Choices
+		[
+			{
+				Text = "Bring her aboard."
+				Need { Bunks = 1 }
+				Outcomes [ { Text = "She crosses on a tether with one bag and takes a bunk."; Crew = 1; HandOver = true } ]
+			}
+			{
+				Text = "Bring her aboard, and strip the transport's hold."
+				Need { Bunks = 1 }
+				Outcomes [ { Text = "She crosses over while your crew empties the hold. The transport's black box records every crate."; Crew = 1; Resources = [{ ID = processor; Amount = 6; PerTier = 2 }]; Heat = 10; HandOver = true } ]
+			}
+			{
+				Text = "Not yet."
+				Outcomes [ { Text = "\"Hurry. Somebody will miss me.\"" } ]
+			}
+		]
+	}
+
+	// The Black Box hand-over (spec 1107): the station's broker takes the recorder. The Playback page (chains) follows at the station.
+	{
+		ID = blackbox_broker
+		Trigger = Hail
+		HailTarget = Contact
+		HailLine = "Hand over the flight recorder."
+		MaxPerRun = 0
+		Need { Resources = [{ ID = yarden_zamir.flight_recorder; Amount = 1 }] }
+		Title = "The Black Box: The Broker"
+		Text = "The broker's man waits at the airlock with a padded case. Your navigator asks for one minute with the recorder first."
+		Choices
+		[
+			{
+				Text = "Hand it over."
+				Cost { Resources = [{ ID = yarden_zamir.flight_recorder; Amount = 1 }] }
+				Outcomes [ { Text = "The case snaps shut. Your navigator got the logs, and your pay waits at the station."; HandOver = true } ]
+			}
+			{
+				Text = "Not yet."
+				Outcomes [ { Text = "\"The broker doesn't like to wait.\"" } ]
+			}
+		]
+	}
+
+	// Prototype Retrieval hand-over (spec 1108): the broker at the station takes the core. Haggling risks a tip-off.
+	{
+		ID = prototype_broker
+		Trigger = Hail
+		HailTarget = Contact
+		HailLine = "Hand over the prototype core."
+		MaxPerRun = 0
+		Need { Resources = [{ ID = yarden_zamir.prototype_core_cargo; Amount = 1 }] }
+		Title = "Prototype Retrieval: The Broker"
+		Text = "The broker runs a scanner over the core twice. \"Intact. Good. My client will be pleased.\""
+		Choices
+		[
+			{
+				Text = "Hand it over."
+				Cost { Resources = [{ ID = yarden_zamir.prototype_core_cargo; Amount = 1 }] }
+				Outcomes [ { Text = "The core goes into a shielded crate. Your pay waits at the station."; HandOver = true } ]
+			}
+			{
+				Text = "Haggle. The core is worth more than that."
+				Cost { Resources = [{ ID = yarden_zamir.prototype_core_cargo; Amount = 1 }] }
+				Outcomes
+				[
+					{ Weight = 50; Text = "The broker sighs and adds to the price."; Money = 0.5; HandOver = true }
+					{ Weight = 50; WeightPerHeat = 0.2; Text = "The broker pays, then sells your hull number to the corporation for the difference."; Heat = 10; HandOver = true }
+				]
+			}
+			{
+				Text = "Not yet."
+				Outcomes [ { Text = "\"Don't take it far.\"" } ]
+			}
+		]
+	}
+
+	// Repossession hand-over (spec 1110): the bank takes the freighter at the station, once it is close and no player crew is aboard.
+	{
+		ID = repo_handover
+		Trigger = Hail
+		HailTarget = Contact
+		HailLine = "Hand over the repossessed freighter."
+		MaxPerRun = 0
+		Title = "Repossession: The Bank"
+		Text = "The bank's dock crew wait with a docking clamp. \"Bring it alongside and clear your people off. We take it from there.\""
+		Choices
+		[
+			{
+				Text = "Hand over the freighter."
+				Need { HandOverReady = true }
+				Outcomes [ { Text = "The clamps lock on, and the bank's pilots take the helm. Your pay waits at the station."; HandOver = true } ]
+			}
+			{
+				Text = "Not yet."
+				Outcomes [ { Text = "\"The meter is running.\"" } ]
+			}
+		]
+	}
+
 	// ---- Station
 
 	{
