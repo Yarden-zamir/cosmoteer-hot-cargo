@@ -4,10 +4,6 @@ newgame run
 wait 10
 ev_set Enabled false
 closepanel
-# The start event pauses the game: answer it and close its result page.
-choose last
-uxpick 1
-wait 1
 pause off
 godmode on
 tactics Sniper

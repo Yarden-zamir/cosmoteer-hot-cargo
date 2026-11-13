@@ -2,8 +2,6 @@
 # the chain survives save and load mid-chain, and the Return mission completes through its real objective.
 newgame run
 wait 8
-expectevent getaway
-choose 3 1
 ev_set Enabled false
 chain_force fence_ledger
 chain_tostation

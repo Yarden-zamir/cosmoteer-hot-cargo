@@ -106,7 +106,7 @@ Nothing on screen names an enemy personality, trait or role: read them from the 
 The autotests cover triggers, conditions, costs, effects, spawns, follow-up pages, the MP input and save and load. Only a person can judge the points below.
 To see more events fast, put `Events { ArrivalEventChance = 1  StationEventChance = 1  CooldownSeconds = 20 }` in `tunables.rules`.
 
-1. Start a new career. After about 3 seconds, "Clean Getaway?" opens. Does the window look like the game's comms window (title bar, icon, fonts, flat buttons)? Is it centered and easy to read?
+1. Start a new career. Check that no event opens at the start. When the first event opens, does the window look like the game's comms window (title bar, icon, fonts, flat buttons)? Is it centered and easy to read?
 2. Does the game pause while the window is open, and continue after "Continue."?
 3. Read the costs on the buttons, for example "(-5,000 credits)". Are they clear? Is the blue "[Sensor Array]" tag readable, and is the grey reason ("Needs a Sensor Array") readable on a disabled button?
 4. After a choice, read the result lines (money, heat, crew, resources). Do the colors match the vanilla mission reward lines? Is "Heat -20" in green and "Heat +15" in red?
@@ -116,7 +116,7 @@ To see more events fast, put `Events { ArrivalEventChance = 1  StationEventChanc
 8. Text tone: are the texts short enough to read at a glance? Do they sound like one game, like FTL? Note any line that is too long or unclear.
 9. Balance: is a typical event worth less than a vanilla mission, but enough to make the choice interesting? Are the costs at sector 1 affordable with the starting money (about 10,000 credits)?
 10. The Corporate Checkpoint scan: with 6 tech, the scan almost always fails (85 %). Does that read as fair? Does it make you want to sell tech earlier?
-11. Story chains: buy the forged codes at the start, then meet a Corporate Checkpoint. Does the hidden option appear? Take the Defector aboard, then look for "Varga's Old Office" in sector 5 or later.
+11. Story chains: take the clean transponder codes at the end of the Fence's Ledger, then meet a Corporate Checkpoint. Does the hidden option appear? Take the Defector aboard, then look for "Varga's Old Office" in sector 5 or later.
 12. Fights: "Freighter Under Fire" (4-minute limit), "The Magpies" and corporate patrols. Do the spawned ships appear at a fair distance? Is the siege winnable in time? Do the Magpies go for the vault?
 13. Multiplayer (co-op): both players see the window. One player chooses. Does the other player's window switch to the result? Does a second click on an old page do nothing?
 14. Frequency: over a full run, are there too many or too few events? Do two events ever come right after each other?
@@ -136,7 +136,7 @@ To see more events fast, put `Events { ArrivalEventChance = 1  StationEventChanc
 6. Courier Job: look for "Courier Job" in a station's mission list. Is the contact easy to find (target area on the map)? Is 7 minutes too short or too long? Does it feel different from a vanilla delivery?
 7. Vault Coolant Leak (at most one per run): does an event with no free choice feel fair, or punishing? Is the choice between a crate, crew and money a real decision?
 8. Dead in Space: with a Tractor Beam Emitter, can you actually pull the freighter to the station? Is the distance fair (the nearest station at least 3,000 away can be much farther)? Does the map show the destination ring?
-9. "Clean Getaway?" shows the real tech count ("Your vault holds 6 crates"). Do the choice buttons show the gold key numbers from the UX area, with no second "1." in the text?
+9. Do the choice buttons show the gold key numbers from the UX area, with no second "1." in the text?
 
 ## Co-op (two players)
 

@@ -13,42 +13,6 @@
 // Spawn names are generators in spawns.rules. Next opens another event as a follow-up page. Flags carry a story between events.
 Events
 [
-	// ---- Start
-
-	{
-		ID = getaway
-		Trigger = Start
-		Title = "Clean Getaway?"
-		Text = "The lab's alarms fade behind you. Your vault holds {crates} of prototype tech, and every one carries a corporate tracking tag. Somewhere, a security chief is already pulling up your hull number.\n\nThe jump drive is warm."
-		Choices
-		[
-			{
-				Text = "Buy forged transponder codes."
-				Cost { Money = 0.5 }
-				Outcomes
-				[
-					{ Text = "The forger takes your credits and hands you a chip. \"One use. Make it count.\""; SetFlags = [fake_codes] }
-				]
-			}
-			{
-				Text = "Sell one crate to the getaway crew's fence."
-				Need { Tech = 1 }
-				Cost { Tech = 1 }
-				Outcomes
-				[
-					{ Text = "The fence pays well for a crate this fresh. One less tag broadcasts your position."; MoneyTech = 1.2 }
-				]
-			}
-			{
-				Text = "Keep every crate. Fly."
-				Outcomes
-				[
-					{ Text = "You punch it. {crates}, one tracking tag each, and one very angry corporation." }
-				]
-			}
-		]
-	}
-
 	// ---- Arrival
 
 	{

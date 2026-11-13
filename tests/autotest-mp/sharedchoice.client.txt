@@ -19,7 +19,7 @@ ev_mark
 vote 2
 waitfor sc_decided_reason == 3 60
 expect sc_decided_choice == 2
-expect ev_tech_gain == -1
+expect ev_tech_gain == -2
 # Force round. A pick in vote mode does nothing; the vote counts.
 waitfor ev_pending == 1 60
 choose 1

@@ -1,12 +1,13 @@
 # Telemetry: a short scripted run that makes data for a report (tools/telemetry) and checks that each event kind shows.
-# Three systems: the Start event, a contract, an escort, a sale, heat stages with hunters, won fights, a destroyed vault, an event,
+# Three systems: an event, a contract, an escort, a sale, heat stages with hunters, won fights, a destroyed vault, an event,
 # a save and a load, and a win at the Buyer. It checks telemetry coverage, not balance, so the player's ships cannot be hurt
 # (shieldplayers) and damagehostiles stands in for won fights.
 newgame run
 wait 8
 shieldplayers on
-# System 1: the Start event, a contract, a sale, an escort, mission fame and heat up to Warning.
-choose 1
+# System 1: an event, a contract, a sale, an escort, mission fame and heat up to Warning.
+event the_fence
+choose 3
 hc_generate all
 wait 3
 contract_money 200000
