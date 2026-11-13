@@ -1,4 +1,4 @@
-# Tow (spec 134) and capture (spec 135).
+# Tow (spec 134) and capture (spec 135, 1110: the bank takes the freighter at the station).
 newgame run
 wait 8
 ev_set Enabled false
@@ -38,6 +38,24 @@ expect mech_capture_hostile == 1
 mech_capture_surrender
 wait 2
 expect mech_goal_capture == 1
+# The surrendered freighter stays in the system (spec 1110). The bank takes it at the station, once it is alongside.
+wait 10
+ev_contact_goto
+pause off
+wait 3
+ev_comms contact Hand over the repossessed freighter.
+expectchoice 1 disabled
+ev_comms carrier Not yet
+mech_capture_goto
+pause off
+wait 4
+ev_deliver_ship
+pause off
+wait 3
+ev_comms contact Hand over the repossessed freighter.
+expectchoice 1 enabled
+ev_comms carrier Hand over the freighter.
+expect ev_handover == 1
 # Capture by crew: the freighter becomes a wreck, then the players' crew claim it.
 mech_generate capture
 mech_accept capture
@@ -46,6 +64,22 @@ wait 4
 mech_capture_claim
 wait 2
 expect mech_goal_capture == 1
+# Player crew aboard block the hand-over until they are off. The claimed freighter is a player ship, so it never goes into stasis.
+ev_contact_goto
+pause off
+wait 3
+ev_deliver_ship
+pause off
+wait 3
+ev_delivered_crew 1
+ev_comms contact Hand over the repossessed freighter.
+expectchoice 1 disabled
+ev_comms carrier Not yet
+ev_delivered_crew 0
+ev_comms contact Hand over the repossessed freighter.
+expectchoice 1 enabled
+ev_comms carrier Hand over the freighter.
+expect ev_handover == 1
 # Capture failure: the freighter is destroyed.
 mech_generate capture
 mech_accept capture

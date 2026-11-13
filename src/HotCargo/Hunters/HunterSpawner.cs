@@ -26,9 +26,19 @@ public static class HunterSpawner
     /// <summary>Waves spawned since game start. For autotest fields only; not sim state.</summary>
     public static int WavesSpawned { get; private set; }
 
-    /// <summary>Live hunters. Wreck pieces keep the tag but belong to the junk player, so they do not count.</summary>
-    /// <summary>Live hunters. A hunter ship that the players took over (it now has a human owner) is no longer a hunter.</summary>
+    /// <summary>
+    /// Live hunters. Wreck pieces keep the tag but belong to the junk player, so they do not count. A hunter ship that the players
+    /// took over (it now has a human owner) is no longer a hunter.
+    /// </summary>
     public static IEnumerable<Ship> Hunters(SimRoot sim) => sim.Ships.Where(s => s.HasTag(HunterTag) && !s.IsJunk && !s.IsHumanPlayerShip);
+
+    /// <summary>
+    /// Player indexes of the hunters in this system, live and in stasis, in a stable order. Wrecks and hunter ships that the players
+    /// took over do not count. All hunters are one side, so a correct game has at most one index here (spec 33, 1003).
+    /// </summary>
+    public static List<int> SideIndexes(SimRoot sim, CareerSimModeManager career) =>
+        SimQueries.TaggedShips(sim, HunterTag).Select(h => h.PlayerIndex)
+            .Where(p => p != Cosmoteer.PlayerIndexes.Junk && !career.IsHumanPlayerAllegiance(p)).Distinct().ToList();
 
     // A spawn error must not crash the sim tick. Errors.Guard skips the wave and shows the error.
     internal static void OnStageStarted(Run run, SimRoot sim, int stageIndex) => Errors.Guard("hunter spawn", () =>
@@ -180,6 +190,7 @@ public static class HunterSpawner
             var spawned = sim.Ships[spawner.ReservedObjectID]
                 ?? throw new InvalidOperationException($"hunter {ship.ID} did not spawn");
             _ = spawned.Renderer.AnimateFtlJumpIn(spawned.WorldFlightDirection);
+            Dev.Invariants.HunterSpawned(spawned);
             int fuel = EnsureFuel(run, spawned, t.MinFuel);
             Log.Info($"hunters: {reason} spawned {spawned.Metadata.PlainShipName} tier {ship.SpawnTier ?? ship.Tier} " +
                      $"(wanted {tier}) at {loc.DistanceTo(in fleetCenter):0} from the fleet, player index {allegiance}, fuel {fuel}");
@@ -273,17 +284,15 @@ public static class HunterSpawner
     }
 
     /// <summary>
-    /// All hunters in one system share one hostile player index, so they are allies of each other across waves.
-    /// The index comes from the hunters already in the sim, so it survives save and load without extra state.
-    /// </summary>
-    /// <summary>
-    /// The shared allegiance of all hunters: the one of a live hunter, else a new unique one. Only an allocated unique index
-    /// (MaxPlayers and above) is reused: a hunter with a human index belongs to the players, and new hunters with that index
-    /// joined the players' fleet (playtest 2026-11-13).
+    /// All hunters in one system share one hostile player index, so they are allies of each other across waves (spec 33).
+    /// The index comes from the hunters in the sim, live or in stasis, so it survives save and load without extra state,
+    /// and a wave that spawns while the others wait in stasis does not fight them later.
+    /// Only an allocated unique index (MaxPlayers and above) is reused: a hunter with a human index belongs to the players,
+    /// and new hunters with that index joined the players' fleet (playtest 2026-11-13).
     /// </summary>
     static int HunterAllegiance(SimRoot sim, CareerSimModeManager career)
     {
-        int index = Hunters(sim).Select(h => h.Metadata.PlayerIndex).FirstOrDefault(p => p >= career.Rules.MaxPlayers, -1);
+        int index = SideIndexes(sim, career).FirstOrDefault(p => p >= career.Rules.MaxPlayers, -1);
         if (index < 0) index = career.AllocUniquePlayerIndex();
         if (career.IsHumanPlayerAllegiance(index)) throw new InvalidOperationException($"hunter allegiance {index} is a human player's");
         return index;

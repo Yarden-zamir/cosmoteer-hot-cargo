@@ -1,0 +1,16 @@
+# Courier Job (spec 1103): the job fails when the sealed case is gone from the fleet and the system.
+newgame run
+wait 8
+ev_set CourierChance 1
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+worlds jumpto hc_trade_hub
+ev_tostation
+wait 2
+ev_courier_accept
+expect ev_courier_handover == 0
+# The case is destroyed (a storage hit with no drop).
+ev_storage_clear yarden_zamir.sealed_case
+wait 2
+expect ev_courier_handover < 0
+quit

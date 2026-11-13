@@ -25,7 +25,7 @@ Question: can a .NET 10 host on macOS (arm64) run the real game logic with Hot C
 Which runner a test uses:
 
 - A test with the line `# runner: pc` stays on the PC. The line before it says why.
-- Co-op tests (`tests/autotest-mp/`) always run on the PC.
+- Co-op sessions (`tests/autotest-mp/`) run on the Mac too, as two sim processes on 127.0.0.1 (`scripts/autotest-mac-mp.sh`). Both keep the real-time clock (`MAC_SIM_REALTIME=1`), because network requests and lockstep read the game clock. Encoding the co-op ship icon (`TextureData.SaveTo`, FreeImage) writes a blank PNG.
 - `integrate.sh` sets `AUTOTEST_MAC=0`: merges keep the PC suite as the gate.
 - Without the game files on the Mac, `autotest-affected.sh` runs every test on the PC.
 
@@ -50,7 +50,7 @@ Three full runs on this Mac (Apple Silicon, 10 cores, 64 GB, .NET 10.0.14), 8 ru
 | core | core | mp:core |
 | diplomacy | diplomacy-friends, diplomacy-hunters | diplomacy-surrender, mp:diplomacy |
 | events | events-abandoned, events-batch2, events-courier, events-hail, events-outcomes, events-research, events-save, events-tow, events-triggers, events-unavoidable, events-wanted | mp:events |
-| factions | factions-combat-jump, factions-jumps, factions-prices, factions-zones | mp:factions |
+| factions | factions-combat-jump, factions-jumps, factions-peace, factions-prices, factions-zones | mp:factions |
 | hunters | hunters-spawn, hunters-tactics, hunters-waves | - |
 | journey | journey-jump, journey-run | - |
 | mechanics | mechanics-holdout, mechanics-listening, mechanics-offers, mechanics-placement, mechanics-prototype, mechanics-salvage, mechanics-save, mechanics-survey-mining | - |
@@ -137,6 +137,6 @@ Not tried: crossgen of the IL-only copies for osx-arm64, a warm pool of booted h
 
 Risks:
 
-- Sim values on the Mac need not equal PC values (arm64 and x64 floating point, a fixed clock). Assertions with ranges are fine. Exact cross-machine comparisons (the co-op `MPSTATE` check) stay on the PC.
+- Sim values on the Mac need not equal PC values (arm64 and x64 floating point, a fixed clock). Assertions with ranges are fine. The co-op state hash compares two processes on the same Mac, so it stays exact.
 - The host depends on private game members (publicized). A game update can rename them. Each seam then fails at boot with a clear Harmony error.
 - Placeholder art: code that reads texture pixels or sizes for game logic gets blank 1x1 to 64x64 images. No such case showed up in the tests.

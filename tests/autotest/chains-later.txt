@@ -4,18 +4,27 @@ newgame run
 wait 8
 # Sell one crate, so the vault has room for the chain's tech reward.
 event the_fence
+pick 1
 choose 1 1
 ev_set Enabled false
 chain_force black_box
 chain_tostation
 chain_accept
 expect chain_accepted == 1
-# The drone dies; the mission waits for the payment at the station (ReceiveRewards), like a vanilla bounty.
+# The drone dies. The recorder is in the capsule at the wreck (spec 1107): salvage it, hand it to the broker in comms, then the
+# mission waits for the payment at the station (ReceiveRewards), like a vanilla bounty.
 chain_goto
 chain_kill
 wait 2
 expectstage recorder
+ev_goto hc_ch_recorder
+pause off
+wait 3
+ev_take hc_ch_recorder yarden_zamir.flight_recorder
 chain_tostation
+ev_comms contact Hand over the flight recorder.
+ev_comms carrier Hand it over.
+expect ev_handover == 1
 chainview
 chain_pay
 wait 2

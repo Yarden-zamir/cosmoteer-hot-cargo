@@ -102,6 +102,8 @@ public static class TunableTiming
         ["UxTunables.RunIntro"] = Applies.NewRun,
         ["UxTunables.StageAlertSeconds"] = Applies.NextUse,
         ["UxTunables.CommsStayOnMap"] = Applies.NextUse,
+        // The filter, the risk sort and the kind icons attach when a mission list opens.
+        ["UxTunables.MissionSelect"] = Applies.NextUse,
         ["UxTunables.PauseOnComms"] = Applies.NextUse,
         ["UxTunables.PauseOnCommsMultiplayer"] = Applies.NextUse,
         ["DifficultyRow.HunterShips"] = Applies.NextSpawn,

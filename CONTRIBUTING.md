@@ -33,32 +33,37 @@ The mod checks at the first frame of a run that each trigger has a page and each
 3. Unit tests (pure math only): `cd tests/HotCargo.Tests && dotnet run`.
 4. Game test on the PC: `scripts/autotest.sh tests/autotest/<name>.txt`. It deploys, turns the mod on, runs the game headless in a test slot and prints the result and a `== timing` line (seconds per phase). Commands are in `src/HotCargo/Dev/Autotest.cs`.
 5. Other PC scripts: `deploy.sh`, `run.sh`, `stop.sh`, `logs.sh`, `mod-toggle.sh on|off`. `stage.sh <dir>` builds and stages the mod with a content hash. The PC keeps the 30 newest builds in `%USERPROFILE%\HotCargoSlots\_builds\<hash>`, so `deploy.sh` uploads a build only once. The PC side of a deploy is `scripts/slot-install.ps1`; it ships inside the build, because the T3 link allows only 8192 characters for a command.
-6. Suites: `scripts/autotest-all.sh [--detach] [timeout] [tests...]` and `scripts/autotest-affected.sh [--detach]`. A suite stages once, and all its tests run that build. `--detach` runs it safe from a killed shell; `scripts/suite-wait.sh <log>` waits for it.
-   - Mac sim: `scripts/autotest-mac.sh [timeout] [tests...]` runs single-player tests on this Mac, in parallel, with no PC (`tools/mac-sim`, `docs/mac-sim-spike.md`). `autotest-affected.sh` runs single-player tests there and the rest on the PC. A test with the line `# runner: pc` stays on the PC. `integrate.sh` runs every test on the PC (`AUTOTEST_MAC=0`).
+6. Suites: `scripts/autotest-all.sh [--detach] [timeout] [tests...]` and `scripts/autotest-affected.sh [--detach]`. A suite stages once, and all its tests run that build. `--detach` runs it safe from a killed shell; `scripts/suite-wait.sh <log>` waits for it. A `--detach` run loses PC access when the Bash call that started it ends, so run PC suites as a background Bash command instead (see the `hot-cargo-testing` skill).
+   - Mac sim: `scripts/autotest-mac.sh [timeout] [tests...]` runs tests on this Mac, in parallel, with no PC (`tools/mac-sim`, `docs/mac-sim-spike.md`). Co-op sessions (`mp:<session>`) run as two sim processes on 127.0.0.1 with the real-time clock (`scripts/autotest-mac-mp.sh`). `autotest-affected.sh` runs tests there, co-op included. A test with the line `# runner: pc` stays on the PC. `integrate.sh` runs every test on the PC (`AUTOTEST_MAC=0`).
 7. Telemetry: every game writes a JSONL file per session (TELEMETRY.md). `scripts/pull-telemetry.sh` copies the files to `../.telemetry`, and `cd tools/telemetry && uv run hc-telemetry` writes a report. `scripts/autotest-all.sh --telemetry` does both after a test pass.
 
 ### Co-op (multiplayer) tests
 
-Run a co-op test with `scripts/autotest-mp.sh tests/autotest-mp/<name>.host.txt tests/autotest-mp/<name>.client.txt [timeout]`. Run them all with `scripts/autotest-mp-all.sh`.
+Co-op tests are sessions: `tests/autotest-mp/<session>.txt` (`coop-core`, `coop-economy`, `coop-combat`). Run one with `scripts/autotest-all.sh 400 mp:<session>` or `scripts/autotest-mp.sh tests/autotest-mp/<session>.txt [timeout]`. Run them all with `scripts/autotest-mp-all.sh`.
 
 - The script takes two test slots. One slot hosts a co-op career, and the other slot joins it over UDP on `127.0.0.1`. Both run headless with `--nosteam`, through the LAN lobby and game setup screens.
+- The session file is the host's script and holds all choreography. The client runs `tests/autotest-mp/client.txt`: it joins, then follows the host. A `client: <command>` line in the session file runs on the client before it joins (local settings).
 - `{PORT}` in a script becomes the host's port (35870 + host slot number).
-- The test fails on an `AUTOTEST FAIL` or `ERROR` line in either log. A desync that the game detects writes an `MP DESYNC` error line, in tests and in normal play.
-- Both machines log an `MPSTATE` line every 300 sim ticks. The script compares the lines of the ticks that both machines logged. This catches a divergence that the game's integrity hash does not cover.
+- `step <area>.<name>` starts a step. Each step logs its own result. A failure skips only the rest of its step, so one failure does not hide the others. The area is the lowercase area folder name: `scripts/autotest-affected.sh` runs every session with a step of a changed area.
+- `end` closes the last step, sends the client away and quits.
+- Both machines log `MPHASH` and `MPFIELDS` lines every 150 sim ticks: a hash of every saved `RunState` member, money per player, ship and part counts and the sim random state. A desync that the game detects writes an `MP DESYNC` error line, in tests and in normal play.
+- `scripts/coop-report.sh <host log> <client log>` gives the verdict from the two logs only: one line per step, then `== result: PASS` or `== result: FAIL: <reasons>` (join failed, steps failed, desync, state differs, state hash gap, errors). On a state difference it names the first game and tick, the step and the members that differ.
+- The join retries once inside the game. A whole session runs again only when nothing ran in the host.
 
-Commands for co-op scripts (`src/HotCargo/Dev/MpAutotest.cs`):
+Commands for co-op sessions (`src/HotCargo/Dev/MpAutotest.cs`):
 
 - `mphost <port>` (host): host a career on the Hot Cargo map with starter ship 0. `mpstart [players]` (host): wait for the clients to be ready, then start.
-- `mpjoin <address:port>` (client): join like Direct Connect. `mpready [shared]` (client): pick a ship if needed, say ready and wait for the game. With `shared`, the client joins the host's team.
-- `mp <command>`: run a test command inside the sim on every machine. Use it for every test command that changes the sim (`heat`, `stage`, `godmode`, `tostation`, `buyer goto`, `hc_generate`, `event` and so on). A test command that changes the sim without `mp` causes a desync.
-- Real player actions run without `mp`, from one machine: `choose`, `tech sell`, `buyer sell`, `pause`. They send the game's own MP inputs.
-- `waitfor <field> <op> <value> [timeout]`: wait until a check holds. Use it to keep the two scripts in step. `mp mpmark <n>` with `waitfor mpmark >= <n>` is a barrier between host and client.
-- `mplobby` (host): return all players to the game setup screen. `mpload <name>` (host): the next `mpstart` loads the save `HotCargoTest_<name>`.
+- `mpjoin <address:port>` (client): join like Direct Connect. `follow` (client): say ready in every game setup, run the commands that the host sends, quit when the host ends.
+- `mp <command>`: run a test command inside the sim on every machine, as the sender. Use it for every test command that changes the sim (`heat`, `stage`, `godmode`, `tostation`, `hc_generate`, `event` and so on). A test command that changes the sim without `mp` causes a desync.
+- `as <player> <command>`: like `mp`, as that player index (0 the host, 1 the client). An input that the command sends runs at once as that player, after the game's `AllowMPInput` check. Use it for choices that read only sim state: `choose`, `vote`, `dip`, `dip_pick`, `dip_punish`, `spawnstage`, `tostation`, `buyer goto`.
+- `on <player> <command>`: run a command on that player's own machine and wait until it reports back. A failure there fails the step. Use it for that machine's UI and view (`menu`, `hover`, `expectcomms`, `tactics_editor`, `expect` of local fields such as money gains) and for inputs that it sends over the network like a real click (`choose`, `tech sell`, `fa_buy`, `buyer sell`, `contract_accept`, `tactics`).
+- Real player actions of the host run without `mp`: `choose`, `tech sell`, `vote`, `pause`.
+- `waitfor <field> <op> <value> [timeout]`: wait until a check holds.
+- `mplobby` (host): return all players to the game setup screen. `mpload <name>` (host): the next `mpstart` loads the save `HotCargoTest_<name>`. A loaded game starts paused: `pause off`. `mprestart` (host): a new run with the connection kept, for steps after a won or lost run.
 - `mpresync` (host): do the resync that follows a desync (the host's game goes to every machine). Then `waitfor mpgames >= <n>`.
-- `mpchoose <serial> <choice>`: send an event choice for any page, like a late second click.
-- `tunablesfile <text>` (before `mphost`): give this slot a different `tunables.rules`.
+- `mpchoose <serial|marked> <choice>`: send an event choice for any page, like a late second click. `marked`: the page that was pending at the last `ev_mark`.
+- `tunablesfile <text>` (before `mphost`): give this slot a different `tunables.rules`. Fields are separated by `;`.
 - Fields: `desyncs`, `mpgames`, `ishost`, `mpplayers`, `mpconnected`, `mpsetup`, `localplayer`, `mpmark`, `heatperminute`.
-- End each test with the client quitting first. The host waits with `waitfor mpconnected == 0`, then quits.
 
 The game runs on a Windows PC that a person also uses. `autotest.sh` runs headless test instances (no window) in slots t1..t6, each with its own save folder `%USERPROFILE%\HotCargoSlots\<slot>`, so several tests run at the same time. Other scripts take `SLOT=<name>`; without it they act on the player's own game (slot main), which starts minimized.
 

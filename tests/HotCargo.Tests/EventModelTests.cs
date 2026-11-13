@@ -11,6 +11,7 @@ public class EventModelTests
         Tech = 3,
         VaultSpace = 1,
         Crew = 4,
+        Bunks = 1,
         Heat = 40,
         Sector = 3,
         Resources = new Dictionary<string, int> { ["hyperium"] = 25 },
@@ -25,12 +26,23 @@ public class EventModelTests
     }
 
     [Fact]
+    public void Hand_over_need_reports_the_blocker_text()
+    {
+        Assert.Null(EventModel.FirstUnmet(new Need { HandOverReady = true }, Fleet));
+        var blocked = Fleet with { HandOverBlock = "Take your crew off it first" };
+        Assert.Equal(new Unmet(UnmetKind.HandOver, "Take your crew off it first"), EventModel.FirstUnmet(new Need { HandOverReady = true }, blocked));
+        Assert.Null(EventModel.FirstUnmet(new Need(), blocked));
+    }
+
+    [Fact]
     public void Each_need_kind_reports_its_first_failure()
     {
         Assert.Equal(UnmetKind.Money, EventModel.FirstUnmet(new Need { Money = 10_001 }, Fleet)?.Kind);
         Assert.Equal(UnmetKind.Tech, EventModel.FirstUnmet(new Need { Tech = 4 }, Fleet)?.Kind);
         Assert.Equal(UnmetKind.VaultSpace, EventModel.FirstUnmet(new Need { VaultSpace = 2 }, Fleet)?.Kind);
         Assert.Equal(UnmetKind.Crew, EventModel.FirstUnmet(new Need { Crew = 5 }, Fleet)?.Kind);
+        Assert.Equal(UnmetKind.Bunks, EventModel.FirstUnmet(new Need { Bunks = 2 }, Fleet)?.Kind);
+        Assert.Null(EventModel.FirstUnmet(new Need { Bunks = 1 }, Fleet));
         Assert.Equal(UnmetKind.MinHeat, EventModel.FirstUnmet(new Need { MinHeat = 41 }, Fleet)?.Kind);
         Assert.Equal(UnmetKind.MaxHeat, EventModel.FirstUnmet(new Need { MaxHeat = 40 }, Fleet)?.Kind);
         Assert.Equal(UnmetKind.MinSector, EventModel.FirstUnmet(new Need { MinSector = 4 }, Fleet)?.Kind);
@@ -221,5 +233,45 @@ public class EventModelResearchTests
         EventModel.Shuffle(b, n => (seedB = seedB * 31 + 11) % n);
         Assert.Equal(a, b);
         Assert.Equal([1, 2, 3, 4, 5], a.Order());
+    }
+}
+
+public class EventModelOptionTests
+{
+    [Fact]
+    public void A_unit_grows_with_tier_and_heat_like_the_old_costs()
+    {
+        Assert.Equal(25f, EventModel.UnitSize(25f, 5f, 0f, tier: 1, heat: 50f), 4);
+        Assert.Equal(35f, EventModel.UnitSize(25f, 5f, 0f, tier: 3, heat: 50f), 4);
+        Assert.Equal(0.8f, EventModel.UnitSize(0.3f, 0f, 0.01f, tier: 1, heat: 50f), 4);
+        Assert.Equal(0f, EventModel.UnitSize(-1f, 0f, 0f, tier: 1, heat: 0f));
+    }
+
+    [Fact]
+    public void Whole_items_round_half_away_from_zero_and_reject_negative_amounts()
+    {
+        Assert.Equal(10, EventModel.Whole(0.5f, 20f));
+        Assert.Equal(3, EventModel.Whole(0.5f, 5f));
+        Assert.Equal(2, EventModel.Whole(2f, 1f));
+        Assert.Throws<ArgumentOutOfRangeException>(() => EventModel.Whole(-1f, 1f));
+    }
+
+    [Fact]
+    public void Ten_steps_of_a_tenth_reach_a_need_of_one_and_less_does_not()
+    {
+        float points = 0f;
+        for (int i = 0; i < 10; i++) points += 0.1f;
+        Assert.True(EventModel.Enough(points, 1f));
+        Assert.False(EventModel.Enough(0.9f, 1f));
+        Assert.Equal(1.5f, EventModel.NeedPoints(1f, 0.01f, 50f), 4);
+    }
+
+    [Fact]
+    public void Risk_and_offer_percent_stay_in_range()
+    {
+        Assert.Equal(0.4f, EventModel.RiskChance(0.2f, 2f), 4);
+        Assert.Equal(1f, EventModel.RiskChance(0.6f, 2f), 4);
+        Assert.Equal(50, EventModel.OfferPercent(0.5f, 1f));
+        Assert.Equal(100, EventModel.OfferPercent(0f, 0f));
     }
 }

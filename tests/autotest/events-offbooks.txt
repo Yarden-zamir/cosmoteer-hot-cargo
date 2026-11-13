@@ -5,12 +5,14 @@ ev_set StationEventChance 0
 ev_set CourierChance 0
 ev_set CooldownSeconds 0
 save offbooks
-# 1. Sell one crate: tech drops by 1, money rises, the page closes.
+# 1. Sell one crate (an option row, spec 810): tech drops by 1, money rises, the page closes.
 ev_open station
 ev_click station Sell a crate off the books
 expectevent off_books
 ev_mark
-ev_click station Sell one crate
+pick 1
+expectoption 1 selected
+ev_click station Sell the crates
 expect ev_tech_gain == -1
 expect ev_money_gain > 0
 expect ev_pending == 0

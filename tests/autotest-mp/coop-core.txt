@@ -1,0 +1,207 @@
+# Co-op session: host tunables, onboarding, heat and hunters, settings menu, run modes, ship tactics, resync, save and load.
+# The session file is the host's script. "client:" lines run on the client before it joins; the client then follows (client.txt).
+# "as 1 <command>": the command runs in the sim as the client player. "on 1 <command>": it runs on the client's own machine.
+# Every step logs its own result. Both machines log a state hash every 300 ticks; scripts/coop-report.sh compares them.
+
+# Before the join. The host's tunables.rules differs from the client's: both start with the defaults, then the host's file
+# arrives as an MP input. Tutorials are on for both players, so the co-op page shows (spec 721, 733).
+client: codex_reset
+client: tutorials on
+codex_reset
+tutorials on
+tunablesfile Heat { HeatPerGameMinute = 30; HeatCarryOverFraction = 0.5 }  Events { Enabled = false }
+mphost {PORT}
+mpstart 2
+mp godmode on
+mp maxhunters 4
+mp tacticlog on
+
+step core.tunables
+waitfor heatperminute == 30 30
+on 1 waitfor heatperminute == 30 30
+
+step onboarding.coop-page
+waitfor hint_hc_coop == 1 15
+on 1 waitfor hint_hc_coop == 1 15
+
+step core.client-heat
+# The client adds heat, and the first stage (Warning at heat 40, #19) starts on both machines.
+as 1 heat 40
+waitfor stages >= 1 60
+
+step onboarding.runlog
+# Each machine logs the stage in its own run log.
+waitfor runlog_stage == 1 10
+expect runlog_count >= 2
+on 1 waitfor runlog_stage == 1 10
+on 1 expect runlog_count >= 2
+
+step core.hunters
+# Hunters jump in, the host forces two more stages, and the hunters stay hostile to both players.
+waitfor hunters >= 1 60
+mp stage
+mp stage
+waitfor stages >= 3 30
+waitfor hunters >= 2 60
+wait 20
+hunters host
+expect huntershostile == 1
+on 1 hunters client
+on 1 expect huntershostile == 1
+
+step tunablesmenu.host-edit
+# Spec 504: the host's menu change reaches the client through the tunables input. A menu edit keeps the file's other values.
+waitfor menu_ready == 1 30
+menu open
+expect menu_readonly == 0
+menu set Events.Enabled off
+menu set Heat.HeatPerGameMinute 45
+menu set Hunters.Stages[0].ShipCount 4
+menu close
+waitfor heatperminute == 45 30
+menu file has HeatPerGameMinute = 45
+menu file has HeatCarryOverFraction = 0.5
+menu value Heat.HeatCarryOverFraction == 0.5
+
+step tunablesmenu.client-readonly
+on 1 waitfor heatperminute == 45 30
+on 1 menu open
+on 1 expect menu_readonly == 1
+on 1 menu reject Heat.HeatPerGameMinute 10
+on 1 menu close
+on 1 menu value Hunters.Stages[0].ShipCount == 4
+on 1 menu value Heat.HeatCarryOverFraction == 0.5
+
+step tunablesmenu.file
+# Spec 60, 850: a change of the host's tunables.rules mid-run goes out as the tunables input, and every machine applies it
+# at the same tick. A bad file sends nothing. The client's own file has no effect.
+tunablesfile Events { Enabled = false }; Heat { HeatPerGameMinute = 50 }; Hunters { MaxLiveHunters = 7 }
+waitfor heatperminute == 50 30
+menu open
+menu shows Heat.HeatPerGameMinute 50
+menu close
+tunablesfile Heat { HeatPerGameMinute = 55; HeatCarryOverFraction = 2 }
+wait 3
+expect tunables_error == 1
+expect heatperminute == 50
+on 1 waitfor heatperminute == 50 30
+on 1 menu open
+on 1 expect menu_readonly == 1
+on 1 menu shows Heat.HeatPerGameMinute 50
+on 1 menu close
+on 1 menu value Hunters.MaxLiveHunters == 7
+on 1 tunablesfile Heat { HeatPerGameMinute = 99 }
+on 1 wait 3
+on 1 expect heatperminute == 50
+wait 2
+expect heatperminute == 50
+
+step shipai.tactics
+# Spec 409, 411: edits by either player go through the tactics input. The client's edits come from its own machine.
+mp aiset FleeEnabled false
+tactics Defensive
+tacticsauto on
+on 1 tactics Sniper
+on 1 tacticsauto on
+waitfor tactics_any_auto >= 2 30
+expecttacticsany Sniper
+expecttacticsany Defensive
+
+step shipai.editor
+# The client edits in the editor window: apply a preset, change the action of row 1, move row 3 up, edit a condition term.
+# Each edit is one input.
+on 1 tactics_editor open
+on 1 tactics_editor apply Escort
+on 1 tactics_editor act 1 RetreatRepair
+on 1 tactics_editor up 3
+# A term edit: add a condition, pick it, and turn NOT on. Each one is one input.
+on 1 tactics_editor addterm 1
+on 1 tactics_editor cond 1 HuntersInSystem 2
+on 1 tactics_editor not 1 2
+on 1 wait 3
+on 1 expecttactics HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
+on 1 expect tactics_auto == 1
+on 1 tactics_editor close
+wait 2
+expecttacticsany HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
+
+step shipai.fight
+# Both machines run the same tactics decisions in a fight.
+# Two ships of the sector tier: the Warning response of the last sector (#19 removed the Patrol stage).
+mp stageset Warning EarlyScale 1
+mp spawnstage Warning
+wait 30
+expect tactics_evals > 20
+
+step core.resync
+# The resync that follows a desync (and a late join): every machine reloads the host's game. A pending event, a sprung trap,
+# the stage and the ship tactics come back on both machines.
+mp hc_generate shady
+mp hc_accept shady
+mp hc_shady_spring
+mp event smuggler_den
+waitfor hc_trap_state == 2 20
+expectevent smuggler_den
+# The fight can destroy a ship's control room (godmode cannot stop a one-hit kill); a ship without command becomes a wreck.
+# So the tactics check compares every ship that is still a human ship with a snapshot from just before the resync.
+mp tactics_snapshot
+wait 1
+save mpsave
+mpresync
+waitfor mpgames >= 2 120
+waitfor active == 1 60
+expectevent smuggler_den
+expect hc_trap_state == 2
+expect stages >= 1
+expect heat >= 30
+expect tactics_snapshot_kept >= 1
+expect tactics_snapshot_changed == 0
+on 1 waitfor active == 1 60
+on 1 expectevent smuggler_den
+on 1 expect hc_trap_state == 2
+on 1 expect tactics_snapshot_kept >= 1
+on 1 expect tactics_snapshot_changed == 0
+
+step core.save-load
+# Back to the game setup with the connection kept, load the save (from before the resync) for both players, start.
+mplobby
+mpload mpsave
+mpstart 2
+# A loaded co-op game starts paused.
+pause off
+waitfor paused == 0 10
+expectevent smuggler_den
+expect hc_trap_state == 2
+expect stages >= 1
+expect heat >= 30
+on 1 waitfor active == 1 60
+on 1 expectevent smuggler_den
+on 1 expect hc_trap_state == 2
+
+step runmodes.difficulty
+# Spec 680 to 685: the host changes the difficulty through the vanilla settings inputs. The client sees the same effective
+# heat rate, hunter count and tier, tech value and fees. The state hash compares the heat that time adds at the new rate.
+# Late in the session: the very hard fight can destroy a ship that earlier steps check.
+rm_difficulty very_hard slow scarce
+rm_log host
+on 1 expect rm_heatrate > 1
+on 1 expect rm_ships > 1
+on 1 expect rm_tech < 1
+on 1 expect rm_techgap < 0.01
+on 1 expect pricegap == 0
+on 1 rm_log client
+# Two ships of the sector tier: the Warning response of the last sector (#19 removed the Patrol stage).
+mp stageset Warning EarlyScale 1
+mp spawnstage Warning
+wait 15
+rm_log host-after
+on 1 expect rm_tiers >= 1
+on 1 rm_log client-after
+
+step onboarding.restore
+# The slot keeps its settings file: tutorials off again for later tests in these slots.
+codex_restore
+on 1 codex_restore
+
+end
+# tier: smoke

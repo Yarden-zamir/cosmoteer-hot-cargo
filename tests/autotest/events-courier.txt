@@ -1,4 +1,4 @@
-# Courier Job (spec 85): the first trade station in a system puts the offer into its mission list; the contact is far away.
+# Courier Job (spec 85, 1101 to 1103): the first trade station in a system puts the offer into its mission list; the contact is far away.
 newgame run
 wait 8
 ev_set CourierChance 1
@@ -17,15 +17,15 @@ wait 2
 expect ev_courier_offers == 1
 ev_courier_accept
 expect ev_courier_offers == 0
-expect ev_courier_reached == 0
+expect ev_courier_handover == 0
 # The first teleport loads the contact out of stasis, the second one puts the ships next to its live position.
 ev_courier_goto
 pause off
 ev_courier_goto
 pause off
+# Check sight at once: the contact drifts on patrol, and in a cloudy nebula sight is about 120.
+waitfor ev_courier_seen == 1 20
 wait 5
 log contact
 expect ev_paused == 0
-expect ev_courier_seen == 1
-expect ev_courier_reached == 1
 quit

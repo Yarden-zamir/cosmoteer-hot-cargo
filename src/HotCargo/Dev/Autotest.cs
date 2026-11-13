@@ -33,8 +33,24 @@ public static class Autotest
     /// <summary>Test only: while godmode is on, the run cannot be lost (one big hit can still destroy a vault).</summary>
     public static bool GodMode => _godmode is not null;
 
-    /// <summary>A condition that the script waits for. Then runs after the condition holds and may start the next wait.</summary>
-    sealed record WaitCondition(Func<bool> Done, double Deadline, string What, Action? Then);
+    /// <summary>
+    /// A condition that the script waits for. Then runs after the condition holds and may start the next wait.
+    /// OnTimeout, when set, runs in place of the failure when the deadline passes (for example a second join try).
+    /// </summary>
+    sealed record WaitCondition(Func<bool> Done, double Deadline, string What, Action? Then, Action? OnTimeout);
+
+    /// <summary>The step that runs now (see the "step" command). Null before the first step: then a failure ends the script.</summary>
+    static string? _step;
+    static readonly List<string> _passedSteps = [], _failedSteps = [];
+
+    /// <summary>The step that the sim ran last (the "mpstep" input). A failed "mp" or "as" line counts for this step.</summary>
+    internal static string? SimStep;
+
+    /// <summary>
+    /// True on a co-op client that follows the host (MpAutotest "follow"). A failed sim line is then only logged, because
+    /// the host records it, and a failed command from the host ("on") skips to its acknowledgement.
+    /// </summary>
+    internal static bool Following;
 
     /// <summary>True when this game instance runs an autotest script.</summary>
     public static bool IsActive => _script is not null;
@@ -47,14 +63,7 @@ public static class Autotest
         if (!File.Exists(path)) return;
         var lines = File.ReadAllLines(path);
         File.Move(path, Path.Combine(Mod.ModRoot, "autotest.done"), overwrite: true);
-        _script = new();
-        for (int i = 0; i < lines.Length; i++)
-        {
-            string line = lines[i].Split('#')[0].Trim();
-            if (line.Length == 0) continue;
-            int space = line.IndexOf(' ');
-            _script.Enqueue(space < 0 ? (line, "", i + 1) : (line[..space], line[(space + 1)..].Trim(), i + 1));
-        }
+        _script = new(Parse(lines, firstLine: 1));
         AddBaseCommands();
         MpAutotest.AddCommands();
         // Test slots start with empty settings, so every tutorial page is unseen. Pages with AutoPause would pause the game
@@ -63,6 +72,27 @@ public static class Autotest
         foreach (var page in GameApp.Rules.Codex.CodexPages.Where(p => p.AutoPause)) { page.AutoPause = false; unpaused++; }
         Log.Info($"AUTOTEST loaded {_script.Count} commands; tutorial auto-pause off on {unpaused} pages");
         App.Director.FrameEnded += OnFrame;
+    }
+
+    /// <summary>Script lines to commands. Comments ('#') and empty lines drop out. firstLine numbers the lines in the log.</summary>
+    static IEnumerable<(string Name, string Arg, int Line)> Parse(IEnumerable<string> lines, int firstLine)
+    {
+        int number = firstLine;
+        foreach (string raw in lines)
+        {
+            int n = number++;
+            string line = raw.Split('#')[0].Trim();
+            if (line.Length == 0) continue;
+            int space = line.IndexOf(' ');
+            yield return space < 0 ? (line, "", n) : (line[..space], line[(space + 1)..].Trim(), n);
+        }
+    }
+
+    /// <summary>Puts lines in front of the rest of the script (line number 0 in the log). For commands that the host sends.</summary>
+    internal static void Inject(IEnumerable<string> lines)
+    {
+        var script = _script ?? throw new InvalidOperationException("no autotest script");
+        _script = new(Parse(lines, firstLine: 0).Select(c => c with { Line = 0 }).Concat(script));
     }
 
     static void OnFrame(object? sender, EventArgs e)
@@ -74,8 +104,9 @@ public static class Autotest
             {
                 if (!Holds(w.Done))
                 {
-                    if (App.Clock.Time.Seconds > w.Deadline) throw new TimeoutException($"timed out waiting for {w.What}; states: {StateNames()}");
-                    return;
+                    if (App.Clock.Time.Seconds <= w.Deadline) return;
+                    if (w.OnTimeout is { } retry) { _waitFor = null; retry(); return; }
+                    throw new TimeoutException($"timed out waiting for {w.What}; states: {StateNames()}");
                 }
                 _waitFor = null;
                 Log.Info($"AUTOTEST waited for {w.What}");
@@ -97,13 +128,54 @@ public static class Autotest
         catch (Exception ex) { Fail($"line {line}: {name} {arg}", ex); }
     }
 
-    /// <summary>Logs the failure and ends the script with quit.</summary>
+    /// <summary>
+    /// Logs the failure. In a step: the script goes on at the next "step" or "end", so one failure does not hide the rest.
+    /// On a following co-op client: a failed command from the host skips to its acknowledgement ("mpack"), which reports it.
+    /// Else the script ends with quit.
+    /// </summary>
     static void Fail(string what, Exception ex)
     {
-        Log.Error($"AUTOTEST FAIL {what}", ex);
         _waitFor = null;
+        _waitUntil = 0;
+        if (Following && SkipTo("mpack"))
+        {
+            Log.Error($"AUTOTEST ON FAIL {what}", ex);
+            MpAutotest.OnCommandFailed = true;
+            return;
+        }
+        if (_step is { } step && !Following)
+        {
+            FailStep(step, what, ex);
+            if (SkipTo("step", "end")) return;
+        }
+        else Log.Error($"AUTOTEST FAIL {what}", ex);
         _script?.Clear();
         _script?.Enqueue(("quit", "", _line));
+    }
+
+    static void FailStep(string step, string what, Exception ex)
+    {
+        // The reason in the same line, so scripts/coop-report.sh can print it.
+        Log.Error($"AUTOTEST STEP FAIL {step}: {what}: {ex.Message}", ex);
+        if (!_failedSteps.Contains(step)) _failedSteps.Add(step);
+    }
+
+    /// <summary>Drops script lines up to the next line with one of the command names. False when no such line is left.</summary>
+    static bool SkipTo(params string[] names)
+    {
+        if (_script is null || !_script.Any(c => names.Contains(c.Name, StringComparer.OrdinalIgnoreCase))) return false;
+        while (!names.Contains(_script.Peek().Name, StringComparer.OrdinalIgnoreCase)) _script.Dequeue();
+        return true;
+    }
+
+    /// <summary>Logs the result of the step that runs now: AUTOTEST STEP RESULT name PASS|FAIL.</summary>
+    static void CloseStep()
+    {
+        if (_step is not { } step) return;
+        bool failed = _failedSteps.Contains(step);
+        if (!failed) _passedSteps.Add(step);
+        Log.Info($"AUTOTEST STEP RESULT {step} {(failed ? "FAIL" : "PASS")}");
+        _step = null;
     }
 
     /// <summary>A condition that throws (for example no run yet, during a resync) counts as not met.</summary>
@@ -114,18 +186,24 @@ public static class Autotest
     }
 
     // A dialog's message usually says why a wait failed (for example why a co-op join was refused), so the names include it.
-    static string StateNames() => string.Join(", ", App.Director.States.Select(s =>
+    internal static string StateNames() => string.Join(", ", App.Director.States.Select(s =>
         s is Halfling.Gui.Dialogs.OneButtonDialog d ? $"OneButtonDialog \"{d.MessageLabel.Text}\"" : s.GetType().Name));
 
     /// <summary>Pauses the script for real seconds.</summary>
     public static void Wait(double seconds) => _waitUntil = App.Clock.Time.Seconds + seconds;
 
-    /// <summary>Pauses the script until the condition holds, then runs then. Fails the test after timeout real seconds.</summary>
-    public static void WaitFor(Func<bool> done, double timeoutSeconds, string what, Action? then = null) =>
-        _waitFor = new(done, App.Clock.Time.Seconds + timeoutSeconds, what, then);
+    /// <summary>
+    /// Pauses the script until the condition holds, then runs then. After timeout real seconds it runs onTimeout,
+    /// or fails the test when onTimeout is null.
+    /// </summary>
+    public static void WaitFor(Func<bool> done, double timeoutSeconds, string what, Action? then = null, Action? onTimeout = null) =>
+        _waitFor = new(done, App.Clock.Time.Seconds + timeoutSeconds, what, then, onTimeout);
 
     /// <summary>The player index of the sender while an "mp" command runs inside the sim. Null outside of it.</summary>
     static int? _simPlayer;
+
+    /// <summary>The acting player while a command runs inside the sim ("mp", "as"). Inputs that it sends then run at once as this player.</summary>
+    internal static int? SimPlayer => _simPlayer;
 
     /// <summary>The player that a test command acts for: the sender of an "mp" command inside the sim, else the local player.</summary>
     public static int ActingPlayerIndex => _simPlayer ?? (Game ?? throw new InvalidOperationException("no game")).LocalPlayerIndex;
@@ -138,8 +216,8 @@ public static class Autotest
     }
 
     /// <summary>
-    /// Runs one script line inside the sim on every machine, for "mp" commands (see MpAutotest.AutotestInput).
-    /// A failure fails the script on every machine the same way.
+    /// Runs one script line inside the sim on every machine, for "mp" and "as" commands (see MpAutotest.AutotestInput).
+    /// A failure counts for the step that the sim runs (SimStep). A following client only logs it: the host records it.
     /// </summary>
     internal static void RunInSim(string line, int playerIndex)
     {
@@ -152,7 +230,13 @@ public static class Autotest
             Log.Info($"AUTOTEST sim tick {Game?.Sim.Tick}: {line} (player {playerIndex})");
             cmd(arg);
         }
-        catch (Exception ex) { Fail($"mp {line}", ex); }
+        catch (Exception ex)
+        {
+            if (Following) Log.Info($"AUTOTEST SIM FAIL (the host records it) {line}: {ex.Message}");
+            // The host's script can be in a later step when the input runs; then only that earlier step fails.
+            else if (SimStep is { } simStep && simStep != _step) FailStep(simStep, $"sim: {line}", ex);
+            else Fail($"sim: {line}", ex);
+        }
         finally { _simPlayer = null; }
     }
 
@@ -258,12 +342,12 @@ public static class Autotest
             App.Director.PushState(init.CreateGame(SPManager.Create));
             Wait(5);
         };
-        // The game blocks saving for a moment during async work (a trade ship or police spawn, a short invulnerability).
-        // Wait that out like the vanilla autosave does (GameRoot), then save.
         Commands["save"] = arg =>
         {
             var game = Game ?? throw new InvalidOperationException("no game");
-            WaitFor(() => !game.IsGameSavingBlocked, 15, "game saving is not blocked", () =>
+            // Background work (hit effects, construction, jumps) blocks saving for a moment (GameSaveHandler.BlockGameSaving),
+            // and SaveAs then throws. So the save waits until it may run.
+            WaitFor(() => !game.IsGameSavingBlocked, 30, "game saving to be allowed", () =>
             {
                 game.SaveAs((string)(Paths.SavedGamesFolder / $"HotCargoTest_{arg}.savedgame"));
                 Wait(2);
@@ -322,6 +406,26 @@ public static class Autotest
                         if (part.Health < part.Rules.MaxHealth) part.Health = part.Rules.MaxHealth;
             };
             game.EventHub.Tick += _godmode;
+        };
+        // step <area>.<name>: starts a step. Each step logs its own result, and a failure skips only the rest of its step.
+        // The area is the lowercase area folder name; scripts/autotest-affected.sh picks sessions by it.
+        Commands["step"] = arg =>
+        {
+            if (!arg.Contains('.') || arg.Contains(' ')) throw new InvalidOperationException("step needs: <area>.<name>");
+            CloseStep();
+            _step = arg;
+            // The host's sim tick at the start: every effect of the step comes at or after it (scripts/coop-report.sh maps ticks to steps).
+            Log.Info($"AUTOTEST STEP START {arg} tick={Game?.Sim.Tick.ToString(CultureInfo.InvariantCulture) ?? "-"}");
+            MpAutotest.OnStepStarted(arg);
+        };
+        // end: closes the last step and logs the totals. In a co-op game the host then sends the client away and waits for it.
+        Commands["end"] = _ =>
+        {
+            CloseStep();
+            // A sim line can fail a step after its result line (it runs some ticks later), so the failed list wins.
+            Log.Info($"AUTOTEST STEPS passed={_passedSteps.Except(_failedSteps).Count()} failed={_failedSteps.Count}" +
+                     (_failedSteps.Count > 0 ? $": {string.Join(", ", _failedSteps)}" : ""));
+            if (!MpAutotest.EndSession()) Inject(["quit"]);
         };
         Commands["quit"] = _ =>
         {

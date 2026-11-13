@@ -1,0 +1,5 @@
+# The generic co-op client of every session. The session file (the host's script) holds all choreography.
+# Before this, scripts/autotest-mp.sh adds the session's "client:" lines (local settings before the join).
+# follow: ready in every game setup, run the commands that the host sends ("on 1 ..."), quit when the host ends the session.
+mpjoin 127.0.0.1:{PORT}
+follow

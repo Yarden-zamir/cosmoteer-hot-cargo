@@ -157,6 +157,22 @@ public static class ShipAiArea
             return hunters.MinBy(HunterOrders.HealthFraction)!.UniqueID == id ? 2 : 0;
         };
         Autotest.Fields["tactics_editor"] = () => TacticsEditor.IsOpen ? 1 : 0;
+        Autotest.Fields["tactics_facing_row"] = () => Tactics().FacingRow;
+        // The facing of the tactics attack order: the nose offset from the target (rotation plus FlightDirection) in whole degrees,
+        // 0 to 359, while it has a rotation target, else -999.
+        Autotest.Fields["tactics_face"] = () => TestShip().Commands.CurConfirmedCommand is AttackCommand { RotationTarget: not null, Rotation: { } r }
+            ? ((int)MathF.Round(((float)r + (float)TestShip().FlightDirection) * 180f / MathF.PI) % 360 + 360) % 360 : -999;
+        Autotest.Fields["tactics_terms"] = () => ShipTactics.Of(TestShip())?.Rows.Sum(r => r.Terms.Length) ?? 0;
+        Autotest.Fields["tactics_presets"] = () => TacticsPresets.Load().Count;
+        // tactics_presets_reset: deletes this slot's personal preset file, so a test starts without presets. Test only.
+        Autotest.Commands["tactics_presets_reset"] = _ => TacticsPresets.Reset();
+        // tactics_select all|none: selects every own ship of the local player, like a drag box, or none. UI only.
+        Autotest.Commands["tactics_select"] = arg =>
+        {
+            var input = Sim().PlayerInput;
+            if (arg == "none") input.SelectShips([]);
+            else input.SelectShips(Sim().Ships.HumanPlayerShips.Where(s => s.Commands.IsCommandableByLocalPlayer).ToList());
+        };
         Autotest.Fields["design_rows"] = () => _loadedDesign is null ? -1 : ShipTactics.Of(_loadedDesign)?.Rows.Count ?? 0;
         Autotest.Fields["design_hash"] = () => ShipAiModel.StableHash(_loadedDesign is null ? "" : ShipTactics.Of(_loadedDesign)?.Text ?? "");
         Autotest.Fields["design_auto"] = () => _loadedDesign is not null && ShipTactics.Of(_loadedDesign) is { Auto: true } ? 1 : 0;
@@ -189,6 +205,19 @@ public static class ShipAiArea
             var have = Sim().Ships.HumanPlayerShips.OrderBy(s => s.UniqueID).Select(s => ShipTactics.Of(s)?.Text ?? "").ToList();
             Autotest.Check(have.Contains(want), $"a human ship has tactics '{want}' (have: {string.Join(" | ", have)})");
         };
+        // tactics_snapshot: records the rows and the Auto switch of every human ship that has tactics. Run it with "mp", so every
+        // machine records at the same sim tick. A later resync or load must bring them back (tactics_snapshot_* fields).
+        Autotest.Commands["tactics_snapshot"] = _ =>
+        {
+            _snapshot = Sim().Ships.HumanPlayerShips.Where(s => ShipTactics.Of(s) is not null)
+                .ToDictionary(s => s.UniqueID, s => (ShipTactics.Of(s)!.Text, ShipTactics.Of(s)!.Auto));
+            Log.Info($"AUTOTEST tactics snapshot: {string.Join(" | ", _snapshot.Select(kv => $"{kv.Key} auto={kv.Value.Auto} {kv.Value.Text}"))}");
+        };
+        // Ships of the snapshot that are live human ships now with the same rows and Auto switch.
+        Autotest.Fields["tactics_snapshot_kept"] = () => SnapshotShips().Count(x => x.Same);
+        // Ships of the snapshot that are live human ships now with other rows or another Auto switch. A ship that the fight
+        // destroyed or made a wreck is not counted: the check does not depend on which ships survive.
+        Autotest.Fields["tactics_snapshot_changed"] = () => SnapshotShips().Count(x => !x.Same);
         // expecttactics <preset name|clear|HC1:...>: the test ship has exactly these rows.
         Autotest.Commands["expecttactics"] = arg =>
         {
@@ -277,7 +306,8 @@ public static class ShipAiArea
                 .Concat(Enum.GetNames<Preset>().Select(n => "Preset_" + n))
                 .Concat(Enum.GetNames<PartKind>().Select(n => "PartKind_" + n))
                 .Concat(Enum.GetNames<ShipClass>().Select(n => "ShipClass_" + n))
-                .Concat(Enum.GetNames<GuardWho>().Select(n => "GuardWho_" + n));
+                .Concat(Enum.GetNames<GuardWho>().Select(n => "GuardWho_" + n))
+                .Concat(Enum.GetNames<Side>().Select(n => "Side_" + n));
             var missing = keys.Where(k => !Strings.TryGetText("HotCargoShipAi/" + k, out _)).ToList();
             Autotest.Check(missing.Count == 0, $"tactics strings exist (missing: {string.Join(", ", missing)})");
         };
@@ -288,6 +318,21 @@ public static class ShipAiArea
             Log.Info($"AUTOTEST TACTICS {arg}: ship={ship.Metadata.PlainShipName} auto={t?.Auto} waiting={t?.Waiting} target={t?.TargetRow} move={t?.MoveRow} " +
                      $"matched={t?.Matched} cmd={ship.Commands.CurConfirmedCommand?.GetType().Name} health={HunterOrders.HealthFraction(ship):0.00} text='{t?.Text}'");
         };
+    }
+
+    static Dictionary<Cosmoteer.Game.ObjectID, (string Text, bool Auto)>? _snapshot;
+
+    static IEnumerable<(Ship Ship, bool Same)> SnapshotShips()
+    {
+        var snap = _snapshot ?? throw new InvalidOperationException("no tactics_snapshot yet");
+        foreach (var ship in Sim().Ships.HumanPlayerShips.OrderBy(s => s.UniqueID))
+            if (snap.TryGetValue(ship.UniqueID, out var want))
+            {
+                var t = ShipTactics.Of(ship);
+                bool same = t is not null && t.Text == want.Text && t.Auto == want.Auto;
+                if (!same) Log.Info($"AUTOTEST tactics snapshot: {ship.UniqueID} has auto={t?.Auto} '{t?.Text}', was auto={want.Auto} '{want.Text}'");
+                yield return (ship, same);
+            }
     }
 
     static List<HashSet<PartKind>> AimedParts()

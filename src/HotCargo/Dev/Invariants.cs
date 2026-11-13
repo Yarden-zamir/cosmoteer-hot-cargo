@@ -60,7 +60,33 @@ public static class Invariants
             HostilesWaitForTrigger(run, sim);
             MarkersEndWithMission(run, sim);
             RivalsSymmetric(run, sim);
+            HuntersOneSide(sim);
         });
+    }
+
+    /// <summary>
+    /// Spec 1002: a hunter that the mod spawns has no human player index and is an enemy of every human ship. Players can take a
+    /// hunter over later; that does not break the rule. Runs in the sim tick at each spawn.
+    /// </summary>
+    internal static void HunterSpawned(Ship hunter)
+    {
+        if (!On || hunter.Sim is not { } sim) return;
+        var friends = sim.Ships.HumanPlayerSignificantShips.Where(h => !h.IsEnemiesWith(hunter)).Select(h => h.Metadata.PlainShipName).ToList();
+        if (!hunter.IsHumanPlayerShip && friends.Count == 0) return;
+        Fail("hunter_spawn_hostile", hunter.UniqueID.ToString(),
+            $"new hunter {hunter.Metadata.PlainShipName} has player index {hunter.Metadata.PlayerIndex} (human: {hunter.IsHumanPlayerShip}) " +
+            $"and is not an enemy of [{string.Join(", ", friends)}]");
+    }
+
+    /// <summary>
+    /// Spec 33, 1003: the hunters of a system, live and in stasis, are one side with one player index. Wrecks and hunter ships that the
+    /// players took over do not count.
+    /// </summary>
+    static void HuntersOneSide(SimRoot sim)
+    {
+        if (sim.Mode is not Cosmoteer.Modes.Career.CareerSimModeManager career) return;
+        var sides = Hunters.HunterSpawner.SideIndexes(sim, career);
+        if (sides.Count > 1) Fail("hunter_one_side", string.Join("/", sides), $"hunters in this system have {sides.Count} player indexes: [{string.Join(", ", sides)}]");
     }
 
     /// <summary>Spec 29, 993: heat stays in 0 to 100, and the started stages are the stages that the heat reached.</summary>
