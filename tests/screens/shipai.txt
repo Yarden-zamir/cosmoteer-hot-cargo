@@ -51,6 +51,13 @@ wait 2
 screenshot shipai-editor-chains
 tactics_editor close
 tactics_presets_reset
+# Spec 415: Face=1 (+90 degrees) turns the left side of the ship to the target.
+tactics HC1:Always>TargetNearest;Always>CloseIn;Always>Face=1
+waitfor tactics_face == 90 30
+wait 12
+vault focus wide
+wait 1
+screenshot shipai-face-left
 # The game's own Save Ship path with the picture: the tactics node goes into the .ship.png.
 savedesign shipai_png png
 loaddesign shipai_png
