@@ -41,6 +41,28 @@ static class WorldsAutotest
         // Strength of the current at the ship's location (0 to 1), and as the ship's nebula tracker sees it (what the push uses).
         Autotest.Fields["worlds_in_current"] = () => Sim().Nebulas.GetInsideStrength(Ship().DetWorldCenter, Current.NebulaId);
         Autotest.Fields["worlds_ship_in_current"] = () => Ship().Nebulas.GetNebulaStrength(Current.NebulaId);
+        // Loose items (vanilla nuggets: resources, tech crates) inside the current. Spec 221: they float out.
+        Autotest.Fields["worlds_items_in_current"] = () =>
+        {
+            var sim = Sim();
+            int count = 0;
+            for (int i = 0; i < sim.Nuggets.Count; i++)
+                if (sim.Nebulas.GetInsideStrength(sim.Nuggets[i].DetWorldLocation, Current.NebulaId) > 0f) count++;
+            return count;
+        };
+        // The fastest speed along the flow of a loose item in the current (0 when there is none).
+        Autotest.Fields["worlds_item_flow_speed"] = () =>
+        {
+            var sim = Sim();
+            Vector2 flow = Current.FlowVector(sim);
+            float best = 0f;
+            for (int i = 0; i < sim.Nuggets.Count; i++)
+            {
+                var n = sim.Nuggets[i];
+                if (sim.Nebulas.GetInsideStrength(n.DetWorldLocation, Current.NebulaId) > 0f) best = Math.Max(best, n.LinearVelocity.Dot(flow));
+            }
+            return best;
+        };
         Autotest.Fields["worlds_flow_speed"] = () => ((Vector2)(Ship().Physics.Body ?? throw new InvalidOperationException("ship has no body")).LinearVelocity).Dot(Current.FlowVector(Sim()));
         Autotest.Fields["worlds_belt_rocks"] = () => Tagged(Sim(), BeltRock).Count;
         Autotest.Fields["worlds_passes"] = () => Doodads(Sim(), Pass).Count;
@@ -108,6 +130,8 @@ static class WorldsAutotest
             case ["paint"]:
             {
                 var sim = Sim();
+                // The push finds the band axis from all current triangles (Current.Band): one band per system.
+                if (Current.TriangleCenters(sim, Current.NebulaId).Count > 0) throw new InvalidOperationException("this system already has a current");
                 var spawner = MissionArea.AllSpawners(GameApp.Rules.CareerMode.SectorTypesByID[new ID<SectorTypeRules>("hc_trade_hub")].SystemGenerator.Spawners)
                     .OfType<CurrentSpawner>().FirstOrDefault() ?? throw new InvalidOperationException("the trade hub rules have no HotCargoCurrent spawner");
                 spawner.DoSpawn(sim, sim.Rand, 0, 0, 1, null, Ship().DetWorldCenter, [], new SpawnedObjectCollection(), 0f, loadInstantly: true, []);

@@ -33,6 +33,60 @@ public class WorldsModelTests
     }
 
     [Fact]
+    public void Outward_points_across_the_flow_to_the_nearer_side()
+    {
+        // Flow east: the band sides are north (-Y) and south (+Y).
+        Assert.Equal((0f, 1f), WorldsModel.Outward(1f, 0f, 500f, 300f));
+        Assert.Equal((0f, -1f), WorldsModel.Outward(1f, 0f, -500f, -300f));
+        var (x, y) = WorldsModel.Outward(1f, 0f, 700f, 0f);
+        Assert.Equal(1f, MathF.Abs(y)); // on the axis: still a side, never zero
+        Assert.Equal(0f, x);
+    }
+
+    [Fact]
+    public void Push_drives_a_drifting_ship_out_of_the_band_at_its_side()
+    {
+        (float X, float Y) flow = (1f, 0f), outward = (0f, 1f);
+        const float flowSpeed = 45f, accel = 9f, share = 0.3f, halfWidth = 1200f, length = 6000f, dt = 0.05f;
+        // At rest: full push along the flow and the side share across it.
+        var (ax, ay) = WorldsModel.Push(0f, 0f, flow, outward, flowSpeed, accel, share, 1f);
+        Assert.Equal(9f, ax, 4);
+        Assert.Equal(2.7f, ay, 4);
+        // At the drift velocity: no push either way, and the current never brakes.
+        var (sx, sy) = WorldsModel.Push(45f, flowSpeed * share, flow, outward, flowSpeed, accel, share, 1f);
+        Assert.Equal(0f, sx, 4);
+        Assert.Equal(0f, sy, 4);
+        Assert.Equal((0f, 0f), WorldsModel.Push(80f, 30f, flow, outward, flowSpeed, accel, share, 1f));
+        // A ship that only drifts, from the upstream end on the axis, leaves the band in bounded time.
+        float px = 0f, py = 0f, vx = 0f, vy = 0f, t = 0f;
+        while (px < length && py < halfWidth)
+        {
+            var (fx, fy) = WorldsModel.Push(vx, vy, flow, outward, flowSpeed, accel, share, 1f);
+            vx += fx * dt; vy += fy * dt; px += vx * dt; py += vy * dt; t += dt;
+            Assert.True(t < 120f, "a drifting ship leaves the band");
+        }
+        Assert.True(py >= halfWidth, "it leaves at the side, before the far end");
+        Assert.Equal(0f, WorldsModel.Push(0f, 0f, flow, outward, flowSpeed, accel, 0f, 1f).Y); // no side share: no side push
+    }
+
+    [Fact]
+    public void Items_float_with_the_current_against_the_vanilla_drag()
+    {
+        (float X, float Y) flow = (0f, 1f), outward = (-1f, 0f);
+        const float damping = 0.5f, dt = 0.05f;
+        float vx = 0f, vy = 0f;
+        for (int i = 0; i < 600; i++) // 30 s, 15 drag time constants
+        {
+            vx -= vx * damping * dt; vy -= vy * damping * dt; // vanilla Nugget.FixedUpdateDynamic
+            var (dx, dy) = WorldsModel.ItemDrift(flow, outward, 45f, 0.3f, damping, 1f, dt);
+            vx += dx; vy += dy;
+        }
+        Assert.Equal(45f, vy, 0.1f); // the drift velocity of the current
+        Assert.Equal(-13.5f, vx, 0.1f);
+        Assert.Equal((0f, 0f), WorldsModel.ItemDrift(flow, outward, 45f, 0.3f, damping, 0f, dt)); // outside the cloud: vanilla drag only
+    }
+
+    [Fact]
     public void Heat_depth_runs_from_the_edge_to_the_kill_radius()
     {
         Assert.Equal(0f, WorldsModel.HeatDepth(5000f, 1500f, 3750f));

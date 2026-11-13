@@ -1,8 +1,14 @@
-# Current (spec 221): a ship at rest in the current drifts along the flow of the system; beside the current it stays at rest.
+# Current (spec 221): a ship at rest in the current drifts along the flow; beside the current it stays at rest.
+# Ships and loose items that only drift leave the band: the drift also leans toward the nearer side.
+# timeout: 1300
 newgame run
 wait 8
+ev_set Enabled false
+tech_set LossGraceSeconds 900
 worlds jumpto hc_trade_hub
 pause off
+expect worlds_current_tris >= 6
+expect worlds_current_tris <= 20
 worlds goto nocurrent
 expect worlds_in_current == 0
 wait 4
@@ -11,7 +17,15 @@ expect worlds_flow_speed > -1
 worlds goto current
 expect worlds_in_current > 0.5
 expect worlds_ship_in_current > 0.5
+# A tech crate dropped in the current floats out with it.
+tech drop 1
+wait 1
+expect worlds_items_in_current >= 1
+wait 4
+expect worlds_item_flow_speed > 5
 # An idle ship brakes against the drift, but it keeps drifting downstream.
 wait 5
 expect worlds_flow_speed > 2
+waitfor worlds_items_in_current == 0 240
+waitfor worlds_ship_in_current < 0.01 900
 quit
