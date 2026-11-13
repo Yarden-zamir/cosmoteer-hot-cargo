@@ -81,4 +81,21 @@ public class FactionsModelTests
         Assert.Equal(0.75f, FactionsModel.BlindSpinProgress(1f, 15f, 10f, 2f), 5);
         Assert.Equal(1f, FactionsModel.BlindSpinProgress(1f, 30f, 10f, 2f));
     }
+
+    [Fact]
+    public void Ally_faction_and_hunters_are_at_peace_only_in_ally_space()
+    {
+        Assert.Null(FactionsModel.Peace(Zone.Neutral, 101, 102, 20));
+        Assert.Null(FactionsModel.Peace(Zone.Shelter, 101, 102, 20));
+        Assert.False(FactionsModel.Peace(Zone.Ally, 101, 102, null)?.Covers(101, 20) ?? true); // no live hunters
+        var peace = FactionsModel.Peace(Zone.Ally, 101, 102, 20) ?? throw new InvalidOperationException("no peace in ally space");
+        Assert.True(peace.Covers(101, 20));
+        Assert.True(peace.Covers(20, 102));
+        Assert.False(peace.Covers(103, 20)); // another faction still fights the hunters
+        Assert.False(peace.Covers(101, 21)); // another hostile side is not the hunters
+        Assert.False(peace.Covers(101, 0)); // the players keep the vanilla relation with the faction
+        Assert.False(peace.Covers(20, 0));
+        Assert.True(peace.IsAllyFaction(102));
+        Assert.False(peace.IsAllyFaction(20));
+    }
 }
