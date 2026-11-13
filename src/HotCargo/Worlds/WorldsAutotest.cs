@@ -71,6 +71,17 @@ static class WorldsAutotest
         Autotest.Fields["worlds_lair_found"] = () => State(Objective<FindLairObjective>());
         Autotest.Fields["worlds_sundive_salvage"] = () => Objective<SundiveObjective>().SalvageSeconds;
         Autotest.Fields["worlds_sundive_carrier"] = () => Objective<SundiveObjective>().Carrier is null ? 0 : 1;
+        // Ring radii of the smaller systems (spec 105), from the system center. The trade station ring lies inside the gate ring,
+        // and no station is in a sun's heat zone.
+        Autotest.Fields["worlds_gate_min"] = () => Radii(Gate).Min();
+        Autotest.Fields["worlds_gate_max"] = () => Radii(Gate).Max();
+        Autotest.Fields["worlds_trade_station_max"] = () => Radii(TradeStation).Max();
+        Autotest.Fields["worlds_station_heat_gap"] = () =>
+        {
+            var suns = HeatZone.Suns(Sim());
+            if (suns.Count == 0) return double.MaxValue;
+            return At(Station).Min(p => suns.Min(sun => p.DistanceTo(sun.Center) - sun.EdgeRadius));
+        };
         foreach (var (name, metatype) in Metatypes)
         {
             var id = new ID<MissionMetatype>(metatype);
@@ -256,7 +267,22 @@ static class WorldsAutotest
         }
     }
 
-    static readonly ID<SimObjectSpawner> HubPlanet = new("hc_hub_planet"), Station = new("station"), Gate = new("ftl_gate");
+    static readonly ID<SimObjectSpawner> HubPlanet = new("hc_hub_planet"), Station = new("station"), Gate = new("ftl_gate"),
+        TradeStation = new("trade_station");
+
+    /// <summary>Centers of the spawned objects with a tag in this system, live or in stasis. Crashes when there is none.</summary>
+    static List<Vector2> At(ID<SimObjectSpawner> tag) =>
+        MissionArea.ExistingSpawnTags(Sim()).TryGetValue(tag, out var list) && list.Count > 0
+            ? [.. list.Select(so => so.Location.Center)]
+            : throw new InvalidOperationException($"no object tagged {tag} in this system");
+
+    /// <summary>Distances of the tagged objects from the system center, logged for the test record.</summary>
+    static List<double> Radii(ID<SimObjectSpawner> tag)
+    {
+        var radii = At(tag).Select(p => (double)p.Length).Order().ToList();
+        Log.Info($"AUTOTEST {tag} radii: {string.Join(" ", radii.Select(r => r.ToString("0", CultureInfo.InvariantCulture)))}");
+        return radii;
+    }
 
     static void Clearance()
     {

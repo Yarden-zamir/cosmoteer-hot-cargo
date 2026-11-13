@@ -1,0 +1,12 @@
+// Spec 105: the size of a star system. Each gameplay spawn distance is a formula: the vanilla distance times Scale.
+// Each count of scattered objects is the vanilla count times Area. Scenery (suns, planets, nebulas, fog) keeps the vanilla size.
+// Rules reference these values from their own folder, for example "(&<contracts/system_scale.rules>/Scale) * 19000" in mod.rules
+// or "(&<../contracts/system_scale.rules>/Scale) * 19000" in an area folder. A change needs a game restart.
+Scale = 0.5
+Area = (&~/Scale) * (&~/Scale)
+
+// The heat zone of a vanilla sun ends at DefaultScale / 2 * EffectsRadiusFactor from its center (3750, doodad_planet_sun.rules).
+SunHeatRadius = (&<./Data/doodads/planets/doodad_planet_sun.rules>/DefaultScale) / 2 * (&<./Data/doodads/planets/doodad_planet_sun.rules>/ProximityEffects/EffectsRadiusFactor)
+// Stations and ships keep at least this far from a sun center: the heat zone plus a station hull.
+// Each sun gap is max(vanilla gap * Scale, SunClearance), so a small Scale never puts a station into the heat.
+SunClearance = (&~/SunHeatRadius) + 750

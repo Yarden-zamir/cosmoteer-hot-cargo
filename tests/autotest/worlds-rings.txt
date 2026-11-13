@@ -1,0 +1,22 @@
+# Smaller systems (spec 105): gates at Scale 0.5 x the vanilla [18750, 22500], trade stations inside the gate ring, no station in sun heat.
+# Checks the start (basic), a binary system (two suns off the center) and a supernova system (no sun, several belts).
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+expect worlds_gate_min >= 9370
+expect worlds_gate_max <= 11255
+expect worlds_station_heat_gap >= 300
+expect worlds_trade_station_max <= 7000
+worlds jumpto binary
+pause off
+expect worlds_gate_min >= 9370
+expect worlds_gate_max <= 11255
+expect worlds_station_heat_gap >= 300
+expect worlds_trade_station_max <= 7000
+worlds jumpto supernova
+pause off
+expect worlds_gate_min >= 9370
+expect worlds_gate_max <= 11255
+expect worlds_trade_station_max <= 7000
+quit
