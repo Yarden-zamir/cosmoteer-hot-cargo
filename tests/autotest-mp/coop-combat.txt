@@ -25,6 +25,9 @@ counttag pirate
 @2p expect tagcount <= 22
 @3p expect tagcount >= 27
 @3p expect tagcount <= 33
+# The counted wanderers leave. With 3 players, 27 or more of them join the AI fight of ai.personalities and destroy the host's
+# ship (godmode does not save parts that one hit destroys). Later steps spawn the enemies they need.
+mp chain_kill pirate
 
 step diplomacy.payoff
 # Spec 587 (#25): the client ticks tech on the hunter page, and the draft is shared, so the host adds money to it. The client
