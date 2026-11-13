@@ -5,6 +5,8 @@ mp tostation
 wait 5
 @2p tech sell 4
 @3p @c1 tech sell 3
+# The game drops a sale to a station tile that another sale in the same tick filled (MPMoveResourcesInput), so client 2 sells after client 1.
+@3p @c2 waitfor tech == 5 60
 @3p @c2 tech sell 2
 @2p waitfor tech == 4 60
 @3p waitfor tech == 3 60
