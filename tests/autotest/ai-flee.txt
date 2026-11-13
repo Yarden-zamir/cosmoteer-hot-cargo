@@ -9,7 +9,9 @@ aiset RegroupEnabled false
 aiset FleeJumpSeconds 6
 # Chance 0: damaged hunters stay and fight.
 aiset FleeChance 0
-spawnstage Patrol
+# Two ships of the sector tier: the Warning response of the last sector.
+stageset Warning EarlyScale 1
+spawnstage Warning
 wait 2
 hunters start
 expect hunters == 2
@@ -30,7 +32,7 @@ expect ai_flee_jump >= 1
 expect hunters <= 1
 # Chance 1: damaged hunters run.
 aiset FleeChance 1
-spawnstage Patrol
+spawnstage Warning
 wait 2
 damagehunters 0.15
 wait 3

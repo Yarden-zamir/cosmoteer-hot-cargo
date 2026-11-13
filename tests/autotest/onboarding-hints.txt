@@ -42,7 +42,7 @@ vault damage 0.05
 wait 1
 expect hint_hc_vault == 1
 # First heat stage, then the hunters that it sends.
-heat 30
+stage
 wait 2
 expect hint_hc_heat == 1
 waitfor hunters >= 1 30
@@ -50,7 +50,7 @@ wait 1
 expect hint_hc_hunters == 1
 # Each page shows once: heat that drops and rises again does not show it again.
 heat -100
-heat 30
+stage
 wait 2
 expect hint_hc_heat == 1
 # Wanted while heat is at a stage: the Wanted warning.

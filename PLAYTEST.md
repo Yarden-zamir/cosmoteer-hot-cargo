@@ -219,7 +219,7 @@ The autotests cover the archetype mix on the map, the hazard tooltip, the curren
 The autotests `shipai-basic`, `shipai-save` and the co-op test `shipai` cover row order, most conditions and actions, saves, designs and sync. These checks need a person.
 
 1. Select your ship and press Ctrl+K, or click the "AI" button in the ships card. Does the window fit the game's look? Are the drop lists easy to read?
-2. Apply each preset with Auto on and fight a Patrol stage (F10 with debug keys). Does each preset behave the way its name says? Which one feels useless?
+2. Apply each preset with Auto on and fight a Hunt stage (F10 with debug keys). Does each preset behave the way its name says? Which one feels useless?
 3. Sniper: does the ship keep its distance, and does it still hit? Note any target that it never reaches.
 4. Give a move order while Auto is on. Does the ship obey at once, and do the tactics take over again when it arrives?
 5. Put two weapons in part group 1 (build menu, part groups) and add a row "Always → Fire: hold, group 1". Do only those two stop firing?

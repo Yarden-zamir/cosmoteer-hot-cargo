@@ -15,7 +15,7 @@ expect runlog_sector == 2
 ev_tostation
 tostation
 # A heat stage.
-heat 30
+stage
 wait 2
 expect runlog_stage == 1
 # A destroyed vault (spec 65, 731): its tech drops as crates or burns, and the run log says so.

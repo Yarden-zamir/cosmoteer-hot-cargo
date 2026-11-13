@@ -20,7 +20,7 @@ Players of the mod likely know the base game. So the Hot Cargo mechanics join th
 | `hc_wanted` Wanted and Hunted | the Wanted warning (requirement 470) |
 | `hc_buyer` The Buyer | the Buyer spawned |
 | `hc_settings` Settings | sector 2 |
-| `hc_ship_tactics` Ship Tactics | `ShipAi.Enabled` and the Hunt stage (3 stages started), or more human ships than human players |
+| `hc_ship_tactics` Ship Tactics | `ShipAi.Enabled` and the stage before the last (Hunt) or later, or more human ships than human players |
 | `hc_coop` Co-op | a multiplayer run with 2 or more human players |
 
 722. The game keeps the page state in its settings (`Settings.CodexPageStates`), so each page shows once per player, across careers, and "Reset Tutorials" in the game settings shows them again. With "Show tutorials" off, no trigger runs and no page shows. Triggers only read state and change no sim state.

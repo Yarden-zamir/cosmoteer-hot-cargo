@@ -3,7 +3,7 @@
 //   Money, Cost.Money, Need.Money: event money units. 1 = the middle of a standard mission's pay at the sector tier, with the reward factors.
 //     On the default economy, 1 unit at tier 1 is about 10,000 credits, the value of one Stolen Tech in sector 1.
 //   MoneyTech: × the tech value when the event opened.  Fame: × a standard mission's fame (fame adds heat through the normal rule).
-//   Heat: heat points (a stage every 25).  Tech, Crew: units.  Resources: { ID; Amount; PerTier } with PerTier added per tier above 1.
+//   Heat: heat points (stages at Heat.Stages, by default 40, 75, 100).  Tech, Crew: units.  Resources: { ID; Amount; PerTier } with PerTier added per tier above 1.
 // A choice's Cost is paid for sure and is shown on its button. A Need greys the button out with the reason, or hides it (HideIfUnmet).
 // Outcome weights: Weight + WeightPerHeat × heat + WeightPerTech × fleet tech, never below 0.
 // Reputation: × a standard mission's reputation, with the faction that controls the system.  BuyerPrice: multiplies the Buyer price for the run.

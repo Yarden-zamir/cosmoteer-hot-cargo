@@ -117,7 +117,11 @@ expect hunters == 1
 dip_expect deal hunter 3 == 0.85
 dip_expect deal hunter 1 < 0.85
 maxhunters 20
-spawnstage Patrol
+# Two ships of the sector tier: the Warning response of the last sector.
+stageset Warning EarlyScale 1
+spawnstage Warning
+# Back to the default: later Warning spawns send 1 ship in sector 1.
+stageset Warning EarlyScale 0.5
 wait 2
 dip_near hunters 300
 wait 1

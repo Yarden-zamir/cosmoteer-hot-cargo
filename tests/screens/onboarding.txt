@@ -14,7 +14,7 @@ wait 1
 ev_set Enabled false
 pause off
 wait 6
-heat 30
+stage
 wait 4
 screenshot onboarding-howtoplay
 careerlog
