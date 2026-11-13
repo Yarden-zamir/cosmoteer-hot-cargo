@@ -4,7 +4,9 @@ mpstart 2
 mp ev_set Enabled false
 mp godmode on
 mp hc_generate all
-waitfor hc_offers_escort >= 1 20
+# The mp input runs a few ticks later, and the system can already offer an escort, so wait for the assault allies.
+waitfor hc_allies >= 2 20
+expect hc_offers_escort >= 1
 expect hc_allies_vs_player == 0
 expect hc_allies_vs_target >= 2
 expect hc_escort_vs_player == 0

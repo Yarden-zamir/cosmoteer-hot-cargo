@@ -17,9 +17,10 @@ mp ev_spawn TollGuards
 mp counttag hc_ev_toll
 waitfor tagcount >= 6 30
 expect tagcount == 6
-# The first system was generated with factor 2: pirate wanderers are [9, 11] (mod/contracts/actions.rules), so 18 to 22.
+# The first system was generated with factor 2: pirate wanderers are round([14, 16] x Area) = 4 at SystemScale 0.5
+# (mod/contracts/actions.rules), so 8.
 counttag pirate
-expect tagcount >= 18
+expect tagcount >= 8
 wait 30
 expect desyncs == 0
 log host-end
