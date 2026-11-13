@@ -23,7 +23,7 @@ SLOTS_AT=$SECONDS
 PORT=$((35870 + ${HOST#t}))
 echo "== host slot $HOST, client slot $CLIENT, port $PORT"
 
-{ echo "telename $NAME.host"; grep -v '^client:' "$SESSION" | sed "s/{PORT}/$PORT/g"; } | start_slot "$HOST"
+coop_host_script "$SESSION" "$PORT" | start_slot "$HOST"
 DEPLOYED_AT=$SECONDS
 # Small status calls every AUTOTEST_POLL seconds; the full logs are fetched once at the end.
 CLIENT_STARTED=no LINK_REFUSED=no
@@ -33,7 +33,7 @@ while (( SECONDS - DEPLOYED_AT < TIMEOUT )); do
   if [[ "$HOST_STATUS" == *"$LINK_REFUSED_TEXT"* ]]; then LINK_REFUSED=yes; break; fi
   if [[ "$CLIENT_STARTED" == no ]]; then
     if [[ "$HOST_STATUS" == *match=1* ]]; then
-      { echo "telename $NAME.client"; sed -n 's/^client: *//p' "$SESSION"; sed "s/{PORT}/$PORT/g" "$CLIENT_SCRIPT"; } | start_slot "$CLIENT"
+      coop_client_script "$SESSION" "$PORT" | start_slot "$CLIENT"
       CLIENT_STARTED=yes
     elif [[ "$HOST_STATUS" == *running=0* ]]; then
       break

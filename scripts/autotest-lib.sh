@@ -178,6 +178,14 @@ slot_log() {
   )
 }
 
+# The two scripts of a co-op session (any runner: PC slots, later the Mac sim). Args: <session file> <port>.
+# Host: the session file without its "client:" lines. Client: those lines (settings before the join), then client.txt.
+# "{PORT}" becomes the port. The first line names the run (telename <session>.host / .client); a pass needs it in the log.
+coop_host_script() { echo "telename $(basename "$1" .txt).host"; grep -v '^client:' "$1" | sed "s/{PORT}/$2/g"; }
+coop_client_script() {
+  echo "telename $(basename "$1" .txt).client"; sed -n 's/^client: *//p' "$1"; sed "s/{PORT}/$2/g" "$(dirname "$1")/client.txt"
+}
+
 # Prints the names of the co-op sessions: every tests/autotest-mp/*.txt except client.txt (the generic client).
 coop_sessions() { local f; for f in "$REPO_ROOT"/tests/autotest-mp/*.txt; do [[ "$(basename "$f")" == client.txt ]] || basename "$f" .txt; done; }
 
