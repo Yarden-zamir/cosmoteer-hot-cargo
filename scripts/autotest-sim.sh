@@ -57,8 +57,10 @@ take_sim_slots() {
 
 # One co-op session. Prints its result line; returns 0 on a pass.
 run_mp() {
-  local name="${1#mp:}" locks out rc=0
-  locks="$(take_sim_slots "$BASHPID" 2)"
+  local name="${1#mp:}" locks out rc=0 me=$BASHPID
+  # Read $BASHPID out here: inside "$(...)" it is the pid of the command substitution, which exits at once,
+  # so every other taker would judge the lock stale and remove it.
+  locks="$(take_sim_slots "$me" 2)"
   out="$RUN_DIR/$1.out"
   SIM_STAGE="$STAGE" scripts/autotest-sim-mp.sh "tests/autotest-mp/$name.txt" "$((TIMEOUT + 200))" > "$out" 2>&1 || rc=$?
   rm -rf $locks
@@ -67,9 +69,9 @@ run_mp() {
 
 # One run. Prints the log path; returns 0 on a pass.
 run_once() {
-  local name="$1" log save lock rc=0 t0=$SECONDS
-  # $BASHPID: this run's process. take_sim_slots runs in a subshell that exits at once.
-  lock="$(take_sim_slots "$BASHPID" 1)"
+  local name="$1" log save lock rc=0 t0=$SECONDS me=$BASHPID
+  # $me: this run's process. Inside "$(...)" $BASHPID is the short-lived substitution subshell (see run_mp).
+  lock="$(take_sim_slots "$me" 1)"
   log="$LOG_DIR/$name.$(date +%Y%m%d-%H%M%S).sim.log"
   save="$(mktemp -d)"
   { echo "telename $name"; cat "tests/autotest/$name.txt"; } > "$save/script.txt"
