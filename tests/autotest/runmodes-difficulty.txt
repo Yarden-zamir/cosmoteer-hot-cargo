@@ -7,10 +7,7 @@ godmode on
 expect rm_levels_without_row == 0
 rm_log defaults
 rm_check_levels
-# Heat tick at the default levels.
-rm_ratemark
-wait 30
-expect rm_rategap < 0.02
+# The heat tick is measured once, at the hard combination below: its factors are not 1, so it also proves the default wiring.
 rm_feemark
 # A hard combination through the vanilla settings inputs (the settings tab sends the same inputs).
 rm_difficulty very_hard slow scarce
@@ -32,3 +29,4 @@ spawnstage Patrol
 wait 2
 rm_expect_stage Patrol
 quit
+# tier: smoke

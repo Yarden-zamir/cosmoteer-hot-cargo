@@ -10,15 +10,21 @@ description: Build Hot Cargo, run unit tests, headless game tests and co-op test
 2. Unit tests (pure math only, no game types): `cd tests/HotCargo.Tests && dotnet run`. Pure math goes in a file named `*Model.cs` with no game types; the test project picks up every such file.
 
 ## Headless game tests
-- One test: `scripts/autotest.sh tests/autotest/<name>.txt [timeoutSeconds]`. It takes a free headless slot on the PC (t1..t8, own save, settings and cache folders, no window), deploys your worktree's build and runs the script. Exit 0 means pass.
+- One test: `scripts/autotest.sh tests/autotest/<name>.txt [timeoutSeconds]`. It takes a free headless slot on the PC (t1..t6, own save, settings and cache folders, no window), deploys your worktree's build and runs the script. Exit 0 means pass.
+  - The PC caches each build by a hash of its content. A build that the PC already has is not uploaded again.
+  - It prints a `== timing` line: seconds for wait (slot), deploy, start (to the first script line), script and teardown.
+  - Exit code 3 ("AUTOTEST LINK REFUSED"): the PC refused the calls, because your turn was not active. Rerun it with the turn open.
   - It prints only the lines that explain a failure. The full log stays in `../.state/logs/<worktree>/` (it survives restarts), and its path is in the output.
   - A failed run is retried once. "AUTOTEST FLAKY" means the retry passed. Fix a flaky test with `waitfor <condition>` in place of a fixed `wait`. `../.state/flaky.log` lists flaky runs.
-- Several tests: `scripts/autotest-all.sh 400 <name> <name> mp:<coop name>`. They run in parallel on the free slots, also from one worktree.
-- The tests that your change touches: `scripts/autotest-affected.sh` (base `origin/main`). A test belongs to an area when its name starts with the area folder name in lowercase (`tech-sell` for `src/HotCargo/Tech`). Name new tests that way. A change in Core, shared UI or scripts runs the full suite. `LIST_ONLY=1` prints the list.
+- Several tests: `scripts/autotest-all.sh 400 <name> <name> mp:<coop name>`. They run in parallel on the free slots, also from one worktree. The suite builds once, and every test runs that build. At the end it prints the seconds per phase (sum, median, max).
+- Long suites: add `--detach` as the first argument (`autotest-all.sh`, `autotest-affected.sh`, `integrate.sh`). The suite then runs in its own session, and a killed shell does not stop it. It prints a log path in `../.state/suites/`. PC calls work only while your turn is active, so wait in the foreground: run `scripts/suite-wait.sh <log> 540` and repeat it while it exits with 124 (still running). Otherwise its exit code is the suite's. A suite whose PC calls are refused stops starting tests and fails.
+- Mac sim (no PC): `scripts/autotest-mac.sh 400 <name> <name>` runs single-player tests on this Mac in parallel, same pass rule, logs in `../.state/logs/<worktree>/*.mac.log`. One retry, like the PC runner (a pass on the retry is FLAKY). It needs the game files from `scripts/pull-game.sh`. Co-op tests, screenshots and real-time checks need the PC; a test with the line `# runner: pc` stays there. A Mac-only failure can be a sim difference: compare with `scripts/autotest.sh` on the PC.
+- The tests that your change touches: `scripts/autotest-affected.sh` (base `origin/main`). It runs single-player tests on the Mac and the others on the PC at the same time (`AUTOTEST_MAC=0`: all on the PC). A test belongs to an area when its name starts with the area folder name in lowercase (`tech-sell` for `src/HotCargo/Tech`). Name new tests that way. It runs the smoke tier (`tests/TIERS.md`): each touched area runs its smoke test (the line `# tier: smoke`) and all its co-op tests; a change in Core or shared UI runs every smoke test. `AUTOTEST_TIER=full` runs every test of the touched areas, as `integrate.sh` does. `LIST_ONLY=1` prints the list.
+- A new logic rule goes in a `*Model.cs` file with a unit test. A game test checks only what needs the game (`tests/TIERS.md`).
 - All tests: `scripts/autotest-all.sh 400`. A full clean pass on a clean tree writes `../.state/autotest_pass_<sha>`, which `scripts/release.sh` needs.
 - Find the commit that broke a test: `scripts/bisect-autotest.sh <name> <good commit> [bad commit]`.
-- One slot always stays free for runs from the main worktree (merges). While the player's game runs, tests use at most 3 slots (`HOT_CARGO_SLOTS_WHILE_PLAYING`), so the player keeps a smooth frame rate.
-- Long runs: start them with Bash `run_in_background` and wait for the completion notice. Do not poll in a tight loop.
+- While the player's game runs, tests use at most 4 slots (`HOT_CARGO_SLOTS_WHILE_PLAYING`; shared settings in `../.state/slots.env`), so the player keeps a smooth frame rate.
+- Long runs: use `--detach` and `suite-wait.sh` (above). Do not poll in a tight loop.
 - Game log of a slot: `SLOT=tN scripts/logs.sh`. A rules error usually shows there at load. Failed runs also save the vanilla log in their log file.
 - Script commands live in `src/HotCargo/Dev/Autotest.cs` (base) and each area's `Register()`. Useful: `newgame run`, `wait s`, `waitfor field op value seconds`, `heat n`, `expect field op value`, `save name`, `load name`, `godmode on`, `ev_set Enabled false` (turns random events off).
 - A test reads what the game shows, not our own value source. For UI, check the vanilla widget's text or state (for example the tooltip text the game stores), and take a screenshot when the result is visual.
@@ -28,7 +34,7 @@ description: Build Hot Cargo, run unit tests, headless game tests and co-op test
 
 ## Infrastructure failures
 These are not game failures. Rerun the test:
-- "relay was lost", "no signed connection to kitshn", "no longer owns an active thread run", "kitshn refused the run", "tar: Write error".
+- "relay was lost", "no signed connection to kitshn", "kitshn refused the run", "tar: Write error", "the PC did not confirm the deploy", "not enough free memory to start slot" (the PC is full; it waited 120 s).
 - An empty test log after the deploy line.
 A game failure shows `CHECK FAILED`, `ERROR` or `MP DESYNC` in the log.
 

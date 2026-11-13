@@ -12,7 +12,7 @@ Procedures are skills in `.claude/skills/`:
 ## Git
 
 - Feature work goes through a draft pull request: push the feature branch and open a draft PR with a short summary and screenshots of visible changes (`gh-pr-images` skill). CI checks it (build, unit tests, private data). Start PR descriptions and comments with 🤖; keep them short. Small fixes may go straight to `main`. Conventional commits.
-- Feature work happens in a worktree of the bare repo (`../.bare`), one branch for each feature. The integrator merges into `main` with `scripts/integrate.sh <branch>`: merge, build, unit tests, private-data check, affected autotests, push, install. It pushes only when every step passed.
+- Feature work happens in a worktree of the bare repo (`../.bare`), one branch for each feature. The integrator merges into `main` with `scripts/integrate.sh <branch|PR>...` (several branches make one batch): merge, build, unit tests, private-data check, affected autotests, push, install. It pushes only when every step passed.
 - Never credit an AI, model or tool in commits or files.
 - Never commit personal machine data. `scripts/check-private.sh` checks this, and CI runs it.
 
@@ -55,11 +55,16 @@ Procedures are skills in `.claude/skills/`:
 - A change is done when the spec lines it touches are true. Patch stale lines in place. Never renumber requirements. A new feature gets a new file in `spec/` with the next free section number and a new requirement number range.
 
 ## Agents
+- Never start, stop or restart the game in slot main (the player's game): no `screens.sh`, `vault-saved-ships.sh`, `run.sh`, `stop.sh` or deploy with `SLOT=main`. While `.state/player-hold` exists, the scripts refuse it (exit 3). Do not remove that file and do not work around it. Ask the coordinator for main-slot work; the coordinator runs it when the player says the PC is free.
 
 - An agent works only in its own worktree and branch. At the end it pushes its branch and opens a draft PR. It never pushes to `main` and never merges.
+- Tests: run `scripts/autotest-affected.sh` (the smoke tests of your areas, their co-op tests, `core`, and any test you changed) and the unit tests. Put logic in a `*Model.cs` file with unit tests (`tests/TIERS.md`). The integrator runs every test of the touched areas for each merge batch.
 - Save progress so a crash or restart loses nothing:
   - In the first minutes, commit a short `PLAN.md` (design decisions, steps) to your branch, push it, and open the draft PR with a checklist of the steps. Delete `PLAN.md` before the final commit.
   - Commit and push after each step that builds. Tick the step in the PR checklist.
   - A restarted agent reads the branch, `PLAN.md` and the PR checklist first, and continues from there.
-- Never end a turn while your own tests or builds run in the background. Wait for their completion notice first, then continue. Ending the turn early leaves the work hanging.
+- PC work (tests, deploys, screenshots) only works while your turn is active: the T3 link refuses PC calls from a thread with no active turn ("no longer owns an active thread run"), and the run then hangs on its slot. Run PC work as normal Bash tool calls (not `run_in_background`), each under 9 minutes (for example `scripts/autotest-all.sh 400 <a few tests>`), and repeat. Never leave a suite running in the background after your turn ends. This is about how you call Bash, not about the player: whether the player's own game runs only changes how many test slots exist (the scripts handle it), never whether you may run tests.
+- Never end a turn while your own tests or builds run in the background. Ending the turn early leaves the work hanging. How to wait:
+  - Short runs (under about 9 minutes): run them in the foreground with a long Bash timeout.
+  - Long runs: start them with Bash `run_in_background`, then call `t3_background_wait` with the task ID (load it with ToolSearch `select:mcp__t3-code__t3_background_wait`). The turn then stays open until the run finishes.
 - Start only the last message with `FINAL REPORT`: what works with test results, what does not, Core changes, spec changes, commits, merge notes.

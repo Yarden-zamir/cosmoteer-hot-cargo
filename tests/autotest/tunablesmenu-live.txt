@@ -57,3 +57,4 @@ menu file lacks ShipCount
 menu value Hunters.Stages[0].ShipCount == 1
 menu close
 quit
+# tier: smoke

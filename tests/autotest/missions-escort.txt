@@ -24,3 +24,4 @@ hc_escort_arrive
 wait 3
 expect hc_escort_done == 1
 quit
+# tier: smoke

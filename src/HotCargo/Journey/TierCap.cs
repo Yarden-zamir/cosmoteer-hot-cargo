@@ -34,18 +34,17 @@ internal sealed class TierCapSpawner : GalaxySpawner
         foreach (var (node, jumps) in JumpDistances(start))
         {
             var data = mode.GetMapNodeData(node);
-            if (data.TierRange is not { } range || range.Min > MaxChangeableLowTier) continue;
-            int cap = Cap(startTier, jumps);
-            if (range.Min > cap) data.TierRange = new Range<int>(cap, cap + (range.Max - range.Min));
+            if (data.TierRange is { } range && TierCapModel.Capped(range.Min, range.Max, Cap(startTier, jumps), MaxChangeableLowTier) is var (min, max))
+                data.TierRange = new Range<int>(min, max);
         }
     }
 
-    public int Cap(int startTier, int jumps) => startTier + TierPerJump * jumps;
+    public int Cap(int startTier, int jumps) => TierCapModel.Cap(startTier, TierPerJump, jumps);
 
     /// <summary>Spec 305: the main route tier of a sector index: the peak tier cap, up to MaxChangeableLowTier (the final sector tier).
     /// Null when the career does not use the Hot Cargo run map.</summary>
     public static int? RouteTier(CareerGameModeManager mode, int sectorIndex) =>
-        PeakTierCap(mode, sectorIndex) is { } cap ? Math.Min(cap, RunMapCap(mode)!.MaxChangeableLowTier) : null;
+        RunMapCap(mode) is { } cap ? TierCapModel.RouteTier(StartTier(mode), cap.TierPerJump, cap.MaxChangeableLowTier, sectorIndex) : null;
 
     static TierCapSpawner? RunMapCap(CareerGameModeManager mode) =>
         mode.Init is CareerInit init && init.MapSizeIndex < GameApp.Rules.CareerMode.MapSizes.Length
@@ -57,22 +56,16 @@ internal sealed class TierCapSpawner : GalaxySpawner
     /// the start needs at least J + 1 visited systems, so normal systems never pass this cap. Only faction home systems do: a short visit
     /// to one must not multiply the tech value. Null when the career does not use the Hot Cargo run map (no cap).
     /// </summary>
-    public static int? PeakTierCap(CareerGameModeManager mode, int sectorIndex)
+    public static int? PeakTierCap(CareerGameModeManager mode, int sectorIndex) =>
+        RunMapCap(mode) is { } cap ? TierCapModel.PeakTierCap(StartTier(mode), cap.TierPerJump, sectorIndex) : null;
+
+    static int StartTier(CareerGameModeManager mode)
     {
-        if (RunMapCap(mode) is not { } cap) return null;
         var start = mode.Game.Map.Nodes.FirstOrDefault(n => mode.GetMapNodeData(n).IsInitNode)
             ?? throw new InvalidOperationException("the career map has no starting system");
-        return cap.Cap(mode.GetMapNodeData(start).TierRange?.Min ?? 1, Math.Max(0, sectorIndex - 1));
+        return mode.GetMapNodeData(start).TierRange?.Min ?? 1;
     }
 
     /// <summary>Each node reachable from the start with its jump count (breadth-first).</summary>
-    public static Dictionary<MapNode, int> JumpDistances(MapNode start)
-    {
-        var jumps = new Dictionary<MapNode, int> { [start] = 0 };
-        var queue = new Queue<MapNode>([start]);
-        while (queue.TryDequeue(out var node))
-            foreach (var next in node.Connections)
-                if (jumps.TryAdd(next, jumps[node] + 1)) queue.Enqueue(next);
-        return jumps;
-    }
+    public static Dictionary<MapNode, int> JumpDistances(MapNode start) => TierCapModel.JumpDistances(start, n => n.Connections);
 }

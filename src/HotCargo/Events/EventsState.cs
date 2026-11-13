@@ -59,6 +59,8 @@ public sealed class PendingEvent
     [Serialize(Optional = true)] public float Heat;
     /// <summary>The ship that carries the page (spec 767): its comms show the page. Null: the event window shows it.</summary>
     [Serialize(Optional = true)] public ObjectID? Carrier;
+    /// <summary>The system of the carrier when the page opened. Another system now: the players left it behind (spec 770).</summary>
+    [Serialize(Optional = true)] public ObjectID? CarrierNode;
     /// <summary>True until the carrier hails: it waits until a player ship is in comms range, like a vanilla AI hail.</summary>
     [Serialize(Optional = true)] public bool HailDue;
     /// <summary>The page's computed offer (spec 760-762): tech IDs, the tech units it asks for, its research value, the sale price.</summary>

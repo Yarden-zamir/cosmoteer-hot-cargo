@@ -54,6 +54,9 @@ public class FactionsModelTests
         Assert.Equal(1.5f, FactionsModel.TimeHeatFactor(Zone.Ally, 1.5f, 0.6f));
         Assert.Equal(0.6f, FactionsModel.TimeHeatFactor(Zone.Shelter, 1.5f, 0.6f));
         Assert.Equal(1f, FactionsModel.TimeHeatFactor(Zone.Neutral, 1.5f, 0.6f));
+        Assert.Equal(1.5f, FactionsModel.NotorietyFactor(Zone.Ally, 1.5f));
+        Assert.Equal(1f, FactionsModel.NotorietyFactor(Zone.Shelter, 1.5f));
+        Assert.Equal(1f, FactionsModel.NotorietyFactor(Zone.Neutral, 1.5f));
         Assert.False(FactionsModel.Refuses(89.9f, 90f, 1f, 0f));
         Assert.True(FactionsModel.Refuses(90f, 90f, 0.5f, 0.49f));
         Assert.False(FactionsModel.Refuses(95f, 90f, 0.5f, 0.5f));
