@@ -15,6 +15,10 @@ cd "$(dirname "$0")/.."
 TIMEOUT="${1:-400}"
 shift || true
 source scripts/autotest-lib.sh
+source scripts/coverage-lib.sh
+# HOT_CARGO_COVERAGE_DIR=<dir>: each run also writes <dir>/<test>.xml (method coverage of HotCargo.dll) for the test impact
+# map (scripts/coverage-map.sh). Runs are then not retried.
+COVERAGE_DIR="${HOT_CARGO_COVERAGE_DIR:-}"
 
 TESTS=()
 if [[ $# -gt 0 ]]; then TESTS=("$@"); else for t in tests/autotest/*.txt; do TESTS+=("$(basename "$t" .txt)"); done; fi
@@ -59,7 +63,10 @@ run_mp() {
   local name="${1#mp:}" locks out rc=0
   locks="$(take_mac_slots "$BASHPID" 2)"
   out="$RUN_DIR/$1.out"
-  MAC_SIM_STAGE="$STAGE" scripts/autotest-mac-mp.sh "tests/autotest-mp/$name.txt" "$((TIMEOUT + 200))" > "$out" 2>&1 || rc=$?
+  local stage="$STAGE" cov=""
+  if [[ -n "$COVERAGE_DIR" ]] && cov="$(coverage_begin "$STAGE" "$1")"; then stage="${cov#* }"; fi
+  MAC_SIM_STAGE="$stage" scripts/autotest-mac-mp.sh "tests/autotest-mp/$name.txt" "$((TIMEOUT + 200))" > "$out" 2>&1 || rc=$?
+  [[ -n "$cov" ]] && coverage_end "${cov%% *}" "$stage" "$COVERAGE_DIR/$1.xml"
   rm -rf $locks
   return $rc
 }
@@ -72,7 +79,10 @@ run_once() {
   log="$LOG_DIR/$name.$(date +%Y%m%d-%H%M%S).mac.log"
   save="$(mktemp -d)"
   { echo "telename $name"; cat "tests/autotest/$name.txt"; } > "$save/script.txt"
-  MAC_SIM_STAGE="$STAGE" MAC_SIM_SAVE="$save" timeout "$TIMEOUT" tools/mac-sim/run.sh autotest "$save/script.txt" > "$log" 2>&1 || rc=$?
+  local stage="$STAGE" cov=""
+  if [[ -n "$COVERAGE_DIR" ]] && cov="$(coverage_begin "$STAGE" "$name")"; then stage="${cov#* }"; fi
+  MAC_SIM_STAGE="$stage" MAC_SIM_SAVE="$save" timeout "$TIMEOUT" tools/mac-sim/run.sh autotest "$save/script.txt" > "$log" 2>&1 || rc=$?
+  [[ -n "$cov" ]] && coverage_end "${cov%% *}" "$stage" "$COVERAGE_DIR/$name.xml"
   rm -rf "$lock"
   { echo; echo "=== hot_cargo_log.txt"; cat "$save/Mods/hot_cargo/csharp/hot_cargo_log.txt" 2>/dev/null; } >> "$log"
   [[ $rc -eq 124 ]] && echo "== timeout after $TIMEOUT s" >> "$log"
@@ -89,6 +99,7 @@ run_test() {
     return
   fi
   if first="$(run_once "$name")"; then echo "PASS $name"; return; fi
+  if [[ -n "$COVERAGE_DIR" ]]; then echo "FAIL $name"; return; fi
   if log="$(run_once "$name")"; then
     echo "$(date +%F\ %T) $name $first" >> "$STATE_DIR/flaky.log"
     echo "FLAKY $name"

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- dotnet-coverage settings for the test impact map (scripts/coverage-lib.sh): only Hot Cargo's own dll, static instrumentation. -->
+<Configuration>
+  <CodeCoverage>
+    <ModulePaths>
+      <Include>
+        <ModulePath>.*HotCargo\.dll$</ModulePath>
+      </Include>
+    </ModulePaths>
+    <EnableStaticManagedInstrumentation>True</EnableStaticManagedInstrumentation>
+    <EnableDynamicManagedInstrumentation>False</EnableDynamicManagedInstrumentation>
+  </CodeCoverage>
+</Configuration>
