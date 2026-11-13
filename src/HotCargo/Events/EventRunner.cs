@@ -305,8 +305,18 @@ public static class EventRunner
     /// </summary>
     public static event Action<Run, SimRoot, int, int, OutcomeRules>? OutcomeChosen;
 
+    /// <summary>Test only (ev_force_outcome): the next outcome roll picks this outcome index. Set on every machine in co-op.</summary>
+    internal static int? ForcedOutcome;
+
     static int RollOutcome(Run run, ChoiceRules choice, ulong seed, int choiceIndex)
     {
+        if (ForcedOutcome is { } forced)
+        {
+            ForcedOutcome = null;
+            if (forced >= choice.Outcomes.Length) throw new InvalidOperationException($"forced outcome {forced + 1} of {choice.Outcomes.Length}");
+            Log.Info($"event roll forced -> outcome {forced + 1}");
+            return forced;
+        }
         var weights = choice.Outcomes.Select(o => EventModel.EffectiveWeight(o.Weight, o.WeightPerHeat, o.WeightPerTech, run.State.Heat, run.State.FleetTech)).ToList();
         float roll = new FastRand(seed, (ulong)choiceIndex + 1).Single();
         int pick = EventModel.PickWeighted(weights, roll);
@@ -528,7 +538,10 @@ public static class EventRunner
         }
         foreach (string f in o.ClearFlags) State(run).Flags.Remove(f);
         if (o.Spawn.Length > 0) Spawn(run, sim, o.Spawn, p.Seed);
-        if (o.HandOver) HandOverObjective.Deliver(run, p.Carrier);
+        if (o.HandOver) HandOverObjective.Deliver(run, p.Carrier, o.HandOverPay);
+        if (o.ContactTurns != ContactReaction.None) HandOverObjective.React(run, sim, p.Carrier, o.ContactTurns);
+        // UI only: the chat tells every player the result.
+        if (o.Chat && o.Text.Length > 0) Ux.UxKit.ChatLine(run.Game, EventText.Fill(o.Text, run.State.FleetTech, p));
     }
 
     /// <summary>Gains split between the human players like a mission reward. A loss comes from the chooser and stops at 0.</summary>

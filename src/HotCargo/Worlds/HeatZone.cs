@@ -6,6 +6,7 @@ using Halfling.Geometry;
 using Halfling.Graphics.Text;
 using Halfling.Gui;
 using HotCargo.Core;
+using HotCargo.Ux;
 using System.Runtime.CompilerServices;
 using Cosmoteer.Localization;
 
@@ -48,6 +49,8 @@ public static class HeatZone
     static readonly ConditionalWeakTable<GameRoot, Label> Lines = new();
     static readonly ConditionalWeakTable<SimRoot, List<Sun>> SunCache = new();
 
+    static double _next;
+
     internal static void OnFrame(Run run)
     {
         var game = run.Game;
@@ -56,6 +59,12 @@ public static class HeatZone
             label = CreateLabel();
             game.Gui.RootWidget.AddChild(label);
             Lines.AddOrUpdate(game, label);
+        }
+        // Spec 872: the text refreshes every HudRefreshSeconds; the galaxy map still hides it at once.
+        if (!UxKit.HudDue(ref _next))
+        {
+            if (game.MapDisplayFactor >= 1f) label.SelfActive = false;
+            return;
         }
         var sim = game.Sim;
         // Suns do not move, so they are found once per sim.

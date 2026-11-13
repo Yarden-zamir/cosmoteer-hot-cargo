@@ -3,6 +3,7 @@
 render on
 newgame run
 wait 8
+pu_set Enabled false
 closepanel
 wait 1
 ev_set Enabled false

@@ -35,6 +35,8 @@ public static class SimQueries
     public readonly record struct TaggedShip(ObjectID Id, int PlayerIndex, Vector2 Location, Ship? Live);
 
     /// <summary>Live ships with the tag in sim order (wrecks left out), then ships in stasis by ID.</summary>
+    static readonly Comparer<TaggedShip> StasisOrder = Comparer<TaggedShip>.Create((a, b) => Comparer<ObjectID>.Default.Compare(a.Id, b.Id));
+
     public static List<TaggedShip> TaggedShips(SimRoot sim, ID<SimObjectSpawner> tag)
     {
         var result = new List<TaggedShip>();
@@ -43,8 +45,11 @@ public static class SimQueries
             var ship = sim.Ships[i];
             if (ship.HasTag(tag) && !ship.IsJunk) result.Add(new(ship.UniqueID, ship.Metadata.PlayerIndex, ship.DetWorldCenter, ship));
         }
-        foreach (StasisSpawner s in sim.Stasis.OrderBy(s => s.ReservedObjectID))
+        // Filter first, then sort only the matches by ID (spec 873). IDs are unique, so the order equals a sort of all spawners.
+        int live = result.Count;
+        foreach (StasisSpawner s in sim.Stasis)
             if (s.HasTag(tag)) result.Add(new(s.ReservedObjectID, s.ObjectAllegiance, s.Location, null));
+        result.Sort(live, result.Count - live, StasisOrder);
         return result;
     }
 

@@ -14,7 +14,8 @@ static class EdgeLabels
     static void Postfix(ObjectIndicator __instance, Halfling.Geometry.Rect guiBounds, bool isOffScreen)
     {
         if (!UxKit.On(s => s.EdgeLabels)) return;
-        UxKit.Guard("edge labels", () =>
+        // Spec 872: this runs for every blip in every frame, so it has no closure. A failure logs once, like UxKit.Guard.
+        try
         {
             var r = __instance.ScreenRect;
             var align = !isOffScreen ? HAlignment.Center
@@ -23,6 +24,7 @@ static class EdgeLabels
                 : HAlignment.Center;
             __instance._normalText.HAlignment = align;
             __instance._highlightedText.HAlignment = align;
-        });
+        }
+        catch (Exception ex) { Core.Errors.Report("ux edge labels", ex.Message, ex); }
     }
 }

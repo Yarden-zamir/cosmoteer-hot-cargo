@@ -258,6 +258,12 @@ CarefulTargets
 			Distance = [0, 200]
 			Allegiance = Unique
 			SuppressLocationAssertions = true
+			// Spec 1120: the hold is real cargo. Wreck the transport after the pickup, and its storage drops the processors (vanilla drop rates).
+			RememberResourcesAndCrew = true
+			ResourceLoadout
+			[
+				{ ResourceType=processor; RandomWeight=1; Quantity=[1, 2]; }
+			]
 			ShipCriteria
 			{
 				UseLocalFactionWeights = true

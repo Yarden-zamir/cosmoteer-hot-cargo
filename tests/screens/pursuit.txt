@@ -1,0 +1,43 @@
+# Pursuit screenshots (spec 911, 923, 933): the reporting scout marker, the blue heat panel of an outage, the hacker page.
+# Main slot only (needs graphics): see the hot-cargo-screenshots skill.
+render on
+newgame run
+wait 10
+ev_set Enabled false
+choose 3
+wait 2
+closepanel
+godmode on
+aiset FleeEnabled false
+aiset CallEnabled false
+aiset RegroupEnabled false
+dip_set DemandHailChance 0
+pu_set ScoutChance 1
+pu_set BlockadeChance 0
+heat 25
+wait 3
+pu_scoutnear 1800
+wait 2
+pu_focusscout
+wait 2
+screenshot pursuit-scout
+pu_killscout
+wait 2
+tech focus
+pu_outage 222
+wait 1
+pu_gain 10
+wait 0.5
+screenshot pursuit-outage
+pu_hacker
+wait 1
+pu_addmoney 50000
+pu_hacker_near 400
+wait 3
+pause on
+pu_hacker_open
+wait 2
+screenshot pursuit-hacker
+dip_close
+log end
+quit

@@ -31,14 +31,16 @@ TradeHub
 		}
 
 		// The current: a straight band of hc_current cloud (worlds/current.rules). Hot Cargo C# type (Worlds/Current.cs).
-		// The band runs along the flow direction of the system, so it reads like a river. Each sim tick it pushes ships inside it.
+		// The band runs along the flow direction of the system, so it reads like a river. Each sim tick it pushes ships and loose
+		// items inside it. 6000 x 2400 is about 11 nebula triangles (side 2000). A width under about 2300 breaks the band into
+		// patches in the diagonal directions. Fixed sizes, not times the system Scale: the band is sized for ships, not for distances.
 		{
 			Conditions { ProhibitSpawnFlags = [disable_nebulas] }
 			Type = HotCargoCurrent
 			Tags = [hc_current]
 			NebulaType = hc_current
-			Length = "(&<../contracts/system_scale.rules>/Scale) * 18000"
-			Width = 4500
+			Length = 6000
+			Width = 2400
 			// Near the center and past the sun gap, so it keeps its distance at any system scale.
 			Distance = [2000, 6000]
 			MinDistanceFromTags = [[sun, 3000]]

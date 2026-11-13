@@ -5,19 +5,25 @@
 enemysetting 2.0
 client: enemysetting 1.0
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 mp godmode on
 mp ev_set Enabled false
+# The Pursuit stays off, so the hunter counts stay exact (spec 943). The step pursuit.coop turns it on in its own run.
+mp pu_set Enabled false
 
 step scaling.generation
 # Spec 330 to 336: the host's value reaches the client. Both machines generate the first system with factor 2:
 # pirate wanderers are round([14, 16] x Area) = 4 at SystemScale 0.5 (mod/contracts/actions.rules), so 8. The state hash compares the ship counts.
+# With 3 players the factor is 1 + (2 - 1) x 2 = 3 (spec 331), so 12.
 expect enemysetting == 2
-expect enemyfactor == 2
+@2p expect enemyfactor == 2
+@3p expect enemyfactor == 3
 on 1 expect enemysetting == 2
-on 1 expect enemyfactor == 2
+@2p on 1 expect enemyfactor == 2
+@3p on 1 expect enemyfactor == 3
 counttag pirate
-expect tagcount >= 8
+@2p expect tagcount >= 8
+@3p expect tagcount >= 12
 
 step diplomacy.payoff
 # Spec 587 (#25): the client ticks tech on the hunter page, and the draft is shared, so the host adds money to it. The client
@@ -53,24 +59,27 @@ waitfor dip_friendhired == 1 30
 waitfor dip_hires >= 1 30
 
 step scaling.waves
-# A hunter wave and an event group get twice the ships on both machines.
+# A hunter wave and an event group get factor times the ships on both machines (2, or 3 with 3 players).
 # Two ships of the sector tier: the Warning response of the last sector (#19 removed the Patrol stage).
 mp stageset Warning EarlyScale 1
 mp spawnstage Warning
-waitfor hunters >= 4 30
-expect hunters == 4
+@2p waitfor hunters >= 4 30
+@2p expect hunters == 4
+@3p waitfor hunters >= 6 30
+@3p expect hunters == 6
 mp ev_spawn TollGuards
 wait 3
 counttag hc_ev_toll
-expect tagcount == 6
+@2p expect tagcount == 6
+@3p expect tagcount == 9
 
 step missions.escort
 # Offers and sides, then the escort: the freighter steers to the jump point when a player is near, and arrival completes it.
 mp hc_generate all
-# The mp input runs a few ticks later, and the system can already hold these groups, so wait for a mark sent after it.
-mp mpmark 69
-waitfor mpmark >= 69 20
-expect hc_offers_escort >= 1
+# An escort offer can exist before the generation, so the mark tells when it ran.
+mp mpmark 1
+waitfor mpmark >= 1 20
+waitfor hc_offers_escort >= 1 20
 expect hc_allies_vs_player == 0
 expect hc_allies_vs_target >= 2
 expect hc_escort_vs_player == 0
@@ -135,26 +144,70 @@ wait 5
 expect worlds_flow_speed > 2
 on 1 expect worlds_ship_in_current > 0.5
 on 1 expect worlds_flow_speed > 2
+# A crate dropped in the current floats with it on both machines (the item push is sim state, in the integrity hash).
+mp tech_set LossGraceSeconds 600
+mp tech drop 1
+wait 6
+expect worlds_item_flow_speed > 5
+on 1 expect worlds_item_flow_speed > 5
+
+step pursuit.coop
+# Spec 912, 934, in a new run: the client's stage start sends a reporting scout, and its report raises heat on both machines.
+# Then the client pays the hacker through the shared choice input: only the client pays, and both machines start the same
+# outage. The paid outage is not a natural one in the pacer.
+mprestart
+mp ev_set Enabled false
+mp aiset FleeEnabled false
+mp aiset CallEnabled false
+mp aiset RegroupEnabled false
+mp dip_set DemandHailChance 0
+mp pu_set ScoutChance 1
+mp pu_set BlockadeChance 0
+as 1 stage
+waitfor pu_scouts == 1 30
+mp pu_scoutnear 300
+waitfor pu_scouts == 0 60
+# Warning starts at 40, the report adds 15.
+expect heat >= 54.5
+on 1 expect heat >= 54.5
+mp pu_hacker
+waitfor pu_hacker == 1 30
+mp pu_setmoney 50000
+mp pu_hacker_near 400
+wait 3
+pu_money
+on 1 pu_money
+on 1 pu_hacker_pick pay
+waitfor pu_outage >= 200 30
+expect pu_count_outage == 0
+expect pu_hacker_done == 1
+expect pu_moneyspent == 0
+on 1 expect pu_moneyspent == 30000
+on 1 expect pu_outage >= 200
 
 step tech.coop-count
 # Spec 65, 442, 449, in a new run: each player holds a different amount, a vault is destroyed, the client's ship becomes a
 # derelict. Both machines show the same total, equal to the units in the vault storage. "mytech" is the local player's tech.
 mprestart
+mp pu_set Enabled false
 mp godmode off
 mp ev_set Enabled false
 mp tech_set LossGraceSeconds 600
-# Starting vaults are at full health: 4 units for each player. The tech count updates in the first sim tick of the new run.
+# Starting vaults are at full health: 4 units for each player (3 + 3 + 2 with 3 players, spec 17). The tech count updates in the first sim tick of the new run.
 waitfor tech == 8 15
 expect vaultminhealth == 3000
 expect vaultunits == 8
-expect mytech == 4
+@2p expect mytech == 4
+@3p expect mytech == 3
 on 1 expect vaultminhealth == 3000
-on 1 expect mytech == 4
+@2p on 1 expect mytech == 4
+@3p on 1 expect mytech == 3
 mp tech remove 1
 wait 1
 expect tech == 7
 expect vaultunits == 7
-expect mytech == 3
+@2p expect mytech == 3
+@3p expect mytech == 2
 # Damage costs no tech while the vault stands. A destroyed vault drops its units as crates, in every machine's count.
 mp tech_set VaultTechLossChance 0
 mp vault damage 0.6
@@ -167,26 +220,33 @@ wait 1
 expect tech == 6
 expect vaultunits == 6
 expect techcrates == 1
-expect mytech == 2
+@2p expect mytech == 2
+@3p expect mytech == 1
 on 1 expect tech == 6
 on 1 expect vaultunits == 6
 on 1 expect techcrates == 1
-on 1 expect mytech == 4
-# The client's ship becomes a derelict. Its 4 units still count, the loss timer stays off, and its blip shows them.
+@2p on 1 expect mytech == 4
+@3p on 1 expect mytech == 3
+# The client's ship becomes a derelict. Its units (4, or 3 with 3 players) still count, the loss timer stays off, and its blip shows them.
 as 1 tech derelict
 wait 2
 expect tech == 6
 expect vaultunits == 6
-expect derelicttech == 4
-expect derelicttag == 4
+@2p expect derelicttech == 4
+@2p expect derelicttag == 4
+@3p expect derelicttech == 3
+@3p expect derelicttag == 3
 expect losstimer == 0
-on 1 expect derelicttech == 4
-on 1 expect derelicttag == 4
+@2p on 1 expect derelicttech == 4
+@2p on 1 expect derelicttag == 4
+@3p on 1 expect derelicttech == 3
+@3p on 1 expect derelicttag == 3
 on 1 expect losstimer == 0
 
 step tech.loss-timer
 # Spec 443, in a new run (8 tech): tech at 0 starts the timer on both machines, tech back stops it, and the timer ends the run.
 mprestart
+mp pu_set Enabled false
 # The loss must happen: godmode blocks it, and its switch stays on across a restart.
 mp godmode off
 mp ev_set Enabled false
@@ -208,6 +268,7 @@ on 1 waitfor lost == 1 30
 step journey.buyer-win
 # A new run: the Buyer appears, the client flies to it and sells tech from its own machine, and the run is won on both.
 mprestart
+mp pu_set Enabled false
 # The loss steps before turned godmode off. Without it, ships near the Buyer can destroy the client's vaults before the sale.
 mp godmode on
 mp ev_set Enabled false

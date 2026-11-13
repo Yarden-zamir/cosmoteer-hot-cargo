@@ -109,6 +109,23 @@ Heat stages and missions. One typical mission adds about 11.8 heat: 5.8 from fam
 - Hunters give no fame (no kill fame, measured 0 at every tier) and no money reward, but their wrecks pay about 10 % of their value in salvage (1 std at `RewardScale` 1), and 30 to 60 fuel.
 - **Recommendation: no bounty.** Kill fame would add heat, so a fight would call the next wave (a loop). A money bounty would make repeat Strike waves (every 180 s, up to 12 hunters) a farm. Salvage already pays, and it takes time to collect under pressure, which is the trade-off we want.
 
+### 8. The Pursuit (spec 900 to 949)
+
+The Pursuit changes hunter strength and adds heat events. The budget above still holds: the Strike comes after about 6.3 to 7.5 missions per sector.
+
+Modelled with the numbers of section 4 (8 units, multiplier 1.2: one typical mission is about 11.8 heat with its contract and its time, time 1.37 heat per minute):
+
+| Pursuit part | Rule | Heat per sector | Missions before the Strike |
+|---|---|---|---|
+| Reporting scout | `ScoutChance` 0.5 × `ScoutReportHeat` 15 × an escape share of about 0.5. Warning (40) starts in every sector, because it is above the highest carried heat (25). | +3.75 | −0.3 |
+| Natural outage | 120 s without gains: time 2.7 + about 0.7 missions (6 missions in 17.5 min) × 8.5 (fame and contract) = about −9 in the sector where it runs. 1.9 per run (`PursuitModel.ExpectedCapped(6, 0.5, 2)`), so about −2 per sector on average. | −9 there | +0.7 there |
+| Hacker outage | 240 s: about −17 in that sector. It comes in 82 % of runs (1 − 0.75⁶), at most once, and costs 0.5 × TVM: 1 to 1.5 typical missions of money. | −17 there | +1.5 there, if bought |
+| Ramp and fleet factor | Fewer hunters early (× 0.75 in sector 1, × 1 at the Buyer), ± 15 % by fleet value. Hunters give no fame, so no heat change. | 0 | 0 |
+| Blockade | No heat change. Parked ships make the relay a watched relay (−75 % instead of −85 %): about +10 heat in the next sector if the players do not lure them away or jump blind. At most 2 per run. | +10 next sector, rare | −0.8 there |
+
+- Run average: scouts (+3.75 per sector) and outages (−2 per sector) leave about +1.7 heat per sector. The Strike comes about 0.15 missions earlier than in the section 4 table: about 6.3 missions after a watched relay. A sector with an outage gives about 0.7 more, a sector with an escaped scout about 1.3 fewer. That is the spread that the Pursuit wants: the heat clock varies, the budget holds.
+- Limit: the escape share of scouts and the hacker buy rate are guesses. Check them against telemetry (`TELEMETRY.md`, heat events by source) when real runs exist.
+
 ## Changes
 
 | Tunable or rule | Before | After | Requirement |
@@ -130,6 +147,12 @@ Heat stages and missions. One typical mission adds about 11.8 heat: 5.8 from fam
 | Station fuel stock (typed, untyped) | 80–90 %, 0–10 % | 25–40 %, 0–2 % | 300 |
 | Jump fuel cost (map, local) | 1 per 100 mass per 10 LY, 25 km | per 5 LY, 12.5 km | 300 |
 | `Balance.StationFuelPerMillion`, `StationFuelMinimum` (new) | no floor | 100 per million of the next tier's ship value, at least 10 | 304 |
+| `Pursuit.EarlyShipFactor`, `LateShipFactor` (new) | 1 | 0.75 in sector 1 → 1 at the Buyer | 901 |
+| `Pursuit.EarlyIntervalFactor`, `LateIntervalFactor` (new) | 1 | 1.5 → 1 (repeat Strike waves) | 901 |
+| `Pursuit.FleetFactorPerDoubling`, `FleetFactorMax` (new) | none | ± 15 % hunter ships by fleet value | 902 |
+| `Pursuit.ScoutChance`, `ScoutReportHeat` (new) | none | 0.5, +15 heat | 910, 912 |
+| `Pursuit.OutageChance`, `OutageSeconds` (new) | none | 0.5 per sector, at most 2 a run, 120 s | 920, 921 |
+| `Pursuit.HackerChance`, `HackerOutageSeconds`, `HackerPriceShare` (new) | none | 0.25, 240 s, 0.5 × TVM | 930, 931 |
 | Convoy reward sort value | int.MinValue (the sum wrapped) | 0 | — |
 
 ## Dependencies on other areas

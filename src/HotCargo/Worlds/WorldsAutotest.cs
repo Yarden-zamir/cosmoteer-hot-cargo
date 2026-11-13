@@ -41,6 +41,37 @@ static class WorldsAutotest
         // Strength of the current at the ship's location (0 to 1), and as the ship's nebula tracker sees it (what the push uses).
         Autotest.Fields["worlds_in_current"] = () => Sim().Nebulas.GetInsideStrength(Ship().DetWorldCenter, Current.NebulaId);
         Autotest.Fields["worlds_ship_in_current"] = () => Ship().Nebulas.GetNebulaStrength(Current.NebulaId);
+        // Loose items (vanilla nuggets: resources, tech crates) inside the current. Spec 221: they float out.
+        Autotest.Fields["worlds_items_in_current"] = () =>
+        {
+            var sim = Sim();
+            int count = 0;
+            for (int i = 0; i < sim.Nuggets.Count; i++)
+                if (sim.Nebulas.GetInsideStrength(sim.Nuggets[i].DetWorldLocation, Current.NebulaId) > 0f) count++;
+            return count;
+        };
+        // The fastest speed along the flow of a loose item in the current (0 when there is none).
+        Autotest.Fields["worlds_item_flow_speed"] = () =>
+        {
+            var sim = Sim();
+            Vector2 flow = Current.FlowVector(sim);
+            float best = 0f;
+            for (int i = 0; i < sim.Nuggets.Count; i++)
+            {
+                var n = sim.Nuggets[i];
+                if (sim.Nebulas.GetInsideStrength(n.DetWorldLocation, Current.NebulaId) > 0f) best = Math.Max(best, n.LinearVelocity.Dot(flow));
+            }
+            return best;
+        };
+        // Where the first tech crate is, from the current's center: along the flow and across it (absolute values).
+        // A crate that left the band with along below half the band length (3000) left it at a side.
+        Autotest.Fields["worlds_crate_along"] = () => Math.Abs(CrateOffset().Dot(Current.FlowVector(Sim())));
+        Autotest.Fields["worlds_crate_across"] = () =>
+        {
+            Vector2 flow = Current.FlowVector(Sim());
+            return Math.Abs(CrateOffset().Dot(new Vector2(-flow.Y, flow.X)));
+        };
+        Autotest.Fields["worlds_sim_seconds"] = () => Sim().Tick * (float)Sim().FixedUpdater.Interval;
         Autotest.Fields["worlds_flow_speed"] = () => ((Vector2)(Ship().Physics.Body ?? throw new InvalidOperationException("ship has no body")).LinearVelocity).Dot(Current.FlowVector(Sim()));
         Autotest.Fields["worlds_belt_rocks"] = () => Tagged(Sim(), BeltRock).Count;
         Autotest.Fields["worlds_passes"] = () => Doodads(Sim(), Pass).Count;
@@ -121,6 +152,8 @@ static class WorldsAutotest
             case ["paint"]:
             {
                 var sim = Sim();
+                // The push finds the band axis from all current triangles (Current.Band): one band per system.
+                if (Current.TriangleCenters(sim, Current.NebulaId).Count > 0) throw new InvalidOperationException("this system already has a current");
                 var spawner = MissionArea.AllSpawners(GameApp.Rules.CareerMode.SectorTypesByID[new ID<SectorTypeRules>("hc_trade_hub")].SystemGenerator.Spawners)
                     .OfType<CurrentSpawner>().FirstOrDefault() ?? throw new InvalidOperationException("the trade hub rules have no HotCargoCurrent spawner");
                 spawner.DoSpawn(sim, sim.Rand, 0, 0, 1, null, Ship().DetWorldCenter, [], new SpawnedObjectCollection(), 0f, loadInstantly: true, []);
@@ -321,6 +354,18 @@ static class WorldsAutotest
     static SimRoot Sim() => Autotest.RequireRun().Game.Sim ?? throw new InvalidOperationException("no sim");
 
     static Ship Ship() => SimQueries.FirstHumanShip(Sim()) ?? throw new InvalidOperationException("no human ship");
+
+    /// <summary>The first tech crate's offset from the mean of the current triangles (the band center).</summary>
+    static Vector2 CrateOffset()
+    {
+        var sim = Sim();
+        var centers = Current.TriangleCenters(sim, Current.NebulaId);
+        if (centers.Count == 0) throw new InvalidOperationException("no current in this system");
+        Vector2 mean = centers.Aggregate(Vector2.Zero, (a, c) => a + c) / centers.Count;
+        for (int i = 0; i < sim.Nuggets.Count; i++)
+            if (sim.Nuggets[i].ResourceType == Tech.Vaults.TechId) return sim.Nuggets[i].DetWorldLocation - mean;
+        throw new InvalidOperationException("no tech crate in space");
+    }
 
     static string SectorId() => Autotest.RequireRun().Mode.CurrentSectorType.ID.ToString();
 

@@ -41,13 +41,15 @@ public static class Overlay
         label.AutoSize.AutoWidthMode = AutoSizeMode.Enable;
         label.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
         label.AutoSize.Anchor = new Vector2(1f, 0f);
+        double nextText = 0;
         label.BeforeFrameDraw += (_, _) =>
         {
             if (App.Keyboard.HotkeyPressed(ViKey.F8)) Visible = !Visible;
             bool panel = Run.Current is { } r && r.Mode == mode && r.T.Ux.HeatPanel;
             bool error = FatalError is not null || TunablesFile.LastError is not null;
             label.SelfActive = (error || (Visible && !panel)) && mode.Game.MapDisplayFactor < 1f;
-            if (label.SelfActive) label.Text = panel ? ErrorText() : Text(mode);
+            // Spec 872: the text refreshes every HudRefreshSeconds, not in every frame.
+            if (label.SelfActive && UxKit.HudDue(ref nextText)) label.Text = panel ? ErrorText() : Text(mode);
         };
         mode.Game.Gui.RootWidget.AddChild(label);
         mode.Game.Gui.TopLeftHudBox.Children.Insert(0, new HeatPanel(mode));
