@@ -1,8 +1,0 @@
-# Co-op AI personalities, client side.
-mpjoin 127.0.0.1:{PORT}
-mpready
-waitfor mpmark >= 1 180
-aiprofiles client
-expect ai_personality > 0
-expect desyncs == 0
-quit

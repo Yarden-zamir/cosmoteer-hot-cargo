@@ -1,5 +1,6 @@
 using Cosmoteer.Modes.Career;
 using Cosmoteer.Ships;
+using Cosmoteer.Ships.Commands;
 using Cosmoteer.Simulation;
 using HarmonyLib;
 using HotCargo.Core;
@@ -38,7 +39,32 @@ public static class AllyPeace
         var zone = FactionsArea.ZoneOf(run, run.Game.CurrentMapNode);
         if (zone != Zone.Ally) { _current = null; return; }
         var ally = FactionsArea.Roles(run).Ally;
+        var before = _current;
         _current = FactionsModel.Peace(zone, ally.MilitaryPlayerIndex, ally.CivilianPlayerIndex, HunterIndex(sim)) is { } peace ? new Current(sim, peace) : null;
+        if (_current is { Peace.Hunter: { } hunter } now && (before?.Sim != sim || before.Peace != now.Peace)) ClearFights(sim, now.Peace, hunter);
+    }
+
+    /// <summary>
+    /// When the peace starts or a new hunter side arrives, the two sides drop the fights that they started before: attack orders and
+    /// turret targets, like the vanilla truce (CareerSimModeManager.ClearAggressivePlayerActsToAndFromShip). Else they keep firing until their AI looks again.
+    /// </summary>
+    static void ClearFights(SimRoot sim, HunterPeace peace, int hunter)
+    {
+        foreach (var ship in sim.Ships)
+        {
+            int player = ship.Metadata.PlayerIndex;
+            if (peace.IsAllyFaction(player))
+            {
+                ship.Weapons.ClearAllWeaponTargetsAtPlayerIndex(hunter);
+                ship.Commands.RemoveAll(c => c is IAttackCommand { Target: { } t } && t.Metadata.PlayerIndex == hunter);
+            }
+            else if (player == hunter)
+            {
+                ship.Weapons.ClearAllWeaponTargetsAtPlayerIndex(peace.AllyMilitary);
+                ship.Weapons.ClearAllWeaponTargetsAtPlayerIndex(peace.AllyCivilian);
+                ship.Commands.RemoveAll(c => c is IAttackCommand { Target: { } t } && peace.IsAllyFaction(t.Metadata.PlayerIndex));
+            }
+        }
     }
 
     /// <summary>The shared player index of the live hunters (the same pick as HunterSpawner: an allocated index), or null with none.</summary>

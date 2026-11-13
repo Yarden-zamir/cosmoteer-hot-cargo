@@ -12,7 +12,7 @@ Rules:
 - Put logic (math, rules, state machines) in a `*Model.cs` file with no game types, and test it there.
 - A game test checks what only the game can show: spawns, AI, physics, UI, saves, co-op sync, vanilla integration. It may compare a game value with a model value (a "gap" field). It does not test the model again with other inputs.
 - Each area has one smoke test: it loads and runs the main flow. An area without a smoke test runs all its tests in the smoke tier.
-- A touched area always runs all its co-op tests: they guard co-op determinism. A change in shared code runs every smoke test and the co-op tests marked smoke (`core`, `save`).
+- A touched area always runs every co-op session with a step of the area (`step <area>.<name>`): they guard co-op determinism. A change in shared code runs every smoke test and the co-op session marked smoke (`coop-core`).
 - Put the marker at the end of the file, after `quit`, so it does not conflict with edits at the top. The `# runner: pc` line (Mac sim) goes there too.
 
 ## Audit
@@ -107,31 +107,7 @@ Actions: **smoke** (in the smoke tier), keep (full tier only), done (changed in 
 
 ### Co-op
 
-Every co-op test checks determinism (no desync, equal `MPSTATE` lines) and stays. A touched area runs all its co-op tests. `core` and `save` are the co-op smoke tests for shared code.
-
-| Test | Checks | Action |
-|---|---|---|
-| ai | personalities, cover, teams with no desync | keep |
-| contracts | client pays the fee and gets the bonus | keep |
-| core | host tunables reach the client, heat, stages, hunters | **smoke** |
-| diplomacy | hand-over and hire through the shared choice input | keep |
-| events | choice, late second click, tech cost | keep |
-| factions | trades at fence and markup prices, peace in ally space | keep |
-| hail | ship comms choice applies once | keep |
-| missions | offers, escort, shady trap roll | keep |
-| onboarding | co-op page, same run log | keep |
-| research | research trade unlocks on both | keep |
-| runmodes | difficulty through vanilla inputs | keep |
-| save | save, resync, load | **smoke** |
-| scaling | host slider, factor 2 | keep |
-| sharedchoice | votes: unanimity, timeout, force | keep |
-| shipai | tactics edits and decisions in sync | keep |
-| timer | loss timer on both | keep |
-| trade | own-ship sales, loss for both | keep |
-| tunablesmenu | menu change at the same tick | keep |
-| wanted | wanted and clean record on both | keep |
-| win | Buyer sale wins on both | keep |
-| worlds | current pushes the same way | keep |
+Co-op tests are 3 sessions (`tests/autotest-mp/`): `coop-core`, `coop-economy` and `coop-combat`. Each session checks determinism with a hash of the whole run state and has one step for each old co-op test check. A touched area runs every session with a step of the area. `coop-core` is the co-op smoke test for shared code. The old 21 tests map to steps as listed in the session files (the step names start with the area).
 
 ## Findings
 
@@ -145,7 +121,7 @@ Medians from `../.state/logs` (November 2026). A co-op test counts as two slots 
 
 | | Before | After |
 |---|---|---|
-| Game tests (single player + co-op) | 79 + 21 | 77 + 21 |
+| Game tests (single player + co-op) | 79 + 21 | 77 + 21 (co-op later: 3 sessions) |
 | Full suite slot time | 12,257 s (ideal 34 min) | 12,052 s (ideal 33 min) |
 | `autotest-affected.sh` after a Core change | 100 tests, 12,257 s | 23 tests, 2,332 s (ideal 6.5 min) |
 | `autotest-affected.sh` after an Events change | 13 tests, 1,163 s | 3 tests, 408 s |
