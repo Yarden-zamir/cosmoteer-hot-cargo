@@ -34,7 +34,7 @@ With the defaults, about 3 of 4 systems are archetypes. The start system stays b
 - Items: loose nuggets (resources, tech crates) in the band float with the current. Their vanilla drag (0.5 per second) pulls them toward the drift velocity instead of to rest, so they leave the band with it. Junk capsules and wrecks are ships and get the ship push.
 - Exceptions: stations, asteroids and megaroids do not drift.
 - Look: the vanilla cloud with a teal tint and full sight, plus arrows that drift in the drift direction (they lean toward the nearer side). The vanilla nebula HUD shows "current" while a ship is inside.
-- Found in tests: an idle player ship brakes against the drift and settles at about 5.5 units per second downstream. A ship that maneuvers gets the full push.
+- Found in tests: an idle player ship brakes against the drift and settles at about 5.5 units per second downstream; from the middle of the band it still drifts out in about 45 s. A dropped tech crate floats at about 40 units per second and leaves the band in a few seconds. A ship that maneuvers gets the full push.
 
 ### Dense belt and passes (Mining Belt)
 
