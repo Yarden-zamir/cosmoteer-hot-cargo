@@ -7,6 +7,7 @@
 #   of the runs that these tests made (tools/telemetry). The report path is printed at the end.
 # - No test names: every tests/autotest/*.txt and every co-op session (mp:<session>, see coop_sessions in autotest-lib.sh).
 # - Test names: only those, for example "tech-sell mp:coop-economy" (autotest-affected.sh passes its list this way).
+#   "mp3:<session>" runs a session with 3 players (the host and 2 clients, 3 slots).
 # Each test retries once (see autotest.sh); a pass on the retry counts as FLAKY, not as a failure.
 # The suite builds and stages the mod once (scripts/stage.sh) and every test deploys that stage (HOT_CARGO_STAGE),
 # so all tests run the same build. Changes made in the worktree during the suite are not in it.
@@ -46,9 +47,10 @@ scripts/stage.sh "$HOT_CARGO_STAGE" > "$RUN_DIR/build.log" 2>&1 || { cat "$RUN_D
 
 run_test() {
   local t="$1" out="$RUN_DIR/$1.out"
-  if [[ "$t" == mp:* ]]; then
-    local n="${t#mp:}"
-    scripts/autotest-mp.sh "tests/autotest-mp/$n.txt" "$((TIMEOUT + 200))" > "$out" 2>&1
+  if [[ "$t" == mp:* || "$t" == mp3:* ]]; then
+    local n="${t#*:}" players=2
+    [[ "$t" == mp3:* ]] && players=3
+    PLAYERS=$players scripts/autotest-mp.sh "tests/autotest-mp/$n.txt" "$((TIMEOUT + 200))" > "$out" 2>&1
   else
     scripts/autotest.sh "tests/autotest/$t.txt" "$TIMEOUT" > "$out" 2>&1
   fi
@@ -104,7 +106,7 @@ fi
 # A co-op session prints its step lines and one result line with the reason (join failed, steps failed, desync, PC link).
 for t in $FAILED; do
   echo "--- $t"
-  if [[ "$t" == mp:* ]]; then grep -E "^FAIL |^== result|^   " "$RUN_DIR/$t.out" | head -40
+  if [[ "$t" == mp:* || "$t" == mp3:* ]]; then grep -E "^FAIL |^== result|^   " "$RUN_DIR/$t.out" | head -40
   else grep -A60 "first run failed\|retry failed\|MP AUTOTEST FAILED" "$RUN_DIR/$t.out" | head -40; fi
 done
 echo "== failed: $FAILED ($RUN_DIR)"; exit 1

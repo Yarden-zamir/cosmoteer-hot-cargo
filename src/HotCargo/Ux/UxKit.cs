@@ -40,6 +40,18 @@ public static class UxKit
 
     public static bool On(Func<UxTunables, bool> pick) => Switches is { } s && pick(s);
 
+    /// <summary>
+    /// Spec 872. True at most once per HudRefreshSeconds of real time for one caller, which keeps <paramref name="next"/>.
+    /// A HUD text that changes all the time refreshes on true only, so it does not build strings and lay out in every frame.
+    /// </summary>
+    public static bool HudDue(ref double next)
+    {
+        double now = App.Clock.Time.Seconds;
+        if (now < next) return false;
+        next = now + (Switches?.HudRefreshSeconds ?? Defaults.HudRefreshSeconds);
+        return true;
+    }
+
     /// <summary>Text from mod/ux/strings.en.rules (section HotCargoUx).</summary>
     public static string Text(string key) => Strings.GetText("HotCargoUx/" + key);
 
@@ -131,7 +143,12 @@ public static class UxKit
     }
 
     /// <summary>Runs a UI patch body. A failure logs once, shows in the overlay, and the vanilla UI stays.</summary>
-    public static void Guard(string what, Action body) => Errors.Guard("ux " + what, body);
+    /// The name is built only on failure, because frame code calls this many times per frame (spec 872).
+    public static void Guard(string what, Action body)
+    {
+        try { body(); }
+        catch (Exception ex) { Errors.Report("ux " + what, ex.Message, ex); }
+    }
 
     /// <summary>Per-stage text "HotCargoUx/Stage{Name}". A stage that the strings do not know gets a generic line.</summary>
     public static string StageText(string stageName) =>

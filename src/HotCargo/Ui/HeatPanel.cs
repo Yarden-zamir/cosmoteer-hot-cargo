@@ -44,6 +44,7 @@ sealed class HeatPanel : LayoutBox
     int _seenStages = -1;
     double _alertUntil;
     double _flashUntil;
+    double _nextText;
 
     public HeatPanel(CareerGameModeManager mode)
     {
@@ -111,6 +112,9 @@ sealed class HeatPanel : LayoutBox
         var t = run.T;
         double now = App.Clock.Time.Seconds;
         DetectStageStart(run, now);
+        _alert.SelfActive = now < _alertUntil;
+        // Spec 872: the texts below refresh every HudRefreshSeconds, not in every frame.
+        if (!UxKit.HudDue(ref _nextText)) return;
 
         _sector.Text = UxKit.Format("SectorFmt", s.SectorIndex, t.Journey.RunSectorCount);
         float mult = run.HeatMultiplier(s.FleetTech);
@@ -126,7 +130,6 @@ sealed class HeatPanel : LayoutBox
         string? contracts = Contracts.ContractsUi.HeatPanelLine(run);
         _contracts.SelfActive = contracts is not null;
         _contracts.Text = contracts ?? "";
-        _alert.SelfActive = now < _alertUntil;
         // Spec 60: in multiplayer the tunables hash stays visible, so players can compare it.
         _debug.SelfActive = t.Debug.DebugKeys || run.IsMultiplayer;
         if (_debug.SelfActive)

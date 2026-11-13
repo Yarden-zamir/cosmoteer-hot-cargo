@@ -108,7 +108,7 @@ Actions: **smoke** (in the smoke tier), keep (full tier only), done (changed in 
 
 ### Co-op
 
-Co-op tests are 3 sessions (`tests/autotest-mp/`): `coop-core`, `coop-economy` and `coop-combat`. Each session checks determinism with a hash of the whole run state and has one step for each old co-op test check. A touched area runs every session with a step of the area. `coop-core` is the co-op smoke test for shared code. The old 21 tests map to steps as listed in the session files (the step names start with the area).
+Co-op tests are 4 sessions (`tests/autotest-mp/`): `coop-core`, `coop-economy`, `coop-combat` and `coop-stress` (a cost measure, spec 42). Each session checks determinism with a hash of the whole run state and has one step for each old co-op test check. A touched area runs every session with a step of the area. `coop-core` is the co-op smoke test for shared code. The old 21 tests map to steps as listed in the session files (the step names start with the area).
 
 ## Findings
 

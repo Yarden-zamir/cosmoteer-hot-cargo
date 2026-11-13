@@ -198,12 +198,14 @@ slot_log() {
   )
 }
 
-# The two scripts of a co-op session (any runner: PC slots, later the Mac sim). Args: <session file> <port>.
+# The two scripts of a co-op session (any runner: PC slots, later the Mac sim). Args: <session file> <port> [players, default 2].
 # Host: the session file without its "client:" lines. Client: those lines (settings before the join), then client.txt.
-# "{PORT}" becomes the port. The first line names the run (telename <session>.host / .client); a pass needs it in the log.
-coop_host_script() { echo "telename $(basename "$1" .txt).host"; grep -v '^client:' "$1" | sed "s/{PORT}/$2/g"; }
+# "{PORT}" becomes the port and "{PLAYERS}" the player count. A line that starts with "@<n>p " runs only with n players.
+# Every client runs the same client script. The first line names the run (telename <session>.host / .client); a pass needs it in the log.
+coop_lines() { awk -v p="${2:-2}" '/^@[0-9]+p / { if (substr($1, 2) + 0 != p) next; sub(/^@[0-9]+p /, "") } { print }' "$1"; }
+coop_host_script() { echo "telename $(basename "$1" .txt).host"; coop_lines "$1" "${3:-2}" | grep -v '^client:' | sed "s/{PORT}/$2/g; s/{PLAYERS}/${3:-2}/g"; }
 coop_client_script() {
-  echo "telename $(basename "$1" .txt).client"; sed -n 's/^client: *//p' "$1"; sed "s/{PORT}/$2/g" "$(dirname "$1")/client.txt"
+  echo "telename $(basename "$1" .txt).client"; coop_lines "$1" "${3:-2}" | sed -n 's/^client: *//p'; sed "s/{PORT}/$2/g" "$(dirname "$1")/client.txt"
 }
 
 # Prints the names of the co-op sessions: every tests/autotest-mp/*.txt except client.txt (the generic client).
