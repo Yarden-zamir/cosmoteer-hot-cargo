@@ -9,6 +9,7 @@ using Cosmoteer.Modes.Career.Missions;
 using Cosmoteer.Modes.Career.Missions.Objectives;
 using Cosmoteer.Modes.Career.Missions.Rewards;
 using Cosmoteer.Simulation;
+using Cosmoteer.Simulation.Doodads;
 using Cosmoteer.Ships;
 using Cosmoteer.Simulation.Stasis;
 using Halfling.ObjectText;
@@ -53,7 +54,7 @@ internal sealed class StashObjective : Objective
             if (invalid) return null;
             var game = sim.RequireGame();
             double now = Run.Current is { } run && run.Game == game ? run.State.GameSeconds : 0;
-            var objective = new StashObjective(sim.NodeId(), site!.Location.Center, TriggerDistance, now, rand.UInt64());
+            var objective = new StashObjective(sim.NodeId(), site!.Location.Center, TriggerDistance, now, rand.UInt64()) { SitePoiID = site.UniqueID };
             int tier = Math.Max(1, ((CareerSimModeManager)sim.Mode).TierFields.GetTier(site.Location.Center));
             float factor = StashArea.TunablesFor(game).LootMoneyFactor;
             foreach (RewardSpawner r in LootRewards ?? [])
@@ -72,6 +73,8 @@ internal sealed class StashObjective : Objective
     /// <summary>Run game seconds at the offer. The found-first chance counts from here.</summary>
     [Serialize] public double OfferedAt { get; private set; }
     [Serialize] public ulong RollSeed { get; private set; }
+    /// <summary>The target area marker of the site. It belongs to the stash until the roll removes it.</summary>
+    [Serialize(Optional = true)] public ObjectID? SitePoiID { get; private set; }
     [Serialize(Optional = true)] public StashState State { get; private set; }
     [Serialize(Optional = true)] public List<ObjectiveTargetShip> Ambushers { get; private set; } = [];
 
@@ -106,6 +109,9 @@ internal sealed class StashObjective : Objective
 
     public override bool IsShipAssociated(MetaShip ship) =>
         State == StashState.Ambush && Completion == CompletionState.InProgress && Ambushers.Any(a => a.TargetMetaShip == ship);
+
+    public override bool IsPOIAssociated(POIDoodad poi) =>
+        Completion == CompletionState.InProgress && State == StashState.Waiting && poi.UniqueID == SitePoiID;
 
     /// <summary>Spec 971: the found-first chance now, from the run time. Before a run is active, the chance at the offer.</summary>
     internal float FoundFirstNow(GameRoot game)
@@ -174,6 +180,7 @@ internal sealed class StashObjective : Objective
         float foundRoll = rand.Single(), emptyRoll = rand.Single(), techRoll = rand.Single();
         var outcome = StashArea.ForcedOutcome ?? StashModel.Outcome(foundRoll, chance, emptyRoll, t.EmptyShare);
         StashArea.ForcedOutcome = null;
+        RemoveMarker(sim);
         Log.Info($"stash resolved: chance={chance:0.000} roll={foundRoll:0.000} outcome={outcome}");
         switch (outcome)
         {
@@ -198,6 +205,12 @@ internal sealed class StashObjective : Objective
                 Spring(sim, near);
                 break;
         }
+    }
+
+    /// <summary>Spec 972: the site is found, so its marker goes away. Resolve runs only in the stash's system, where the ID is valid.</summary>
+    void RemoveMarker(SimRoot sim)
+    {
+        if (SitePoiID is { } id && sim.Doodads[id] is POIDoodad poi) sim.Doodads.Remove(poi, dispose: true);
     }
 
     void Spring(SimRoot sim, Vector2 near)
