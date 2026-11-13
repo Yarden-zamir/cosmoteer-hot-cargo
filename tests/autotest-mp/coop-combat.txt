@@ -1,7 +1,7 @@
 # Co-op session: enemy scaling, diplomacy, missions, AI personalities, currents, the loss timer and the win.
 # See coop-core.txt for "client:", "as 1", "on 1" and steps.
 # Before the join: the host's enemy slider is 2.0 and the client's is 1.0. The host's value counts, so every step of this
-# session runs with an enemy factor of 2 (2 players).
+# session runs with an enemy factor of 2 (2 players) or 3 (3 players).
 enemysetting 2.0
 client: enemysetting 1.0
 mphost {PORT}
@@ -12,7 +12,8 @@ mp ev_set Enabled false
 step scaling.generation
 # Spec 330 to 336: the host's value reaches the client. Both machines generate the first system with factor 2:
 # pirate wanderers are [9, 11] (mod/contracts/actions.rules), so 18 to 22. The state hash compares the ship counts.
-# With 3 players the factor is 1 + (2 - 1) x 2 = 3 (spec 331), so 27 to 33.
+# With 3 players the factor is 1 + (2 - 1) x 2 = 3 (spec 331), so 27 to 33. The group spacing shrinks with the factor, so
+# the system has room for all of them (spec 332).
 expect enemysetting == 2
 @2p expect enemyfactor == 2
 @3p expect enemyfactor == 3
@@ -21,7 +22,9 @@ on 1 expect enemysetting == 2
 @3p on 1 expect enemyfactor == 3
 counttag pirate
 @2p expect tagcount >= 18
+@2p expect tagcount <= 22
 @3p expect tagcount >= 27
+@3p expect tagcount <= 33
 
 step diplomacy.payoff
 # Spec 587 (#25): the client ticks tech on the hunter page, and the draft is shared, so the host adds money to it. The client

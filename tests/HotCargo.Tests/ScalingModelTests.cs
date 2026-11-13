@@ -54,4 +54,16 @@ public class ScalingModelTests
         Assert.Equal(1, ScalingModel.Cap(1, 1.4));
         Assert.Equal(0, ScalingModel.Cap(0, 2));
     }
+
+    [Fact]
+    public void Spacing_shrinks_by_the_root_of_the_factor_so_the_same_area_holds_factor_times_ships()
+    {
+        Assert.Equal(4500f, ScalingModel.Spacing(4500f, 1));
+        Assert.Equal(4500f / MathF.Sqrt(3), ScalingModel.Spacing(4500f, 3), 3);
+        // Ships per area grow with 1 / spacing², so they grow by the factor.
+        Assert.Equal(2.5, Math.Pow(4500.0 / ScalingModel.Spacing(4500f, 2.5), 2), 4);
+        Assert.Equal(0f, ScalingModel.Spacing(0f, 2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ScalingModel.Spacing(4500f, 0.9));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ScalingModel.Spacing(-1f, 2));
+    }
 }

@@ -54,6 +54,42 @@ static class SpawnScalePatches
         }
     }
 
+    /// <summary>
+    /// Spec 332: while a scaled group spawns, its spacing from its own tags (pirate from pirate) shrinks by √factor, so the
+    /// extra ships find a place. Spacing from other tags (sun, stations) stays. Rules objects are shared, so the finalizer
+    /// puts the original list back.
+    /// </summary>
+    [HarmonyPatch(typeof(SimObjectSpawner), "DoSpawn",
+        [typeof(SimRoot), typeof(Rand), typeof(List<SimSpawner.SpawnedObject>), typeof(uint), typeof(uint), typeof(bool),
+         typeof(List<SimSpawner.SpawnedObject>), typeof(SpawnedObjectCollection), typeof(HashSet<ID<SimSpawner.SpawnFlag>>), typeof(float)],
+        [ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Ref, ArgumentType.Ref, ArgumentType.Normal,
+         ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal])]
+    static class GroupSpacing
+    {
+        static void Prefix(SimObjectSpawner __instance, SimRoot sim, out List<(ID<SimObjectSpawner> Tag, float Distance)>? __state)
+        {
+            __state = null;
+            if (__instance is not ShipSpawner { MinDistanceFromTags: { } spacing, Tags: { } tags } s) return;
+            try
+            {
+                if (!IsGroup(s) || !Scales(s)) return;
+                double factor = EnemyScale.Factor(sim);
+                if (factor <= 1 || !spacing.Any(t => tags.Contains(t.Tag))) return;
+                s.MinDistanceFromTags = spacing.Select(t => tags.Contains(t.Tag) ? (t.Tag, ScalingModel.Spacing(t.Distance, factor)) : t).ToList();
+                __state = spacing;
+            }
+            catch (Exception ex)
+            {
+                Errors.Report("enemy scaling (spacing)", ex.Message, ex);
+            }
+        }
+
+        static void Finalizer(SimObjectSpawner __instance, List<(ID<SimObjectSpawner> Tag, float Distance)>? __state)
+        {
+            if (__state is not null) __instance.MinDistanceFromTags = __state;
+        }
+    }
+
     /// <summary>Extra fleet ships copy random ships of the fleet. They join its fleet and tags, so fleet objectives count them.</summary>
     [HarmonyPostfix, HarmonyPatch(typeof(ShipSpawner), nameof(ShipSpawner.PickSpawnShips))]
     static void FleetShips(ShipSpawner __instance, SimRoot sim, Rand rand,
