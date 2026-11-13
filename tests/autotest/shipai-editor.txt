@@ -15,16 +15,16 @@ tactics_editor cond 1 EnemiesAtLeast 3
 tactics_editor param 1 3 3
 tactics_editor or 1 3
 wait 2
-expecttactics HC1:HealthBelow=20&!CarryingTech|EnemiesAtLeast=3>RetreatRepair;Always>TargetWeakest;Always>CloseIn;Always>FocusTarget
+expecttactics HC1:HealthBelow=20&!CarryingTech|EnemiesAtLeast=3>RetreatRepair;Always>TargetWeakest;Always>CloseIn;Always>FocusTarget=0
 # Remove the middle term; the OR stays with its term.
 tactics_editor removeterm 1 2
 wait 2
-expecttactics HC1:HealthBelow=20|EnemiesAtLeast=3>RetreatRepair;Always>TargetWeakest;Always>CloseIn;Always>FocusTarget
+expecttactics HC1:HealthBelow=20|EnemiesAtLeast=3>RetreatRepair;Always>TargetWeakest;Always>CloseIn;Always>FocusTarget=0
 # Facing action with its side.
 tactics_editor act 3 Face
 tactics_editor actparam 3 2
 wait 2
-expecttactics HC1:HealthBelow=20|EnemiesAtLeast=3>RetreatRepair;Always>TargetWeakest;Always>Face=2;Always>FocusTarget
+expecttactics HC1:HealthBelow=20|EnemiesAtLeast=3>RetreatRepair;Always>TargetWeakest;Always>Face=2;Always>FocusTarget=0
 # Personal presets: save, apply after a change, delete. The file is a local preference, not sim state.
 expect tactics_presets == 0
 tactics_editor savepreset My brawler
@@ -34,7 +34,7 @@ wait 2
 expecttactics Sniper
 tactics_editor apply My brawler
 wait 2
-expecttactics HC1:HealthBelow=20|EnemiesAtLeast=3>RetreatRepair;Always>TargetWeakest;Always>Face=2;Always>FocusTarget
+expecttactics HC1:HealthBelow=20|EnemiesAtLeast=3>RetreatRepair;Always>TargetWeakest;Always>Face=2;Always>FocusTarget=0
 # Saving under the same name replaces the preset.
 tactics_editor apply Escort
 tactics_editor savepreset My brawler
