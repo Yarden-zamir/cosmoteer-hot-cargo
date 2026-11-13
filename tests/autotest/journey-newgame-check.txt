@@ -19,8 +19,7 @@ wait 1
 expect vaultdialog == 1
 # A new career with a preset starts, and the first ship holds all starting tech.
 newgame run 2
-wait 8
-expect vaults == 4
+waitfor vaults == 4 30
 expect tech == 8
 expect startresearch == 1
 quit

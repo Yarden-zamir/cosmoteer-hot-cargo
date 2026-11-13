@@ -31,6 +31,5 @@ wait 6
 expect ai_flee_weak_to_threat == 0
 # Switched off, the same ships no longer keep the strong side to the threat.
 aiset WeakSideEnabled false
-wait 8
-expect ai_flee_off_strong >= 1
+waitfor ai_flee_off_strong >= 1 30
 quit

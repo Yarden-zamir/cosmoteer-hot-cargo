@@ -3,7 +3,7 @@
 # ///
 """Audit of the game tests from their history: cost, failures and catches.
 
-Usage: uv run tools/test-audit.py [--md]   (run from the repo root; reads ../.state/logs, ../.state/flaky.log and git log)
+Usage: uv run tools/test-audit.py [--md | --costs]   (run from the repo root; reads ../.state/logs, ../.state/flaky.log and git log)
 
 For each game test (tests/autotest/*.txt, co-op sessions as mp:<session>):
 - runs and median cost in seconds: PC = deploy + start + script + teardown (slot wait excluded), Mac = total.
@@ -128,7 +128,11 @@ for name in ALL:
         "catches": len(catches[name]), "testfix": len(testfix[name]),
     })
 rows.sort(key=lambda r: -max(r["cpc"], r["cmac"]))
-if "--md" in sys.argv:
+if "--costs" in sys.argv:
+    # For scripts/full-suite.sh and the Mac batch plan: "<test> <median PC s> <median Mac s>", 0 when there is no run yet.
+    for r in rows:
+        print(r["test"], r["cpc"], r["cmac"])
+elif "--md" in sys.argv:
     print("| Test | Runs PC/Mac | Median s PC/Mac | Game fails | Infra fails | Flaky | Catches | Test-only commits |")
     print("|---|---|---|---|---|---|---|---|")
     for r in rows:

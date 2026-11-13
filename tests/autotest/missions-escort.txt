@@ -17,8 +17,7 @@ expect heat <= 13
 hc_escort_goto
 # The game can pause by itself here (enemy spotted or a codex page, with default settings in test slots).
 pause off
-wait 5
-expect hc_escort_steering == 1
+waitfor hc_escort_steering == 1 30
 hc_mark
 hc_escort_diag before_flight
 # The freighter type is random, and a slow one can take a while to turn and speed up. Wait for progress instead of a fixed time.

@@ -18,6 +18,7 @@ public static class HunterArea
 
     public static void Register()
     {
+        Run.Hooks.NewRunStarted += HunterSpawner.OnNewRunStarted;
         Run.Hooks.StageStarted += HunterSpawner.OnStageStarted;
         Run.Hooks.StrikeWave += HunterSpawner.OnStrikeWave;
         Run.Hooks.Tick += HunterSpawner.OnTick;

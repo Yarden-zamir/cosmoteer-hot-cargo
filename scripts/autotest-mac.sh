@@ -5,7 +5,15 @@
 #   two processes on 127.0.0.1 with the real-time clock. A session takes 2 slots and has no retry (its steps report on their own).
 # - Same pass rule as autotest.sh: the log has "telename <name>", AUTOTEST DONE, and no AUTOTEST FAIL or ERROR line.
 # - Same log place as the PC runner: <container>/.state/logs/<worktree>/<name>.<time>.mac.log, summary in run-mac-<time>/.
-# - Retries a failed run once, like autotest.sh. A pass on the retry prints FLAKY and goes to ../.state/flaky.log.
+# - Retries a failed run once, like autotest.sh (MAC_RETRY=0: no retry). A pass on the retry prints FLAKY, goes to
+#   ../.state/flaky.log and puts the test in the flake quarantine (scripts/gate-lib.sh).
+# - Batches: single-player tests run HOT_CARGO_MAC_BATCH at a time (default 6) in one game process (the "test" command),
+#   so the process start and the rules load happen once per batch. A test with "# batch: alone" (it changes game settings
+#   that the next test would see) runs on its own. A test that fails in a batch runs again alone; that run decides, and a
+#   pass alone is reported as a batch flake.
+# - Speed: each test runs at the game speed of scripts/autotest-lib.sh test_speed (HOT_CARGO_TEST_SPEED or its "# speed:"
+#   line). A test with "# clock: real" runs with the real-time clock (MAC_SIM_REALTIME=1), like the PC.
+# - Prints the slowest tests and checks the suite time budget (scripts/gate-lib.sh).
 #   The fixed-step clock repeats most sim values, but background work (jumps, spawns, the telemetry writer) runs in real time.
 # - Parallel runs: HOT_CARGO_MAC_JOBS, default from the cores and the memory (see below). The limit is for the whole Mac:
 #   runs of every worktree share the slot locks /tmp/hot_cargo_mac_slot_<n>.lock.
@@ -16,6 +24,7 @@ TIMEOUT="${1:-400}"
 shift || true
 source scripts/autotest-lib.sh
 source scripts/coverage-lib.sh
+source scripts/gate-lib.sh
 # HOT_CARGO_COVERAGE_DIR=<dir>: each run also writes <dir>/<test>.xml (method coverage of HotCargo.dll) for the test impact
 # map (scripts/coverage-map.sh). Runs are then not retried.
 COVERAGE_DIR="${HOT_CARGO_COVERAGE_DIR:-}"
@@ -78,10 +87,10 @@ run_once() {
   lock="$(take_mac_slots "$BASHPID" 1)"
   log="$LOG_DIR/$name.$(date +%Y%m%d-%H%M%S).mac.log"
   save="$(mktemp -d)"
-  { echo "telename $name"; cat "tests/autotest/$name.txt"; } > "$save/script.txt"
+  { echo "telename $name"; echo "defaultspeed $(test_speed "tests/autotest/$name.txt")"; cat "tests/autotest/$name.txt"; } > "$save/script.txt"
   local stage="$STAGE" cov=""
   if [[ -n "$COVERAGE_DIR" ]] && cov="$(coverage_begin "$STAGE" "$name")"; then stage="${cov#* }"; fi
-  MAC_SIM_STAGE="$stage" MAC_SIM_SAVE="$save" timeout "$TIMEOUT" tools/mac-sim/run.sh autotest "$save/script.txt" > "$log" 2>&1 || rc=$?
+  MAC_SIM_REALTIME="$(clock_real "$name")" MAC_SIM_STAGE="$stage" MAC_SIM_SAVE="$save" timeout "$TIMEOUT" tools/mac-sim/run.sh autotest "$save/script.txt" > "$log" 2>&1 || rc=$?
   [[ -n "$cov" ]] && coverage_end "${cov%% *}" "$stage" "$COVERAGE_DIR/$name.xml"
   rm -rf "$lock"
   { echo; echo "=== hot_cargo_log.txt"; cat "$save/Mods/hot_cargo/csharp/hot_cargo_log.txt" 2>/dev/null; } >> "$log"
@@ -92,6 +101,49 @@ run_once() {
   [[ $rc -eq 0 ]] && log_passed < "$log" && grep -qF "telename $name" "$log"
 }
 
+# 1 for a test with "# clock: real" (it measures real time), else empty.
+clock_real() { grep -qx '# clock: real' "tests/autotest/$1.txt" && echo 1 || true; }
+
+# A batch of single-player tests in one game process. Prints PASS/FAIL per test; a failed one runs again alone (run_test).
+run_batch() {
+  local names=("$@") lock save log t rc=0 t0=$SECONDS start passed
+  lock="$(take_mac_slots "$BASHPID" 1)"
+  save="$(mktemp -d)"
+  log="$LOG_DIR/batch-${names[0]}.$(date +%Y%m%d-%H%M%S).mac.log"
+  # Each test: "test <name>", its telename and speed, its lines without "quit". "end" logs the totals and quits.
+  for t in "${names[@]}"; do
+    echo "test $t"; echo "telename $t"; echo "defaultspeed $(test_speed "tests/autotest/$t.txt")"
+    grep -v '^quit$' "tests/autotest/$t.txt"
+  done > "$save/script.txt"
+  echo "end" >> "$save/script.txt"
+  MAC_SIM_STAGE="$STAGE" MAC_SIM_SAVE="$save" timeout "$((TIMEOUT * ${#names[@]}))" tools/mac-sim/run.sh autotest "$save/script.txt" > "$log" 2>&1 || rc=$?
+  rm -rf "$lock"
+  local hc="$save/Mods/hot_cargo/csharp/hot_cargo_log.txt"
+  { echo; echo "=== hot_cargo_log.txt"; cat "$hc" 2>/dev/null; } >> "$log"
+  rm -rf "$save"
+  # One log per test with its part of the batch log and a timing line, like a single run (tools/test-audit.py reads them).
+  for t in "${names[@]}"; do
+    # ".batch": a rerun alone in the same second must not overwrite it.
+    local tl="$LOG_DIR/$t.$(date +%Y%m%d-%H%M%S).batch.mac.log" secs
+    awk -v t="$t" '/AUTOTEST STEP START / { on = ($NF == "tick=-" && $(NF-1) == t) } on' "$log" > "$tl"
+    secs="$(awk -v t="$t" '/AUTOTEST STEP START / { if ($(NF-1) == t) a = $1; else if (a != "" && b == "") b = $1 }
+      /AUTOTEST STEPS / && a != "" && b == "" { b = $1 }
+      END { if (a == "" || b == "") { print 0; exit } split(a, x, ":"); split(b, y, ":");
+            d = (y[1] * 3600 + y[2] * 60 + y[3]) - (x[1] * 3600 + x[2] * 60 + x[3]); print int(d < 0 ? d + 86400 : d) }' "$log")"
+    echo "== timing $t total=$secs (batch $log)" >> "$tl"
+    if grep -q "AUTOTEST STEP RESULT $t PASS" "$log" && ! grep -v "AUTOTEST STEP FAIL" "$tl" | grep -q " ERROR "; then
+      echo "AUTOTEST DONE (end of this test in the batch)" >> "$tl"
+      echo "PASS $t"
+    else
+      passed="$(run_test "$t")"
+      if [[ "$passed" == "PASS $t" ]]; then
+        echo "$(date +%F\ %T) $t $tl (failed in a batch, passed alone)" >> "$STATE_DIR/flaky.log"
+        echo "FLAKY $t"
+      else echo "$passed"; fi
+    fi
+  done
+}
+
 run_test() {
   local name="$1" first log
   if [[ "$name" == mp:* ]]; then
@@ -99,9 +151,13 @@ run_test() {
     return
   fi
   if first="$(run_once "$name")"; then echo "PASS $name"; return; fi
-  if [[ -n "$COVERAGE_DIR" ]]; then echo "FAIL $name"; return; fi
+  if [[ -n "$COVERAGE_DIR" || "${MAC_RETRY:-1}" == 0 ]]; then
+    { echo "== AUTOTEST FAILED $name (log $first)"; failure_lines "$first"; } > "$RUN_DIR/$name.out"
+    echo "FAIL $name"; return
+  fi
   if log="$(run_once "$name")"; then
     echo "$(date +%F\ %T) $name $first" >> "$STATE_DIR/flaky.log"
+    quarantine_add "$name" mac "$first"
     echo "FLAKY $name"
     return
   fi
@@ -109,9 +165,28 @@ run_test() {
   echo "FAIL $name"
 }
 
+# Single-player tests that may share a process go in batches; co-op sessions, "# batch: alone" and "# clock: real" tests and
+# coverage runs (one coverage file per test) run on their own.
+BATCHABLE=() SINGLE=()
+for t in "${TESTS[@]}"; do
+  if [[ "$t" != mp:* && -z "$COVERAGE_DIR" && "${HOT_CARGO_MAC_BATCH:-6}" -gt 1 ]] \
+    && ! grep -qx '# batch: alone' "tests/autotest/$t.txt" && [[ -z "$(clock_real "$t")" ]]; then BATCHABLE+=("$t"); else SINGLE+=("$t"); fi
+done
 {
-  for t in "${TESTS[@]}"; do
+  # Long jobs first: co-op sessions, then batches, then single tests.
+  for t in "${SINGLE[@]}"; do
+    [[ "$t" == mp:* ]] || continue
     # A co-op session counts as one job here; take_mac_slots holds its second slot.
+    while [[ $(jobs -rp | wc -l) -ge $JOBS ]]; do sleep 1; done
+    run_test "$t" &
+  done
+  B="${HOT_CARGO_MAC_BATCH:-6}"
+  for ((i = 0; i < ${#BATCHABLE[@]}; i += B)); do
+    while [[ $(jobs -rp | wc -l) -ge $JOBS ]]; do sleep 1; done
+    run_batch "${BATCHABLE[@]:i:B}" &
+  done
+  for t in "${SINGLE[@]}"; do
+    [[ "$t" == mp:* ]] && continue
     while [[ $(jobs -rp | wc -l) -ge $JOBS ]]; do sleep 1; done
     run_test "$t" &
   done
@@ -120,9 +195,12 @@ run_test() {
 
 FAILED="$(grep '^FAIL ' "$RUN_DIR/summary.txt" | cut -d' ' -f2- | tr '\n' ' ')"
 echo "== $(grep -c . "$RUN_DIR/summary.txt") tests, $JOBS parallel, wall $((SECONDS - SUITE_START)) s ($RUN_DIR)"
+slowest_tests $(find "$LOG_DIR" -name '*.mac.log' -newer "$RUN_DIR/build.log") "$RUN_DIR"/*.out
+BUDGET_OK=yes
+[[ -n "$COVERAGE_DIR" ]] || check_budget "Mac suite of ${#TESTS[@]} tests" "$((SECONDS - SUITE_START))" "${TESTS[@]}" || BUDGET_OK=no
 FLAKY="$(grep '^FLAKY ' "$RUN_DIR/summary.txt" | cut -d' ' -f2- | tr '\n' ' ')"
 [[ -n "$FLAKY" ]] && echo "== flaky on the Mac (passed on retry): $FLAKY"
-if [[ -z "$FAILED" ]]; then echo "== all passed on the Mac"; exit 0; fi
+if [[ -z "$FAILED" ]]; then echo "== all passed on the Mac"; [[ "$BUDGET_OK" == yes ]] || exit 1; exit 0; fi
 for t in $FAILED; do
   echo "--- $t"
   # A co-op session: its step lines and one result line with the reason.

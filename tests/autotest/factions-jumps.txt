@@ -27,8 +27,7 @@ heat 80
 wait 2
 expect fa_huntersnear == 0
 fa_jump relay
-wait 20
-expect sector == 2
+waitfor sector == 2 60
 expect heat >= 11.5
 expect heat <= 13.5
 
@@ -44,8 +43,7 @@ wait 2
 expect fa_huntersnear >= 1
 fa_tooltip
 fa_jump relay
-wait 20
-expect sector == 2
+waitfor sector == 2 60
 expect heat >= 19.5
 expect heat <= 21.5
 
@@ -60,8 +58,7 @@ wait 1
 heat 80
 expect fa_hurtparts == 0
 fa_jump blind
-wait 20
-expect sector == 2
+waitfor sector == 2 60
 expect heat >= 7.5
 expect heat <= 9.5
 expect fa_blind == 0

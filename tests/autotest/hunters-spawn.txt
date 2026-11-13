@@ -37,8 +37,7 @@ expect hunterspending >= 1
 expect hunterfuelmin >= 40
 # Strike waves repeat while heat stays at 100.
 strikeinterval 5
-wait 8
-expect hunterwaves > stagecount
+waitfor hunterwaves > stagecount 30
 strikeinterval 600
 save hunters
 wait 3
@@ -48,7 +47,6 @@ hunters loaded
 expect hunters >= 4
 expect hunterindices == 1
 expect huntershostile == 1
-wait 10
-expect huntersattacking >= 1
+waitfor huntersattacking >= 1 30
 quit
 # tier: smoke

@@ -27,8 +27,7 @@ contract_accept
 expect contract_accepted == 1
 expect contract_open >= 3.5
 expect contract_trail > 0
-wait 20
-expect contract_trail_heat > 0.1
+waitfor contract_trail_heat > 0.1 60
 # Informant: chance 1, sell-out after 3 game seconds.
 contract_informant_delay 3
 contract_pick any
@@ -37,8 +36,7 @@ contract_accept
 expect contract_accepted == 1
 expect contract_informants_pending == 1
 heat_mark
-wait 10
-expect contract_informants_pending == 0
+waitfor contract_informants_pending == 0 30
 expect contract_soldout == 1
 expect contract_informant_warnings == 1
 expect heat_change >= 15

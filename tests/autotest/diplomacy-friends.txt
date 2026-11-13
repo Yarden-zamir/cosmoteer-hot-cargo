@@ -65,8 +65,7 @@ expect dip_held == 2
 tech remove 4
 wait 1
 expect dip_vaulttech == 0
-wait 6
-expect tech == 2
+waitfor tech == 2 30
 expect lost == 0
 dip_log held
 # Hired help: a fourth ship joins for pay, attacks an enemy near the player and runs when badly hurt.

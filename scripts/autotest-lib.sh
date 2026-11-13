@@ -198,10 +198,14 @@ slot_log() {
   )
 }
 
+# Game speed of a test (the game's own clock scale; script waits count game seconds, so a script means the same at every
+# speed): its "# speed: <x>" line, else HOT_CARGO_TEST_SPEED. A test that measures real time has "# speed: 1".
+test_speed() { local x; x="$(sed -n 's/^# speed: *\([0-9.]*\)$/\1/p' "$1" | head -1)"; echo "${x:-${HOT_CARGO_TEST_SPEED:-4}}"; }
+
 # The two scripts of a co-op session (any runner: PC slots, later the Mac sim). Args: <session file> <port>.
 # Host: the session file without its "client:" lines. Client: those lines (settings before the join), then client.txt.
 # "{PORT}" becomes the port. The first line names the run (telename <session>.host / .client); a pass needs it in the log.
-coop_host_script() { echo "telename $(basename "$1" .txt).host"; grep -v '^client:' "$1" | sed "s/{PORT}/$2/g"; }
+coop_host_script() { echo "telename $(basename "$1" .txt).host"; echo "defaultspeed $(test_speed "$1")"; grep -v '^client:' "$1" | sed "s/{PORT}/$2/g"; }
 coop_client_script() {
   echo "telename $(basename "$1" .txt).client"; sed -n 's/^client: *//p' "$1"; sed "s/{PORT}/$2/g" "$(dirname "$1")/client.txt"
 }

@@ -17,6 +17,7 @@ SCRIPT_TIMEOUT="$(grep -m1 '^# timeout:' "$SCRIPT" | cut -d: -f2 | tr -d ' ' || 
 [[ -n "$SCRIPT_TIMEOUT" && "$SCRIPT_TIMEOUT" -gt "$TIMEOUT" ]] && TIMEOUT="$SCRIPT_TIMEOUT"
 RETRY="${AUTOTEST_RETRY:-1}"
 source "$(dirname "$0")/autotest-lib.sh"
+source "$(dirname "$0")/gate-lib.sh"
 NAME="$(basename "$SCRIPT" .txt)"
 
 SLOT=""
@@ -33,7 +34,7 @@ run_once() {
   # telename labels the telemetry of this test with the script name (TELEMETRY.md).
   # A failed deploy started no game, and the slot can still hold the log of an older run: never read it.
   out=""
-  if { echo "telename $NAME"; cat "$SCRIPT"; } | start_slot "$SLOT" > "$RUN_LOG.deploy" 2>&1; then
+  if { echo "telename $NAME"; echo "defaultspeed $(test_speed "$SCRIPT")"; cat "$SCRIPT"; } | start_slot "$SLOT" > "$RUN_LOG.deploy" 2>&1; then
     t2=$SECONDS; wait_slot_end "$SLOT" "$TIMEOUT"
     # A failed PC call leaves an empty log, which never passes.
     if out="$(slot_finish "$SLOT" 2>&1)"; then rm -rf "$(slot_lock "$SLOT")"; else out=""; release_slot "$SLOT"; fi
@@ -69,6 +70,7 @@ failure_lines "$FIRST_LOG"
 if [[ "$RETRY" -ge 1 ]] && run_once; then
   echo "== AUTOTEST FLAKY $NAME (failed once, passed on retry; first log $FIRST_LOG)"
   echo "$(date +%F\ %T) $NAME $FIRST_LOG" >> "$STATE_DIR/flaky.log"
+  quarantine_add "$NAME" pc "$FIRST_LOG"
   exit 0
 fi
 [[ "$RUN_REFUSED" == yes ]] && refused

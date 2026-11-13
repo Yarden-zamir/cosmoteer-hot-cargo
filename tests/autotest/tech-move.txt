@@ -13,7 +13,6 @@ wait 1
 vault place
 wait 2
 waitfor vaultsbusy == 0 300
-tech dump
 expect vaults == 4
 expect vaultsbuilt == 4
 expect shipvalid == 1
@@ -26,7 +25,6 @@ wait 1
 vault place
 wait 2
 waitfor vaultsbusy == 0 300
-tech dump
 expect vaults == 4
 expect vaultsbuilt == 4
 expect shipvalid == 1

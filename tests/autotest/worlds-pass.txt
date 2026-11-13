@@ -22,8 +22,7 @@ wait 3
 worlds kill hc_pass_raider
 wait 3
 expect worlds_pass_held > 0
-wait 14
-expect worlds_pass_waves >= 1
+waitfor worlds_pass_waves >= 1 42
 expect worlds_pass_done == 1
 # Failure: hold, then leave the pass.
 worlds generate pass

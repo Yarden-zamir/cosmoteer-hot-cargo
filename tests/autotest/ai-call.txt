@@ -27,8 +27,7 @@ expect hunterspending == 0
 # A long call, cut off by one disruptor hit.
 aiset CallSeconds 60
 spawnstage Strike
-wait 6
-expect ai_calling >= 1
+waitfor ai_calling >= 1 30
 disrupt disruptor
 wait 1
 expect ai_call_interrupt >= 1

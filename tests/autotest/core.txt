@@ -13,8 +13,7 @@ fame 30
 expect heat >= 46.4
 expect heat <= 47.6
 expect stages == 1
-wait 20
-expect seconds > 5
+waitfor seconds > 5 60
 save core
 wait 3
 load core

@@ -15,8 +15,7 @@ wait 4
 expect mech_hold_guarded == 1
 expect mech_hold_seconds > 0
 # Spec 132 defaults: first wave after 8 guarded seconds, tier 1 to 3 drones, hostile to the players.
-wait 10
-expect mech_wave_ships >= 1
+waitfor mech_wave_ships >= 1 30
 expect mech_waves_vs_player >= 1
 mech_hold_skip 400
 wait 2

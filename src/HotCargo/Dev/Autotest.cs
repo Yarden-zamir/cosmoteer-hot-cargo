@@ -26,9 +26,19 @@ public static class Autotest
 
     static Queue<(string Name, string Arg, int Line)>? _script;
     static double _waitUntil;
+    /// <summary>Sim clock seconds at which the current "wait" ends (NaN: no game, the real-time bound alone).</summary>
+    static double _waitSimUntil = double.NaN;
+    /// <summary>
+    /// Game speed (the game's own clock scale, MPSetClockScaleInput) for every game that this script starts. The test runners
+    /// set it with "defaultspeed" (HOT_CARGO_TEST_SPEED); a test that measures real time keeps 1 ("# speed: 1").
+    /// </summary>
+    static float _defaultSpeed = 1f;
+    static GameRoot? _speedApplied;
     static WaitCondition? _waitFor;
     static int _line;
     static EventHandler<Cosmoteer.Simulation.SimRoot>? _godmode;
+    /// <summary>The slot's tunables.rules when the script started. Each test of a batch starts from it.</summary>
+    static string? _tunablesAtStart;
 
     /// <summary>Test only: while godmode is on, the run cannot be lost (one big hit can still destroy a vault).</summary>
     public static bool GodMode => _godmode is not null;
@@ -64,6 +74,8 @@ public static class Autotest
         var lines = File.ReadAllLines(path);
         File.Move(path, Path.Combine(Mod.ModRoot, "autotest.done"), overwrite: true);
         _script = new(Parse(lines, firstLine: 1));
+        // A batch of tests ("test" command) starts each test from the slot's own tunables file, as a single run does.
+        if (File.Exists(TunablesFile.FilePath)) _tunablesAtStart = File.ReadAllText(TunablesFile.FilePath);
         AddBaseCommands();
         MpAutotest.AddCommands();
         // Test slots start with empty settings, so every tutorial page is unseen. Pages with AutoPause would pause the game
@@ -97,7 +109,9 @@ public static class Autotest
 
     static void OnFrame(object? sender, EventArgs e)
     {
-        if (_script is null || App.Clock.Time.Seconds < _waitUntil) return;
+        if (_script is null) return;
+        ApplyDefaultSpeed();
+        if (Waiting()) return;
         if (_waitFor is { } w)
         {
             try
@@ -146,7 +160,7 @@ public static class Autotest
         if (_step is { } step && !Following)
         {
             FailStep(step, what, ex);
-            if (SkipTo("step", "end")) return;
+            if (SkipTo("step", "test", "end")) return;
         }
         else Log.Error($"AUTOTEST FAIL {what}", ex);
         _script?.Clear();
@@ -190,7 +204,31 @@ public static class Autotest
         s is Halfling.Gui.Dialogs.OneButtonDialog d ? $"OneButtonDialog \"{d.MessageLabel.Text}\"" : s.GetType().Name));
 
     /// <summary>Pauses the script for real seconds.</summary>
-    public static void Wait(double seconds) => _waitUntil = App.Clock.Time.Seconds + seconds;
+    /// <summary>
+    /// Pauses the script for game seconds: until the sim clock advanced that far, so a script means the same at every game
+    /// speed. The same number of real seconds is the upper bound (a paused game, a menu, a load).
+    /// </summary>
+    public static void Wait(double seconds)
+    {
+        _waitUntil = App.Clock.Time.Seconds + seconds;
+        _waitSimUntil = Game is { } g ? g.Sim.Clock.Time.Seconds + seconds : double.NaN;
+    }
+
+    static bool Waiting()
+    {
+        if (App.Clock.Time.Seconds >= _waitUntil) return false;
+        return double.IsNaN(_waitSimUntil) || Game is not { } g || g.Sim.Clock.Time.Seconds < _waitSimUntil;
+    }
+
+    /// <summary>Sends the default game speed once to each new game: single player, or the host of a co-op game.</summary>
+    static void ApplyDefaultSpeed()
+    {
+        if (_defaultSpeed == 1f || Game is not { } g || g == _speedApplied || Run.Current?.Game != g) return;
+        if (g.NetManager is BaseMPManager { IsHost: false }) return;
+        _speedApplied = g;
+        g.NetManager.EnqueueInput(new MPSetClockScaleInput(_defaultSpeed));
+        Log.Info($"AUTOTEST game speed {_defaultSpeed}x");
+    }
 
     /// <summary>
     /// Pauses the script until the condition holds, then runs then. After timeout real seconds it runs onTimeout,
@@ -324,6 +362,11 @@ public static class Autotest
     static void AddBaseCommands()
     {
         Commands["wait"] = arg => Wait(double.Parse(arg, CultureInfo.InvariantCulture));
+        // speed <x>: the game's own speed setting (MPSetClockScaleInput, as the speed bar sends it; any value works, the bar
+        // offers 0.125 to 8). defaultspeed <x>: the speed of every game that the script starts, this one too.
+        Commands["speed"] = arg => (Game ?? throw new InvalidOperationException("no game")).NetManager.EnqueueInput(
+            new MPSetClockScaleInput(float.Parse(arg, CultureInfo.InvariantCulture)));
+        Commands["defaultspeed"] = arg => { _defaultSpeed = float.Parse(arg, CultureInfo.InvariantCulture); _speedApplied = null; };
         Commands["newgame"] = arg =>
         {
             // arg: [map size index, or "run" / nothing for the Hot Cargo run map] [starter ship index, default 0].
@@ -409,6 +452,25 @@ public static class Autotest
         };
         // step <area>.<name>: starts a step. Each step logs its own result, and a failure skips only the rest of its step.
         // The area is the lowercase area folder name; scripts/autotest-affected.sh picks sessions by it.
+        // test <name>: starts the next test of a batch. scripts/autotest-mac.sh runs several single-player tests in one game
+        // process, so the process start and the rules load happen once. Each test starts from the title screen with the slot's
+        // tunables file and no godmode; a failure skips to the next test. Results: AUTOTEST STEP RESULT <name> PASS|FAIL.
+        Commands["test"] = arg =>
+        {
+            if (arg.Length == 0 || arg.Contains(' ')) throw new InvalidOperationException("test needs: <test name>");
+            CloseStep();
+            _waitFor = null;
+            _waitUntil = 0;
+            if (Game is { } game)
+            {
+                if (_godmode is not null) game.EventHub.Tick -= _godmode;
+                App.Director.PopStatesUntil(s => s is TitleScreen, including: false);
+            }
+            _godmode = null;
+            if (_tunablesAtStart is not null) File.WriteAllText(TunablesFile.FilePath, _tunablesAtStart);
+            _step = arg;
+            Log.Info($"AUTOTEST STEP START {arg} tick=-");
+        };
         Commands["step"] = arg =>
         {
             if (!arg.Contains('.') || arg.Contains(' ')) throw new InvalidOperationException("step needs: <area>.<name>");
@@ -449,6 +511,7 @@ public static class Autotest
         ["tier"] = () => RequireRun().CurrentTier,
         ["active"] = () => Run.Current is null ? 0 : 1,
         ["paused"] = () => (Game ?? throw new InvalidOperationException("no game")).Sim.IsPaused.Confirmed ? 1 : 0,
+        ["speed"] = () => (Game ?? throw new InvalidOperationException("no game")).Sim.ClockScale.Confirmed,
     };
 
     static double Field(string name) =>

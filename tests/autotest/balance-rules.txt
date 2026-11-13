@@ -34,8 +34,7 @@ expect balance_fame_heat_gap <= 0.2
 # A high floor in the next system: every trade station there loads with at least the floor (tier 2 or 3: 2000 x 0.09 to 0.11 = 180 to 220 fuel).
 balance_set StationFuelPerMillion 2000
 balance_route
-wait 12
-expect balance_station_fuel_floor >= 180
+waitfor balance_station_fuel_floor >= 180 36
 balance_visit 0
 wait 3
 balance_visit 1

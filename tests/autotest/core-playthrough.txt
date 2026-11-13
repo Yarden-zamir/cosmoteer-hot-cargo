@@ -2,6 +2,8 @@
 # Every command stands in for one player click: an order, a comms button, a trade window transfer, a build confirmation.
 # The run passes when the players reach sector 2 with tech and no invariant broke (every ERROR line fails a test).
 # timeout: 1500
+# The real playthrough: it runs on its own, outside the suite time budget (scripts/gate-lib.sh).
+# budget: exempt
 newgame run
 wait 8
 pt_watch 30

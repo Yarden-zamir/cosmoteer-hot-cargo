@@ -23,8 +23,13 @@ public static class HunterSpawner
     public const string AiId = "HotCargoHunter";
     public static readonly ID<SimObjectSpawner> HunterTag = new("hc_hunter");
 
-    /// <summary>Waves spawned since game start. For autotest fields only; not sim state.</summary>
+    /// <summary>
+    /// Waves spawned since this run started in this game process (a second career in the same process starts again at 0).
+    /// Not sim state: autotest fields and the invariant check (Dev/Invariants.cs) read it.
+    /// </summary>
     public static int WavesSpawned { get; private set; }
+
+    internal static void OnNewRunStarted(Run run) => WavesSpawned = 0;
 
     /// <summary>
     /// Live hunters. Wreck pieces keep the tag but belong to the junk player, so they do not count. A hunter ship that the players

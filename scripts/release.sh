@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Build a player release zip and publish it as a GitHub release.
 # Usage: release.sh <version> [--prerelease]
-# Needs: a clean tree, HEAD pushed to origin/main, and scripts/autotest-all.sh passed on HEAD (pass marker).
+# Needs: a clean tree, HEAD pushed to origin/main, and the full PC suite passed on HEAD (pass marker from
+# scripts/full-suite.sh, which scripts/nightly.sh runs).
 # Set FORCE=1 to skip the test marker check (not for normal use).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -25,7 +26,7 @@ tested() {
   done
   return 1
 }
-tested || [[ "${FORCE:-}" == 1 ]] || { echo "release: run scripts/autotest-all.sh on this commit first"; exit 1; }
+tested || [[ "${FORCE:-}" == 1 ]] || { echo "release: run the full PC suite on this commit first (scripts/full-suite.sh or scripts/nightly.sh)"; exit 1; }
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && { echo "release: tag $TAG exists"; exit 1; }
 scripts/check-private.sh
 

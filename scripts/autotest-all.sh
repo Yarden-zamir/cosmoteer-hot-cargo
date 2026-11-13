@@ -5,7 +5,7 @@
 #   scripts/suite-wait.sh <log>.
 # --telemetry: after the tests, copy the telemetry of every slot to ../.telemetry (scripts/pull-telemetry.sh) and write a report
 #   of the runs that these tests made (tools/telemetry). The report path is printed at the end.
-# - No test names: every tests/autotest/*.txt and every co-op session (mp:<session>, see coop_sessions in autotest-lib.sh).
+# - Test names are required. The full PC suite runs in parts of at most the suite budget: scripts/full-suite.sh.
 # - Test names: only those, for example "tech-sell mp:coop-economy" (autotest-affected.sh passes its list this way).
 # Each test retries once (see autotest.sh); a pass on the retry counts as FLAKY, not as a failure.
 # The suite builds and stages the mod once (scripts/stage.sh) and every test deploys that stage (HOT_CARGO_STAGE),
@@ -30,14 +30,13 @@ source scripts/autotest-lib.sh
 SUITE_START=$SECONDS
 RUN_DIR="$LOG_DIR/run-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$RUN_DIR"
-# A clean tree that stays on the same commit gets a pass marker, which scripts/release.sh requires (full runs only).
-START_SHA="$(git rev-parse HEAD)"
-CLEAN_AT_START="$([[ -z "$(git status --porcelain)" && $# -eq 0 ]] && echo yes || echo no)"
 
-TESTS=()
-if [[ $# -gt 0 ]]; then TESTS=("$@"); else
-  for t in tests/autotest/*.txt; do TESTS+=("$(basename "$t" .txt)"); done
-  for n in $(coop_sessions); do TESTS+=("mp:$n"); done
+source scripts/gate-lib.sh
+TESTS=("$@")
+if [[ $# -eq 0 ]]; then
+  # One run of every test takes far longer than the suite budget (scripts/gate-lib.sh).
+  echo "autotest-all: name the tests. The full PC suite runs in parts of at most $SUITE_BUDGET s: scripts/full-suite.sh" >&2
+  exit 2
 fi
 
 # Build and stage once before the parallel runs. The PC caches the build by hash, so only the first deploy uploads it.
@@ -83,6 +82,9 @@ phase_times() {
   echo "   build uploads: $(grep -c 'build=uploaded' <<<"$lines") of $(grep -c 'build=' <<<"$lines") deploys"
 }
 phase_times | tee "$RUN_DIR/phases.txt"
+slowest_tests "$RUN_DIR"/*.out | tee -a "$RUN_DIR/phases.txt"
+BUDGET_OK=yes
+check_budget "PC suite of ${#TESTS[@]} tests" "$((SECONDS - SUITE_START))" "${TESTS[@]}" || BUDGET_OK=no
 
 if [[ "$TELEMETRY" == yes ]]; then
   scripts/pull-telemetry.sh >/dev/null && (cd tools/telemetry && uv run hc-telemetry --since "$STARTED_UTC") || echo "== telemetry report failed"
@@ -96,9 +98,7 @@ FLAKY="$(grep '^FLAKY ' "$RUN_DIR/summary.txt" | cut -d' ' -f2- | tr '\n' ' ')"
 [[ -n "$FLAKY" ]] && echo "== flaky (passed on retry): $FLAKY"
 if [[ -z "$FAILED" ]]; then
   echo "== all $(grep -c . "$RUN_DIR/summary.txt") autotests passed ($RUN_DIR)"
-  if [[ "$CLEAN_AT_START" == yes && "$(git rev-parse HEAD)" == "$START_SHA" && -z "$(git status --porcelain)" ]]; then
-    touch "$STATE_DIR/autotest_pass_$START_SHA"; echo "== pass marker written for $START_SHA"
-  fi
+  [[ "$BUDGET_OK" == yes ]] || exit 1
   exit 0
 fi
 # A co-op session prints its step lines and one result line with the reason (join failed, steps failed, desync, PC link).

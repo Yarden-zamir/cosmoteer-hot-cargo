@@ -19,8 +19,7 @@ mech_scan_range
 wait 3
 mech_order startscan
 expect mech_hold_phase == 1
-wait 8
-expect mech_hold_guarded == 1
+waitfor mech_hold_guarded == 1 30
 expect mech_wave_ships >= 1
 mech_order intensive
 expect mech_hold_pay >= 1.25

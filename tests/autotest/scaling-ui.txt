@@ -2,8 +2,7 @@
 # the run state keeps it, the game keeps a vanilla init, and a save and load keep the value.
 enemysetting 2.0
 newgameui
-wait 8
-expect active == 1
+waitfor active == 1 30
 expect enemysetting == 2
 expect vanillainit == 1
 # Solo is always 1x.
@@ -14,3 +13,5 @@ load scaling_ui
 wait 3
 expect enemysetting == 2
 quit
+# It changes game settings (codex, tutorials or the enemy slider) that the next test of a Mac batch would see.
+# batch: alone

@@ -21,8 +21,7 @@ expect hc_money_gain > 0
 hc_escort_goto
 # The game can pause by itself here (enemy spotted or a codex page, with default settings in test slots).
 pause off
-wait 5
-expect hc_escort_steering == 1
+waitfor hc_escort_steering == 1 30
 hc_escort_arrive
 wait 3
 expect hc_escort_done == 1

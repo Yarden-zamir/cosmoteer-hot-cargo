@@ -40,8 +40,7 @@ expectevent blackbox_routes
 choose 1
 expectstage courier
 # AfterSectors 0: the courier mission starts in this system after LaterDelaySeconds and goes straight into the log.
-wait 12
-expect chain_accepted == 1
+waitfor chain_accepted == 1 36
 ev_mark
 # Careful targeting: the escorts die, the transport lives.
 chain_goto

@@ -24,8 +24,7 @@ wait 1
 expect runlog_loss >= 1
 # A tech sale at a station.
 tech sell 1
-wait 25
-expect runlog_sale == 1
+waitfor runlog_sale == 1 75
 # A contract accept.
 hc_generate all
 wait 3
@@ -59,7 +58,6 @@ wait 15
 buyer goto
 wait 2
 buyer sell 1
-wait 45
-expect runlog_delivery >= 1
+waitfor runlog_delivery >= 1 135
 expect runlog_won == 1
 quit

@@ -12,6 +12,5 @@ worlds goto current
 expect worlds_in_current > 0.5
 expect worlds_ship_in_current > 0.5
 # An idle ship brakes against the drift, but it keeps drifting downstream.
-wait 5
-expect worlds_flow_speed > 2
+waitfor worlds_flow_speed > 2 30
 quit

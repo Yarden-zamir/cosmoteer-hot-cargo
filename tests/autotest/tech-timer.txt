@@ -26,8 +26,7 @@ expect techcrates == 0
 expect shiptag == 8
 # A save keeps a running timer, and a load goes on from there. The crates keep their markers.
 tech drop 8
-wait 5
-expect losstimer == 1
+waitfor losstimer == 1 30
 save timer
 load timer
 wait 1
@@ -35,6 +34,5 @@ expect losstimer == 1
 expect losstimerleft <= 55
 expect techcrates == 8
 expect lost == 0
-wait 60
-expect lost == 1
+waitfor lost == 1 180
 quit

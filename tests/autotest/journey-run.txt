@@ -35,8 +35,7 @@ expect buyermission == 0
 buyer goto
 wait 2
 buyer sell 2
-wait 45
-expect won == 1
+waitfor won == 1 135
 expect delivered >= 1
 expect score > 0
 log won

@@ -14,19 +14,16 @@ log sensor
 expect mech_survey_done == 0
 mech_survey_next
 pause off
-wait 20
-expect mech_survey_done >= 1
+waitfor mech_survey_done >= 1 60
 mech_survey_next
 wait 20
 mech_survey_next
-wait 20
-expect mech_goal_survey == 1
+waitfor mech_goal_survey == 1 60
 # Sun mining: ore deposits sit on the seam asteroids; a sale to the station counts; the time limit fails it.
 mech_generate sunmining
 mech_accept sunmining
 mech_sun_goto
-wait 5
-expect mech_sun_ore_units >= 30
+waitfor mech_sun_ore_units >= 30 30
 expect mech_deliver_target >= 30
 mech_deliver_goto
 wait 3

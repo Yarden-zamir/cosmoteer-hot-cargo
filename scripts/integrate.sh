@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # Merge one or more feature branches into main and ship them together, stopping at the first failure:
-# merge each -> build -> unit tests -> private-data check -> one autotest suite -> push -> install into the player's game.
+# merge each -> build -> unit tests -> private-data check -> determinism lint -> affected autotests on the Mac (tests with
+# "# runner: pc" on the PC) -> push -> install into the player's game.
+# The Mac is the merge gate (scripts/autotest-affected.sh: test impact map, flake quarantine, suite time budget). The full
+# PC suite runs nightly on main (scripts/nightly.sh) and before a release (scripts/release.sh needs its pass marker).
 # Usage: integrate.sh [--detach] [--no-autotest] [--full] <branch | PR number>...
 #        integrate.sh [--detach] [--no-autotest] [--full] --continue   after you resolved merge conflicts or fixed a
 #        failure with a new commit (merges the rest of the batch first)
 # --detach      run in the background, safe from a killed shell; wait with scripts/suite-wait.sh <log> (see detach.sh).
-# --no-autotest skip the autotests.  --full  run the full suite, not only the tests that the batch affects.
+# --no-autotest skip the autotests.  --full  run the full PC suite in parts (scripts/full-suite.sh), not only the tests
+#               that the batch affects.
 # Run it in the main worktree. Nothing is pushed unless every step passed. On a failure the merge commits stay local:
 # fix them with a new commit and run "integrate.sh --continue", or undo them with "git reset --hard origin/main".
 # When autotests fail, it names the branches of the batch whose areas own each failed test (autotest-affected.sh rule).
@@ -38,6 +42,7 @@ STATE_DIR="${HOT_CARGO_STATE:-$(cd .. && pwd)/.state}"; mkdir -p "$STATE_DIR"
 # The refs of the batch, and the refs that are not merged yet (both one per line).
 BATCH_FILE="$STATE_DIR/integrate-batch" PENDING_FILE="$STATE_DIR/integrate-pending"
 step() { echo; echo "== integrate: $*"; }
+GATE_T0=$SECONDS
 
 if [[ "$CONTINUE" == yes ]]; then
   if git rev-parse -q --verify MERGE_HEAD >/dev/null; then
@@ -94,6 +99,8 @@ step "unit tests"
 grep -a "Total:" /tmp/hot_cargo_integrate_unit.log | tail -1
 step "private-data check"
 scripts/check-private.sh
+step "determinism lint"
+uv run tools/determinism-lint.py origin/main
 
 # Prints, for each failed test, the branches of the batch whose changes select that test.
 blame() {
@@ -113,12 +120,11 @@ blame() {
 if [[ "$AUTOTEST" == yes ]]; then
   TEST_OUT="$STATE_DIR/integrate-autotest.out" rc=0
   if [[ "$FULL" == yes ]]; then
-    step "full autotest suite"
-    scripts/autotest-all.sh 400 2>&1 | tee "$TEST_OUT" || rc=$?
+    step "full PC suite in parts"
+    scripts/full-suite.sh 400 2>&1 | tee "$TEST_OUT" || rc=$?
   else
     step "affected autotests"
-    # AUTOTEST_MAC=0: the PC suite stays the merge gate until the Mac sim has a track record.
-    AUTOTEST_MAC=0 COMMITTED_ONLY=1 scripts/autotest-affected.sh origin/main 2>&1 | tee "$TEST_OUT" || rc=$?
+    COMMITTED_ONLY=1 scripts/autotest-affected.sh origin/main 2>&1 | tee "$TEST_OUT" || rc=$?
   fi
   if [[ $rc -ne 0 ]]; then
     FAILED="$(grep '^== failed: ' "$TEST_OUT" | tail -1 || true)"
@@ -129,6 +135,7 @@ if [[ "$AUTOTEST" == yes ]]; then
   fi
 fi
 step "push"
+echo "integrate: gate took $((SECONDS - GATE_T0)) s from the start to the push"
 git push -q origin main
 git log --oneline -1
 rm -f "$BATCH_FILE"

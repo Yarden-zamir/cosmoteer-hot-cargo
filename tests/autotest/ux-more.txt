@@ -1,8 +1,7 @@
 # UX batch 2 (UX.md V7 to V15, H8) in a headless game: dialogue keys, watched supplies, damage pings, several parts,
 # low supply alert, trade hints, comms over the map with the comms pause, wanted timer.
 newgame run
-wait 8
-expect active == 1
+waitfor active == 1 30
 # An event page waits until the run intro closes. A page with plain choices: on a page with option rows, key 1 picks a row (tested below).
 event ghost_signal
 expect ux_event_open == 0
