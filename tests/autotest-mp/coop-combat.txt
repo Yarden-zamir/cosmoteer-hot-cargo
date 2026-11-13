@@ -57,20 +57,26 @@ waitfor dip_friendhired == 1 30
 waitfor dip_hires >= 1 30
 
 step scaling.waves
-# A hunter wave and an event group get twice the ships on both machines.
+# A hunter wave and an event group get factor times the ships on both machines (2, or 3 with 3 players).
 # Two ships of the sector tier: the Warning response of the last sector (#19 removed the Patrol stage).
 mp stageset Warning EarlyScale 1
 mp spawnstage Warning
-waitfor hunters >= 4 30
-expect hunters == 4
+@2p waitfor hunters >= 4 30
+@2p expect hunters == 4
+@3p waitfor hunters >= 6 30
+@3p expect hunters == 6
 mp ev_spawn TollGuards
 wait 3
 counttag hc_ev_toll
-expect tagcount == 6
+@2p expect tagcount == 6
+@3p expect tagcount == 9
 
 step missions.escort
 # Offers and sides, then the escort: the freighter steers to the jump point when a player is near, and arrival completes it.
 mp hc_generate all
+# An escort offer can exist before the generation, so the mark tells when it ran.
+mp mpmark 1
+waitfor mpmark >= 1 20
 waitfor hc_offers_escort >= 1 20
 expect hc_allies_vs_player == 0
 expect hc_allies_vs_target >= 2
@@ -172,21 +178,27 @@ wait 1
 expect tech == 6
 expect vaultunits == 6
 expect techcrates == 1
-expect mytech == 2
+@2p expect mytech == 2
+@3p expect mytech == 1
 on 1 expect tech == 6
 on 1 expect vaultunits == 6
 on 1 expect techcrates == 1
-on 1 expect mytech == 4
-# The client's ship becomes a derelict. Its 4 units still count, the loss timer stays off, and its blip shows them.
+@2p on 1 expect mytech == 4
+@3p on 1 expect mytech == 3
+# The client's ship becomes a derelict. Its units (4, or 3 with 3 players) still count, the loss timer stays off, and its blip shows them.
 as 1 tech derelict
 wait 2
 expect tech == 6
 expect vaultunits == 6
-expect derelicttech == 4
-expect derelicttag == 4
+@2p expect derelicttech == 4
+@2p expect derelicttag == 4
+@3p expect derelicttech == 3
+@3p expect derelicttag == 3
 expect losstimer == 0
-on 1 expect derelicttech == 4
-on 1 expect derelicttag == 4
+@2p on 1 expect derelicttech == 4
+@2p on 1 expect derelicttag == 4
+@3p on 1 expect derelicttech == 3
+@3p on 1 expect derelicttag == 3
 on 1 expect losstimer == 0
 
 step tech.loss-timer
