@@ -8,7 +8,7 @@ Cosmoteer's Career 2.0 dev blog ([Steam news](https://store.steampowered.com/new
 
 | Archetype | Sector ID | Weight | Hazard | Mission |
 |---|---|---|---|---|
-| Trade Hub | `hc_trade_hub` | 1 | A current: a cloud band that pushes ships one way | none of its own; the hub world sits next to a trade station |
+| Trade Hub | `hc_trade_hub` | 1 | A current: a cloud band that pushes ships and loose items one way | none of its own; the hub world sits next to a trade station |
 | Mining Belt | `hc_mining_belt` | 1 | A dense rock belt with 3 or 4 cleared passes | Hold the Pass |
 | Solar Zone | `hc_solar_zone` | 0.8 | The vanilla sun heat zone | Sundive (and the gameplay area's Sunside Ore) |
 | Deep Space | `hc_deep_space` | 0.8, tier 3+ | Dense clouds and ion storms | Raid the Lair |
@@ -27,16 +27,18 @@ With the defaults, about 3 of 4 systems are archetypes. The start system stays b
 
 ### The current (Trade Hub)
 
-- Shape: the C# spawner `HotCargoCurrent` paints a straight band of nebula triangles (18,000 × 4,500) along the system's flow direction. A band reads like a river.
+- Shape: the C# spawner `HotCargoCurrent` paints a straight band of nebula triangles (6,000 × 2,400, about 11 triangles) along the system's flow direction. A band reads like a river. A playtest found the old band (18,000 × 4,500) too big. The nebula grid (triangle side 2,000) sets the minimum width: under about 2,300, diagonal bands break into patches. The size does not follow the system scale (spec 105).
 - Direction: one of 8 directions from the map node seed. Nothing extra is saved, and every co-op client gets the same direction.
 - Push: the nebula effect `HotCargoCurrentPush` runs in the vanilla nebula tick, like the ion storm lightning. Acceleration = `CurrentAccel` × cloud strength × how far the ship's speed along the flow is below `CurrentFlowSpeed`. Full push at rest or upstream, none at flow speed or faster. The force scales with mass, so all ships drift alike.
+- Exit drift: the same rule pushes across the flow, toward the nearer side of the band, with `CurrentSideShare` (0.5) of the push and of the flow speed. The drift leans atan(0.5) ≈ 27° outward. From the band center, the side is 1,200 away and the end 3,000, so a share above 0.4 makes drift from the center leave at the near side. The band axis is the mean of the current triangles (one current per system).
+- Items: loose nuggets (resources, loot, tech crates) in the cloud get the same push, and the vanilla nugget drag (0.5 per second) does not apply there, so they move like ships without engines. With the drag, the push fades in the soft cloud edge and items stopped there. Outside the cloud the drag stops them again. Junk capsules and wrecks are ships and get the ship push.
 - Exceptions: stations, asteroids and megaroids do not drift.
-- Look: the vanilla cloud with a teal tint and full sight, plus arrows that drift along the flow. The vanilla nebula HUD shows "current" while a ship is inside.
-- Found in tests: an idle player ship brakes against the drift and settles at about 5.5 units per second downstream. A ship that maneuvers gets the full push.
+- Look: the vanilla cloud with a teal tint and full sight, plus arrows that drift in the drift direction (they lean toward the nearer side). The vanilla nebula HUD shows "current" while a ship is inside.
+- Found in tests: an idle player ship brakes against the drift and settles at about 5.5 units per second downstream; from the middle of the band it still drifts out, in about 490 s of game time. A tech crate dropped near the band center reaches about 28 units per second along the flow and leaves at the near side in about 57 s (2,430 along the flow from the center, 1,420 across). A ship that maneuvers gets the full push.
 
 ### Dense belt and passes (Mining Belt)
 
-- 1,700 to 1,900 rocks (mostly L and XL, some XXL and megaroids) in a band 900 wide at 11,900 to 12,500 from the center, between the trade stations and the FTL gates. That is about one large rock every 195 units: small ships thread it, big ships hit rocks.
+- About 1,140 to 1,280 rocks (mostly L and XL, some XXL and megaroids) in a band 900 wide in the middle between the trade station ring and the FTL gates (about 8,200 from the center at `SystemScale` 0.5). The count follows the orbit length. That is about one large rock every 195 units: small ships thread it, big ships hit rocks.
 - 3 or 4 passes: ring markers of radius 800 that the rocks keep clear of.
 - The belt lies between the stations and the FTL gates, so the passes matter for the route in and out.
 
@@ -69,6 +71,6 @@ Pay is in standard mission units at the system tier, before `RewardScale`. Every
 
 ## Tests
 
-- Unit (`tests/HotCargo.Tests/WorldsModelTests.cs`): flow directions, push, heat depth, pass hold steps, waves, band distance.
-- Game (`tests/autotest/worlds-*.txt`): map weights and hazard tooltip, current drift (and none beside it), belt and passes, pass hold win and loss, heat depth, sundive, lair discovery, save and load.
-- Co-op (step `worlds.current` in `tests/autotest-mp/coop-combat.txt`): a current painted on both machines pushes the host ship the same way, with no desync.
+- Unit (`tests/HotCargo.Tests/WorldsModelTests.cs`): flow directions, push, outward side, near-side exit of a ship and an item, heat depth, pass hold steps, waves, band distance.
+- Game (`tests/autotest/worlds-*.txt`): map weights and hazard tooltip, current drift (and none beside it), a crate that leaves at the near side, a ship that drifts out, belt and passes, pass hold win and loss, heat depth, sundive, lair discovery, save and load.
+- Co-op (step `worlds.current` in `tests/autotest-mp/coop-combat.txt`): a current painted on both machines pushes the host ship and a dropped crate the same way, with no desync.

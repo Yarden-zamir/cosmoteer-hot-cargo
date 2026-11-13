@@ -2,8 +2,8 @@
 // of the basic sector generator, so suns, planets, nebulas, stations and gates exist when these spawners run.
 // Each archetype group runs only with its spawn flag (worlds/sectors.rules). Groups with an hc_group_* tag hold a mission;
 // the autotest command "worlds generate" finds them by that tag.
-// Distances fit the smaller Hot Cargo systems (mod/contracts/actions.rules, spec 105): trade stations keep the vanilla ring
-// (7500 to 11000 from the sun at the center), FTL gates sit at 13500 to 16000. The mining belt lies in the gap between them.
+// Distances follow the system scale (contracts/system_scale.rules, spec 105). The mining belt lies in the gap between the
+// trade station ring and the FTL gate ring.
 
 // ---- Trade hub (spec 221): a big hub world next to a trade station, and a current that pushes ships one way.
 TradeHub
@@ -31,14 +31,17 @@ TradeHub
 		}
 
 		// The current: a straight band of hc_current cloud (worlds/current.rules). Hot Cargo C# type (Worlds/Current.cs).
-		// The band runs along the flow direction of the system, so it reads like a river. Each sim tick it pushes ships inside it.
+		// The band runs along the flow direction of the system, so it reads like a river. Each sim tick it pushes ships and loose
+		// items inside it. 6000 x 2400 is about 11 nebula triangles (side 2000). A width under about 2300 breaks the band into
+		// patches in the diagonal directions. Fixed sizes, not times the system Scale: the band is sized for ships, not for distances.
 		{
 			Conditions { ProhibitSpawnFlags = [disable_nebulas] }
 			Type = HotCargoCurrent
 			Tags = [hc_current]
 			NebulaType = hc_current
-			Length = 18000
-			Width = 4500
+			Length = 6000
+			Width = 2400
+			// Near the center and past the sun gap, so it keeps its distance at any system scale.
 			Distance = [2000, 6000]
 			MinDistanceFromTags = [[sun, 3000]]
 			MaxDistanceFromWorldOrigin = &<./Data/modes/career/career.rules>/Exploration/UnexploredRadius
@@ -59,8 +62,8 @@ MiningBelt
 		{
 			Type = None
 			Tags = [hc_belt]
-			// Rocks reach 450 to each side (11450 to 12950): outside the station ring and inside the gate ring.
-			Distance = [11900, 12500]
+			// The middle of the gap between the trade station ring and the gate ring. Rocks reach 450 to each side.
+			Distance = ["(&~/BeltRadius) - 300", "(&~/BeltRadius) + 300"]
 			SubSpawners
 			[
 				// The passes first, so the rocks keep clear of them. A pass is a ring on the map. A ring POI's scale is its radius.
@@ -86,7 +89,8 @@ MiningBelt
 				// Big ships hit rocks. The number of rocks is the main performance cost of this archetype.
 				{
 					Type = Doodads
-					Count = [1700, 1900]
+					// 1700 to 1900 rocks at radius 12200; the count follows the orbit length.
+					Count = ["round(1700 * (&~/BeltRadius) / 12200, 0)", "round(1900 * (&~/BeltRadius) / 12200, 0)"]
 					Distance = [-450, 450]
 					Tags = [asteroid, hc_belt_rock]
 					RootLocation = Grandparent
@@ -212,6 +216,7 @@ MiningBelt
 }
 
 PassRadius = 800
+BeltRadius = ((&<../contracts/system_scale.rules>/TradeStationDistance/1) + (&<../contracts/system_scale.rules>/GateDistance/0)) / 2
 SundiveRadius = 300
 
 // Bigger rocks than the vanilla belt, and some megaroids, so the belt blocks big ships.
@@ -353,8 +358,9 @@ DeepSpace
 			Type = None
 			Tags = [hc_group_lair]
 			SpawnChance = 80%
-			Distance = [8000, 13000]
-			MinDistanceFromTags = [[sun, 7500], [station, 6000], [ftl_gate, 3000]]
+			// The vanilla military station placement at the system scale, away from the center.
+			Distance = ["(&<../contracts/system_scale.rules>/Scale) * 8000", "(&<../contracts/system_scale.rules>/Scale) * 20000"]
+			MinDistanceFromTags = [[sun, "max((&<../contracts/system_scale.rules>/Scale) * 7500, (&<../contracts/system_scale.rules>/SunClearance))"], [station, "(&<../contracts/system_scale.rules>/Scale) * 6000"], [ftl_gate, "(&<../contracts/system_scale.rules>/Scale) * 3000"]]
 			SuppressLocationAssertions = true
 			SubSpawners
 			[

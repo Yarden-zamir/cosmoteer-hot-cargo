@@ -2,7 +2,9 @@
 # wanted, trade and loss. See coop-core.txt for "client:", "as 1", "on 1" and steps.
 # Events stay on until events.wanted (its trigger needs them). A run has no start event (#22): steps open named events.
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
+# The Pursuit stays off, so the hunter counts stay exact (spec 943).
+mp pu_set Enabled false
 mp godmode on
 # The event window opens after the run intro closes (GUI only). The client's hover needs its window.
 closepanel
@@ -135,12 +137,28 @@ mp ev_courier_goto
 wait 3
 mp ev_courier_goto
 waitfor ev_courier_seen == 1 20
-on 1 ev_comms contact Hand over the sealed case.
+on 1 ev_comms contact Hand over the case.
 waitfor ev_carrier == 1 20
-on 1 ev_comms carrier Hand it over.
+on 1 ev_comms carrier Hand over the sealed case.
 waitfor ev_courier_handover == 1 30
 expect ev_res_yarden_zamir.sealed_case_gain == 0
 on 1 waitfor ev_res_yarden_zamir.sealed_case_gain == 0 30
+
+step items.open-case
+# Spec 1111 to 1115: the client opens a sealed case in its own hold with the item action (a real MP input from its machine).
+# Both machines see the opened case and the codes (forced on both).
+mp item_force 1
+ev_mark
+on 1 ev_mark
+as 1 item_give yarden_zamir.sealed_case
+waitfor ev_res_yarden_zamir.sealed_case_gain == 1 20
+on 1 waitfor ev_res_yarden_zamir.sealed_case_gain == 1 30
+on 1 item_action yarden_zamir.sealed_case open
+waitfor ev_res_yarden_zamir.access_codes_gain == 1 30
+expect ev_res_yarden_zamir.opened_case_gain == 1
+expect ev_res_yarden_zamir.sealed_case_gain == 0
+on 1 waitfor ev_res_yarden_zamir.access_codes_gain == 1 30
+on 1 waitfor ev_res_yarden_zamir.opened_case_gain == 1 30
 
 step events.research-trade
 # Spec 760 to 763: the offer is built the same on both machines, the client trades from its own machine, the techs unlock on both.
@@ -175,12 +193,14 @@ votemode on
 waitfor sc_votemode == 1 10
 vote 2
 as 1 vote 2
+@3p as 2 vote 2
 waitfor sc_decided_reason == 1 60
 expect sc_decided_choice == 2
 expect ev_pending == 0
 
 step sharedchoice.timeout
-# Host 2, client 1 with two crates selected (spec 810). A tie after 10 game seconds goes to the lowest choice (1, sell).
+# Host 2, client 1 with two crates selected (spec 810); a second client does not vote. A tie after 10 game seconds goes to
+# the lowest choice (1, sell).
 mp sc_reset
 mp sc_set VoteTimeoutSeconds 10
 mp event the_fence
@@ -236,6 +256,7 @@ step factions.prices
 mp heat -100
 mp tostation
 as 1 tostation
+@3p as 2 tostation
 wait 3
 mp fa_roles - station
 mp fa_base
@@ -277,30 +298,42 @@ on 1 expect fa_peace_allyhits == 0
 on 1 expect fa_peace_hunterhits == 0
 
 step tech.trade-loss
-# Spec 17, 443, 1011: a new run. Each player's starter ship has 4 vaults and half of the tech (4 + 4); each player sells from
-# their own ship. The last sale loses the run for both.
+# Spec 17, 443, 1011: a new run. Each player's starter ship has 4 vaults and a share of the tech (4 + 4, or 3 + 3 + 2 with
+# 3 players); each player sells from their own ship. The last sale loses the run for all.
 mprestart
+mp pu_set Enabled false
 # The loss must happen: godmode blocks it, and its switch stays on across a restart.
 mp godmode off
 mp ev_set Enabled false
 mp tech_set LossGraceSeconds 3
 expect vaulttech == 8
-expect vaults == 8
-expect vaultpaths == 8
+@2p expect vaults == 8
+@2p expect vaultpaths == 8
+@3p expect vaults == 12
+@3p expect vaultpaths == 12
 expect noaccess == 0
 # The host money before the client sells: the client's sale must not change it (the starting money depends on the starter preset).
 hc_mark
 mp tostation
 as 1 tostation
+@3p as 2 tostation
 wait 5
-on 1 tech sell 4
-waitfor tech == 4 60
-on 1 waitfor moneygain >= 60000 60
+@2p on 1 tech sell 4
+@2p waitfor tech == 4 60
+@2p on 1 waitfor moneygain >= 60000 60
+@3p on 1 tech sell 3
+@3p waitfor tech == 5 60
+@3p on 1 waitfor moneygain >= 45000 60
 expect hc_money_gain == 0
-tech sell 4
+# The game drops a sale to a station tile that another sale in the same tick filled (MPMoveResourcesInput), so the sales take turns.
+@3p on 2 tech sell 2
+@3p waitfor tech == 3 60
+@2p tech sell 4
+@3p tech sell 3
 waitfor lost == 1 120
 expect tech == 0
-expect moneygain >= 60000
+@2p expect moneygain >= 60000
+@3p expect moneygain >= 45000
 on 1 waitfor lost == 1 30
 
 end

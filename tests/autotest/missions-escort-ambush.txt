@@ -21,7 +21,8 @@ expect hc_raiders_vs_player >= 2
 hc_escort_goto
 waitfor hc_raiders_on_escort >= 1 45
 hc_escort_goto
-waitfor hc_escort_health < 100 40
+# The raiders spawn EscortAmbushLead ahead; in some layouts they first hit the freighter about 55 s later.
+waitfor hc_escort_health < 100 90
 hc_escort_diag hit
 expect hc_escort_done == 0
 hc_escort_goto

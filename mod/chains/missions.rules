@@ -155,7 +155,7 @@ ChainEscort
 			ScaleFactor = 500
 			Tags = [hc_ch_dest]
 			Distance = [4500, 6500]
-			MinDistanceFromTags = [[sun, 6000], [station, 3000]]
+			MinDistanceFromTags = [[sun, "max((&<../contracts/system_scale.rules>/Scale) * 6000, (&<../contracts/system_scale.rules>/SunClearance))"], [station, "(&<../contracts/system_scale.rules>/Scale) * 3000"]]
 			MinDistanceFromNebulas = [[ion_storm, 1000]]
 			Undiscovered = true
 			HideIfUnexplored = true
@@ -219,6 +219,8 @@ ChainEscort
 									EscortTag = { Mode=Latest; Tag=hc_ch_escort; }
 									DestinationTag = { Mode=Latest; Tag=hc_ch_dest; }
 									ArrivalRadius = 400
+									// The route keeps the route sun clearance of the smaller systems (spec 36, spec 105).
+									SunClearance = "(&<../contracts/system_scale.rules>/RouteSunClearance)"
 								}
 								{
 									Type = ProtectShips
@@ -243,7 +245,7 @@ CarefulTargets
 {
 	Type = None
 	Distance = [3500, 5000]
-	MinDistanceFromTags = [[sun, 6000], [station, 3000]]
+	MinDistanceFromTags = [[sun, "max((&<../contracts/system_scale.rules>/Scale) * 6000, (&<../contracts/system_scale.rules>/SunClearance))"], [station, "(&<../contracts/system_scale.rules>/Scale) * 3000"]]
 	MinDistanceFromNebulas = [[ion_storm, 1000]]
 	SuppressLocationAssertions = true
 	SynchronizeAllegiance = true
@@ -256,6 +258,12 @@ CarefulTargets
 			Distance = [0, 200]
 			Allegiance = Unique
 			SuppressLocationAssertions = true
+			// Spec 1120: the hold is real cargo. Wreck the transport after the pickup, and its storage drops the processors (vanilla drop rates).
+			RememberResourcesAndCrew = true
+			ResourceLoadout
+			[
+				{ ResourceType=processor; RandomWeight=1; Quantity=[1, 2]; }
+			]
 			ShipCriteria
 			{
 				UseLocalFactionWeights = true
@@ -338,7 +346,7 @@ ChainCourierHit
 		: ~/CarefulTargets
 		{
 			Distance = [2500, 3500]
-			MinDistanceFromTags = [[sun, 4000]]
+			MinDistanceFromTags = [[sun, "max((&<../contracts/system_scale.rules>/Scale) * 4000, (&<../contracts/system_scale.rules>/SunClearance))"]]
 		}
 		: ~/PlayerMission
 		{
@@ -396,7 +404,7 @@ ChainSalvageRace
 			Type = Ships
 			Tags = [hc_ch_pod]
 			Distance = [3500, 5000]
-			MinDistanceFromTags = [[sun, 6000], [station, 3000]]
+			MinDistanceFromTags = [[sun, "max((&<../contracts/system_scale.rules>/Scale) * 6000, (&<../contracts/system_scale.rules>/SunClearance))"], [station, "(&<../contracts/system_scale.rules>/Scale) * 3000"]]
 			MinDistanceFromNebulas = [[ion_storm, 1000]]
 			SuppressLocationAssertions = true
 			Allegiance = Junk
@@ -477,7 +485,7 @@ ChainClearRaiders
 		{
 			ScaleFactor = 1500
 			Distance = [3500, 5500]
-			MinDistanceFromTags = [[sun, 6000], [station, 3000]]
+			MinDistanceFromTags = [[sun, "max((&<../contracts/system_scale.rules>/Scale) * 6000, (&<../contracts/system_scale.rules>/SunClearance))"], [station, "(&<../contracts/system_scale.rules>/Scale) * 3000"]]
 			MinDistanceFromNebulas = [[ion_storm, 1000]]
 			SuppressLocationAssertions = true
 			SubSpawners
@@ -534,7 +542,7 @@ ChainBlackBox
 			Type = Ships
 			Tags = [hc_ch_wreck]
 			Distance = [3500, 5000]
-			MinDistanceFromTags = [[sun, 6000], [station, 3000]]
+			MinDistanceFromTags = [[sun, "max((&<../contracts/system_scale.rules>/Scale) * 6000, (&<../contracts/system_scale.rules>/SunClearance))"], [station, "(&<../contracts/system_scale.rules>/Scale) * 3000"]]
 			MinDistanceFromNebulas = [[ion_storm, 1000]]
 			SuppressLocationAssertions = true
 			Allegiance = Junk
@@ -695,7 +703,7 @@ ChainDepot
 		{
 			Type = None
 			Distance = [3000, 4000]
-			MinDistanceFromTags = [[sun, 4000]]
+			MinDistanceFromTags = [[sun, "max((&<../contracts/system_scale.rules>/Scale) * 4000, (&<../contracts/system_scale.rules>/SunClearance))"]]
 			MinDistanceFromNebulas = [[ion_storm, 1000]]
 			SuppressLocationAssertions = true
 			SynchronizeAllegiance = true

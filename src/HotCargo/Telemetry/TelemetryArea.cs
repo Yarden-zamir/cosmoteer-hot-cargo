@@ -1,4 +1,8 @@
 using System.Globalization;
+using Cosmoteer;
+using Cosmoteer.Generators.Simulation;
+using Cosmoteer.Simulation.Stasis;
+using Halfling.Geometry;
 using Halfling;
 using HarmonyLib;
 using HotCargo.Core;
@@ -65,6 +69,8 @@ public static class TelemetryArea
     {
         // telename <name>: labels the telemetry of this game process. scripts/autotest.sh sends the script name first.
         Autotest.Commands["telename"] = arg => Label = arg;
+        SelfProfile.AddAutotest();
+        FrameProbe.AddAutotest();
         Autotest.Fields["tele_active"] = () => Session.Current is null ? 0 : 1;
         Autotest.Fields["tele_events"] = () => Interlocked.Read(ref Stats.Events);
         Autotest.Fields["tele_dropped"] = () => Interlocked.Read(ref Stats.Dropped);
@@ -105,6 +111,23 @@ public static class TelemetryArea
                 n++;
             }
             Log.Info($"AUTOTEST damagehostiles {fraction}: {n} ships");
+        };
+        // wrecks <n>: spawns n derelict built-in ships (player index -3, junk) on a ring 2,500 to 4,500 from the fleet, for a heavy scene.
+        // Test only. In co-op run it through "mp": it uses the sim random source.
+        Autotest.Commands["wrecks"] = arg =>
+        {
+            var sim = Autotest.RequireRun().Game.Sim;
+            int count = int.Parse(arg, CultureInfo.InvariantCulture);
+            var center = SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no player ship");
+            for (int i = 0; i < count; i++)
+            {
+                var pick = GameApp.Rules.BuiltinShips.GetRandomMatchingShip(sim.Rand, tier: new Range<int>(1, 4))
+                    ?? throw new InvalidOperationException("no built-in ship for a wreck");
+                var near = center + Vector2.FromAngle(i * 2.4f) * (2500f + 2000f * sim.Rand.Single());
+                var loc = Autotest.ClearSpotNear(sim, near, 0f, 150f);
+                new StasisShipSpawner(sim, pick.ID, loc, SpawnedShipFeatures.None, sim.Rand.UInt64()) { ObjectAllegiance = -3 }.Spawn(sim);
+            }
+            Log.Info($"AUTOTEST wrecks: {count} derelict ships");
         };
         // shieldplayers on|off: human ship parts lose no health and human crew do not die (TestShield). Test only, single player.
         Autotest.Commands["shieldplayers"] = arg =>

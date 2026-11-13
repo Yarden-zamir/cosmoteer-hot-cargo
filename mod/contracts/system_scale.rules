@@ -1,0 +1,25 @@
+// Spec 105: the size of a star system. Rules reference these values from their own folder, for example
+// "(&<contracts/system_scale.rules>/Scale) * 19000" in mod.rules or "(&<../contracts/system_scale.rules>/Scale) * 19000" in an area folder.
+// - A spawn distance from the system center, or a long trip from a station or the fleet, is the vanilla-size distance times Scale.
+// - A short hop next to a station or the fleet (under about 6500) keeps its distance, so fights do not start next to stations.
+// - A gap between gameplay objects is the vanilla-size gap times Scale. Gaps under 1000 are hull clearances and keep their value.
+// - A sun gap is max(vanilla-size gap * Scale, SunClearance), so a small Scale never puts a station or a site into the heat.
+// - A count of scattered objects is the vanilla count times Area.
+// - Scenery (suns, planets, nebulas, fog) keeps the vanilla size.
+// A change needs a game restart.
+Scale = 0.5
+Area = (&~/Scale) * (&~/Scale)
+
+// The FTL gate ring (vanilla [18750, 22500]). Sites that must stay inside the gate ring use GateDistance/0.
+GateDistance = ["(&~/Scale) * 18750", "(&~/Scale) * 22500"]
+// The trade station ring. The vanilla ring [4000, 11000] reaches 3500 past the vanilla sun gap (7500); this ring reaches
+// Scale * 3500 past SunClearance, which cuts its inner part. (Scale * 11000 would leave almost no room past the sun gap.)
+TradeStationDistance = ["(&~/Scale) * 4000", "(&~/SunClearance) + (&~/Scale) * 3500"]
+
+// The heat zone of a vanilla sun ends at DefaultScale / 2 * EffectsRadiusFactor from its center (3750, doodad_planet_sun.rules).
+SunHeatRadius = (&<./Data/doodads/planets/doodad_planet_sun.rules>/DefaultScale) / 2 * (&<./Data/doodads/planets/doodad_planet_sun.rules>/ProximityEffects/EffectsRadiusFactor)
+// Stations and sites keep at least this far from a sun center: the heat zone plus room for the ships parked around a station.
+SunClearance = (&~/SunHeatRadius) + 1500
+// A moving ship's route (the escort freighter, spec 36) passes a sun at least this far from its center. It is less than
+// SunClearance, so a route that starts up to 800 from a station always fits.
+RouteSunClearance = (&~/SunHeatRadius) + 500

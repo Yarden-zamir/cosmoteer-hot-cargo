@@ -41,6 +41,37 @@ static class WorldsAutotest
         // Strength of the current at the ship's location (0 to 1), and as the ship's nebula tracker sees it (what the push uses).
         Autotest.Fields["worlds_in_current"] = () => Sim().Nebulas.GetInsideStrength(Ship().DetWorldCenter, Current.NebulaId);
         Autotest.Fields["worlds_ship_in_current"] = () => Ship().Nebulas.GetNebulaStrength(Current.NebulaId);
+        // Loose items (vanilla nuggets: resources, tech crates) inside the current. Spec 221: they float out.
+        Autotest.Fields["worlds_items_in_current"] = () =>
+        {
+            var sim = Sim();
+            int count = 0;
+            for (int i = 0; i < sim.Nuggets.Count; i++)
+                if (sim.Nebulas.GetInsideStrength(sim.Nuggets[i].DetWorldLocation, Current.NebulaId) > 0f) count++;
+            return count;
+        };
+        // The fastest speed along the flow of a loose item in the current (0 when there is none).
+        Autotest.Fields["worlds_item_flow_speed"] = () =>
+        {
+            var sim = Sim();
+            Vector2 flow = Current.FlowVector(sim);
+            float best = 0f;
+            for (int i = 0; i < sim.Nuggets.Count; i++)
+            {
+                var n = sim.Nuggets[i];
+                if (sim.Nebulas.GetInsideStrength(n.DetWorldLocation, Current.NebulaId) > 0f) best = Math.Max(best, n.LinearVelocity.Dot(flow));
+            }
+            return best;
+        };
+        // Where the first tech crate is, from the current's center: along the flow and across it (absolute values).
+        // A crate that left the band with along below half the band length (3000) left it at a side.
+        Autotest.Fields["worlds_crate_along"] = () => Math.Abs(CrateOffset().Dot(Current.FlowVector(Sim())));
+        Autotest.Fields["worlds_crate_across"] = () =>
+        {
+            Vector2 flow = Current.FlowVector(Sim());
+            return Math.Abs(CrateOffset().Dot(new Vector2(-flow.Y, flow.X)));
+        };
+        Autotest.Fields["worlds_sim_seconds"] = () => Sim().Tick * (float)Sim().FixedUpdater.Interval;
         Autotest.Fields["worlds_flow_speed"] = () => ((Vector2)(Ship().Physics.Body ?? throw new InvalidOperationException("ship has no body")).LinearVelocity).Dot(Current.FlowVector(Sim()));
         Autotest.Fields["worlds_belt_rocks"] = () => Tagged(Sim(), BeltRock).Count;
         Autotest.Fields["worlds_passes"] = () => Doodads(Sim(), Pass).Count;
@@ -71,6 +102,19 @@ static class WorldsAutotest
         Autotest.Fields["worlds_lair_found"] = () => State(Objective<FindLairObjective>());
         Autotest.Fields["worlds_sundive_salvage"] = () => Objective<SundiveObjective>().SalvageSeconds;
         Autotest.Fields["worlds_sundive_carrier"] = () => Objective<SundiveObjective>().Carrier is null ? 0 : 1;
+        // Ring radii of the smaller systems (spec 105), from the system center. The trade station ring lies inside the gate ring,
+        // and no station is in a sun's heat zone.
+        Autotest.Fields["worlds_gate_min"] = () => Radii(Gate).Min();
+        Autotest.Fields["worlds_gate_max"] = () => Radii(Gate).Max();
+        Autotest.Fields["worlds_trade_station_max"] = () => Radii(TradeStation).Max();
+        // The vanilla rules spawn 2 to 3 military stations in each of two groups; fewer means that they did not fit.
+        Autotest.Fields["worlds_military_stations"] = () => At(new ID<SimObjectSpawner>("military_station")).Count;
+        Autotest.Fields["worlds_station_heat_gap"] = () =>
+        {
+            var suns = HeatZone.Suns(Sim());
+            if (suns.Count == 0) return double.MaxValue;
+            return At(Station).Min(p => suns.Min(sun => p.DistanceTo(sun.Center) - sun.EdgeRadius));
+        };
         foreach (var (name, metatype) in Metatypes)
         {
             var id = new ID<MissionMetatype>(metatype);
@@ -108,6 +152,8 @@ static class WorldsAutotest
             case ["paint"]:
             {
                 var sim = Sim();
+                // The push finds the band axis from all current triangles (Current.Band): one band per system.
+                if (Current.TriangleCenters(sim, Current.NebulaId).Count > 0) throw new InvalidOperationException("this system already has a current");
                 var spawner = MissionArea.AllSpawners(GameApp.Rules.CareerMode.SectorTypesByID[new ID<SectorTypeRules>("hc_trade_hub")].SystemGenerator.Spawners)
                     .OfType<CurrentSpawner>().FirstOrDefault() ?? throw new InvalidOperationException("the trade hub rules have no HotCargoCurrent spawner");
                 spawner.DoSpawn(sim, sim.Rand, 0, 0, 1, null, Ship().DetWorldCenter, [], new SpawnedObjectCollection(), 0f, loadInstantly: true, []);
@@ -256,7 +302,22 @@ static class WorldsAutotest
         }
     }
 
-    static readonly ID<SimObjectSpawner> HubPlanet = new("hc_hub_planet"), Station = new("station"), Gate = new("ftl_gate");
+    static readonly ID<SimObjectSpawner> HubPlanet = new("hc_hub_planet"), Station = new("station"), Gate = new("ftl_gate"),
+        TradeStation = new("trade_station");
+
+    /// <summary>Centers of the spawned objects with a tag in this system, live or in stasis. Crashes when there is none.</summary>
+    static List<Vector2> At(ID<SimObjectSpawner> tag) =>
+        MissionArea.ExistingSpawnTags(Sim()).TryGetValue(tag, out var list) && list.Count > 0
+            ? [.. list.Select(so => so.Location.Center)]
+            : throw new InvalidOperationException($"no object tagged {tag} in this system");
+
+    /// <summary>Distances of the tagged objects from the system center, logged for the test record.</summary>
+    static List<double> Radii(ID<SimObjectSpawner> tag)
+    {
+        var radii = At(tag).Select(p => (double)p.Length).Order().ToList();
+        Log.Info($"AUTOTEST {tag} radii: {string.Join(" ", radii.Select(r => r.ToString("0", CultureInfo.InvariantCulture)))}");
+        return radii;
+    }
 
     static void Clearance()
     {
@@ -279,7 +340,9 @@ static class WorldsAutotest
         CheckMin("pass ring edge to station or gate center", fixedPoints, Doodads(sim, Pass).Select(c => (c.Center, c.Radius)), 600f);
         CheckMin("belt rock to station or gate center", fixedPoints, Tagged(sim, BeltRock).Select(p => (p, 0f)), 600f);
         CheckMin("hub planet to gate center", At(Gate), At(HubPlanet).Select(p => (p, 0f)), 2000f);
-        CheckMin("lair to station or gate center", fixedPoints, lairs.Select(p => (p, 0f)), 3000f);
+        // The lair keeps the vanilla military gaps times the system scale 0.5: 3000 from stations, 1500 from gates (spec 105).
+        CheckMin("lair to station center", At(Station).Where(p => !lairs.Contains(p)).ToList(), lairs.Select(p => (p, 0f)), 3000f);
+        CheckMin("lair to gate center", At(Gate), lairs.Select(p => (p, 0f)), 1500f);
     }
 
     static int State(CompletionState c) => c switch { CompletionState.Completed => 1, CompletionState.Failed => -1, _ => 0 };
@@ -291,6 +354,18 @@ static class WorldsAutotest
     static SimRoot Sim() => Autotest.RequireRun().Game.Sim ?? throw new InvalidOperationException("no sim");
 
     static Ship Ship() => SimQueries.FirstHumanShip(Sim()) ?? throw new InvalidOperationException("no human ship");
+
+    /// <summary>The first tech crate's offset from the mean of the current triangles (the band center).</summary>
+    static Vector2 CrateOffset()
+    {
+        var sim = Sim();
+        var centers = Current.TriangleCenters(sim, Current.NebulaId);
+        if (centers.Count == 0) throw new InvalidOperationException("no current in this system");
+        Vector2 mean = centers.Aggregate(Vector2.Zero, (a, c) => a + c) / centers.Count;
+        for (int i = 0; i < sim.Nuggets.Count; i++)
+            if (sim.Nuggets[i].ResourceType == Tech.Vaults.TechId) return sim.Nuggets[i].DetWorldLocation - mean;
+        throw new InvalidOperationException("no tech crate in space");
+    }
 
     static string SectorId() => Autotest.RequireRun().Mode.CurrentSectorType.ID.ToString();
 

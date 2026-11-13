@@ -1,13 +1,15 @@
 # Escort (spec 36): accept, the freighter steers to the jump point when a player is near, and arrival completes the objective.
 newgame run
 wait 8
+pu_set Enabled false
 hc_generate escort
 hc_accept escort
 expect hc_active_escort == 1
 # Route (spec 36): MissionTunables.EscortRouteShare (0.65) of the nearest gate distance, so it scales with the system.
 expect hc_escort_route_share >= 0.6
 expect hc_escort_route_share <= 0.7
-expect hc_escort_route >= 7000
+# At least 0.65 of the inner gate ring (9,375 at SystemScale 0.5).
+expect hc_escort_route >= 6000
 expect hc_escort_marker == 1
 # Convoy cover: the offer carries MissionTunables.EscortHeatChange, and the reward lowers heat. Heat stays below the first stage, so no hunter disturbs the escort.
 expect hc_escort_cover == -8
