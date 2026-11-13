@@ -13,9 +13,9 @@ mp pu_set Enabled false
 
 step scaling.generation
 # Spec 330 to 336: the host's value reaches the client. Both machines generate the first system with factor 2:
-# pirate wanderers are [9, 11] (mod/contracts/actions.rules), so 18 to 22. The state hash compares the ship counts.
-# With 3 players the factor is 1 + (2 - 1) x 2 = 3 (spec 331), so 27 to 33. The group spacing shrinks with the factor, so
-# the system has room for all of them (spec 332).
+# pirate wanderers are round([14, 16] x Area) = 4 at SystemScale 0.5 (mod/contracts/actions.rules), so 8. The state hash compares the ship counts.
+# With 3 players the factor is 1 + (2 - 1) x 2 = 3 (spec 331), so 12. The group spacing shrinks with the factor, so the
+# system has room for all of them (spec 332).
 expect enemysetting == 2
 @2p expect enemyfactor == 2
 @3p expect enemyfactor == 3
@@ -23,12 +23,10 @@ on 1 expect enemysetting == 2
 @2p on 1 expect enemyfactor == 2
 @3p on 1 expect enemyfactor == 3
 counttag pirate
-@2p expect tagcount >= 18
-@2p expect tagcount <= 22
-@3p expect tagcount >= 27
-@3p expect tagcount <= 33
-# The counted wanderers leave. With 3 players, 27 or more of them join the AI fight of ai.personalities and destroy the host's
-# ship (godmode does not save parts that one hit destroys). Later steps spawn the enemies they need.
+@2p expect tagcount == 8
+@3p expect tagcount == 12
+# The counted wanderers leave. With 3 players they join the AI fight of ai.personalities and can destroy the host's ship
+# (godmode does not save parts that one hit destroys). Later steps spawn the enemies they need.
 mp chain_kill pirate
 
 step diplomacy.payoff

@@ -328,12 +328,17 @@ public static class EventsArea
             foreach (var soul in souls) soul.Delete(killed: false);
             Autotest.Wait(1);
         };
-        // ev_goto <tag>: moves the fleet next to the first ship with the tag, live or in stasis. Test only.
+        // ev_goto <tag>: moves the fleet next to the first ship with the tag, live or in stasis, junk included (a salvage capsule). Test only.
         Autotest.Commands["ev_goto"] = arg =>
         {
-            var target = SimQueries.TaggedShips(RequireSim(), new ID<SimObjectSpawner>(arg.Trim())).FirstOrDefault();
+            var sim = RequireSim();
+            var tag = new ID<SimObjectSpawner>(arg.Trim());
+            // TaggedShips leaves live junk out, so a capsule that already left stasis is found here.
+            var target = SimQueries.TaggedShips(sim, tag).FirstOrDefault();
+            if (target == default && sim.Ships.Where(sh => sh.HasTag(tag)).OrderBy(sh => sh.UniqueID).FirstOrDefault() is { } junk)
+                target = new(junk.UniqueID, junk.Metadata.PlayerIndex, junk.DetWorldCenter, junk);
             if (target == default) throw new InvalidOperationException($"no ship tagged {arg}");
-            MoveNextTo(RequireSim(), target.Location, target.Live?.WorldBoundingRadius + 150f ?? 600f);
+            MoveNextTo(sim, target.Location, target.Live?.WorldBoundingRadius + 150f ?? 600f);
         };
         // ev_contact_goto: moves the fleet next to the contact of the first open hand-over (live or in stasis). Test only.
         Autotest.Commands["ev_contact_goto"] = _ =>
