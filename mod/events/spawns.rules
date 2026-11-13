@@ -348,24 +348,13 @@ Courier
 							TimeLimit = 420
 							SubObjectives
 							[
+								// Find the contact (the map marks its area until a player ship has it on radar), then hand the case over in its comms
+								// (events.rules, courier_handover). The accept loads the case. One objective, so the lost-case check runs from the accept.
 								{
-									Type = Sequential
-									SubObjectives
-									[
-										// Find the contact: the marker shows its area until a player ship sees it.
-										{
-											Type = GotoShip
-											DestinationShipTag = { Mode=Latest; Tag=hc_courier_contact; }
-											DestinationShipAreaTag = { Mode=Latest; Tag=hc_courier_area; }
-											GetTierFromTierField = true
-										}
-										// Hand the case over in the contact's comms (events.rules, courier_handover). The accept loads the case.
-										{
-											Type = HotCargoHandOver
-											ResourceType = yarden_zamir.sealed_case
-											ContactShipTag = { Mode=Latest; Tag=hc_courier_contact; }
-										}
-									]
+									Type = HotCargoHandOver
+									ResourceType = yarden_zamir.sealed_case
+									ContactShipTag = { Mode=Latest; Tag=hc_courier_contact; }
+									ContactAreaTag = { Mode=Latest; Tag=hc_courier_area; }
 								}
 							]
 						}

@@ -10,6 +10,7 @@ using Cosmoteer.Modes.Career.Missions.Objectives;
 using Cosmoteer.Resources;
 using Cosmoteer.Ships;
 using Cosmoteer.Simulation;
+using Cosmoteer.Simulation.Doodads;
 using Halfling;
 using Halfling.Geometry;
 using Halfling.PortableHashing;
@@ -40,6 +41,8 @@ internal sealed class HandOverObjective : Objective
     {
         [Serialize, PortableHash] public ID<ResourceRules> ResourceType;
         [Serialize, PortableHash] public SpawnedObjectSearch ContactShipTag = null!;
+        /// <summary>A POI area around the contact. The map marks it until a player ship has the contact on radar, like vanilla GotoShip.</summary>
+        [Serialize(Optional = true), PortableHash] public SpawnedObjectSearch? ContactAreaTag;
 
         public override Objective? CreateObjectiveImpl(SimRoot sim, Mission mission, Rand rand, SpawnedObjectCollection objects, Vector2 loc, out bool invalid)
         {
@@ -48,6 +51,7 @@ internal sealed class HandOverObjective : Objective
             ObjectID id = contact!.UniqueID ?? throw new InvalidOperationException($"contact tag {ContactShipTag} found an object without an ID");
             return new HandOverObjective(ResourceType, new ObjectiveTargetShip(sim.RequireGame(), sim.NodeId(), id))
             {
+                AreaDoodadID = ContactAreaTag is null ? null : objects.FindObject(ContactAreaTag, loc, rand).UniqueID,
                 Tier = Math.Max(1, ((Cosmoteer.Modes.Career.CareerSimModeManager)sim.Mode).TierFields.GetTier(contact.Location.Center)),
             };
         }
@@ -56,6 +60,7 @@ internal sealed class HandOverObjective : Objective
     [Serialize] public ID<ResourceRules> ResourceType { get; private set; }
     [Serialize] public ObjectiveTargetShip Contact { get; private set; }
     [Serialize(Optional = true)] public int Tier { get; private set; } = 1;
+    [Serialize(Optional = true)] public ObjectID? AreaDoodadID { get; private set; }
 
     public override string ScriptTypeName => "HotCargoHandOver";
 
@@ -79,7 +84,7 @@ internal sealed class HandOverObjective : Objective
     {
         var found = new List<HandOverObjective>();
         foreach (Mission m in run.Mode.Missions) m.GetObjectives(found);
-        return found.Where(o => o.Completion == CompletionState.InProgress && o.IsActive);
+        return found.Where(o => o.Completion == CompletionState.InProgress);
     }
 
     /// <summary>The page outcome of a hand-over (HandOver = true) on this contact. The page cost already took the unit. Sim logic.</summary>
@@ -107,8 +112,18 @@ internal sealed class HandOverObjective : Objective
 
     public override MapNode? GetFirstMapNode(GameRoot game) => Contact.MapNode;
 
-    public override Circle? GetAreaLocation(GameRoot game) =>
-        Completion == CompletionState.InProgress && Contact.TargetShip is { IsWithinRadarOfLocalPlayer: true } ship ? ship.WorldBoundingCircle : null;
+    /// <summary>The contact when it is on radar, else its area POI once explored. Same rule as vanilla GotoShipObjective.GetAreaLocation.</summary>
+    public override Circle? GetAreaLocation(GameRoot game)
+    {
+        if (Completion != CompletionState.InProgress) return null;
+        if (Contact.TargetShip is { IsWithinRadarOfLocalPlayer: true } ship) return ship.WorldBoundingCircle;
+        return Area(game) is { IsExplored: true } poi ? new Circle(poi.WorldLocation, poi.WorldUniformScale) : null;
+    }
+
+    POIDoodad? Area(GameRoot game) => AreaDoodadID is { } id ? game.Sim?.Doodads[id] as POIDoodad : null;
+
+    public override bool IsPOIAssociated(POIDoodad poi) =>
+        Completion == CompletionState.InProgress && poi.UniqueID == AreaDoodadID && Contact.TargetShip is not { IsWithinRadarOfLocalPlayer: true };
 
     public override bool IsShipAssociated(MetaShip ship) => Completion == CompletionState.InProgress && Contact.TargetMetaShip == ship;
 
@@ -148,16 +163,18 @@ internal sealed class HandOverObjective : Objective
         if (Completion == CompletionState.InProgress) Fail();
     }
 
-    void OnTick(object? sender, SimRoot sim)
+    void OnTick(object? sender, SimRoot sim) => Errors.Guard("hand-over tick", () =>
     {
-        if (Mission is null || Completion != CompletionState.InProgress || !IsActive || sim != Mission.Game.Sim) return;
-        MissionCargo.Watch(Mission.Game);
+        if (Mission?.Game is not { } game || Completion != CompletionState.InProgress || sim != game.Sim) return;
+        MissionCargo.Watch(game);
         if (UnitsLeft(sim, ResourceType) > 0) return;
         Log.Info($"hand-over: no {ResourceType} left in the fleet or the system; the job fails");
+        // Fail() can take the mission out of the log at once, so read everything first.
+        string name = ResourceType.GetResourceRules().NameKey.Text;
         Fail();
         // UI only: tell the players why.
-        Ux.UxKit.CenterText(Mission.Game, Strings.FormatText("HotCargoEventMissions/HandOverLostFmt", ResourceType.GetResourceRules().NameKey.Text));
-    }
+        Ux.UxKit.CenterText(game, Strings.FormatText("HotCargoEventMissions/HandOverLostFmt", name));
+    });
 
     public override int GetTypeIntegrityHash() => 0x4843_484F; // "HCHO"
 }

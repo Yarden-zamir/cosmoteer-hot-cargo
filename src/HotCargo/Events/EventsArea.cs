@@ -185,7 +185,7 @@ public static class EventsArea
         };
         // ev_sector <n>: sets the sector index without a jump (headless games cannot finish a jump). Test only.
         Autotest.Commands["ev_sector"] = arg => RequireRun().State.SectorIndex = Int(arg);
-        // Courier Job (spec 85): offers in station lists, accept the first, fly to the contact, and its GotoShip state.
+        // Courier Job (spec 85, 1100 to 1103): offers in station lists, accept the first, fly to the contact, and the hand-over state.
         Autotest.Fields["ev_courier_offers"] = () => CourierOffers(RequireSim()).Count();
         // Accepts through the game's own accept input, as the comms window does, so the accept gate and the cargo load run (spec 1101).
         Autotest.Commands["ev_courier_accept"] = _ =>
@@ -246,13 +246,6 @@ public static class EventsArea
             if (contacts.Count == 0 || contacts[0].Live is not { } ship) return -1;
             int team = run.Game.GetPlayerState(run.Game.LocalPlayerIndex, deterministic: true).Team;
             return ship.IsWithinSightOfTeam(team) ? 1 : 0;
-        };
-        Autotest.Fields["ev_courier_reached"] = () =>
-        {
-            var mission = RequireRun().Mode.Missions.LastOrDefault(m => m.MetatypeID.Equals(CourierType)) ?? throw new InvalidOperationException("no accepted Courier Job");
-            var found = new List<Cosmoteer.Modes.Career.Missions.Objectives.GotoShipObjective>();
-            foreach (var o in mission.Objectives) o.GetObjectives(found);
-            return found.Single().Completion == CompletionState.Completed ? 1 : 0;
         };
         // Reputation with the faction that controls the system, for the Reputation outcome effect.
         Autotest.Fields["ev_rep"] = () =>
