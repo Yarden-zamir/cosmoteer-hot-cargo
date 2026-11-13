@@ -6,7 +6,7 @@ mpstart {PLAYERS}
 mp ev_set Enabled false
 wait 8
 expect hint_hc_coop == 1
-mp heat 30
+mp stage
 mp mpmark 1
 waitfor mpmark >= 1 60
 wait 3

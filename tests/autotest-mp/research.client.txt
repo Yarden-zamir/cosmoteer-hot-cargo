@@ -1,9 +1,7 @@
 # Co-op research trade, client side.
 mpjoin 127.0.0.1:{PORT}
 mpready
-waitfor ev_pending == 1 30
-waitfor ev_pending == 0 60
-waitfor ev_seen >= 2 60
+waitfor ev_seen >= 1 60
 expectevent research_trade
 ev_mark
 ev_researched_mark

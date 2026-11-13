@@ -9,7 +9,9 @@ rm_log host
 mp mpmark 1
 # Heat from time at the effective rate on both machines (MPSTATE compares the heat).
 wait 40
-mp spawnstage Patrol
+# Two ships of the sector tier: the Warning response of the last sector.
+mp stageset Warning EarlyScale 1
+mp spawnstage Warning
 waitfor hunters >= 3 30
 mp mpmark 2
 rm_log host-after

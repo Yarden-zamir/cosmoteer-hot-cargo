@@ -20,10 +20,12 @@ RETRY="${AUTOTEST_RETRY:-1}"
 NAME="$(basename "$HOST_SCRIPT" .host.txt)"
 TAG="$NAME$([[ "$PLAYERS" -ne 2 ]] && echo "-${PLAYERS}p" || true)"
 # All slots at once, so parallel co-op tests cannot deadlock (see take_slots).
+BEGIN_AT=$SECONDS
 read -r -a SLOTS_TAKEN <<<"$(take_slots "$PLAYERS")"
 HOST="${SLOTS_TAKEN[0]}" CLIENTS=("${SLOTS_TAKEN[@]:1}")
 release_all() { local s; for s in "${SLOTS_TAKEN[@]}"; do release_slot "$s"; done; }
 trap release_all EXIT
+SLOTS_AT=$SECONDS
 PORT=$((35870 + ${HOST#t}))
 echo "== host slot $HOST, client slots ${CLIENTS[*]}, port $PORT, $PLAYERS players"
 
@@ -35,57 +37,76 @@ script_for() {
     /^@c[0-9]+ / { if (substr($1, 3) + 0 != c) next; sub(/^@c[0-9]+ /, "") }
     { print }' "$1" | sed "s/{PORT}/$PORT/g; s/{PLAYERS}/$PLAYERS/g"
 }
-exited() { grep -q '<<GAME EXITED>>' <<<"$1"; }
 
 script_for "$HOST_SCRIPT" 0 | start_slot "$HOST"
-HOST_LOG="" CLIENTS_STARTED=no
-CLIENT_LOG=() # index i holds the log of CLIENTS[i]
-for ((t = 0; t < TIMEOUT; t += 10)); do
-  sleep 10
-  HOST_LOG="$(slot_log "$HOST")"
+DEPLOYED_AT=$SECONDS
+# Small status calls every AUTOTEST_POLL seconds; the full logs are fetched once at the end.
+CLIENTS_STARTED=no LINK_REFUSED=no
+while (( SECONDS - DEPLOYED_AT < TIMEOUT )); do
+  sleep "${AUTOTEST_POLL:-3}"
+  HOST_STATUS="$(slot_status "$HOST" "AUTOTEST hosting")"
+  if [[ "$HOST_STATUS" == *"$LINK_REFUSED_TEXT"* ]]; then LINK_REFUSED=yes; break; fi
   if [[ "$CLIENTS_STARTED" == no ]]; then
-    if grep -q 'AUTOTEST hosting' <<<"$HOST_LOG"; then
+    if [[ "$HOST_STATUS" == *match=1* ]]; then
       for i in "${!CLIENTS[@]}"; do script_for "$CLIENT_SCRIPT" $((i + 1)) | start_slot "${CLIENTS[i]}"; done
       CLIENTS_STARTED=yes
-    elif exited "$HOST_LOG"; then
+    elif [[ "$HOST_STATUS" == *running=0* ]]; then
       break
     fi
     continue
   fi
-  done_all=yes
-  exited "$HOST_LOG" || done_all=no
-  for i in "${!CLIENTS[@]}"; do
-    CLIENT_LOG[i]="$(slot_log "${CLIENTS[i]}")"
-    exited "${CLIENT_LOG[i]}" || done_all=no
+  all_exited=yes
+  [[ "$HOST_STATUS" == *running=0* ]] || all_exited=no
+  for c in "${CLIENTS[@]}"; do
+    CLIENT_STATUS="$(slot_status "$c")"
+    if [[ "$CLIENT_STATUS" == *"$LINK_REFUSED_TEXT"* ]]; then LINK_REFUSED=yes; break 2; fi
+    [[ "$CLIENT_STATUS" == *running=0* ]] || all_exited=no
   done
-  [[ "$done_all" == yes ]] && break
+  [[ "$all_exited" == yes ]] && break
+done
+SCRIPT_END_AT=$SECONDS
+# A failed PC call leaves an empty log, which never passes.
+HOST_OUT="$(slot_finish "$HOST" 2>&1 || true)"
+HOST_LOG="${HOST_OUT%%<<<VANILLA LOG>>>*}"
+CLIENT_OUT=() CLIENT_LOG=() # index i holds the output and log of CLIENTS[i]
+for i in "${!CLIENTS[@]}"; do
+  CLIENT_OUT[i]=""; [[ "$CLIENTS_STARTED" == yes ]] && CLIENT_OUT[i]="$(slot_finish "${CLIENTS[i]}" 2>&1 || true)"
+  CLIENT_LOG[i]="${CLIENT_OUT[i]%%<<<VANILLA LOG>>>*}"
 done
 
 RUN_LOG="$LOG_DIR/mp-$TAG.$(date +%Y%m%d-%H%M%S).$(IFS=-; echo "${SLOTS_TAKEN[*]}").log"
-{ echo "=== host ($HOST)"; grep -v '<<GAME EXITED>>' <<<"$HOST_LOG" || true
-  for i in "${!CLIENTS[@]}"; do echo "=== client (${CLIENTS[i]})"; grep -v '<<GAME EXITED>>' <<<"${CLIENT_LOG[i]:-}" || true; done; } > "$RUN_LOG"
+{ echo "=== host ($HOST)"; echo "$HOST_LOG"
+  for i in "${!CLIENTS[@]}"; do echo "=== client (${CLIENTS[i]})"; echo "${CLIENT_LOG[i]}"; done; } > "$RUN_LOG"
+TIMING="== timing mp-$TAG wait=$((SLOTS_AT - BEGIN_AT)) deploy=$((DEPLOYED_AT - SLOTS_AT)) script=$((SCRIPT_END_AT - DEPLOYED_AT)) teardown=$((SECONDS - SCRIPT_END_AT)) total=$((SECONDS - BEGIN_AT))"
+echo "$TIMING" | tee -a "$RUN_LOG"
 echo "== $TAG: log $RUN_LOG"
 
+if [[ "$LINK_REFUSED" == yes ]] || grep -q "$LINK_REFUSED_TEXT" "$RUN_LOG"; then
+  echo "== MP AUTOTEST LINK REFUSED $TAG: the PC refused the calls, because this agent's turn is not active (log $RUN_LOG)"; exit 3
+fi
 OK=yes
-if ! log_passed <<<"$HOST_LOG"; then echo "== host log failed"; OK=no; fi
+# Each log must be this run's own (first script line "telename <script name>"), not a stale log of another test in the slot.
+if ! log_passed <<<"$HOST_LOG" || ! grep -qF "telename $(basename "$HOST_SCRIPT" .txt)" <<<"$HOST_LOG"; then echo "== host log failed"; OK=no; fi
 for i in "${!CLIENTS[@]}"; do
-  if ! log_passed <<<"${CLIENT_LOG[i]:-}"; then echo "== client ${CLIENTS[i]} log failed"; OK=no; fi
+  if ! log_passed <<<"${CLIENT_LOG[i]}" || ! grep -qF "telename $(basename "$CLIENT_SCRIPT" .txt)" <<<"${CLIENT_LOG[i]}"; then echo "== client ${CLIENTS[i]} log failed"; OK=no; fi
 done
 # Compare the state lines of ticks that every machine logged, without the log time stamps.
 states() { grep -o 'MPSTATE .*' <<<"$1" | tr -d '\r' | sort -u || true; }
 ticks() { grep -o 'tick=[0-9]*' <<<"$1" | sort -u || true; }
 HOST_STATES="$(states "$HOST_LOG")"
 COMMON="$(ticks "$HOST_STATES")"
-for i in "${!CLIENTS[@]}"; do COMMON="$(comm -12 <(echo "$COMMON") <(ticks "$(states "${CLIENT_LOG[i]:-}")"))"; done
+for i in "${!CLIENTS[@]}"; do COMMON="$(comm -12 <(echo "$COMMON") <(ticks "$(states "${CLIENT_LOG[i]}")"))"; done
 only_common() { grep -wFf <(printf '%s\n' ${COMMON:-none}) <<<"$1" || true; }
 echo "== MPSTATE: $(grep -c . <<<"$COMMON" || true) common ticks compared"
 for i in "${!CLIENTS[@]}"; do
-  DIFF="$(diff <(only_common "$HOST_STATES") <(only_common "$(states "${CLIENT_LOG[i]:-}")") || true)"
+  DIFF="$(diff <(only_common "$HOST_STATES") <(only_common "$(states "${CLIENT_LOG[i]}")") || true)"
   if [[ -n "$DIFF" ]]; then echo "== MPSTATE differs between host and client ${CLIENTS[i]}:"; echo "$DIFF"; OK=no; fi
 done
 if [[ "$OK" == yes ]]; then echo "== MP AUTOTEST OK $TAG (host $HOST, clients ${CLIENTS[*]})"; exit 0; fi
-{ echo; echo "=== vanilla game log, host"; slot_game_log "$HOST"
-  for c in "${CLIENTS[@]}"; do echo "=== vanilla game log, client $c"; slot_game_log "$c"; done; } >> "$RUN_LOG"
+{ echo; echo "=== vanilla game log, host"; [[ "$HOST_OUT" == *"<<<VANILLA LOG>>>"* ]] && echo "${HOST_OUT#*<<<VANILLA LOG>>>}"
+  for i in "${!CLIENTS[@]}"; do
+    echo "=== vanilla game log, client ${CLIENTS[i]}"; [[ "${CLIENT_OUT[i]}" == *"<<<VANILLA LOG>>>"* ]] && echo "${CLIENT_OUT[i]#*<<<VANILLA LOG>>>}"
+  done; } >> "$RUN_LOG"
 failure_lines "$RUN_LOG"
 # One retry, like autotest.sh: a pass on the retry is FLAKY, not FAILED.
 if [[ "$RETRY" -ge 1 ]]; then

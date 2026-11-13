@@ -11,3 +11,24 @@
 			&<tech/tech_vault.rules>/Part
 		]
 	}
+	// Spec 1017: the starter ships carry Tech Vaults by design. scripts/vault-saved-ships.sh --starters builds these files from the vanilla ones.
+	{
+		Action = Replace
+		Replace = "<modes/career/career.rules>/StarterShips/0/Ship"
+		With = "tech/starters/Model-L.ship.png"
+	}
+	{
+		Action = Replace
+		Replace = "<modes/career/career.rules>/StarterShips/1/Ship"
+		With = "tech/starters/Model-C.ship.png"
+	}
+	{
+		Action = Replace
+		Replace = "<modes/career/career.rules>/StarterShips/2/Ship"
+		With = "tech/starters/Model-S.ship.png"
+	}
+	{
+		Action = Replace
+		Replace = "<modes/career/career.rules>/StarterShips/3/Ship"
+		With = "tech/starters/Model-M.ship.png"
+	}

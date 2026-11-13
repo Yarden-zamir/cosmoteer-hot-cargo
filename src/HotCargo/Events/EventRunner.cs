@@ -29,10 +29,8 @@ public static class EventRunner
 
     static EventsState State(Run run) => run.State.Events;
 
-    internal static void OnNewRun(Run run)
-    {
-        State(run).StartDueSeconds = run.State.GameSeconds + run.T.Events.StartDelaySeconds;
-    }
+    /// <summary>Spec 70: a new run starts the cooldown, so no Arrival or Station event opens right at the start.</summary>
+    internal static void OnNewRun(Run run) => State(run).LastEventSeconds = run.State.GameSeconds;
 
     internal static void OnSystemEntered(Run run, bool firstVisit)
     {
@@ -50,20 +48,12 @@ public static class EventRunner
         CheckCarrier(run, sim);
         if (!t.Enabled || EventLibrary.LoadError is not null || s.Pending is not null) return;
         double now = run.State.GameSeconds;
-        if (s.StartDueSeconds >= 0 && now >= s.StartDueSeconds)
-        {
-            s.StartDueSeconds = -1;
-            TryTrigger(run, sim, EventTrigger.Start, chance: 1f, limited: false);
-            return;
-        }
         if (s.ArrivalDueSeconds >= 0 && now >= s.ArrivalDueSeconds)
         {
             s.ArrivalDueSeconds = -1;
             TryTrigger(run, sim, EventTrigger.Arrival, t.ArrivalEventChance, limited: true);
             return;
         }
-        // The Start event comes first; signals and stations wait for it.
-        if (s.StartDueSeconds >= 0) return;
         // Proximity checks run twice a game second. The step comes from game time, so every client checks on the same tick.
         if (Math.Floor(now / ProximityCheckSeconds) == Math.Floor((now - dt) / ProximityCheckSeconds)) return;
         CheckSignals(run, sim);
@@ -100,8 +90,18 @@ public static class EventRunner
         bool refuses = alive && sim.Ships[carrier] is { } ship && Factions.FactionsArea.Refuses(run, null, ship);
         if (alive && !refuses) return;
         s.Pending = null;
-        s.LastResult = new EventResult { Serial = p.Serial, Title = EventLibrary.Get(p.EventId).Title, Text = Cosmoteer.Localization.Strings.GetText(refuses ? "HotCargoEvents/CarrierRefuses" : "HotCargoEvents/CarrierGone") };
-        Log.Info($"event {p.EventId}: its carrier is gone, the page closes");
+        // Left behind in another system (no ship here): the players chose to leave, so the page closes with no result page.
+        // A result page on arrival named an offer the players no longer had in mind (playtest 2026-11-13).
+        if (p.CarrierNode is { } node && !node.Equals(sim.NodeId()))
+        {
+            Log.Info($"event {p.EventId}: its carrier stayed in another system, the page closes");
+            return;
+        }
+        string text = refuses ? Cosmoteer.Localization.Strings.GetText("HotCargoEvents/CarrierRefuses")
+            : sim.Ships[carrier] is { } wreck ? Cosmoteer.Localization.Strings.FormatText("HotCargoEvents/CarrierDestroyedFmt", wreck.Metadata.PlainShipName)
+            : Cosmoteer.Localization.Strings.GetText("HotCargoEvents/CarrierGone");
+        s.LastResult = new EventResult { Serial = p.Serial, Title = EventLibrary.Get(p.EventId).Title, Text = text };
+        Log.Info($"event {p.EventId}: its carrier is {(refuses ? "refusing calls" : "destroyed")}, the page closes");
     }
 
     /// <summary>A human ship that reaches a signal POI removes it and opens a Signal event.</summary>
@@ -237,6 +237,7 @@ public static class EventRunner
             carrierHails = e.CarrierHails;
         }
         s.Pending.Carrier = carrier;
+        s.Pending.CarrierNode = carrier is null ? null : sim.NodeId();
         s.Pending.HailDue = carrier is not null && carrierHails;
         if (carrier is { } c && carrierHails) EventText.ShowCalling(run.Game, sim.Ships[c]?.Metadata.PlainShipName ?? e.Title);
         Log.Info($"event opened: {e.ID} serial {s.Pending.Serial} tier {s.Pending.Tier} heat {run.State.Heat:0.0} tech {run.State.FleetTech}");
@@ -264,6 +265,8 @@ public static class EventRunner
         if (EventModel.FirstUnmet(ChoiceNeed(run, choice, p), snapshot) is { } unmet)
         {
             Log.Info($"event choice ignored: {e.ID} choice {choiceIndex + 1} needs {unmet}");
+            // UI only, for the player who clicked: the choice did nothing, so say why.
+            if (playerIndex == run.Game.LocalPlayerIndex) Ux.UxKit.ChatLine(run.Game, EventText.Reason(unmet));
             return;
         }
         var lines = new List<string>();

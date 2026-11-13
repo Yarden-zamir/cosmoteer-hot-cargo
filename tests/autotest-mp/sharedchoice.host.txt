@@ -2,39 +2,40 @@
 # by unanimity, by timeout (plurality, lowest choice on a tie) and by a host force. No desync.
 mphost {PORT}
 mpstart {PLAYERS}
+# Only the forced test pages from here on.
+mp ev_set Enabled false
+mp event the_fence
 waitfor ev_pending == 1 30
 # The event window opens after the run intro closes (GUI only).
 closepanel
 wait 1
-expectevent getaway
+expectevent the_fence
 # Presence: the client hovers choice 3. It reaches the host through the hover RPC, not through the sim.
 waitfor sc_hovers >= 1 30
 expect sc_hover_choice == 3
 mp mpmark 1
 waitfor sc_hovers == 0 30
-# Only the forced test pages from here on.
-mp ev_set Enabled false
 votemode on
 waitfor sc_votemode == 1 10
-# Unanimous: both vote "Keep every crate".
+# Unanimous: both vote "Not today".
 vote 3
 waitfor sc_decided_reason == 1 60
 expect sc_decided_choice == 3
 expect ev_pending == 0
-# Timeout: host 3, clients 2. With 2 players, a tie after 10 game seconds goes to the lowest choice (2, sell a crate).
+# Timeout: host 3, clients 2. With 2 players, a tie after 10 game seconds goes to the lowest choice (2, sell two crates).
 # With 3 players, both clients vote 2: a majority decides at once.
 mp sc_set VoteTimeoutSeconds 10
-mp event getaway
+mp event the_fence
 waitfor ev_pending == 1 10
 ev_mark
 vote 3
 @2p waitfor sc_decided_reason == 3 60
 @3p waitfor sc_decided_reason == 2 60
 expect sc_decided_choice == 2
-expect ev_tech_gain == -1
+expect ev_tech_gain == -2
 # Host force: only the first client votes; the host decides now.
 mp sc_set VoteTimeoutSeconds 0
-mp event getaway
+mp event the_fence
 waitfor ev_pending == 1 10
 waitfor sc_votes >= 1 60
 forcevote

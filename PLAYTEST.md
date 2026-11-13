@@ -16,14 +16,14 @@ Mission checks are in [tests/playtest/missions.md](tests/playtest/missions.md).
 
 ## Tech
 
-1. Look at the starting ship. Check that 4 tinted 1×1 Tech Vaults replace one storage bay, and that each vault shows 2 units (8 units).
-2. Start a career with the Model-M starter ship. Check that 4 vaults replace 4 tiles of a 3×2 storage bay, with a corridor walkway between them, and that crew can walk to each vault.
+1. In the new-game screen, look at the starter ship pictures. Check that each preset shows 4 tinted 1×1 Tech Vaults in place of one storage bay. Start the career. Check that each vault shows 2 units (8 units) and that the FTL drive research is unlocked.
+2. Start a career with the Model-M starter ship. Check that 4 vaults fill 4 tiles of a 3×2 storage bay, with a corridor walkway between them, and that crew can walk to each vault. Load a saved ship without vaults with Load Ship. Check that a dialog says how many Tech Vaults the ship needs.
 3. Open the build menu, Storage group. Check that "Tech Vault" is there with its name, description and tinted icon.
 4. Dock at a trade station and open the trade window. Check that "Stolen Tech" shows the overlay tech value as its sell price.
 5. Sell 1 unit through the trade window. Check that the money rises by the shown price and the overlay tech count drops by 1.
 6. In the trade window, check that the station offers the sold unit back at 1.5 × the sell price.
 7. Try to move tech into a normal storage bay with the transfer window. Check that the game refuses it.
-8. Let an enemy shoot a vault. Check that it loses 1 unit at half health, that the destroyed vault drops its last unit as a crate (rarely it burns, with a toast), that other vaults keep their tech, and that repair does not bring units back. Collect the crate. Check that hunters near loose crates go for them, and that a wrecked hunter drops them again.
+8. Let an enemy shoot a vault. Check that a damaged vault keeps its units, that the destroyed vault drops them as crates (rarely they burn, with a toast), and that other vaults keep their tech. Collect the crate. Check that hunters near loose crates go for them, and that a wrecked hunter drops them again.
 8a. Dive into a Solar Zone heat zone. Check that the ship takes heat damage while the vaults take much less.
 9. Sell the last unit. Check that a toast says "No tech left!", and that the heat panel shows "NO TECH, run lost in 3:00" and counts down. Wait it out. Check that the loss dialog "The corporation recovered the tech." shows at 0:00.
 10. Press F11 and Shift+F11. Check that the overlay tech count goes up and down by 1.
@@ -68,28 +68,29 @@ Switch a behavior off to compare: `Tactics { CallEnabled = false }` for hunters,
 1. Sector 1, low FTL fuel: raise heat to 100 (F9). Strike sends one ship now and one 45 s later. Can you destroy the first one, pick up or salvage its fuel, and jump before the second one arrives? Is it "by the skin of your teeth", or too easy, or impossible? Tune `Hunters.Stages` Strike `EarlyScale`, `WaveGapSeconds` and `Hunters.MinFuel`.
 2. Destroy a hunter's hyperdrive or storage. Do hyperium nuggets drop (about half the fuel)? Does salvaging the wreck give the rest?
 3. Last sector: three strike ships of tier + 2, one at a time. Is the last sector a real threat but still survivable?
-4. Call for help: a hunter calls when it first sees you while another group waits. Is the red ring and "CALLING HELP n%" label easy to notice in a fight? Is 6 s the right window?
+4. Call for help: a hunter calls when it first sees you while another group waits. Is the red ring and "CALLING HELP n%" label easy to notice in a fight? Is 15 s the right window to jam or kill the caller?
 5. Hit a calling ship with a disruptor, an EMP missile or an ion beam. Does the call stop at once, with the "call was cut off" log line? Does that feel like a reward for carrying disruptors?
 6. Fight a pirate group (asteroid field pirates or a fleet bounty). When you engage one, does it call the others, and do they come? Is a 6,000 call range too far or too short?
 7. Fly into an ion storm or electron nebula and fight there. Are calls blocked as expected? Is it clear to the player why no one called?
-8. Flee: damage a pirate or hunter below a quarter of its value. About half of them should break off and run (label FLEEING). A hunter jumps out after 25 s (label shows the countdown). Is the window long enough to chase and kill it? Does a fleeing pirate come back after repairs?
+8. Flee: damage a pirate or hunter below a quarter of its value. About half of them should break off and run (no label). A hunter jumps out after 25 s (label shows the countdown). Is the window long enough to chase and kill it? Does a fleeing pirate come back after repairs?
 9. Destroy all weapons on an enemy. Does it always run?
 10. Focus fire: let one of your ships get badly hurt. Do the enemies switch to it? Is that too punishing (lower `FocusWeakFactor`)?
-11. Regroup: a lone weak enemy near stronger friends should turn toward them (label REGROUPING) and attack together. Does it look smart, or like hesitation? Is 25 s too long?
+11. Regroup: a lone weak enemy near stronger friends should pull back toward them (no label) and attack together. Does it look smart, or like hesitation? Is 25 s too long?
 12. Co-op: run a strike with calls and flees for 20 minutes. Check for no desync.
 
 ## AI personalities (spec 360-369)
 
-Hover an enemy ship: the mouseover names its personality, its traits and its team role. Switch personalities off to compare: `Tactics { PersonalitiesEnabled = false }` (hunters use every tactic, pirates and faction ships use none). Switch one off by name: `Tactics { PersonalitiesOff = ["Cabal Zealots"] }`.
+Nothing on screen names an enemy personality, trait or role: read them from the fight. `Debug { TacticsLog = true }` logs them. Switch personalities off to compare: `Tactics { PersonalitiesEnabled = false }` (hunters use every tactic, pirates and faction ships use none). Switch one off by name: `Tactics { PersonalitiesOff = ["Cabal Zealots"] }`.
 
 1. Fight pirates, then a faction that wants you (attack one of its ships). Do the two feel different? Can you name a faction's style after one or two fights?
 2. Two ships of one faction: do they behave a little differently (one calls, one does not; one flanks, one brawls)? Or does the jitter make factions blur together (lower `Jitter`)?
-3. Heavy ships: a big, slow ship never kites or baits. Does any big ship still dance at long range? Report its name and the mouseover line.
+3. Heavy ships: a big, slow ship never kites or baits. Does any big ship still dance at long range? Report its name and its "tactic personality" log line.
 4. Fast, light, long-range ships: do they hold distance and back off? Fast short-range ships: do they flank? Short-range armored ships: do they close in?
-5. Cover: fight pirates or Fringe ships in an asteroid field. Does a small ship duck behind a rock (label IN COVER), then come out to shoot? Can you flank it, or does it feel like cheating? Tune `CoverPeekSeconds` and `CoverHideSeconds`.
+5. Cover: fight pirates or Fringe ships in an asteroid field. Does a small ship duck behind a rock (no label), then come out to shoot? Can you flank it, or does it feel like cheating? Tune `CoverPeekSeconds` and `CoverHideSeconds`.
 6. Teams (Monolith, Imperium, hunters): do the team's ships all turn on one of your ships? Does the tank lead, the sniper hang back and the flankers swing wide? Put two of your ships in the fight: does the team stay on one?
 7. Do the profile scores match the ships? `Debug { TacticsLog = true }` writes each ship's scores to `hot_cargo_log.txt` ("tactic personality"). If too many ships count as heavy or protected, tune `Tactics { Profile { ... } }`.
-8. Co-op: fight a faction team among asteroids for 10 minutes. Check for no desync.
+8. Weak sides: knock the armor off the back of an enemy with its control room near the back. Does it stop turning its back on you when it runs or falls back (it strafes away instead)?
+9. Co-op: fight a faction team among asteroids for 10 minutes. Check for no desync.
 
 ## Run and UX
 
@@ -105,7 +106,7 @@ Hover an enemy ship: the mouseover names its personality, its traits and its tea
 The autotests cover triggers, conditions, costs, effects, spawns, follow-up pages, the MP input and save and load. Only a person can judge the points below.
 To see more events fast, put `Events { ArrivalEventChance = 1  StationEventChance = 1  CooldownSeconds = 20 }` in `tunables.rules`.
 
-1. Start a new career. After about 3 seconds, "Clean Getaway?" opens. Does the window look like the game's comms window (title bar, icon, fonts, flat buttons)? Is it centered and easy to read?
+1. Start a new career. Check that no event opens at the start. When the first event opens, does the window look like the game's comms window (title bar, icon, fonts, flat buttons)? Is it centered and easy to read?
 2. Does the game pause while the window is open, and continue after "Continue."?
 3. Read the costs on the buttons, for example "(-5,000 credits)". Are they clear? Is the blue "[Sensor Array]" tag readable, and is the grey reason ("Needs a Sensor Array") readable on a disabled button?
 4. After a choice, read the result lines (money, heat, crew, resources). Do the colors match the vanilla mission reward lines? Is "Heat -20" in green and "Heat +15" in red?
@@ -115,7 +116,7 @@ To see more events fast, put `Events { ArrivalEventChance = 1  StationEventChanc
 8. Text tone: are the texts short enough to read at a glance? Do they sound like one game, like FTL? Note any line that is too long or unclear.
 9. Balance: is a typical event worth less than a vanilla mission, but enough to make the choice interesting? Are the costs at sector 1 affordable with the starting money (about 10,000 credits)?
 10. The Corporate Checkpoint scan: with 6 tech, the scan almost always fails (85 %). Does that read as fair? Does it make you want to sell tech earlier?
-11. Story chains: buy the forged codes at the start, then meet a Corporate Checkpoint. Does the hidden option appear? Take the Defector aboard, then look for "Varga's Old Office" in sector 5 or later.
+11. Story chains: take the clean transponder codes at the end of the Fence's Ledger, then meet a Corporate Checkpoint. Does the hidden option appear? Take the Defector aboard, then look for "Varga's Old Office" in sector 5 or later.
 12. Fights: "Freighter Under Fire" (4-minute limit), "The Magpies" and corporate patrols. Do the spawned ships appear at a fair distance? Is the siege winnable in time? Do the Magpies go for the vault?
 13. Multiplayer (co-op): both players see the window. One player chooses. Does the other player's window switch to the result? Does a second click on an old page do nothing?
 14. Frequency: over a full run, are there too many or too few events? Do two events ever come right after each other?
@@ -135,7 +136,7 @@ To see more events fast, put `Events { ArrivalEventChance = 1  StationEventChanc
 6. Courier Job: look for "Courier Job" in a station's mission list. Is the contact easy to find (target area on the map)? Is 7 minutes too short or too long? Does it feel different from a vanilla delivery?
 7. Vault Coolant Leak (at most one per run): does an event with no free choice feel fair, or punishing? Is the choice between a crate, crew and money a real decision?
 8. Dead in Space: with a Tractor Beam Emitter, can you actually pull the freighter to the station? Is the distance fair (the nearest station at least 3,000 away can be much farther)? Does the map show the destination ring?
-9. "Clean Getaway?" shows the real tech count ("Your vault holds 6 crates"). Do the choice buttons show the gold key numbers from the UX area, with no second "1." in the text?
+9. Do the choice buttons show the gold key numbers from the UX area, with no second "1." in the text?
 
 ## Co-op (two players)
 
@@ -219,7 +220,7 @@ The autotests cover the archetype mix on the map, the hazard tooltip, the curren
 The autotests `shipai-basic`, `shipai-save` and the co-op test `shipai` cover row order, most conditions and actions, saves, designs and sync. These checks need a person.
 
 1. Select your ship and press Ctrl+K, or click the "AI" button in the ships card. Does the window fit the game's look? Are the drop lists easy to read?
-2. Apply each preset with Auto on and fight a Patrol stage (F10 with debug keys). Does each preset behave the way its name says? Which one feels useless?
+2. Apply each preset with Auto on and fight a Hunt stage (F10 with debug keys). Does each preset behave the way its name says? Which one feels useless?
 3. Sniper: does the ship keep its distance, and does it still hit? Note any target that it never reaches.
 4. Give a move order while Auto is on. Does the ship obey at once, and do the tactics take over again when it arrives?
 5. Put two weapons in part group 1 (build menu, part groups) and add a row "Always → Fire: hold, group 1". Do only those two stop firing?

@@ -46,7 +46,6 @@ internal sealed class ChainStageReward : Reward
         args["chain_name"] = ChainTitle;
         args["chain_stage"] = StageTitle;
         args["chain_brief"] = Brief;
-        args["chain_story"] = Story.Length > 0 ? $"<gray>{Strings.FormatText("HotCargoChains/SoFarFmt", Story)}</gray>\n\n" : "";
     }
 
     public override void GiveReward(GameRoot game) { }

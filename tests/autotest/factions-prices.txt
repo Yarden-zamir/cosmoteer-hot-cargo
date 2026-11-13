@@ -44,3 +44,4 @@ expect fa_buyratio >= 1.99
 expect fa_buyratio <= 2.02
 fa_tooltip
 quit
+# tier: smoke

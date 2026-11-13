@@ -29,7 +29,7 @@ namespace HotCargo.Missions.Mechanics;
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
 [SerialDerivedType(TypeName = "HotCargoCapture")]
-internal sealed class CaptureObjective : Objective
+internal sealed class CaptureObjective : Objective, IMissionMarkers
 {
     [ReflectiveSerialization(Explicit = true)]
     [SerialDerivedType(TypeName = "HotCargoCapture")]
@@ -56,6 +56,8 @@ internal sealed class CaptureObjective : Objective
     [Serialize] public HullRef Target { get; private set; }
     [Serialize] public int Tier { get; private set; }
     [Serialize(Optional = true)] public ObjectID? AreaPoiId { get; private set; }
+
+    IEnumerable<ObjectID> IMissionMarkers.MarkerIds => AreaPoiId is { } id ? [id] : [];
 
     public override string ScriptTypeName => "HotCargoCapture";
 

@@ -1,5 +1,4 @@
 # Co-op diplomacy, client side: the client's own choices, sent as real shared choice inputs.
-# With 3 players, the first client acts and the second client checks the same results.
 mpjoin 127.0.0.1:{PORT}
 mpready
 waitfor mpmark >= 1 60
@@ -7,13 +6,10 @@ waitfor mpmark >= 1 60
 waitfor hunters >= 1 30
 @c1 mp dip_near hunters
 wait 2
-@c1 dip handover hunter 2
-waitfor dip_vaulttech == 6 30
-waitfor dip_punishment == 1 30
-@c1 dip_pick talk
+@c1 dip_pick hunter tech 2
 waitfor dip_picks >= 2 60
-@c1 dip_punish submit
-waitfor dip_punishment == 0 30
+@c1 dip_payoff hunter
+waitfor dip_vaulttech == 6 30
 waitfor hunters == 0 60
 @c1 mp dip_spawn friend 250
 wait 3

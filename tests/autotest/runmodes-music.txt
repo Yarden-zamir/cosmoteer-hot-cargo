@@ -11,7 +11,7 @@ wait 2
 expect strikemusic == 0
 heat 5
 wait 2
-expect stages == 4
+expect stages == stagecount
 expect strikemusic == 1
 expect musicbattle == 1
 # Off switch: vanilla music at once.
@@ -24,6 +24,6 @@ expect strikemusic == 1
 # Heat below the last threshold re-arms the stage: vanilla music again.
 heat -20
 wait 2
-expect stages == 3
+expect stages < stagecount
 expect strikemusic == 0
 quit

@@ -2,12 +2,11 @@
 mpjoin 127.0.0.1:{PORT}
 mpready
 waitfor ev_pending == 1 30
-expectevent getaway
+expectevent toll_gate
 ev_mark
 # With 3 players, only the first client picks; the second client pays nothing.
 @c1 choose 1
 waitfor ev_result >= 1 30
-expectflag fake_codes 1
 @c1 expect ev_money_gain < 0
 @c2 expect ev_money_gain == 0
 # The host's choice on the next event. The money of the sale is split, so the client gains too.

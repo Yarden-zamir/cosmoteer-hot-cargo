@@ -30,9 +30,9 @@ static class AiText
 }
 
 /// <summary>
-/// Spec 196 and 202: the visible tells. A calling ship gets a red ring that grows to a fixed outer ring as the call completes,
-/// and every behavior shows a label on the ship marker. The mouseover of a hostile ship names its personality (spec 368).
-/// Reads AI module state only, so it is safe in multiplayer.
+/// Spec 197 and 368: the player-facing threats. A calling ship gets a red ring that grows to a fixed outer ring as the call
+/// completes, and its marker shows the call progress. A fleeing corporate hunter's marker shows its jump countdown. Strategy
+/// (personality, traits, roles, cover, regroup) shows nothing. Reads AI module state only, so it is safe in multiplayer.
 /// </summary>
 static class AiOverlay
 {
@@ -64,48 +64,15 @@ static class AiOverlay
         }
     });
 
-    /// <summary>Label for the ship marker, or null when no behavior shows.</summary>
+    /// <summary>Label for the ship marker, or null when no threat shows.</summary>
     static string? Label(Ship ship, TacticsTunables t)
     {
         if (ship.AI is not { } ai) return null;
         if (ai.GetStrategyModule<CallStrategy>() is { Calling: true } call)
             return $"<bad>{AiText.Format("LabelCallingFmt", (int)(call.Progress(ship, t) * 100f))}</bad>";
-        if (ai.GetStrategyModule<FleeStrategy>() is { Fleeing: true } flee)
-            return flee.SecondsToJump(ship, t) is { } s
-                ? $"<limited_color>{AiText.Format("LabelJumpFmt", (int)Math.Ceiling(s))}</limited_color>"
-                : $"<limited_color>{AiText.Text("LabelFleeing")}</limited_color>";
-        if (ai.GetStrategyModule<RegroupStrategy>() is { Active: true })
-            return $"<gray>{AiText.Text("LabelRegroup")}</gray>";
-        if (ai.GetStrategyModule<CoverStrategy>() is { Hiding: true })
-            return $"<gray>{AiText.Text("LabelCover")}</gray>";
+        if (ai.GetStrategyModule<FleeStrategy>()?.SecondsToJump(ship, t) is { } s)
+            return $"<limited_color>{AiText.Format("LabelJumpFmt", (int)Math.Ceiling(s))}</limited_color>";
         return null;
-    }
-
-    /// <summary>Spec 368. Mouseover line of a hostile ship: its personality, its traits and its team role. Null without a personality.</summary>
-    static string? PersonalityLine(Ship ship, TacticsTunables t)
-    {
-        if (!t.PersonalitiesEnabled || ship.AI?.GetStrategyModule<PersonalityStrategy>() is null || !AiGate.HostileToPlayers(ship)) return null;
-        if (PersonalityStrategy.Pick(ship, t) is not { } personality) return null;
-        string traits = string.Join(", ", PersonalityStrategy.Traits(ship, t).All().Select(trait => AiText.Text("Trait" + trait)));
-        string name = StringTools.EscapeForXml(personality.Name);
-        string line = ship.AI.GetStrategyModule<TeamStrategy>() is { Role: not TeamRole.None } team
-            ? AiText.Format("PersonalityRoleFmt", name, traits, AiText.Text("Role" + team.Role))
-            : AiText.Format("PersonalityFmt", name, traits);
-        return $"<gray>{line}</gray>";
-    }
-
-    [HarmonyPatch(typeof(ShipIndicatorSource), nameof(ShipIndicatorSource.GetMouseoverText))]
-    static class MouseoverLine
-    {
-        static void Postfix(ShipIndicatorSource __instance, ref string __result)
-        {
-            if (Run.Current is not { } run) return;
-            try
-            {
-                if (PersonalityLine(__instance.Ship, run.T.Tactics) is { } line) __result = __result + "\n" + line;
-            }
-            catch (Exception ex) { Errors.Report("ai personality line", ex.Message, ex); }
-        }
     }
 
     [HarmonyPatch(typeof(ShipIndicatorSource), nameof(ShipIndicatorSource.GetNonMouseoverText))]

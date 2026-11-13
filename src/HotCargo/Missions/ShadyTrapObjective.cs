@@ -180,7 +180,7 @@ internal sealed class ShadyTrapObjective : Objective
         {
             var tag = new ID<SimObjectSpawner>(AmbushTag);
             var before = SimQueries.TaggedShips(sim, tag).Select(t => t.Id).ToHashSet();
-            ShadyAmbush.Generator.Generate(sim, new FastRand(RollSeed, 0x5348_4144_59UL), loadInstantly: true, rootLoc: near);
+            AmbushFile.Shady.Generator.Generate(sim, new FastRand(RollSeed, 0x5348_4144_59UL), loadInstantly: true, rootLoc: near);
             var spawned = SimQueries.TaggedShips(sim, tag).Select(t => t.Id).Where(id => !before.Contains(id)).ToList();
             if (spawned.Count == 0) throw new InvalidOperationException("the ambush spawner made no ships");
             Ambushers = spawned.Select(id => new ObjectiveTargetShip(sim.RequireGame(), sim.NodeId(), id)).ToList();
@@ -224,23 +224,4 @@ internal sealed class ShadyTrapObjective : Objective
     }
 
     public override int GetTypeIntegrityHash() => 0x4843_5354; // "HCST"
-}
-
-/// <summary>Loads the ambush spawner from missions/shady_ambush.rules in the mod folder. It is not part of the game rules tree.</summary>
-internal static class ShadyAmbush
-{
-    static SimulationGenerator? _generator;
-
-    public static string FilePath => Path.Combine(Mod.ModRoot, "missions", "shady_ambush.rules");
-
-    public static SimulationGenerator Generator => _generator ??= Load();
-
-    static SimulationGenerator Load()
-    {
-        var generator = App.ObjectTextSerializer.ReadFromPath<SimulationGenerator>(new OTFile(FilePath), "Ambush")
-            ?? throw new InvalidDataException($"Ambush missing in {FilePath}");
-        if (generator.Spawners is not { Length: > 0 }) throw new InvalidDataException($"Ambush/Spawners is empty in {FilePath}");
-        Log.Info($"shady ambush loaded: {generator.Spawners.Length} spawners");
-        return generator;
-    }
 }
