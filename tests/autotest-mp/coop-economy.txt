@@ -77,6 +77,9 @@ step events.off-books
 # Spec 74, 771 (#12): the host sells a crate off the books through the real comms window. The line opens the page in the same
 # tab, and the choice works. The sale reaches the client's sim.
 on 1 ev_mark
+# A station offers event lines only while events are on (EventHail); events.wanted turned them off.
+mp ev_set Enabled true
+wait 1
 ev_open station
 ev_click station Sell a crate off the books
 expectevent off_books
@@ -85,6 +88,7 @@ ev_click station Sell one crate
 waitfor ev_pending == 0 20
 expect ev_tech_gain == -1
 expect ev_money_gain > 0
+mp ev_set Enabled false
 on 1 waitfor ev_tech_gain == -1 30
 
 step events.research-trade
