@@ -11,15 +11,19 @@ tactics_editor open
 tactics_editor apply Escort
 tactics_editor act 1 RetreatRepair
 tactics_editor up 3
+# A term edit: add a condition, pick it, and turn NOT on. Each one is one input.
+tactics_editor addterm 1
+tactics_editor cond 1 HuntersInSystem 2
+tactics_editor not 1 2
 wait 3
-expecttactics HC1:HealthBelow=25>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
+expecttactics HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
 expect tactics_auto == 1
 tactics_editor close
 mp mpmark 1
 waitfor mpgames >= 2 180
 waitfor active == 1 60
 expecttacticsany Defensive
-expecttactics HC1:HealthBelow=25>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
+expecttactics HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
 expect tactics_auto == 1
 waitfor mpmark >= 2 120
 expect tactics_evals > 20

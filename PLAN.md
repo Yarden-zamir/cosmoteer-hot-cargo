@@ -17,7 +17,7 @@ Paused for the feature freeze. Resume from this list.
 ## Left
 10. [ ] Run `shipai-editor` and `shipai-calls` (written, never ran because of slot and link failures).
 11. [ ] Rerun `shipai-basic`, `shipai-save`, co-op `mp:shipai` against the new code.
-12. [ ] Extend the co-op `shipai` test with a term edit and apply to selected.
+12. [x] Extend the co-op `shipai` test with a term edit (apply to selected stays in the single-player editor test: co-op tests have one ship per player).
 13. [ ] Screenshots: `tests/screens/shipai.txt` (main slot, under the lock); add them to the PR with `gh-pr-images`.
 14. [ ] Check in a game that +90° turns the left side to the target (spec 415).
 15. [ ] Merge origin/main again, delete PLAN.md, final push.

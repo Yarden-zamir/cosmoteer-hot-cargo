@@ -12,7 +12,7 @@ expecttacticsany Sniper
 expecttacticsany Defensive
 # The client edits in the editor window.
 waitfor mpmark >= 1 120
-expecttacticsany HC1:HealthBelow=25>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
+expecttacticsany HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
 mp spawnstage Patrol
 wait 40
 expect tactics_evals > 20
@@ -22,7 +22,7 @@ mpresync
 waitfor mpgames >= 2 120
 waitfor active == 1 60
 expecttacticsany Defensive
-expecttacticsany HC1:HealthBelow=25>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
+expecttacticsany HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
 expect tactics_any_auto == 2
 wait 10
 expect desyncs == 0
