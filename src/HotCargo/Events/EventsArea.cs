@@ -29,6 +29,7 @@ public static class EventsArea
         Run.Hooks.NewRunStarted += EventRunner.OnNewRun;
         Run.Hooks.SystemEntered += EventRunner.OnSystemEntered;
         Run.Hooks.Tick += EventRunner.OnTick;
+        Run.Hooks.Tick += MissionCargo.OnTick;
         Run.Hooks.NewRunStarted += Abandoned.OnNewRun;
         Ui.CommsHail.Providers.Add(new EventHailProvider());
         Run.Hooks.SystemEntered += Abandoned.OnSystemEntered;
@@ -232,6 +233,34 @@ public static class EventsArea
             foreach (var soul in souls) soul.Delete(killed: false);
             Autotest.Wait(1);
         };
+        // ev_goto <tag>: moves the fleet next to the first ship with the tag, live or in stasis. Test only.
+        Autotest.Commands["ev_goto"] = arg =>
+        {
+            var target = SimQueries.TaggedShips(RequireSim(), new ID<SimObjectSpawner>(arg.Trim())).FirstOrDefault();
+            if (target == default) throw new InvalidOperationException($"no ship tagged {arg}");
+            MoveNextTo(RequireSim(), target.Location, target.Live?.WorldBoundingRadius + 150f ?? 600f);
+        };
+        // ev_take <tag> <resource>: moves the resource out of the live tagged ship's storage into the fleet, as crew carrying
+        // salvage would. Fails when the ship holds none. Test only.
+        Autotest.Commands["ev_take"] = arg =>
+        {
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var tag = new ID<SimObjectSpawner>(parts[0]);
+            // Junk too (a salvage capsule): TaggedShips leaves wrecks out.
+            Ship? Live() => RequireSim().Ships.Where(sh => sh.HasTag(tag)).OrderBy(sh => sh.UniqueID).FirstOrDefault();
+            // A ship that a teleport brought into range leaves stasis a few ticks later.
+            Autotest.WaitFor(() => Live() is not null, 15, $"a live ship tagged {parts[0]}", () => Take(Live()!, new ID<Cosmoteer.Resources.ResourceRules>(parts[1])));
+        };
+        static void Take(Ship source, ID<Cosmoteer.Resources.ResourceRules> rid)
+        {
+            var sim = RequireSim();
+            int taken = source.Resources.RemoveResources(rid, 100);
+            if (taken == 0) throw new InvalidOperationException($"{source.Metadata.PlainShipName} holds no {rid}");
+            int left = taken;
+            foreach (var ship in Tech.Vaults.HumanShips(sim).OrderBy(sh => sh.UniqueID)) left -= ship.Resources.AddResources(rid, left, excludeConstructionSinks: true);
+            if (left > 0) throw new InvalidOperationException($"no fleet storage for {left} {rid}");
+            Autotest.Wait(1);
+        }
         // ev_storage_fill <resource>: fills every human ship's storage with the resource. ev_storage_clear <resource>: takes all of it out. Test only.
         Autotest.Commands["ev_storage_fill"] = arg =>
         {

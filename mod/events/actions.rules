@@ -11,6 +11,11 @@
 	ToAdd = &<events/sealed_case.rules>
 }
 {
+	Action = Add
+	AddTo = "<resources/resources.rules>/Resources"
+	ToAdd = &<events/flight_recorder.rules>
+}
+{
 	Action = Overrides
 	OverrideIn = "<modes/career/mission_metatypes.rules>"
 	Overrides

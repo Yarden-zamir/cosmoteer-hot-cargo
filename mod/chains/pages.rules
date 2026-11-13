@@ -238,11 +238,11 @@ Events
 	{
 		ID = blackbox_playback
 		Title = "The Black Box: Playback"
-		Text = "The recorder's last hours play on your screen: patrol routes, rendezvous points and a courier schedule. The station's broker already asks for a price."
+		Text = "Your navigator's copy of the recorder plays on your screen: patrol routes, rendezvous points and a courier schedule. The broker already asks a price for the copy."
 		Choices
 		[
 			{
-				Text = "Sell it to the broker."
+				Text = "Sell the copy to the broker."
 				Outcomes [ { Text = "The broker pays without haggling, which tells you it was worth more."; Money = 0.8; ChainResult = sold } ]
 			}
 			{
@@ -250,7 +250,7 @@ Events
 				Outcomes [ { Text = "Your navigator copies every route into the charts."; Heat = -15; ChainResult = routes } ]
 			}
 			{
-				Text = "Offer it back to the corporation for a lighter trail."
+				Text = "Offer the copy to the corporation for a lighter trail."
 				Outcomes
 				[
 					{ Weight = 40; Text = "A corporate clerk takes the deal. Your trail goes cold, for now."; Heat = -30; ChainResult = deal }

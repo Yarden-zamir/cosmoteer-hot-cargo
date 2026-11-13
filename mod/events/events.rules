@@ -918,6 +918,30 @@ Events
 		]
 	}
 
+	// The Black Box hand-over (spec 1107): the station's broker takes the recorder. The Playback page (chains) follows at the station.
+	{
+		ID = blackbox_broker
+		Trigger = Hail
+		HailTarget = Contact
+		HailLine = "Hand over the flight recorder."
+		MaxPerRun = 0
+		Need { Resources = [{ ID = yarden_zamir.flight_recorder; Amount = 1 }] }
+		Title = "The Black Box: The Broker"
+		Text = "The broker's man waits at the airlock with a padded case. Your navigator asks for one minute with the recorder first."
+		Choices
+		[
+			{
+				Text = "Hand it over."
+				Cost { Resources = [{ ID = yarden_zamir.flight_recorder; Amount = 1 }] }
+				Outcomes [ { Text = "The case snaps shut. Your navigator got the logs, and your pay waits at the station."; HandOver = true } ]
+			}
+			{
+				Text = "Not yet."
+				Outcomes [ { Text = "\"The broker doesn't like to wait.\"" } ]
+			}
+		]
+	}
+
 	// ---- Station
 
 	{

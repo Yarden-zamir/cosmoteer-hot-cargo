@@ -24,8 +24,9 @@ namespace HotCargo.Events;
 /// <summary>
 /// Rules type "HotCargoHandOver" (spec 1101 to 1103, 1105): an exchange with the Contact ship in its comms. Page is the Hail event
 /// (HailTarget = Contact) that the contact shows while this objective is active; its outcome with HandOver = true calls <see cref="Deliver"/>.
-/// With a ResourceType, the players carry one unit and hand it over: the accepting player's ship gets it on accept (<see cref="MissionCargo"/>),
-/// and the objective fails when no unit is left in the players' ships or loose in the system. Without one, LineKey names the exchange.
+/// With a ResourceType, the players carry one unit and hand it over. GiveOnAccept: the accepting player's ship gets it on accept
+/// (<see cref="MissionCargo"/>). Otherwise the players first recover it (salvage, a pickup); the step reads "Recover" until the fleet holds it.
+/// Once held, the objective fails when no unit is left in the players' ships or loose in the system. Without a ResourceType, LineKey names the exchange.
 /// Fails when the contact dies.
 /// Limit: the lost check counts units of the resource, not units of this mission. Two open jobs with the same item fail only when every
 /// unit is gone. Revisit when a second mission gives out the same item.
@@ -41,6 +42,13 @@ internal sealed class HandOverObjective : Objective
     public sealed class Spawner : ObjectiveSpawner
     {
         [Serialize(Optional = true), PortableHash] public ID<ResourceRules>? ResourceType;
+        /// <summary>The accept loads the unit. False: the players must recover it first (spec 1107).</summary>
+        [Serialize(Optional = true), PortableHash] public bool GiveOnAccept = true;
+        /// <summary>
+        /// The ship that holds the unit to recover. The first time it is live, it gets exactly one unit (a rules ResourceLoadout
+        /// fills every storage tile, so it cannot give exactly one). Salvage or capture it to get the unit out.
+        /// </summary>
+        [Serialize(Optional = true), PortableHash] public SpawnedObjectSearch? SourceShipTag;
         [Serialize, PortableHash] public SpawnedObjectSearch ContactShipTag = null!;
         /// <summary>The Hail event (events.rules) that the contact's comms show for this exchange.</summary>
         [Serialize, PortableHash] public string Page = "";
@@ -56,9 +64,18 @@ internal sealed class HandOverObjective : Objective
             invalid = !objects.TryFindObject(ContactShipTag, loc, rand, out var contact);
             if (invalid) return null;
             ObjectID id = contact!.UniqueID ?? throw new InvalidOperationException($"contact tag {ContactShipTag} found an object without an ID");
+            ObjectiveTargetShip? source = null;
+            if (SourceShipTag is not null)
+            {
+                if (ResourceType is null || GiveOnAccept) throw new InvalidDataException("a SourceShipTag needs a ResourceType and GiveOnAccept = false");
+                var found = objects.FindObject(SourceShipTag, loc, rand);
+                source = new ObjectiveTargetShip(sim.RequireGame(), sim.NodeId(), found.UniqueID ?? throw new InvalidOperationException($"source tag {SourceShipTag} found an object without an ID"));
+            }
             return new HandOverObjective(ResourceType, new ObjectiveTargetShip(sim.RequireGame(), sim.NodeId(), id), Page)
             {
                 LineKey = LineKey,
+                GiveOnAccept = GiveOnAccept,
+                Source = source,
                 AreaDoodadID = ContactAreaTag is null ? null : objects.FindObject(ContactAreaTag, loc, rand).UniqueID,
                 Tier = Math.Max(1, ((Cosmoteer.Modes.Career.CareerSimModeManager)sim.Mode).TierFields.GetTier(contact.Location.Center)),
             };
@@ -69,6 +86,22 @@ internal sealed class HandOverObjective : Objective
     [Serialize] public ObjectiveTargetShip Contact { get; private set; }
     [Serialize] public string Page { get; private set; }
     [Serialize(Optional = true)] public string? LineKey { get; private set; }
+    [Serialize(Optional = true)] public bool GiveOnAccept { get; private set; } = true;
+    /// <summary>The fleet held the unit at least once (the accept loaded it, or the players recovered it). The lost check starts here.</summary>
+    [Serialize(Optional = true)] public bool Held { get; private set; }
+    [Serialize(Optional = true)] public ObjectiveTargetShip? Source { get; private set; }
+    /// <summary>The source ship got its one unit.</summary>
+    [Serialize(Optional = true)] public bool Seeded { get; private set; }
+
+    /// <summary>Puts the one unit into the source ship once it is live. Sim tick, for every open hand-over (its turn or not).</summary>
+    internal void SeedSource(SimRoot sim)
+    {
+        // By ID in this sim: the source is junk, and an objective that is not running yet does not track its target.
+        if (Seeded || Source is null || sim.NodeId() != Source.MapNodeID || sim.Ships[Source.ShipID] is not { } ship || ResourceType is not { } item) return;
+        if (ship.Resources.AddResources(item, 1, excludeConstructionSinks: true) != 1) throw new InvalidOperationException($"{ship.Metadata.PlainShipName} has no storage for {item}");
+        Seeded = true;
+        Log.Info($"hand-over: {item} placed in {ship.Metadata.PlainShipName}");
+    }
     [Serialize(Optional = true)] public int Tier { get; private set; } = 1;
     [Serialize(Optional = true)] public ObjectID? AreaDoodadID { get; private set; }
 
@@ -109,10 +142,15 @@ internal sealed class HandOverObjective : Objective
         o.Complete();
     }
 
-    /// <summary>Units in the players' ships (stored or carried by crew) and loose in this system.</summary>
+    /// <summary>Units in the players' ships, stored or carried by crew.</summary>
+    public static int FleetUnits(SimRoot sim, ID<ResourceRules> resource) =>
+        Tech.Vaults.HumanShips(sim).Sum(s => s.Resources.GetResourceTotal(resource, includeStored: true, includeCarried: true, includeOffShipCarried: true));
+
+    /// <summary>Units in the players' ships and loose in this system.</summary>
     public static int UnitsLeft(SimRoot sim, ID<ResourceRules> resource) =>
-        Tech.Vaults.HumanShips(sim).Sum(s => s.Resources.GetResourceTotal(resource, includeStored: true, includeCarried: true, includeOffShipCarried: true))
-        + sim.Nuggets.Where(n => n.ResourceType == resource).Sum(n => n.Quantity);
+        FleetUnits(sim, resource) + sim.Nuggets.Where(n => n.ResourceType == resource).Sum(n => n.Quantity);
+
+    internal void MarkHeld() => Held = true;
 
     public override void GetIntegrityHash(IntegrityHash iHash)
     {
@@ -150,7 +188,8 @@ internal sealed class HandOverObjective : Objective
     {
         string contact = Contact.GetXmlTargetName(game.Sim);
         var text = ResourceType?.GetResourceRules() is { } r
-            ? Strings.KeyStringFmt("HotCargoEventMissions/HandOverFmt", r.TextIconXml, r.NameKey, contact)
+            ? Held ? Strings.KeyStringFmt("HotCargoEventMissions/HandOverFmt", r.TextIconXml, r.NameKey, contact)
+                : Strings.KeyStringFmt("HotCargoEventMissions/RecoverFmt", r.TextIconXml, r.NameKey)
             : Strings.KeyStringFmt(LineKey ?? throw new InvalidOperationException("a hand-over without an item has no LineKey"), contact);
         lines.Add(new DisplayLine
         {
@@ -191,8 +230,26 @@ internal sealed class HandOverObjective : Objective
     void OnTick(object? sender, SimRoot sim) => Errors.Guard("hand-over tick", () =>
     {
         if (Mission?.Game is not { } game || Completion != CompletionState.InProgress || sim != game.Sim) return;
-        MissionCargo.Watch(game);
-        if (ResourceType is not { } item || UnitsLeft(sim, item) > 0) return;
+        if (ResourceType is not { } item) return;
+        if (!Held)
+        {
+            if (FleetUnits(sim, item) == 0)
+            {
+                // The source is gone (destroyed, or salvaged with the unit destroyed) and no unit drifts loose: it is lost.
+                bool sourceGone = Source is { } src && sim.NodeId() == src.MapNodeID && sim.Ships[src.ShipID] is null && !sim.Stasis.Any(st => st.ReservedObjectID == src.ShipID);
+                if (!sourceGone || UnitsLeft(sim, item) > 0) return;
+                Log.Info($"hand-over: the source of {item} is gone and no unit is loose; the job fails");
+                string lost = item.GetResourceRules().NameKey.Text;
+                Fail();
+                Ux.UxKit.CenterText(game, Strings.FormatText("HotCargoEventMissions/HandOverLostFmt", lost));
+                return;
+            }
+            Held = true;
+            Log.Info($"hand-over: the fleet recovered {item}");
+            OnDisplayLinesChanged();
+            return;
+        }
+        if (UnitsLeft(sim, item) > 0) return;
         Log.Info($"hand-over: no {item} left in the fleet or the system; the job fails");
         // Fail() can take the mission out of the log at once, so read everything first.
         string name = item.GetResourceRules().NameKey.Text;
@@ -210,12 +267,14 @@ internal sealed class HandOverObjective : Objective
 /// </summary>
 public static class MissionCargo
 {
-    static IEnumerable<ID<ResourceRules>> Items(Mission m)
+    static List<HandOverObjective> Given(Mission m)
     {
         var found = new List<HandOverObjective>();
         m.GetObjectives(found);
-        return found.Select(o => o.ResourceType).OfType<ID<ResourceRules>>();
+        return found.Where(o => o.ResourceType is not null && o.GiveOnAccept).ToList();
     }
+
+    static IEnumerable<ID<ResourceRules>> Items(Mission m) => Given(m).Select(o => o.ResourceType!.Value);
 
     public static bool HasItems(Mission m) => Items(m).Any();
 
@@ -239,8 +298,20 @@ public static class MissionCargo
             if (ship.Resources.AddResources(r, 1, excludeConstructionSinks: true) != 1) throw new InvalidOperationException($"{ship.Metadata.PlainShipName} did not take {r}");
             Log.Info($"mission cargo: {r} loaded into {ship.Metadata.PlainShipName} for {m.MetatypeID} {m.MissionID}");
         }
+        foreach (var o in Given(m)) o.MarkHeld();
         Watch(m.Game);
     }
+
+    /// <summary>Sim tick (Run.Hooks): watches the mission log and fills source ships of open hand-overs.</summary>
+    internal static void OnTick(Run run, SimRoot sim, double dt) => Errors.Guard("mission cargo tick", () =>
+    {
+        if (sim != run.Game.Sim) return;
+        Watch(run.Game);
+        var found = new List<HandOverObjective>();
+        foreach (Mission m in run.Mode.Missions) m.GetObjectives(found);
+        foreach (var o in found)
+            if (o.Completion == CompletionState.InProgress && o.Source is not null && !o.Seeded) o.SeedSource(sim);
+    });
 
     static MissionList? _watched;
 
@@ -261,7 +332,7 @@ public static class MissionCargo
         m.GetObjectives(open);
         foreach (var o in open.Where(o => o.Completion != CompletionState.Completed))
         {
-            if (o.ResourceType is not { } item) continue;
+            if (o.ResourceType is not { } item || !o.Held) continue;
             int removed = Tech.Vaults.HumanShips(sim).OrderBy(s => s.UniqueID).Select(s => s.Resources.RemoveResources(item, 1)).FirstOrDefault(n => n > 0);
             Log.Info($"mission cargo: {m.MetatypeID} {m.MissionID} left the log without the hand-over; removed {removed} {item}");
         }
