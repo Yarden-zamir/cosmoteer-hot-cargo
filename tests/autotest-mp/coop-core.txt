@@ -108,17 +108,22 @@ expecttacticsany Sniper
 expecttacticsany Defensive
 
 step shipai.editor
-# The client edits in the editor window: apply a preset, change the action of row 1, move row 3 up. Each edit is one input.
+# The client edits in the editor window: apply a preset, change the action of row 1, move row 3 up, edit a condition term.
+# Each edit is one input.
 on 1 tactics_editor open
 on 1 tactics_editor apply Escort
 on 1 tactics_editor act 1 RetreatRepair
 on 1 tactics_editor up 3
+# A term edit: add a condition, pick it, and turn NOT on. Each one is one input.
+on 1 tactics_editor addterm 1
+on 1 tactics_editor cond 1 HuntersInSystem 2
+on 1 tactics_editor not 1 2
 on 1 wait 3
-on 1 expecttactics HC1:HealthBelow=25>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
+on 1 expecttactics HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
 on 1 expect tactics_auto == 1
 on 1 tactics_editor close
 wait 2
-expecttacticsany HC1:HealthBelow=25>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
+expecttacticsany HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
 
 step shipai.fight
 # Both machines run the same tactics decisions in a fight.
@@ -146,12 +151,12 @@ expect hc_trap_state == 2
 expect stages >= 1
 expect heat >= 30
 expecttacticsany Defensive
-expecttacticsany HC1:HealthBelow=25>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
+expecttacticsany HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
 expect tactics_any_auto == 2
 on 1 waitfor active == 1 60
 on 1 expectevent smuggler_den
 on 1 expect hc_trap_state == 2
-on 1 expecttactics HC1:HealthBelow=25>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
+on 1 expecttactics HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
 
 step core.save-load
 # Back to the game setup with the connection kept, load the save (from before the resync) for both players, start.

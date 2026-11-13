@@ -1,0 +1,26 @@
+# Ship tactics and calls for help (spec 413, 414): a hunter that calls is seen, becomes the target, and the disruptor fire row
+# does not change weapons that are not disruptors.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+shipai Log on
+aiset FleeEnabled false
+aiset RegroupEnabled false
+aiset CallSeconds 60
+aiset CallCooldownSeconds 1
+stageset Strike WaveGapSeconds 300
+tactics HC1:EnemyCalling>TargetCaller;Always>TargetNearest;Always>CloseIn;Always>FireDisruptors=0
+tacticsauto on
+spawnstage Strike
+waitfor ai_calling >= 1 150
+waitfor tactics_target_row == 0 10
+tactics_log caller
+# The starting ship has no disruptor or EMP weapon, so no weapon is aimed or held by that row.
+expect tactics_aimed == 0
+expect tactics_held == 0
+# A disruptor hit ends the call; the caller row stops matching.
+disrupt disruptor
+waitfor ai_calling == 0 5
+waitfor tactics_target_row == 1 10
+quit
