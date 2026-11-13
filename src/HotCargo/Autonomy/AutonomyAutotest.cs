@@ -49,7 +49,7 @@ internal static class AutonomyAutotest
     {
         // auto_build <name> <where> <part>@<x>,<y>[,<rot>] ...: builds a ship of the acting player from vanilla and mod parts, complete,
         // with full storages and batteries. where: player (next to the first own ship), station (next to the nearest trading station),
-        // asteroid (next to the nearest asteroid), or x,y offset from the first own ship. The test fields then read this ship.
+        // asteroid (next to the nearest live asteroid with ore), or x,y offset from the first own ship. The test fields then read this ship.
         Autotest.Commands["auto_build"] = arg => Build(arg);
         Autotest.Commands["auto_ship"] = arg => _shipName = arg;
         // Live ships with the auto_ship name. Unlike the other fields it does not throw with none, so a test can wait for a build
@@ -232,8 +232,10 @@ internal static class AutonomyAutotest
             "away" => AutonomyWorld.Stations(home).MinBy(st => st.Center.DistanceTo(home.DetWorldCenter)) is { } st
                 ? home.DetWorldCenter + Vector2.FromAngle(st.Center.DirectionTo(home.DetWorldCenter)) * 1500f
                 : home.DetWorldCenter + new Vector2(1500f, 0f),
-            "asteroid" => sim.Ships.AllShips.Where(s => s.Rules.IsAsteroid && s.Parts.Count > 0).MinBy(s => s.DetWorldCenter.DistanceTo(home.DetWorldCenter))?.DetWorldCenter
-                          ?? throw new InvalidOperationException("no live asteroid"),
+            // The nearest live asteroid with ore deposits (a plain rock gives nothing to mine), by distance, then ID.
+            "asteroid" => sim.Ships.AllShips.Where(s => s.Rules.IsAsteroid && s.Parts.Any(p => p.Rules.Resources.Length > 0))
+                              .OrderBy(s => s.DetWorldCenter.DistanceTo(home.DetWorldCenter)).ThenBy(s => s.UniqueID).FirstOrDefault()?.DetWorldCenter
+                          ?? throw new InvalidOperationException("no live asteroid with ore"),
             _ => home.DetWorldCenter + Offset(tokens[1]),
         };
         ship.WorldCenter = Autotest.ClearSpotNear(sim, near, 400f, ship.WorldBoundingRadius);

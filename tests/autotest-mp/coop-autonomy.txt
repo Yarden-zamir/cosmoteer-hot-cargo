@@ -5,6 +5,8 @@ mphost {PORT}
 mpstart 2
 mp ev_set Enabled false
 mp godmode on
+# Decision traces in the log (ship tactics [...] lines), for a failed step.
+mp shipai Log on
 closepanel
 on 1 closepanel
 
