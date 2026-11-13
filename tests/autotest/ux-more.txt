@@ -3,8 +3,8 @@
 newgame run
 wait 8
 expect active == 1
-# An event page waits until the run intro closes.
-event the_fence
+# An event page waits until the run intro closes. A page with plain choices: on a page with option rows, key 1 picks a row (tested below).
+event ghost_signal
 expect ux_event_open == 0
 closepanel
 wait 1
