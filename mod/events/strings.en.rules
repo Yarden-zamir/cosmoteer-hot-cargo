@@ -1,16 +1,16 @@
 HotCargoEventMissions
 {
 	Rivals = "Rival Crew"
-	RivalsDesc = "Rival thieves want your cargo. Every station in the {mission_location} system posts a bounty on them. Take them apart and collect {money}."
+	RivalsDesc = "Destroy the rival thieves. Every station here pays a bounty on them."
 	Siege = "Freighter Under Fire"
 	Bounty = "Bounty Hunters"
-	BountyDesc = "Local bounty hunters want the price on your hull. Each one you put down pays its own bounty in the {mission_location} system: {money}."
+	BountyDesc = "Destroy the bounty hunters. Each one pays its own bounty."
 	Tow = "Tow Job"
-	TowDesc = "A freighter with a dead drive needs a tow to the nearest station in the {mission_location} system. Pull it in with a tractor beam and keep it in one piece. The crew pays {money} on arrival."
+	TowDesc = "Tow the dead freighter to the nearest station.\nKeep it in one piece."
 	TowFmt = "Tow {0} to the nearest station"
 	Courier = "Courier Job"
-	CourierDesc = "A sealed case, no questions. Fly it to the contact on the far side of the {mission_location} system within {time_limit_minutes} minutes, then come back for {money}. Good pay, quiet job: little fame, little attention."
-	SiegeDesc = "Raiders have a freighter pinned in the {mission_location} system, and its shields are failing. Drive them off before time runs out, and the crew pays {money}."
+	CourierDesc = "Fly a sealed case to the contact across the system and back within {time_limit_minutes} min."
+	SiegeDesc = "Drive the raiders off a pinned freighter before its shields fail."
 }
 
 HotCargoEvents
@@ -19,7 +19,8 @@ HotCargoEvents
 	WantedHintFmt = "Wanted by {0}, and the corporation hunts you. Ways out: pay the bounty (hail their police), leave the system, outlast the search, or find a smuggler who fixes records."
 	WantedCleared = "Wanted cleared"
 	CarrierCallingFmt = "{0} is calling. Fly within comms range to answer, or hail it."
-	CarrierGone = "The ship is gone, and so is the offer."
+	CarrierDestroyedFmt = "The {0} was destroyed, and its offer with it."
+	CarrierGone = "The ship was destroyed, and its offer with it."
 	CarrierRefuses = "The station stops answering. Your heat is too high for them."
 	RelicSensed = "Your vault hums: stolen tech nearby"
 	RelicSensedChat = "Your vault picks up a tech signature from a dead ship nearby. Another crew's haul? Fly close to look."

@@ -1,0 +1,37 @@
+# Mission descriptions: a story chain stage, a Hot Cargo escort, a mechanics mission and a shady offer in the comms list.
+# Main slot only (needs graphics): scripts/screens.sh tests/screens/descs.txt <out-dir>
+render on
+newgame run
+wait 8
+closepanel
+wait 1
+uxpick 3
+wait 1
+uxpick 1
+ev_set Enabled false
+godmode on
+chain_force fence_ledger
+chain_tostation
+tostation
+wait 2
+hc_generate all
+mech_generate siege
+wait 2
+comms chain
+wait 1
+commsmission
+wait 1
+commsselect Chain
+wait 1
+screenshot desc-01-chain
+commsselect Convoy
+wait 1
+screenshot desc-02-convoy
+commsselect Drone Siege
+wait 1
+screenshot desc-03-siege
+commsselect Discreet
+wait 1
+screenshot desc-04-shady
+comms close
+quit

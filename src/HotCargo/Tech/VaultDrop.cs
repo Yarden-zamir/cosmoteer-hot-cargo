@@ -9,7 +9,7 @@ using HotCargo.Core;
 namespace HotCargo.Tech;
 
 /// <summary>
-/// Spec 65, 445: a destroyed vault drops its tech as crates (the resource drop rate StorageDestroyed = 100 %).
+/// Spec 65, 445: a vault loses tech only when it is destroyed. Then it drops its tech as crates (the resource drop rate StorageDestroyed = 100 %).
 /// With chance VaultTechLossChance the tech burns instead: this empties the tile before the game drops its nuggets, and a toast and
 /// a chat line tell the players. The roll is a FastRand seeded from the ship, the tile and the sim tick, so every client rolls the same.
 /// </summary>
@@ -33,11 +33,13 @@ static class VaultDropPatch
         if (roll >= run.T.Tech.VaultTechLossChance)
         {
             Log.Info($"destroyed vault at {cell} drops {units} tech as crates (roll {roll:0.000})");
+            Onboarding.RunLog.VaultDestroyed(run, units, burned: false);
             return;
         }
         __instance.Resources = 0;
         LostMessages++;
         Log.Info($"destroyed vault at {cell}: {units} tech burned (roll {roll:0.000} < {run.T.Tech.VaultTechLossChance})");
+        Onboarding.RunLog.VaultDestroyed(run, units, burned: true);
         string text = string.Format(Strings.GetText("HotCargoTech/VaultBurnedFmt"), units);
         // Destruction can run on a worker thread, so the toast and the chat line wait for the next frame.
         Run.OnNextFrame(() =>

@@ -1,25 +1,15 @@
 # Events (EVENTS.md): forced events, choices and their effects on money, heat, tech, flags and spawns.
 newgame run
 wait 8
-# The Start event opens StartDelaySeconds (3 game s) after a new run.
-expectevent getaway
+# No page opens at the start of a run.
+expect ev_pending == 0
 # Every event loads, validates and renders with the starting fleet.
 eventviewall
-eventview
-expect ev_stdmoney > 0
-expectchoice 1 enabled
-expectchoice 2 enabled
-# Getaway, choice 2: sell one crate for 1.2 x the tech value.
-ev_mark
-choose 2 1
-expect ev_tech_gain == -1
-expect ev_money_gain >= 11000
-expect ev_pending == 0
-expect ev_result >= 1
-eventview
 # Fence: tech for money and less heat.
 heat 40
 event the_fence
+eventview
+expect ev_stdmoney > 0
 expectchoice 1 enabled
 expectchoice 2 enabled
 ev_mark
@@ -41,9 +31,9 @@ choose 2 1
 expecttagged hc_ev_corp >= 2
 expect ev_heat_gain >= 19
 expect ev_pending == 0
-# Forged codes: the flag shows the hidden choice, and using it clears the flag.
-event getaway
-choose 1 1
+# Forged codes from the Fence's Ledger page: the flag shows the hidden choice, and using it clears the flag.
+event fence_offer
+choose 2 1
 expectflag fake_codes 1
 event corporate_checkpoint
 expectchoice 1 enabled
@@ -72,3 +62,4 @@ event odd_merchant
 choose last
 expect ev_pending == 0
 quit
+# tier: smoke

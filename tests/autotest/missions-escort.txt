@@ -4,6 +4,11 @@ wait 8
 hc_generate escort
 hc_accept escort
 expect hc_active_escort == 1
+# Route (spec 36): MissionTunables.EscortRouteShare (0.65) of the nearest gate distance, so it scales with the system.
+expect hc_escort_route_share >= 0.6
+expect hc_escort_route_share <= 0.7
+expect hc_escort_route >= 7000
+expect hc_escort_marker == 1
 # Convoy cover: the offer carries MissionTunables.EscortHeatChange, and the reward lowers heat. Heat stays below the first stage, so no hunter disturbs the escort.
 expect hc_escort_cover == -8
 heat 20
@@ -23,4 +28,7 @@ expect hc_escort_done == 0
 hc_escort_arrive
 wait 3
 expect hc_escort_done == 1
+# Completion removes the destination marker.
+expect hc_escort_marker == 0
 quit
+# tier: smoke

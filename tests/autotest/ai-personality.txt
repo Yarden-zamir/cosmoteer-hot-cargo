@@ -28,6 +28,9 @@ aitrait Fringe Scrappers Bait 1
 aitrait Fringe Skirmishers Kite 1
 aitrait Fringe Scrappers Kite 1
 expect ai_g_bait >= 1
+# The plan stays hidden (spec 368): no mouseover names a personality. A weak back never kites (spec 1032).
+expect ai_mouseover_tells == 0
+expect ai_weakback_kiters == 0
 # Without thrusters every ship is heavy (spec 363): none kites or baits, whatever its personality wants.
 aiset ProfileRefreshSeconds 1
 aiheavy
@@ -41,3 +44,4 @@ expect ai_heavy_kiters == 0
 aiset PersonalitiesEnabled false
 expect ai_heavy_kiters == 0
 quit
+# tier: smoke

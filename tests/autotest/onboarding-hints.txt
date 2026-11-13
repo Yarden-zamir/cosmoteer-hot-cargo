@@ -4,13 +4,16 @@ tutorials on
 newgame run
 wait 8
 closepanel
-# The run page shows after a few seconds of play. The Start event shows the events page.
+# The run page shows after a few seconds of play. No event page opens at the start, so the events page waits.
 expect hint_hc_run == 1
 expectpage hc_run shown
-expectevent getaway
+expect hint_hc_events == 0
+ev_set Enabled false
+# The first event page shows the events page.
+event the_fence
+wait 1
 expect hint_hc_events == 1
 choose 3 1
-ev_set Enabled false
 # Spec 723: vanilla tutorials wait in the first minutes of a run and while a Hot Cargo page is new. Hot Cargo buttons come first.
 expect hints_unread == 1
 expect codex_vanilla_shown == 0
@@ -42,7 +45,7 @@ vault damage 0.05
 wait 1
 expect hint_hc_vault == 1
 # First heat stage, then the hunters that it sends.
-heat 30
+stage
 wait 2
 expect hint_hc_heat == 1
 waitfor hunters >= 1 30
@@ -50,7 +53,7 @@ wait 1
 expect hint_hc_hunters == 1
 # Each page shows once: heat that drops and rises again does not show it again.
 heat -100
-heat 30
+stage
 wait 2
 expect hint_hc_heat == 1
 # Wanted while heat is at a stage: the Wanted warning.
@@ -91,3 +94,6 @@ lose
 wait 1
 expect runlog_lost == 1
 quit
+# tier: smoke
+# Fails every run in the Mac sim: the Mac draws the same hunters each run, and their combat blocks the save (docs/mac-sim-spike.md).
+# runner: pc

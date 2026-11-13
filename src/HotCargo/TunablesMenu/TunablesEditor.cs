@@ -17,29 +17,15 @@ public static class TunablesEditor
 {
     const string FileHeader =
         "// Hot Cargo tunables: only the values that differ from the defaults.\n" +
-        "// The in-game menu (Esc, Hot Cargo settings) writes this file. You can also edit it; single player reloads it while the game runs.\n" +
+        "// The in-game menu (Esc, Hot Cargo settings) writes this file. You can also edit it; the game reloads it while it runs (single player, and the host in co-op).\n" +
         "// All values and their defaults are in tunables.defaults.rules.\n";
-
-    /// <summary>Multiplayer host: the values of the last change that waits for its input to execute.</summary>
-    static (Run Run, Tunables Values, string Hash)? _sent;
 
     public static bool CanEdit(Run run) => !run.IsMultiplayer || run.Game.NetManager.IsHost;
 
     /// <summary>The values that the menu shows and edits: the values in effect, or the host's last change while its input travels.</summary>
-    public static Tunables Current(Run run) => Pending(run) is { } s ? s.Values : run.T;
+    public static Tunables Current(Run run) => run.LatestTunables.Values;
 
-    public static string CurrentHash(Run run) => Pending(run) is { } s ? s.Hash : run.State.TunablesHash;
-
-    /// <summary>
-    /// Limit: a sent change counts as pending until the live hash equals its hash. The host's own input always executes,
-    /// so this ends within the input delay. Revisit if host inputs can be dropped.
-    /// </summary>
-    static (Run Run, Tunables Values, string Hash)? Pending(Run run)
-    {
-        if (_sent is { } s && s.Run == run && run.State.TunablesHash != s.Hash) return s;
-        _sent = null;
-        return null;
-    }
+    public static string CurrentHash(Run run) => run.LatestTunables.Hash;
 
     /// <summary>A deep copy, made through the same text that the file holds.</summary>
     public static Tunables Copy(Tunables t) => TunablesFile.Parse(Encoding.UTF8.GetBytes(TunablesDefaults.Write(t))).Values;
@@ -48,7 +34,7 @@ public static class TunablesEditor
     public static string? Change(Run run, Action<Tunables> edit)
     {
         if (!CanEdit(run)) return Text("ClientReadOnly");
-        if (run.HostTunablesPending || run.HostTunablesInFlight) return Text("HostFileInFlight");
+        if (run.HostTunablesPending) return Text("HostFileInFlight");
         var before = Current(run);
         var candidate = Copy(before);
         edit(candidate);
@@ -59,12 +45,7 @@ public static class TunablesEditor
         try { loaded = TunablesFile.Parse(bytes); }
         catch (Exception ex) when (ex is InvalidDataException or DeserializeException) { return ex.Message; }
         TunablesFile.Write(bytes);
-        if (run.IsMultiplayer)
-        {
-            _sent = (run, loaded.Values, loaded.Hash);
-            run.Game.NetManager.EnqueueInput(new TunablesInput(bytes));
-            Log.Info($"tunables menu: sent {loaded.Hash} to all players");
-        }
+        if (run.IsMultiplayer) TunablesInput.Send(run, loaded);
         else
         {
             run.ApplyTunables(loaded);
@@ -82,6 +63,37 @@ public static class TunablesEditor
         try { value = Parse(type, text); }
         catch (FormatException ex) { return ex.Message; }
         return Change(run, t => TunablePath.Set(t, path, value));
+    }
+
+    /// <summary>
+    /// Applies several "set PATH VALUE" and "reset PATH" lines as one change (scripts/tune.sh, spec 853): all or none.
+    /// Returns null on success or when nothing changed, else the reason for the rejection.
+    /// </summary>
+    public static string? Apply(Run run, IReadOnlyList<string> lines)
+    {
+        var edits = new List<(string Path, object? Value)>();
+        var defaults = new Tunables();
+        foreach (string line in lines)
+        {
+            try
+            {
+                switch (line.Split(' ', 3, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    case ["set", var path, var text]:
+                        var field = TunablePath.LastField(typeof(Tunables), path);
+                        edits.Add((path, Parse(path.EndsWith(']') ? TunablePath.ElementType(field.FieldType)! : field.FieldType, text)));
+                        break;
+                    case ["reset", var path]:
+                        edits.Add((path, TunablePath.Get(defaults, path)));
+                        break;
+                    default:
+                        return $"expected 'set PATH VALUE' or 'reset PATH', got '{line}'";
+                }
+            }
+            catch (Exception ex) when (ex is FormatException or InvalidOperationException) { return $"{line}: {ex.Message}"; }
+        }
+        try { return Change(run, t => { foreach (var (path, value) in edits) TunablePath.Set(t, path, value); }); }
+        catch (InvalidOperationException ex) { return ex.Message; }
     }
 
     /// <summary>Sets the value at the path to its default. Returns an error when the path has no default (a list item that the defaults do not have).</summary>

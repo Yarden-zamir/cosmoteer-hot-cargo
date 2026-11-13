@@ -24,44 +24,38 @@ public sealed class DiplomacyTunables
     [Serialize(Optional = true)] public float DemandHailChance = 0.8f;
     /// <summary>Game seconds after a hunter demand hail before another hunter can hail.</summary>
     [Serialize(Optional = true)] public float DemandHailGapSeconds = 60f;
-    /// <summary>Game seconds after the hunters accept a deal, or a hunter surrenders, before they jump out of the system.</summary>
+    /// <summary>Game seconds after the hunters accept a pay-off or a bluff, or a hunter surrenders, before they jump out of the system.</summary>
     [Serialize(Optional = true)] public float HunterLeaveSeconds = 8f;
-    /// <summary>Heat lost when the hunters leave after a hand-over and its punishment, or after a bluff: they believe the tech is gone.</summary>
+    /// <summary>Heat lost when the hunters leave after a pay-off or a bluff: they believe the tech is gone.</summary>
     [Serialize(Optional = true)] public float HandOverHeatDrop = 40f;
 
-    // ---- Punishment after a hand-over (spec 594 to 597)
+    // ---- Pay them off (spec 594 to 597). Chance = min(PayChanceCap, crowd × (tech part + money part + crew part)).
 
-    /// <summary>Game seconds that the punishment offer stays open. When it runs out, it counts as refused.</summary>
-    [Serialize(Optional = true)] public float PunishSeconds = 90f;
-    /// <summary>Chance of "talk your way out" alone.</summary>
-    [Serialize(Optional = true)] public float PunishTalkChance = 0.05f;
-    /// <summary>Most money on the money slider, in event money units (a standard mission's pay).</summary>
-    [Serialize(Optional = true)] public float PunishMoneyMaxUnits = 2f;
-    /// <summary>Chance of the money option at the full slider. Linear from 0.</summary>
-    [Serialize(Optional = true)] public float PunishMoneyChance = 0.6f;
-    /// <summary>Most money on the personal bribe slider, in event money units.</summary>
-    [Serialize(Optional = true)] public float PunishBribeMaxUnits = 1.5f;
-    /// <summary>Chance of the bribe at the full slider with no other hunter in the system. Falls like the deal with more hunters.</summary>
-    [Serialize(Optional = true)] public float PunishBribeChance = 0.8f;
-    /// <summary>With more other hunters than this in the system, a bribe adds nothing. Scales with co-op enemy scaling.</summary>
-    [Serialize(Optional = true)] public int PunishBribeMaxOtherHunters = 4;
-    /// <summary>Most crew that the players can send to cryo jail.</summary>
-    [Serialize(Optional = true)] public int PunishCrewMax = 6;
-    /// <summary>Chance added for each crew member sent to cryo jail.</summary>
-    [Serialize(Optional = true)] public float PunishCrewChancePer = 0.08f;
-    /// <summary>The combined chance of the selected options never goes above this.</summary>
-    [Serialize(Optional = true)] public float PunishChanceCap = 0.9f;
-    /// <summary>Chance that the hunters accept a hand-over of 1 unit out of many. The chance rises linearly to HandOverChanceMax for all but one unit.</summary>
-    [Serialize(Optional = true)] public float HandOverChanceMin = 0.15f;
-    /// <summary>Chance that the hunters accept a hand-over of all units.</summary>
-    [Serialize(Optional = true)] public float HandOverChanceMax = 0.95f;
-    /// <summary>Chance lost when the largest pile of tech left after the hand-over is as big as the whole stock. Scales with that pile's share.</summary>
-    [Serialize(Optional = true)] public float HandOverVisiblePenalty = 0.5f;
-    /// <summary>Chance added per point of leverage (-1 when the hunters are 4 times stronger, +1 when the players are).</summary>
-    [Serialize(Optional = true)] public float HandOverPerLeverage = 0.15f;
-    /// <summary>Base chance that a bluff works ("That's all I have").</summary>
+    /// <summary>Pay-off chance part of the tech row when it offers the whole stock. Scales with the share of the stock offered.</summary>
+    [Serialize(Optional = true)] public float PayTechChance = 0.9f;
+    /// <summary>Most money on the pay-off money slider, in event money units (a standard mission's pay).</summary>
+    [Serialize(Optional = true)] public float PayMoneyMaxUnits = 2f;
+    /// <summary>Pay-off chance part of the money row at the full slider. Linear from 0.</summary>
+    [Serialize(Optional = true)] public float PayMoneyChance = 0.6f;
+    /// <summary>Most crew that the players can send to cryo jail in a pay-off.</summary>
+    [Serialize(Optional = true)] public int PayCrewMax = 6;
+    /// <summary>Pay-off chance part for each crew member sent to cryo jail.</summary>
+    [Serialize(Optional = true)] public float PayCrewChancePer = 0.08f;
+    /// <summary>The pay-off chance never goes above this.</summary>
+    [Serialize(Optional = true)] public float PayChanceCap = 0.95f;
+    /// <summary>
+    /// Other hunters near the hailed one make a pay-off harder: the offer counts × (1 − others ÷ (this + 1)), and nothing with more others
+    /// than this. Scales with co-op enemy scaling.
+    /// </summary>
+    [Serialize(Optional = true)] public int PayMaxOtherHunters = 6;
+
+    // ---- Bluff (spec 565)
+
+    /// <summary>Share of the vault tech that a bluff hands over (at least 1 unit, never all).</summary>
+    [Serialize(Optional = true)] public float BluffShare = 0.25f;
+    /// <summary>Base chance that a bluff works ("That's all we have").</summary>
     [Serialize(Optional = true)] public float BluffChanceBase = 0.6f;
-    /// <summary>Bluff chance added when the hand-over is all units. Scales with the share handed over.</summary>
+    /// <summary>Bluff chance added when the bluff hands over all units. Scales with the share handed over (BluffShare).</summary>
     [Serialize(Optional = true)] public float BluffPerShare = 0.2f;
     /// <summary>Bluff chance lost when the largest pile left is as big as the whole stock. Scales with that pile's share. Spread the tech to bluff.</summary>
     [Serialize(Optional = true)] public float BluffVisiblePenalty = 1.2f;
@@ -69,14 +63,6 @@ public sealed class DiplomacyTunables
     [Serialize(Optional = true)] public float BluffCaughtHeat = 10f;
     /// <summary>Tech vaults closer than this (world units, part center to part center) count as one pile.</summary>
     [Serialize(Optional = true)] public float PileDistance = 5f;
-    /// <summary>Chance of a deal (pay the money value instead of tech) when no other hunter is in the area and the money covers all units.</summary>
-    [Serialize(Optional = true)] public float DealChanceAlone = 0.85f;
-    /// <summary>With more other hunters than this in the area, a deal never works. Scales with co-op enemy scaling.</summary>
-    [Serialize(Optional = true)] public int DealMaxOtherHunters = 4;
-    /// <summary>Deal chance factor when the money covers 1 unit out of many. It rises linearly to 1 for all units.</summary>
-    [Serialize(Optional = true)] public float DealShareMin = 0.4f;
-    /// <summary>Deal price per unit, times the tech value.</summary>
-    [Serialize(Optional = true)] public float DealPriceFactor = 1f;
 
     // ---- Surrender (spec 567 to 573)
 

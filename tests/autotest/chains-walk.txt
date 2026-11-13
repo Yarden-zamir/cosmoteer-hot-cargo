@@ -1,9 +1,7 @@
 # Chains (CHAINS.md): a chain walks through a stage result, a choice page, a standing offer that loops, and its end.
 newgame run
 wait 8
-# The Start event opens first. Keep the crates, then turn random events off so they do not take the event window.
-expectevent getaway
-choose 3 1
+# Random events off, so they do not take the event window.
 ev_set Enabled false
 # Every chain loads and validates. At most MaxNewChainsPerSystem (2) stations of the first system got a chain (StationChance 0.6 each),
 # and the station nearest to the fleet always has one in sector 1.
@@ -50,3 +48,4 @@ choose 3
 expectstage end
 expect chain_story >= 3
 quit
+# tier: smoke

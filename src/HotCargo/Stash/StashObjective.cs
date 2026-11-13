@@ -35,7 +35,7 @@ namespace HotCargo.Stash;
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
 [SerialDerivedType(TypeName = "HotCargoStash")]
-internal sealed class StashObjective : Objective
+internal sealed class StashObjective : Objective, Missions.IMissionMarkers
 {
     [ReflectiveSerialization(Explicit = true)]
     [SerialDerivedType(TypeName = "HotCargoStash")]
@@ -75,6 +75,8 @@ internal sealed class StashObjective : Objective
     [Serialize] public ulong RollSeed { get; private set; }
     /// <summary>The target area marker of the site. It belongs to the stash until the roll removes it.</summary>
     [Serialize(Optional = true)] public ObjectID? SitePoiID { get; private set; }
+
+    IEnumerable<ObjectID> Missions.IMissionMarkers.MarkerIds => SitePoiID is { } id ? [id] : [];
     [Serialize(Optional = true)] public StashState State { get; private set; }
     [Serialize(Optional = true)] public List<ObjectiveTargetShip> Ambushers { get; private set; } = [];
 
@@ -219,7 +221,7 @@ internal sealed class StashObjective : Objective
         {
             var tag = new ID<SimObjectSpawner>(Missions.ShadyTrapObjective.AmbushTag);
             var before = SimQueries.TaggedShips(sim, tag).Select(s => s.Id).ToHashSet();
-            Missions.ShadyAmbush.Generator.Generate(sim, new FastRand(RollSeed, 0x5354_4153_48UL), loadInstantly: true, rootLoc: near);
+            Missions.AmbushFile.Shady.Generator.Generate(sim, new FastRand(RollSeed, 0x5354_4153_48UL), loadInstantly: true, rootLoc: near);
             var spawned = SimQueries.TaggedShips(sim, tag).Select(s => s.Id).Where(id => !before.Contains(id)).Order().ToList();
             if (spawned.Count == 0) throw new InvalidOperationException("the ambush spawner made no ships");
             Ambushers = spawned.Select(id => new ObjectiveTargetShip(sim.RequireGame(), sim.NodeId(), id)).ToList();

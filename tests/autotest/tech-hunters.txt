@@ -6,7 +6,9 @@ godmode on
 tacticlog on
 tech_set LossGraceSeconds 600
 tech_set HunterGrabChance 1
-spawnstage Patrol
+# Two ships of the sector tier: the Warning response of the last sector.
+stageset Warning EarlyScale 1
+spawnstage Warning
 wait 3
 expect hunters >= 1
 tech drophunter 2

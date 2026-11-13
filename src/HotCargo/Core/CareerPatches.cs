@@ -47,10 +47,12 @@ static class CareerPatches
     static void FrameUpdate(CareerGameModeManager __instance)
     {
         if (Run.Current is not { } run || run.Mode != __instance) return;
-        if (!run.IsMultiplayer && TunablesFile.ChangedSinceLastRead()) run.ReloadTunables();
         if (run.HostTunablesPending) TunablesInput.SendFromHost(run);
+        // A client's file has no effect (spec 60), so only single player and the host watch it.
+        else if ((!run.IsMultiplayer || run.Game.NetManager.IsHost) && TunablesFile.ChangedSinceLastRead()) run.ReloadTunables();
         DebugKeys.Handle(run);
         RunEndUi.Update(run);
+        Run.Hooks.RaiseFrame(run);
     }
 
     [HarmonyPostfix, HarmonyPatch(nameof(CareerGameModeManager.AllowSaveGame), MethodType.Getter)]

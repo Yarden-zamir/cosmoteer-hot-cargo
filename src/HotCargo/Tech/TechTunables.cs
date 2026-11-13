@@ -5,7 +5,10 @@ namespace HotCargo.Tech;
 [ReflectiveSerialization(Explicit = true)]
 public sealed class TechTunables
 {
+    /// <summary>Spec 17: stolen tech units in the vaults of the starting ships of a new run. A starter ship needs vaults for all of them (spec 1010).</summary>
     [Serialize(Optional = true)] public int StartingTechUnits = 8;
+    /// <summary>Spec 1015: research (career tech IDs) that a new run starts with. Default: the small FTL drive.</summary>
+    [Serialize(Optional = true)] public string[] StartingResearch = ["cosmoteer.hyperdrive_small"];
     /// <summary>
     /// Spec 19: tech value in fractions of the highest ship value of the peak tier (vanilla TierValueMaximums).
     /// Defaults: 0.25 of a ship at the start, about 0.5 mid-run (1.2 h, 250 notoriety), so 2 units buy a full ship of the tier.
@@ -19,18 +22,8 @@ public sealed class TechTunables
     [Serialize(Optional = true)] public float NotorietyStep = 5f;
     /// <summary>Station buy-back price = sell price × this factor. Must be above 1 to stop a sell-and-buy-back money loop.</summary>
     [Serialize(Optional = true)] public float BuyBackFactor = 1.5f;
-    /// <summary>
-    /// Spec 65: one unit is lost each time a vault takes this fraction of its max health in damage.
-    /// Default 0.5 for a 2-unit vault: the first unit goes at half health, the second when the vault is destroyed.
-    /// </summary>
-    [Serialize(Optional = true)] public float VaultDamagePerUnitLost = 0.5f;
     /// <summary>Spec 12, 443: game seconds of the loss timer. When the fleet holds no tech, the players have this long to get tech back.</summary>
     [Serialize(Optional = true)] public float LossGraceSeconds = 180f;
-    /// <summary>
-    /// Spec 448: vaults take this share of heat damage (the "thermal" damage of the heat status, mostly sun heat).
-    /// So a dive into a sun's heat zone risks the ship more than the tech.
-    /// </summary>
-    [Serialize(Optional = true)] public float VaultSunHeatFactor = 0.25f;
     /// <summary>Spec 445: chance that a destroyed vault burns its tech instead of dropping it as crates.</summary>
     [Serialize(Optional = true)] public float VaultTechLossChance = 0.1f;
     /// <summary>Spec 446: chance that a hunter goes for a tech crate it sees. Rolled once for each hunter and crate.</summary>

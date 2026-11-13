@@ -7,16 +7,16 @@ namespace HotCargo.Diplomacy;
 /// <summary>Kinds of hail options. Each one works once per ship (spec 568), except the ones that <see cref="DiplomacyState.Repeatable"/> lists.</summary>
 public enum Offer
 {
-    HandOver, Bluff, Deal, Refuse,
+    /// <summary>Submit the pay-off draft of the hunter page (spec 594 and 595).</summary>
+    PayOff,
+    Bluff, Refuse,
     DemandSurrender, OfferSurrender, AcceptYield,
     Hold, PayHoldFee, DeclineHoldFee, Return,
     Hire, Merc,
-    /// <summary>Submit the punishment draft (spec 595), or refuse it (spec 596). Only on the punishment page.</summary>
-    Punish, PunishRefuse,
 }
 
-/// <summary>The options of the punishment page (spec 594). The values are the multiselect option IDs.</summary>
-public enum PunishOption { Talk = 0, Money = 1, Bribe = 2, Crew = 3 }
+/// <summary>The rows of the pay-off offer (spec 594). The values are the multiselect option IDs.</summary>
+public enum PayOption { Tech = 0, Money = 1, Crew = 2 }
 
 /// <summary>Saved diplomacy state (spec 586). Everything here changes only in the sim tick, the AI tick and shared choice inputs (<see cref="DiplomacyChoiceDomain"/>).</summary>
 [ReflectiveSerialization(Explicit = true)]
@@ -38,8 +38,6 @@ public sealed class DiplomacyState
     [Serialize(Optional = true)] public List<Leaving> Leaving = new();
     /// <summary>A friendly ship that asked for a fee before it holds tech.</summary>
     [Serialize(Optional = true)] public List<FeeAsk> FeeAsks = new();
-    /// <summary>The punishment that waits after an accepted hand-over (spec 594), or null.</summary>
-    [Serialize(Optional = true)] public Punishment? Punish;
     /// <summary>The last result of each hailed ship, shown at the top of its dialogue.</summary>
     [Serialize(Optional = true)] public List<HailResult> Results = new();
     /// <summary>Counts results, so each result line gets its own number.</summary>
@@ -101,19 +99,6 @@ public sealed class FeeAsk
     [Serialize] public int Player;
     [Serialize] public int Units;
     [Serialize] public int Fee;
-}
-
-/// <summary>Spec 594: the hunters took the tech and want more before they leave.</summary>
-[ReflectiveSerialization(Explicit = true)]
-public sealed class Punishment
-{
-    /// <summary>Page serial of the punishment page: int.MinValue + the result counter, far from the serials of ship IDs (Diplomacy uses ship IDs as serials).</summary>
-    [Serialize] public int Serial;
-    /// <summary>The hunter that took the tech. Results show in its dialogue.</summary>
-    [Serialize] public ObjectID Hunter;
-    [Serialize] public int Units;
-    /// <summary>Run game seconds at which the offer runs out and counts as refused.</summary>
-    [Serialize] public double Due;
 }
 
 [ReflectiveSerialization(Explicit = true)]

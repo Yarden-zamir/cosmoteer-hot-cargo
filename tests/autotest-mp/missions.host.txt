@@ -8,7 +8,7 @@ waitfor hc_offers_escort >= 1 20
 expect hc_allies_vs_player == 0
 expect hc_allies_vs_target >= 2
 expect hc_escort_vs_player == 0
-expect hc_raiders_vs_player >= 2
+expect hc_escort_raiders == 0
 mp hc_accept escort
 waitfor hc_active_escort == 1 20
 # The client accepts the shady offer and flies there. The trap rolls on arrival with sim.Rand and the heat formula.
@@ -18,8 +18,14 @@ expect hc_trap_state >= 1
 mp hc_escort_goto
 wait 5
 expect hc_escort_steering == 1
+# The convoy ambush spawns in the sim on both sides; a desync fails the test.
+mp hc_escort_ambush
+waitfor hc_escort_raiders >= 2 20
+expect hc_raiders_vs_player >= 2
+expect hc_raiders_vs_escort >= 2
 mp hc_escort_arrive
 waitfor hc_escort_done == 1 30
+expect hc_escort_marker == 0
 # A forced trap. The client kills the ambush; the reward pays both players.
 mp hc_generate shady
 mp hc_accept shady
