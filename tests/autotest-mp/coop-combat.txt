@@ -28,6 +28,9 @@ mp dip_set DemandHailChance 0
 mp dip_set MercChance 0
 mp dip_set HandOverChanceMin 1
 mp dip_set HandOverChanceMax 1
+# Factor 2 sends more hunters, and their leverage lowers the chance. The step needs a sure hand-over.
+mp dip_set HandOverVisiblePenalty 0
+mp dip_set HandOverPerLeverage 0
 mp dip_set HunterLeaveSeconds 2
 mp dip_set HireChanceBase 5
 mp dip_set PunishChanceCap 1
@@ -61,8 +64,8 @@ mp spawnstage Patrol
 waitfor hunters >= 4 30
 expect hunters == 4
 mp ev_spawn TollGuards
-mp counttag hc_ev_toll
-waitfor tagcount >= 6 30
+wait 3
+counttag hc_ev_toll
 expect tagcount == 6
 
 step missions.escort
