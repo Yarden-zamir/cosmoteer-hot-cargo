@@ -1,7 +1,9 @@
 using System.Globalization;
+using Cosmoteer;
 using Cosmoteer.Game.Gui;
 using Cosmoteer.Gui;
 using Cosmoteer.Localization;
+using Cosmoteer.Resources;
 using Cosmoteer.Ships;
 using Halfling;
 using Halfling.Geometry;
@@ -36,13 +38,17 @@ internal sealed class TacticsEditor : WindowBox
     readonly LayoutBox _list;
     readonly Button _add;
     readonly List<Label> _markers = [];
+    readonly SimpleBox _cargoBar;
+    CargoPicker? _picker;
 
     List<TacticRow> _rows = [];
     bool _auto;
-    string _shownText = "";
-    bool _shownAuto;
-    string? _sentText;
-    bool _sentAuto;
+    /// <summary>Spec 1062, 1064: the cargo settings and the return switch of the ship.</summary>
+    Autonomy.CargoSettings _cargo = Autonomy.CargoSettings.Default;
+    bool _recall;
+    /// <summary>The whole state that the window shows and last sent: rows, Auto, cargo text and return switch (StateKey).</summary>
+    string _shown = "";
+    string? _sent;
     double _sentAt;
     bool _dirty = true;
     bool _updating;
@@ -56,6 +62,14 @@ internal sealed class TacticsEditor : WindowBox
     static string Text(string key) => Strings.GetText("HotCargoShipAi/" + key);
 
     static string Format(string key, params object?[] args) => Strings.FormatText("HotCargoShipAi/" + key, args);
+
+    static string AText(string key) => Strings.GetText("HotCargoAutonomy/" + key);
+
+    static string AFormat(string key, params object?[] args) => Strings.FormatText("HotCargoAutonomy/" + key, args);
+
+    static string StateKey(string text, bool auto, string cargo, bool recall) => $"{text}\n{auto}\n{cargo}\n{recall}";
+
+    static string StateKey(ShipTactics? t) => StateKey(t?.Text ?? "", t?.Auto ?? false, t?.CargoText ?? "", t?.Recall ?? false);
 
     internal static bool IsOpen => _open?.Parent is not null;
 
@@ -90,6 +104,7 @@ internal sealed class TacticsEditor : WindowBox
 
     internal static void Close()
     {
+        _open?._picker?.Unparent();
         _open?.Unparent();
         _open = null;
     }
@@ -98,7 +113,8 @@ internal sealed class TacticsEditor : WindowBox
     /// Autotest: does what a click does. open | close | auto on|off | apply &lt;preset or personal name&gt; | add | remove &lt;row&gt; |
     /// up &lt;row&gt; | cond &lt;row&gt; &lt;Cond&gt; [term] | param &lt;row&gt; &lt;n&gt; [term] | act &lt;row&gt; &lt;Act&gt; | actparam &lt;row&gt; &lt;n&gt; |
     /// addterm &lt;row&gt; | removeterm &lt;row&gt; &lt;term&gt; | not &lt;row&gt; &lt;term&gt; | or &lt;row&gt; &lt;term&gt; | copy | paste [text] |
-    /// savepreset &lt;name&gt; | deletepreset &lt;name&gt; | toselected. Rows and terms count from 1, like the window shows them.
+    /// savepreset &lt;name&gt; | deletepreset &lt;name&gt; | toselected | loot v&lt;n&gt;|&lt;id,id&gt; | sell|mine|buy &lt;id,id&gt;|none |
+    /// recall on|off. Rows and terms count from 1, like the window shows them.
     /// </summary>
     internal static void TestCommand(Run run, Ship ship, string arg)
     {
@@ -142,9 +158,20 @@ internal sealed class TacticsEditor : WindowBox
                 e.DeletePreset();
                 break;
             case "toselected": e.ApplyToSelected(); break;
+            case "loot":
+                e.EditCargo(a[1].StartsWith('v')
+                    ? e._cargo with { LootMinValue = int.Parse(a[1][1..], CultureInfo.InvariantCulture), LootTypes = [] }
+                    : e._cargo with { LootTypes = a[1].Split(',') });
+                break;
+            case "sell": e.EditCargo(e._cargo with { Sell = List(a[1]) }); break;
+            case "mine": e.EditCargo(e._cargo with { Mine = List(a[1]) }); break;
+            case "buy": e.EditCargo(e._cargo with { Buy = List(a[1]) }); break;
+            case "recall": e._recall = a[1] == "on"; e.Send(); break;
             default: throw new InvalidOperationException($"unknown tactics_editor verb '{a[0]}'");
         }
     }
+
+    static string[] List(string arg) => arg == "none" ? [] : arg.Split(',');
 
     /// <summary>The own ships that "Apply to selected" changes: the selected ships that the local player commands, without this one.</summary>
     IEnumerable<Ship> SelectedOthers() =>
@@ -201,6 +228,9 @@ internal sealed class TacticsEditor : WindowBox
         Place(bar2, _toSelected, 66f, 34f);
         page.Children.Add(bar2);
         FillPresets(null);
+
+        _cargoBar = Strip(36f);
+        page.Children.Add(_cargoBar);
 
         _status = NewLabel(18);
         page.Children.Add(_status);
@@ -302,6 +332,7 @@ internal sealed class TacticsEditor : WindowBox
         ParamKind.Stage => Format("StageFmt", value),
         ParamKind.Seconds => Format("SecondsFmt", value),
         ParamKind.Side => Text("Side_" + (Side)value),
+        ParamKind.Station => Text("Station_" + (StationPick)value),
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
     };
 
@@ -320,8 +351,66 @@ internal sealed class TacticsEditor : WindowBox
                 _list.Children.Add(empty);
             }
             _add.SelfInputActive = _rows.Count < ShipAiModel.MaxRows;
+            BuildCargo();
         }
         finally { _updating = false; }
+    }
+
+    /// <summary>Spec 1062, 1064: the loot filter, the three type lists and the return switch.</summary>
+    void BuildCargo()
+    {
+        _cargoBar.Children.Clear();
+        var title = new Label { Text = AText("Cargo") };
+        title.ToolTips.TextProvider = new Ux.LiveText(() => AText("CargoTip"));
+        Place(_cargoBar, title, 0f, 6f);
+        // The loot mode list: the value steps, then "these types" (-1).
+        var values = Autonomy.AutonomyModel.LootValueChoices.Append(-1);
+        int current = _cargo.LootTypes.Length > 0 ? -1 : _cargo.LootMinValue;
+        var loot = Choices(values, current, v => v < 0 ? AText("LootTypes") : v == 0 ? AText("LootAll") : AFormat("LootValueFmt", v),
+            v => EditCargo(v < 0 ? _cargo with { LootTypes = Offered(false).Take(1).Select(r => r.ID.ToString()).ToArray() } : _cargo with { LootMinValue = v, LootTypes = [] }));
+        loot.ToolTips.TextProvider = new Ux.LiveText(() => AText("LootTip"));
+        Place(_cargoBar, loot, 6f, 16f);
+        if (_cargo.LootTypes.Length > 0)
+            Place(_cargoBar, NewTextButton(AFormat("LootTypesFmt", Count(_cargo.LootTypes, "ListNone")),
+                () => Pick(AText("LootTypes"), false, _cargo.LootTypes, l => _cargo with { LootTypes = l.Length > 0 ? l : _cargo.LootTypes })), 22f, 14f);
+        Place(_cargoBar, NewTextButton(AFormat("SellFmt", Count(_cargo.Sell, "ListAll")), () => Pick(AFormat("SellFmt", ""), false, _cargo.Sell, l => _cargo with { Sell = l })), 36f, 14f);
+        Place(_cargoBar, NewTextButton(AFormat("MineFmt", Count(_cargo.Mine, "ListAny")), () => Pick(AFormat("MineFmt", ""), true, _cargo.Mine, l => _cargo with { Mine = l })), 50f, 14f);
+        Place(_cargoBar, NewTextButton(AFormat("BuyFmt", Count(_cargo.Buy, "ListNone")), () => Pick(AFormat("BuyFmt", ""), false, _cargo.Buy, l => _cargo with { Buy = l })), 64f, 14f);
+        var recall = XmlButton(AText(_recall ? "ReturnOn" : "ReturnOff"), AText("ReturnTip"), () => { _recall = !_recall; Send(); _dirty = true; });
+        Place(_cargoBar, recall, 78f, 22f);
+    }
+
+    static IReadOnlyList<Cosmoteer.Resources.ResourceRules> Offered(bool mine) => CargoPicker.Offered(mine);
+
+    /// <summary>A list as the button shows it: one name, "n types", or the word for an empty list.</summary>
+    static string Count(string[] ids, string emptyKey) => ids.Length switch
+    {
+        0 => AText(emptyKey),
+        1 => new Cosmoteer.Data.ID<Cosmoteer.Resources.ResourceRules>(ids[0]).GetResourceRules().NameKey.Text,
+        _ => AFormat("ListCountFmt", ids.Length),
+    };
+
+    void Pick(string title, bool mine, string[] current, Func<string[], Autonomy.CargoSettings> change)
+    {
+        _picker?.Unparent();
+        _picker = new CargoPicker(AFormat("PickTitleFmt", title), mine, current, list => EditCargo(change(list)));
+        _run.Game.Gui.FloatingWindows.AddChild(_picker);
+    }
+
+    static Button NewTextButton(string text, Action click)
+    {
+        var b = new Button();
+        b.CopySettingsFrom(WidgetRules.Instance.FlatButton);
+        b.Text = text;
+        b.Clicked += (_, _) => Errors.Guard("tactics editor cargo", click);
+        return b;
+    }
+
+    void EditCargo(Autonomy.CargoSettings cargo)
+    {
+        _cargo = cargo;
+        _dirty = true;
+        Send();
     }
 
     /// <summary>One block per row: a line per condition term; the first line also holds the action and the row buttons.</summary>
@@ -439,10 +528,10 @@ internal sealed class TacticsEditor : WindowBox
 
     void Send()
     {
-        string text = ShipAiModel.Encode(_rows);
-        (_sentText, _sentAuto, _sentAt) = (text, _auto, App.Clock.Time.Seconds);
-        (_shownText, _shownAuto) = (text, _auto);
-        _run.Game.NetManager.EnqueueInput(new TacticsInput(_ship, text, _auto));
+        string text = ShipAiModel.Encode(_rows), cargo = Autonomy.AutonomyModel.Encode(_cargo);
+        _sent = _shown = StateKey(text, _auto, cargo, _recall);
+        _sentAt = App.Clock.Time.Seconds;
+        _run.Game.NetManager.EnqueueInput(new TacticsInput(_ship, text, _auto, cargo, _recall));
     }
 
     /// <summary>
@@ -450,9 +539,11 @@ internal sealed class TacticsEditor : WindowBox
     /// </summary>
     static bool UseSystemClipboard => !Dev.Autotest.IsActive;
 
+    /// <summary>Spec 1063: the rows, and the cargo text on a second line when the ship has cargo settings.</summary>
     void Copy()
     {
-        _copied = ShipAiModel.Encode(_rows);
+        string cargo = Autonomy.AutonomyModel.Encode(_cargo);
+        _copied = ShipAiModel.Encode(_rows) + (cargo.Length > 0 ? "\n" + cargo : "");
         if (UseSystemClipboard) App.Platform.SetClipboardText(_copied);
         Note(Text("Copied"));
     }
@@ -463,7 +554,13 @@ internal sealed class TacticsEditor : WindowBox
         string? text = UseSystemClipboard ? App.Platform.GetClipboardText()?.Trim() : null;
         if (text is null || !text.StartsWith(ShipAiModel.Prefix, StringComparison.Ordinal)) text = _copied;
         if (text is null) { Note(Text("PasteEmpty")); return; }
-        try { _rows = ShipAiModel.Decode(text); }
+        var lines = text.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        try
+        {
+            var rows = ShipAiModel.Decode(lines[0]);
+            var cargo = lines.Length > 1 ? Autonomy.Cargo.Decode(lines[1]) : _cargo;
+            (_rows, _cargo) = (rows, cargo);
+        }
         catch (FormatException ex) { Note(Format("PasteBadFmt", ex.Message)); return; }
         SendRows();
         Note(Text("Pasted"));
@@ -528,8 +625,8 @@ internal sealed class TacticsEditor : WindowBox
     {
         var ships = SelectedOthers().ToList();
         if (ships.Count == 0) { Note(Text("ToSelectedNone")); return; }
-        string text = ShipAiModel.Encode(_rows);
-        foreach (var ship in ships) _run.Game.NetManager.EnqueueInput(new TacticsInput(ship, text, _auto));
+        string text = ShipAiModel.Encode(_rows), cargo = Autonomy.AutonomyModel.Encode(_cargo);
+        foreach (var ship in ships) _run.Game.NetManager.EnqueueInput(new TacticsInput(ship, text, _auto, cargo, ShipTactics.Of(ship)?.Recall ?? false));
         Note(Format("ToSelectedFmt", ships.Count));
     }
 
@@ -540,9 +637,11 @@ internal sealed class TacticsEditor : WindowBox
     void LoadFromSim()
     {
         var t = ShipTactics.Of(_ship);
-        (_shownText, _shownAuto) = (t?.Text ?? "", t?.Auto ?? false);
+        _shown = StateKey(t);
         _rows = t?.Rows.ToList() ?? [];
-        _auto = _shownAuto;
+        _auto = t?.Auto ?? false;
+        _cargo = t?.Cargo ?? Autonomy.CargoSettings.Default;
+        _recall = t?.Recall ?? false;
         _updating = true;
         _autoToggle.IsSelected = _auto;
         _updating = false;
@@ -556,12 +655,11 @@ internal sealed class TacticsEditor : WindowBox
         {
             _nextRefresh = now + 0.25;
             var t = ShipTactics.Of(_ship);
-            string simText = t?.Text ?? "";
-            bool simAuto = t?.Auto ?? false;
-            if (_sentText is not null && ((simText == _sentText && simAuto == _sentAuto) || now > _sentAt + SendWaitSeconds)) _sentText = null;
-            if (_sentText is null && (simText != _shownText || simAuto != _shownAuto)) LoadFromSim();
+            string sim = StateKey(t);
+            if (_sent is not null && (sim == _sent || now > _sentAt + SendWaitSeconds)) _sent = null;
+            if (_sent is null && sim != _shown) LoadFromSim();
             bool commandable = _ship.Commands.IsCommandableByLocalPlayer;
-            if (_list.SelfInputActive != commandable) { _list.SelfInputActive = commandable; _autoToggle.SelfInputActive = commandable; }
+            if (_list.SelfInputActive != commandable) { _list.SelfInputActive = commandable; _autoToggle.SelfInputActive = commandable; _cargoBar.SelfInputActive = commandable; }
             int others = SelectedOthers().Count();
             _toSelected.Text = Format("ToSelectedButtonFmt", others);
             _toSelected.SelfInputActive = others > 0;
@@ -581,6 +679,7 @@ internal sealed class TacticsEditor : WindowBox
         if (_note is not null && App.Clock.Time.Seconds < _noteUntil) status = _note;
         else if (!_run.T.ShipAi.Enabled) status = Text("StatusDisabled");
         else if (t is not { Auto: true }) status = Text("StatusOff");
+        else if (Autonomy.Autonomous.IsAutonomous(_ship) && t.Target is null) status = AText("NoOrders");
         else if (t.Waiting) status = Text("StatusWaiting");
         else if (t.Target is { } id && _run.Game.Sim[id] is Ship target) status = Format("StatusTargetFmt", target.Metadata.XmlShipName);
         else status = Text("StatusActive");
@@ -589,7 +688,7 @@ internal sealed class TacticsEditor : WindowBox
         bool live = t is { Auto: true, Waiting: false } && t.Text == ShipAiModel.Encode(_rows);
         for (int i = 0; i < _markers.Count; i++)
         {
-            bool on = live && t is not null && (i == t.TargetRow || i == t.MoveRow || i == t.FacingRow ||
+            bool on = live && t is not null && (i == t.TargetRow || i == t.MoveRow || i == t.FacingRow || i == t.TradeRow ||
                 ((t.Matched & (1 << i)) != 0 && ShipAiModel.KindOf(_rows[i].Act) == ActKind.Weapons));
             _markers[i].Text = on ? $"<good>{i + 1}</good>" : $"<gray>{i + 1}</gray>";
         }

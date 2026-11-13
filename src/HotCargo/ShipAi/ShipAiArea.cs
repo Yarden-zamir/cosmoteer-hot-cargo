@@ -185,14 +185,14 @@ public static class ShipAiArea
         Autotest.Commands["tactics"] = arg =>
         {
             var ship = TestShip();
-            Sim().RequireGame().NetManager.EnqueueInput(new TacticsInput(ship, RowsText(arg), ShipTactics.Of(ship)?.Auto ?? false));
+            Sim().RequireGame().NetManager.EnqueueInput(TacticsInput.Rows(ship, RowsText(arg), ShipTactics.Of(ship)?.Auto ?? false));
             Autotest.Wait(1);
         };
         // tacticsauto on|off: the Auto switch of the test ship, through the tactics input.
         Autotest.Commands["tacticsauto"] = arg =>
         {
             var ship = TestShip();
-            Sim().RequireGame().NetManager.EnqueueInput(new TacticsInput(ship, ShipTactics.Of(ship)?.Text ?? "", arg != "off"));
+            Sim().RequireGame().NetManager.EnqueueInput(TacticsInput.Rows(ship, ShipTactics.Of(ship)?.Text ?? "", arg != "off"));
             Autotest.Wait(1);
         };
         // Human ships with Auto on, of every player (co-op checks).

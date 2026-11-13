@@ -59,15 +59,18 @@ internal static class ShipAiController
     }
 
     /// <summary>The tactics input (spec 409). Clears the old decision, so the new rows decide from scratch at the next tick.</summary>
-    internal static void Set(Ship ship, string text, bool auto, SimRoot sim)
+    internal static void Set(Ship ship, string text, bool auto, string cargo, bool recall, SimRoot sim)
     {
         ShipAiModel.Decode(text);
+        Autonomy.Cargo.Decode(cargo);
         var t = ShipTactics.For(ship);
         Release(ship, t);
         t.SetRows(text);
+        t.SetCargo(cargo);
         t.Auto = auto;
+        t.Recall = recall;
         t.NextTick = sim.LogicalTime;
-        Log.Info($"ship tactics: {ship.Metadata.PlainShipName} auto={auto} rows={t.Rows.Count} {text}");
+        Log.Info($"ship tactics: {ship.Metadata.PlainShipName} auto={auto} recall={recall} rows={t.Rows.Count} {text} cargo={cargo}");
     }
 
     /// <summary>
@@ -96,28 +99,33 @@ internal static class ShipAiController
         }
         t.Waiting = false;
         var rows = t.Rows;
-        var view = new View(run, ship);
+        var view = new View(run, ship, t);
         var d = ShipAiModel.Evaluate(rows, view.Facts(), view.CanRun, t.Memory, HunterOrders.Sim(ship).LogicalTime.Seconds,
             new Hysteresis(tun.HysteresisMargin, tun.MinHoldSeconds));
         Ship? target = d.TargetRow >= 0 ? view.TargetFor(rows[d.TargetRow].Act) : null;
-        Act? move = d.MoveRow >= 0 ? rows[d.MoveRow].Act : null;
+        // Spec 1064: "return to me" replaces the move rows.
+        Act? move = t.Recall ? Act.ReturnToFleet : d.MoveRow >= 0 ? rows[d.MoveRow].Act : null;
         Ship? guarded = move == Act.Guard ? view.GuardTarget((GuardWho)rows[d.MoveRow].ActParam) : null;
         // A guard with no target row attacks whoever attacks the guarded ship.
         if (target is null && guarded is not null) target = view.AttackerOf(guarded);
-        Act? before = t.MoveRow >= 0 && t.MoveRow < rows.Count ? rows[t.MoveRow].Act : null;
+        Act? before = t.Recall ? Act.ReturnToFleet : t.MoveRow >= 0 && t.MoveRow < rows.Count ? rows[t.MoveRow].Act : null;
         Side? facing = d.FacingRow >= 0 ? (Side)rows[d.FacingRow].ActParam : null;
         Side? facingBefore = t.FacingRow >= 0 && t.FacingRow < rows.Count ? (Side)rows[t.FacingRow].ActParam : null;
-        var attack = Move(ship, t, tun, view, move, target, guarded, fresh: before != move || facing != facingBefore);
+        int moveParam = !t.Recall && d.MoveRow >= 0 ? rows[d.MoveRow].ActParam : 0;
+        var attack = Move(ship, t, tun, view, move, moveParam, target, guarded, fresh: before != move || facing != facingBefore);
         if (attack is not null && facing is { } side) Face(attack, side);
+        if (d.TradeRow >= 0) Trade(run, ship, t, view, rows[d.TradeRow].Act);
         int mask = 0;
         for (int i = 0; i < d.Matched.Length; i++) if (d.Matched[i]) mask |= 1 << i;
         Weapons(ship, t, tun, rows, t.Matched, mask, target, view.Caller);
-        if (mask != t.Matched || d.TargetRow != t.TargetRow || d.MoveRow != t.MoveRow || d.FacingRow != t.FacingRow || target?.UniqueID != t.Target)
+        if (mask != t.Matched || d.TargetRow != t.TargetRow || d.MoveRow != t.MoveRow || d.FacingRow != t.FacingRow || d.TradeRow != t.TradeRow
+            || target?.UniqueID != t.Target)
             Trace(ship, tun, $"target row {d.TargetRow} ({target?.Metadata.PlainShipName ?? "-"}) move row {d.MoveRow} ({move?.ToString() ?? "-"}) " +
-                             $"facing row {d.FacingRow} matched {Convert.ToString(mask, 2)}");
+                             $"facing row {d.FacingRow} trade row {d.TradeRow} matched {Convert.ToString(mask, 2)}");
         t.TargetRow = d.TargetRow;
         t.MoveRow = d.MoveRow;
         t.FacingRow = d.FacingRow;
+        t.TradeRow = d.TradeRow;
         t.Memory = d.Memory;
         t.Matched = mask;
         t.Target = target?.UniqueID;
@@ -147,7 +155,7 @@ internal static class ShipAiController
             }
         }
         t.Matched = 0;
-        t.TargetRow = t.MoveRow = t.FacingRow = -1;
+        t.TargetRow = t.MoveRow = t.FacingRow = t.TradeRow = -1;
         t.Memory = null;
         t.Target = null;
         t.Anchor = null;
@@ -158,7 +166,7 @@ internal static class ShipAiController
     // ---- Movement and target: one vanilla command at a time.
 
     /// <summary>Gives the move command. Returns the attack command when the ship attacks, so a facing row can turn it.</summary>
-    static AttackCommand? Move(Ship ship, ShipTactics t, ShipAiTunables tun, View view, Act? move, Ship? target, Ship? guarded, bool fresh)
+    static AttackCommand? Move(Ship ship, ShipTactics t, ShipAiTunables tun, View view, Act? move, int moveParam, Ship? target, Ship? guarded, bool fresh)
     {
         if (move != Act.HoldPosition) t.Anchor = null;
         switch (move)
@@ -186,6 +194,22 @@ internal static class ShipAiController
                 return null;
             case Act.CollectTech:
                 Collect(ship, t, tun, view);
+                return null;
+            case Act.CollectLoot:
+                CollectLoot(ship, t, view);
+                return null;
+            case Act.GoToStation:
+                GoToStation(ship, t, view, (StationPick)moveParam);
+                return null;
+            case Act.Mine:
+                Mine(ship, t, view);
+                return null;
+            case Act.Salvage:
+                SalvageWreck(ship, t, view);
+                return null;
+            case Act.ReturnToFleet:
+                if (Autonomy.Autonomous.FirstCrewed(ship) is { } home) Follow(ship, t, home);
+                else Stop(ship, t);
                 return null;
             case null or Act.Kite or Act.CloseIn when target is not null:
                 var ac = Attack(ship, t, target, fresh);
@@ -234,6 +258,76 @@ internal static class ShipAiController
         else Stop(ship, t);
         foreach (var crate in view.Crates)
             if (ship.DetWorldBoundingCircle.DistanceTo(crate.DetWorldLocation) < GameApp.Rules.Crew.LoseHomeShipWarningDistance) PickUp(ship, crate);
+    }
+
+    // ---- Autonomous ship actions (spec 1067 to 1075). AutonomyWorld does the sim work.
+
+    /// <summary>Spec 1068: flies so that the first Funnel passes over the nearest accepted loot, and gives the collect order.</summary>
+    static void CollectLoot(Ship ship, ShipTactics t, View view)
+    {
+        var nearest = view.NearestLoot ?? throw new InvalidOperationException("CollectLoot ran without loot");
+        // The nugget drifts; a new order only when the aim point moved more than a quarter tile.
+        MoveTo(ship, t, Autonomy.AutonomyWorld.FunnelAim(ship, nearest.DetWorldLocation), ship.Scale.X * 0.25f);
+        Autonomy.AutonomyWorld.OrderCollect(ship, view.Loot);
+    }
+
+    /// <summary>Spec 1069: flies next to the picked station, DockDistance from its hull, and holds there.</summary>
+    static void GoToStation(Ship ship, ShipTactics t, View view, StationPick pick)
+    {
+        var station = view.Station(pick) ?? throw new InvalidOperationException("GoToStation ran without a station");
+        float dock = view.Autonomy.DockDistance;
+        Vector2 dir = Vector2.FromAngle(station.Center.DirectionTo(ship.DetWorldCenter));
+        var spot = station.Center + dir * (station.Radius + ship.WorldBoundingRadius + dock);
+        MoveTo(ship, t, spot, dock * 0.5f);
+    }
+
+    /// <summary>
+    /// Spec 1070: flies to the nearest asteroid with ore of the mine list and turns the nose to it at MineDistance, then gives salvage
+    /// orders for its matching deposit parts. An asteroid in stasis gets a move order to its place; it turns live as the ship comes near.
+    /// </summary>
+    static void Mine(Ship ship, ShipTactics t, View view)
+    {
+        var rock = view.Asteroid ?? throw new InvalidOperationException("Mine ran without an asteroid");
+        if (rock.Live is not { } live)
+        {
+            MoveTo(ship, t, rock.Center, view.Autonomy.MineDistance);
+            return;
+        }
+        WorkOn(ship, t, view, live, view.Cargo);
+    }
+
+    /// <summary>Spec 1072: like mine, on the nearest wreck on radar, for every part.</summary>
+    static void SalvageWreck(Ship ship, ShipTactics t, View view) =>
+        WorkOn(ship, t, view, view.Wreck ?? throw new InvalidOperationException("Salvage ran without a wreck"), null);
+
+    static void WorkOn(Ship ship, ShipTactics t, View view, Ship target, Autonomy.CargoSettings? mine)
+    {
+        var tun = view.Autonomy;
+        Vector2 dir = Vector2.FromAngle(target.DetWorldCenter.DirectionTo(ship.DetWorldCenter));
+        var spot = target.DetWorldCenter + dir * (target.WorldBoundingRadius + ship.WorldBoundingRadius + tun.MineDistance);
+        var face = ship.DetWorldCenter.DirectionTo(target.DetWorldCenter);
+        if (Current(ship, t) is not MoveCommand { Location: { } at } || at.DistanceTo(in spot) > tun.MineDistance * 0.5f)
+            Issue(ship, t, new MoveCommand(ship, ship.Commands.AllocGlobalCommandID(), spot, face, CollisionAvoidanceFlags.All, isTentative: false));
+        if (HunterOrders.EdgeDistance(ship, target) <= tun.MineDistance * 3f) Autonomy.AutonomyWorld.OrderSalvage(ship, target, mine, tun.SalvageJobs);
+    }
+
+    /// <summary>Spec 1073, 1074, 1067: the trade row runs at once each AI tick.</summary>
+    static void Trade(Run run, Ship ship, ShipTactics t, View view, Act act)
+    {
+        switch (act)
+        {
+            case Act.Sell:
+                Autonomy.AutonomyWorld.Sell(ship, view.InRange ?? throw new InvalidOperationException("Sell ran out of range"), view.Cargo);
+                break;
+            case Act.Buy:
+                Autonomy.AutonomyWorld.Buy(ship, view.InRange ?? throw new InvalidOperationException("Buy ran out of range"), view.Cargo, run.T.Autonomy.BuyReserve);
+                break;
+            case Act.Unload:
+                Autonomy.AutonomyWorld.Unload(ship, view.CrewedInRange ?? throw new InvalidOperationException("Unload ran without a crewed ship"));
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(act), act, "not a trade action");
+        }
     }
 
     /// <summary>Same order as SalvageJob.OnPartSalvaged._CollectNugget: crew jobs for the part of the crate that no crew fetches yet.</summary>
@@ -524,11 +618,17 @@ internal static class ShipAiController
         /// <summary>Tech crates that this ship's team sees, in nugget order.</summary>
         public readonly List<Nugget> Crates = [];
         readonly Dictionary<Act, Ship?> _targets = [];
+        /// <summary>The conditions that the rows use: costly facts (loot, stations, asteroids, wrecks) are only read for them.</summary>
+        readonly HashSet<Cond> _uses;
+        public readonly Autonomy.CargoSettings Cargo;
+        public Autonomy.AutonomyTunables Autonomy => _run.T.Autonomy;
 
-        public View(Run run, Ship self)
+        public View(Run run, Ship self, ShipTactics t)
         {
             _run = run;
             _self = self;
+            Cargo = t.Cargo;
+            _uses = t.Rows.SelectMany(r => r.Terms).Select(term => term.Cond).ToHashSet();
             var sim = HunterOrders.Sim(self);
             for (int i = 0; i < sim.Nuggets.Count; i++)
             {
@@ -567,11 +667,12 @@ internal static class ShipAiController
 
         public Ship? Caller => _enemies.Where(Calls).MinBy(Distance);
 
-        /// <summary>The first ship of this ship's player (lowest ID). Null when that is this ship.</summary>
+        /// <summary>The first ship of this ship's player (lowest ID). Null when that is this ship. Spec 1071: an autonomous ship follows the first crewed ship.</summary>
         public Ship? Leader
         {
             get
             {
+                if (HotCargo.Autonomy.Autonomous.IsAutonomous(_self)) return HotCargo.Autonomy.Autonomous.FirstCrewed(_self);
                 var leader = Allies.Where(a => a.Metadata.PlayerIndex == _self.Metadata.PlayerIndex).Append(_self).MinBy(s => s.UniqueID);
                 return leader == _self ? null : leader;
             }
@@ -608,8 +709,73 @@ internal static class ShipAiController
                 LossTimerRunning: LossTimer.IsRunning(_run),
                 NearestCrate: NearestCrate is { } crate ? CrateDistance(crate) : float.PositiveInfinity,
                 EnemyHoldsTech: _enemies.Any(HoldsTech),
-                EnemyCalling: Caller is not null);
+                EnemyCalling: Caller is not null,
+                Cargo: HotCargo.Autonomy.AutonomyWorld.CargoFill(_self),
+                CargoToSell: _uses.Contains(Cond.CargoToSell) && HotCargo.Autonomy.AutonomyWorld.HasCargoToSell(_self, Cargo),
+                NearestLoot: _uses.Contains(Cond.LootWithin) && NearestLoot is { } loot ? LootDistance(loot) : float.PositiveInfinity,
+                StationInRange: _uses.Contains(Cond.StationInRange) && InRange is not null,
+                NearestAsteroid: _uses.Contains(Cond.AsteroidWithin) && Asteroid is { } rock ? EdgeTo(rock.Center, rock.Radius) : float.PositiveInfinity,
+                NearestWreck: _uses.Contains(Cond.WreckWithin) && Wreck is { } wreck ? Distance(wreck) : float.PositiveInfinity,
+                NearestFleet: _uses.Contains(Cond.FleetBeyond) && NearestCrewed is { } home ? Distance(home) : float.PositiveInfinity);
         }
+
+        // ---- Autonomous ship facts (spec 1066). Each one is read once per tick, when a row needs it.
+
+        float EdgeTo(Vector2 center, float radius) => Math.Max(0f, _self.DetWorldBoundingCircle.DistanceTo(center) - radius);
+
+        float LootDistance(Nugget n) => _self.DetWorldBoundingCircle.DistanceTo(n.DetWorldLocation);
+
+        List<Nugget>? _loot;
+        public List<Nugget> Loot => _loot ??= HotCargo.Autonomy.AutonomyWorld.AcceptedLoot(_self, Cargo);
+        public Nugget? NearestLoot => Loot.MinBy(LootDistance);
+
+        readonly Dictionary<StationPick, HotCargo.Autonomy.StationRef?> _stations = [];
+        public HotCargo.Autonomy.StationRef? Station(StationPick pick)
+        {
+            if (!_stations.TryGetValue(pick, out var s)) _stations[pick] = s = HotCargo.Autonomy.AutonomyWorld.PickStation(_self, pick, Cargo);
+            return s;
+        }
+
+        bool _inRangeRead;
+        Ship? _inRange;
+        public Ship? InRange
+        {
+            get
+            {
+                if (!_inRangeRead) (_inRange, _inRangeRead) = (HotCargo.Autonomy.AutonomyWorld.StationInRange(_self), true);
+                return _inRange;
+            }
+        }
+
+        bool _asteroidRead;
+        HotCargo.Autonomy.AsteroidRef? _asteroid;
+        public HotCargo.Autonomy.AsteroidRef? Asteroid
+        {
+            get
+            {
+                if (!_asteroidRead) (_asteroid, _asteroidRead) = (HotCargo.Autonomy.AutonomyWorld.NearestAsteroid(_self, Cargo), true);
+                return _asteroid;
+            }
+        }
+
+        bool _wreckRead;
+        Ship? _wreck;
+        public Ship? Wreck
+        {
+            get
+            {
+                if (!_wreckRead) (_wreck, _wreckRead) = (HotCargo.Autonomy.AutonomyWorld.NearestWreck(_self), true);
+                return _wreck;
+            }
+        }
+
+        /// <summary>The owner's nearest crewed ship in this system.</summary>
+        public Ship? NearestCrewed => Allies.Where(a => a.Metadata.PlayerIndex == _self.Metadata.PlayerIndex && HotCargo.Autonomy.Autonomous.IsCrewed(a))
+            .OrderBy(Distance).ThenBy(a => a.UniqueID).FirstOrDefault();
+
+        public Ship? CrewedInRange => HotCargo.Autonomy.AutonomyWorld.CrewedInRange(_self);
+
+        bool CargoRoom => HotCargo.Autonomy.AutonomyWorld.CargoFill(_self) is { } fill && fill < 0.999f;
 
         public bool CanRun(TacticRow row) => ShipAiModel.KindOf(row.Act) switch
         {
@@ -623,7 +789,18 @@ internal static class ShipAiController
                 Act.FollowLeader => Leader is not null,
                 Act.Guard => GuardTarget((GuardWho)row.ActParam) is not null,
                 Act.CollectTech => Crates.Count > 0 && TechRoom(_self) > 0,
+                Act.CollectLoot => Loot.Count > 0 && CargoRoom,
+                Act.GoToStation => Station((StationPick)row.ActParam) is not null,
+                Act.Mine => Asteroid is not null && CargoRoom,
+                Act.Salvage => Wreck is not null,
                 _ => true,
+            },
+            ActKind.Trade => row.Act switch
+            {
+                Act.Sell => InRange is not null && HotCargo.Autonomy.AutonomyWorld.HasCargoToSell(_self, Cargo),
+                Act.Buy => InRange is not null && Cargo.Buy.Length > 0 && CargoRoom,
+                Act.Unload => CrewedInRange is not null && HotCargo.Autonomy.AutonomyWorld.CargoFill(_self) is > 0f,
+                _ => throw new ArgumentOutOfRangeException(nameof(row), row.Act, "not a trade action"),
             },
             _ => true,
         };
