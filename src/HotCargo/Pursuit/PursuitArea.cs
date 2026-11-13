@@ -143,6 +143,11 @@ public static class PursuitArea
         {
             foreach (int p in R().Game.HumanPlayersIndexes) R().Game.GetPlayerState(p, deterministic: true).AddMoney(int.Parse(arg, CultureInfo.InvariantCulture));
         };
+        Autotest.Commands["pu_setmoney"] = arg =>
+        {
+            int money = int.Parse(arg, CultureInfo.InvariantCulture);
+            foreach (int p in R().Game.HumanPlayersIndexes) { var ps = R().Game.GetPlayerState(p, deterministic: true); ps.AddMoney(money - ps.Money); }
+        };
         Autotest.Commands["pu_money"] = _ => _moneyMark = R().Game.GetPlayerState(R().Game.LocalPlayerIndex, deterministic: true).Money;
 
         Autotest.Fields["pu_scouts"] = () => R().State.Pursuit.Scouts.Count;

@@ -14,12 +14,13 @@ expect pu_ramp == 0.75
 expect pu_interval == 1.5
 expect pu_fleet >= 0.85
 expect pu_fleet <= 1.15
-# Ship counts: with factor 0.3 and no fleet factor, Warning, Patrol and Hunt send 1 ship each (at least 1), not 1 + 2 + 3.
+# Ship counts: with factor 0.3 and no fleet factor, each stage up to Hunt sends 1 ship (at least 1).
 pu_set EarlyShipFactor 0.3
 pu_set FleetFactorMax 0
 heat 75
 wait 3
-expect hunters == 3
+expect stages == 2
+expect hunters == stages
 # Pacer: an outage may start; after it starts, the kind gap and the global gap hold other starts.
 expect pu_may_outage == 1
 expect pu_may_relaylockdown == 1

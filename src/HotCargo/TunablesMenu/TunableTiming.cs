@@ -116,6 +116,21 @@ public static class TunableTiming
         ["DifficultyRow.HunterShips"] = Applies.NextSpawn,
         ["DifficultyRow.HunterTiers"] = Applies.NextSpawn,
         ["DifficultyRow.ContractFees"] = Applies.NextOffer,
+        ["PursuitTunables.OutageMinSector"] = Applies.NextSystem,
+        ["PursuitTunables.OutageChance"] = Applies.NextSystem,
+        ["PursuitTunables.OutageDelayMin"] = Applies.NextSystem,
+        ["PursuitTunables.OutageDelayMax"] = Applies.NextSystem,
+        ["PursuitTunables.HackerMinSector"] = Applies.NextSystem,
+        ["PursuitTunables.HackerChance"] = Applies.NextSystem,
+        ["PursuitTunables.HackerDelayMin"] = Applies.NextSystem,
+        ["PursuitTunables.HackerDelayMax"] = Applies.NextSystem,
+        ["PursuitTunables.EarlyShipFactor"] = Applies.NextSpawn,
+        ["PursuitTunables.LateShipFactor"] = Applies.NextSpawn,
+        ["PursuitTunables.FleetReferenceShare"] = Applies.NextSpawn,
+        ["PursuitTunables.FleetFactorPerDoubling"] = Applies.NextSpawn,
+        ["PursuitTunables.FleetFactorMax"] = Applies.NextSpawn,
+        ["PursuitTunables.OutageSeconds"] = Applies.NextUse,
+        ["PursuitTunables.HackerOutageSeconds"] = Applies.NextUse,
     };
 
     public static Applies Of(FieldInfo field) =>

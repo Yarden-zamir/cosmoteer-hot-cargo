@@ -25,7 +25,7 @@ expect pu_blockade == 0
 # The pacer keeps a second Hunt from another blockade.
 heat -30
 wait 1
-heat 30
+stage
 wait 2
 expect pu_count_blockade == 1
 expect pu_blockade == 0

@@ -2,14 +2,14 @@
 mpjoin 127.0.0.1:{PORT}
 mpready
 waitfor mpmark >= 1 60
-mp heat 25
+mp stage
 waitfor pu_scouts == 1 30
 mp pu_scoutnear 300
 waitfor pu_scouts == 0 60
-expect heat >= 39.5
+expect heat >= 54.5
 mp pu_hacker
 waitfor pu_hacker == 1 30
-mp pu_addmoney 50000
+mp pu_setmoney 50000
 mp pu_hacker_near 400
 wait 3
 pu_money

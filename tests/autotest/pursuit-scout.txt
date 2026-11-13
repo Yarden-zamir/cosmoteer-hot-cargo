@@ -9,7 +9,7 @@ aiset RegroupEnabled false
 dip_set DemandHailChance 0
 pu_set ScoutChance 1
 pu_set BlockadeChance 0
-heat 25
+stage
 wait 2
 expect hunters == 1
 expect pu_scouts == 1
@@ -18,20 +18,20 @@ pu_scoutnear 1500
 wait 1
 expect pu_scoutdist <= 1550
 waitfor pu_scouts == 0 120
-# Escaped: heat +15 (from about 25) and the scout jumped out.
-expect heat >= 39.5
+# Escaped: heat +15 (from about 40, Warning) and the scout jumped out.
+expect heat >= 54.5
 waitfor hunters == 0 20
 log escaped
 # A second scout destroyed before the relay reports nothing.
-heat -30
+heat -50
 wait 1
-heat 25
+stage
 wait 2
 expect pu_scouts == 1
 log before-kill
 pu_killscout
 wait 2
 expect pu_scouts == 0
-expect heat <= 37
+expect heat <= 50
 log end
 quit

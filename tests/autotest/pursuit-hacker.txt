@@ -13,9 +13,10 @@ expect pu_hacker_price == 30000
 pu_hacker_near 400
 wait 3
 # Without the money the pay button is off.
+pu_setmoney 1000
 pu_hacker_page
 expect pu_hacker_buttons == 1
-pu_addmoney 50000
+pu_setmoney 50000
 pu_hacker_page
 expect pu_hacker_buttons == 2
 pu_hacker_open
