@@ -258,11 +258,16 @@ public static class Autotest
             App.Director.PushState(init.CreateGame(SPManager.Create));
             Wait(5);
         };
+        // The game blocks saving for a moment during async work (a trade ship or police spawn, a short invulnerability).
+        // Wait that out like the vanilla autosave does (GameRoot), then save.
         Commands["save"] = arg =>
         {
             var game = Game ?? throw new InvalidOperationException("no game");
-            game.SaveAs((string)(Paths.SavedGamesFolder / $"HotCargoTest_{arg}.savedgame"));
-            Wait(2);
+            WaitFor(() => !game.IsGameSavingBlocked, 15, "game saving is not blocked", () =>
+            {
+                game.SaveAs((string)(Paths.SavedGamesFolder / $"HotCargoTest_{arg}.savedgame"));
+                Wait(2);
+            });
         };
         Commands["load"] = arg =>
         {
