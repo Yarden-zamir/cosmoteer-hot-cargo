@@ -36,19 +36,6 @@ STAGE="$RUN_DIR/stage"
 { dotnet build tools/mac-sim/MacSim.csproj -c Release -nologo -v quiet -clp:ErrorsOnly && scripts/stage.sh "$STAGE"; } > "$RUN_DIR/build.log" 2>&1 \
   || { cat "$RUN_DIR/build.log"; echo "== build failed"; exit 1; }
 
-# Waits for a free Mac slot, writes the owner pid $1 into it and prints its lock folder. A lock whose owner is gone is stale.
-take_mac_slot() {
-  local i lock
-  while :; do
-    for ((i = 1; i <= JOBS; i++)); do
-      lock="/tmp/hot_cargo_mac_slot_$i.lock"
-      if mkdir "$lock" 2>/dev/null; then echo "$1" > "$lock/pid.tmp" && mv -f "$lock/pid.tmp" "$lock/pid"; echo "$lock"; return; fi
-      if lock_is_stale "$lock"; then rm -rf "$lock"; fi
-    done
-    sleep 2
-  done
-}
-
 # Takes $2 free Mac slots at once (all or none, so two co-op runs cannot deadlock), writes the owner pid $1 into each and
 # prints their lock folders. A co-op session runs two game processes.
 take_mac_slots() {
@@ -80,8 +67,8 @@ run_mp() {
 # One run. Prints the log path; returns 0 on a pass.
 run_once() {
   local name="$1" log save lock rc=0 t0=$SECONDS
-  # $BASHPID: this run's process. take_mac_slot runs in a subshell that exits at once.
-  lock="$(take_mac_slot "$BASHPID")"
+  # $BASHPID: this run's process. take_mac_slots runs in a subshell that exits at once.
+  lock="$(take_mac_slots "$BASHPID" 1)"
   log="$LOG_DIR/$name.$(date +%Y%m%d-%H%M%S).mac.log"
   save="$(mktemp -d)"
   { echo "telename $name"; cat "tests/autotest/$name.txt"; } > "$save/script.txt"
