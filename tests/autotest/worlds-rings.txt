@@ -1,4 +1,4 @@
-# Smaller systems (spec 105): gates at Scale 0.5 x the vanilla [18750, 22500], trade stations at most 0.5 x 11000 from the center
+# Smaller systems (spec 105): gates at Scale 0.5 x the vanilla [18750, 22500], trade stations at most SunClearance + 0.5 x 3500 (7000) from the center
 # (inside the gate ring), no station in sun heat, the vanilla military stations fit, and the Buyer finds a place.
 # Checks the start (basic), a binary system (two suns off the center) and a supernova system (no sun, several belts).
 newgame run
@@ -7,8 +7,8 @@ ev_set Enabled false
 godmode on
 expect worlds_gate_min >= 9370
 expect worlds_gate_max <= 11255
-expect worlds_station_heat_gap >= 300
-expect worlds_trade_station_max <= 5600
+expect worlds_station_heat_gap >= 1200
+expect worlds_trade_station_max <= 7100
 expect worlds_military_stations >= 4
 buyer spawn
 expect buyers == 1
@@ -16,8 +16,8 @@ worlds jumpto binary
 pause off
 expect worlds_gate_min >= 9370
 expect worlds_gate_max <= 11255
-expect worlds_station_heat_gap >= 300
-expect worlds_trade_station_max <= 5600
+expect worlds_station_heat_gap >= 1200
+expect worlds_trade_station_max <= 7100
 expect worlds_military_stations >= 4
 buyer spawn
 expect buyers == 1
@@ -25,7 +25,7 @@ worlds jumpto supernova
 pause off
 expect worlds_gate_min >= 9370
 expect worlds_gate_max <= 11255
-expect worlds_trade_station_max <= 5600
+expect worlds_trade_station_max <= 7100
 expect worlds_military_stations >= 4
 buyer spawn
 expect buyers == 1

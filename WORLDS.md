@@ -36,7 +36,7 @@ With the defaults, about 3 of 4 systems are archetypes. The start system stays b
 
 ### Dense belt and passes (Mining Belt)
 
-- About 1,050 to 1,150 rocks (mostly L and XL, some XXL and megaroids) in a band 900 wide in the middle between the trade station ring and the FTL gates (about 7,400 from the center at `SystemScale` 0.5). The count follows the orbit length. That is about one large rock every 195 units: small ships thread it, big ships hit rocks.
+- About 1,140 to 1,280 rocks (mostly L and XL, some XXL and megaroids) in a band 900 wide in the middle between the trade station ring and the FTL gates (about 8,200 from the center at `SystemScale` 0.5). The count follows the orbit length. That is about one large rock every 195 units: small ships thread it, big ships hit rocks.
 - 3 or 4 passes: ring markers of radius 800 that the rocks keep clear of.
 - The belt lies between the stations and the FTL gates, so the passes matter for the route in and out.
 
