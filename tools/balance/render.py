@@ -96,12 +96,13 @@ charts = [
         bars("Heat in one sector, before: one typical mission adds about 61 heat", SECTORS, [
             ("carried in", "--c5", col(B, "heatIn"), "x"), ("missions", "--c3", col(B, "heatMissions"), "x"),
             ("time", "--c2", col(B, "heatTime"), "x"), ("contracts", "--c4", col(B, "heatContracts"), "x")],
+            # The heat stages of that time.
             lines=[(25, "Warning"), (50, "Patrol"), (75, "Hunt"), (100, "Strike")],
             note="Before the fame cap, the Strike came after 1 or 2 missions. After the cap, missions added no heat at all (the cap leak)."),
-        bars("Heat in one sector, after: 6 missions in 17.5 minutes reach the Strike", SECTORS, [
+        bars("Heat in one sector, after: about 6 missions in 17.5 minutes reach the Strike", SECTORS, [
             ("carried in", "--c5", col(A, "heatIn"), "x"), ("missions", "--c1", col(A, "heatMissions"), "x"),
             ("time", "--c2", col(A, "heatTime"), "x"), ("contracts", "--c4", col(A, "heatContracts"), "x")],
-            lines=[(25, "Warning"), (50, "Patrol"), (75, "Hunt"), (100, "Strike")]),
+            lines=[tuple(s) for s in M["model"]["stages"]]),
         bars("Missions until the Strike", SECTORS, [
             ("before", "--c3", col(B, "missionsToStrike"), "b"), ("after", "--c1", col(A, "missionsToStrike"), "a")],
             lines=[(6, "target 6")]),

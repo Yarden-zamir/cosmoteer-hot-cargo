@@ -29,6 +29,7 @@ public static class MissionArea
 
     public static void Register()
     {
+        MissionMarkers.Register();
         foreach (var (name, metatype) in Metatypes)
         {
             var id = new ID<MissionMetatype>(metatype);
@@ -41,6 +42,13 @@ public static class MissionArea
         Autotest.Commands["hc_escort_goto"] = _ => TeleportPlayers(RequireEscort().Escort.Location ?? throw new InvalidOperationException("escort is not in this system"));
         Autotest.Commands["hc_escort_arrive"] = _ => TestEscortArrive();
         Autotest.Commands["hc_escort_diag"] = arg => LogEscort(arg);
+        Autotest.Commands["hc_escort_advance"] = arg => TestEscortAdvance(float.Parse(arg, System.Globalization.CultureInfo.InvariantCulture));
+        Autotest.Commands["hc_escort_ambush"] = _ =>
+        {
+            var o = RequireEscort();
+            o.SpringAmbush(RequireSim(), o.Escort.Location ?? throw new InvalidOperationException("escort is not in this system"));
+            Autotest.Wait(2);
+        };
         // Test slots start with empty settings, so tutorial codex pages are unseen. The combat tutorial pauses the game
         // the first time an enemy is in sight without a station in sight, which freezes the escort. Tests turn that off.
         Autotest.Commands["hc_assault_goto"] = _ => TeleportPlayers(TaggedShips(RequireSim(), "hc_assault_ally").First().Location);
@@ -53,7 +61,11 @@ public static class MissionArea
             _markedMoney = RequireRun().Game.LocalPlayerState.Money;
             _markedEscortDist = FindObjective<EscortObjective>() is null ? 0f : EscortDistance();
         };
-        Autotest.Commands["hc_ambush_file"] = _ => Autotest.Check(ShadyAmbush.Generator.Spawners.Length > 0, $"shady ambush file loads ({ShadyAmbush.FilePath})");
+        Autotest.Commands["hc_ambush_file"] = _ =>
+        {
+            foreach (var file in new[] { AmbushFile.Shady, AmbushFile.Convoy })
+                Autotest.Check(file.Generator.Spawners.Length > 0, $"ambush file loads ({file.FilePath})");
+        };
 
         // Convoy cover (spec 36): the heat change on the accepted escort, and a command that gives that reward now.
         Autotest.Fields["hc_escort_cover"] = () => EscortCover().Heat;
@@ -62,6 +74,24 @@ public static class MissionArea
         Autotest.Fields["hc_escort_steering"] = () => RequireEscort() is var o && o.Escort.TargetShip?.AI?.Parameters?.PatrolOrigin is { } p && p == o.Destination ? 1 : 0;
         Autotest.Fields["hc_escort_dist"] = () => EscortDistance();
         Autotest.Fields["hc_escort_progress"] = () => _markedEscortDist - EscortDistance();
+        // Spec 36: route length, and its share of the nearest gate's distance from the center.
+        Autotest.Fields["hc_escort_route"] = () => RequireEscort() is var o ? o.Start.DistanceTo(o.Destination) : 0f;
+        Autotest.Fields["hc_escort_route_share"] = () =>
+        {
+            var o = RequireEscort();
+            var gates = ExistingSpawnTags(RequireSim()).GetValueOrDefault(new ID<SimObjectSpawner>("ftl_gate")) ?? throw new InvalidOperationException("no FTL gate in this system");
+            return o.Start.DistanceTo(o.Destination) / gates.Min(g => g.Location.Center.Length);
+        };
+        Autotest.Fields["hc_escort_marker"] = () => RequireEscort() is var o && o.DestinationPoiID is { } id && RequireSim().Doodads[id] is not null ? 1 : 0;
+        Autotest.Fields["hc_escort_raiders"] = () => TaggedShips(RequireSim(), "hc_escort_raider").Count;
+        // Live raiders whose attack command targets the escort.
+        Autotest.Fields["hc_raiders_on_escort"] = () =>
+        {
+            Ship? escort = RequireEscort().Escort.TargetShip;
+            return escort is null ? 0 : TaggedShips(RequireSim(), "hc_escort_raider").Count(t => t.Live?.Commands.CurConfirmedCommand is Cosmoteer.Ships.Commands.AttackCommand a && a.Target == escort);
+        };
+        Autotest.Fields["hc_escort_health"] = () =>
+            100f * Hunters.HunterOrders.HealthFraction(RequireEscort().Escort.TargetShip ?? throw new InvalidOperationException("escort is not live; keep a player near it"));
         Autotest.Fields["hc_escort_done"] = () => RequireEscort().Completion == CompletionState.Completed ? 1 : 0;
         Autotest.Fields["hc_trap_done"] = () => RequireTrap().Completion == CompletionState.Completed ? 1 : 0;
         Autotest.Fields["hc_ambushers"] = () => RequireTrap().Ambushers.Count(a => a.IsAlive);
@@ -266,6 +296,16 @@ public static class MissionArea
         Ship escort = o.Escort.TargetShip ?? throw new InvalidOperationException("escort is not live; run hc_escort_goto and wait first");
         Autotest.Teleport(escort, o.Destination);
         TeleportPlayers(o.Destination);
+    }
+
+    /// <summary>Moves the live escort to the given share of its route, and the players next to it. Run hc_escort_goto first.</summary>
+    static void TestEscortAdvance(float share)
+    {
+        var o = RequireEscort();
+        Ship escort = o.Escort.TargetShip ?? throw new InvalidOperationException("escort is not live; run hc_escort_goto and wait first");
+        Vector2 at = o.Start + (o.Destination - o.Start) * share;
+        Autotest.Teleport(escort, at);
+        TeleportPlayers(at);
     }
 
     static void TestShadySpring()

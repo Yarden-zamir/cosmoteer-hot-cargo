@@ -25,8 +25,8 @@ waitfor hint_hc_coop == 1 15
 on 1 waitfor hint_hc_coop == 1 15
 
 step core.client-heat
-# The client adds heat, and the first stage starts on both machines.
-as 1 heat 30
+# The client adds heat, and the first stage (Warning at heat 40, #19) starts on both machines.
+as 1 heat 40
 waitfor stages >= 1 60
 
 step onboarding.runlog
@@ -56,7 +56,7 @@ menu open
 expect menu_readonly == 0
 menu set Events.Enabled off
 menu set Heat.HeatPerGameMinute 45
-menu set Hunters.Stages[0].ShipCount 2
+menu set Hunters.Stages[0].ShipCount 4
 menu close
 waitfor heatperminute == 45 30
 menu file has HeatPerGameMinute = 45
@@ -69,8 +69,32 @@ on 1 menu open
 on 1 expect menu_readonly == 1
 on 1 menu reject Heat.HeatPerGameMinute 10
 on 1 menu close
-on 1 menu value Hunters.Stages[0].ShipCount == 2
+on 1 menu value Hunters.Stages[0].ShipCount == 4
 on 1 menu value Heat.HeatCarryOverFraction == 0.5
+
+step tunablesmenu.file
+# Spec 60, 850: a change of the host's tunables.rules mid-run goes out as the tunables input, and every machine applies it
+# at the same tick. A bad file sends nothing. The client's own file has no effect.
+tunablesfile Events { Enabled = false }; Heat { HeatPerGameMinute = 50 }; Hunters { MaxLiveHunters = 7 }
+waitfor heatperminute == 50 30
+menu open
+menu shows Heat.HeatPerGameMinute 50
+menu close
+tunablesfile Heat { HeatPerGameMinute = 55; HeatCarryOverFraction = 2 }
+wait 3
+expect tunables_error == 1
+expect heatperminute == 50
+on 1 waitfor heatperminute == 50 30
+on 1 menu open
+on 1 expect menu_readonly == 1
+on 1 menu shows Heat.HeatPerGameMinute 50
+on 1 menu close
+on 1 menu value Hunters.MaxLiveHunters == 7
+on 1 tunablesfile Heat { HeatPerGameMinute = 99 }
+on 1 wait 3
+on 1 expect heatperminute == 50
+wait 2
+expect heatperminute == 50
 
 step shipai.tactics
 # Spec 409, 411: edits by either player go through the tactics input. The client's edits come from its own machine.
@@ -98,7 +122,9 @@ expecttacticsany HC1:HealthBelow=25>RetreatRepair;Always>Guard=0;AllyUnderAttack
 
 step shipai.fight
 # Both machines run the same tactics decisions in a fight.
-mp spawnstage Patrol
+# Two ships of the sector tier: the Warning response of the last sector (#19 removed the Patrol stage).
+mp stageset Warning EarlyScale 1
+mp spawnstage Warning
 wait 30
 expect tactics_evals > 20
 
@@ -155,7 +181,9 @@ on 1 expect rm_tech < 1
 on 1 expect rm_techgap < 0.01
 on 1 expect pricegap == 0
 on 1 rm_log client
-mp spawnstage Patrol
+# Two ships of the sector tier: the Warning response of the last sector (#19 removed the Patrol stage).
+mp stageset Warning EarlyScale 1
+mp spawnstage Warning
 wait 15
 rm_log host-after
 on 1 expect rm_tiers >= 1

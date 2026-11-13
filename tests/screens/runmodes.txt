@@ -5,10 +5,6 @@ wait 10
 pause off
 closepanel
 wait 1
-uxpick 3
-wait 2
-uxpick 1
-wait 2
 ev_set Enabled false
 rm_difficulty very_hard slow scarce
 wait 2

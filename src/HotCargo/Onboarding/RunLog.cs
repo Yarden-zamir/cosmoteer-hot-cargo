@@ -111,8 +111,8 @@ public static class RunLog
         Add(run, RunLogKind.Chain, text);
     }
 
-    /// <summary>Spec 731: tech that vault damage destroyed (Tech VaultDamagePatch).</summary>
-    public static void TechLost(Run run, int units, int left) => Add(run, RunLogKind.Loss, Format("VaultHitFmt", units, left));
+    /// <summary>Spec 731: a destroyed vault: its tech dropped as crates, or burned (Tech VaultDropPatch).</summary>
+    public static void VaultDestroyed(Run run, int units, bool burned) => Add(run, RunLogKind.Loss, Format(burned ? "VaultBurnedFmt" : "VaultDroppedFmt", units));
 
     /// <summary>
     /// Spec 731: tech sales and Buyer deliveries, when the crew deliver and the station pays. Runs in the sim tick.

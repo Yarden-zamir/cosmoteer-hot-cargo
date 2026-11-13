@@ -20,18 +20,4 @@ public static class TechModel
         double fraction = baseFraction + fractionPerGameHour * steppedHours + fractionPer100Notoriety * steppedNotoriety / 100.0;
         return (long)Math.Round(shipValue * Math.Max(0, fraction) / 100.0) * 100;
     }
-
-    /// <summary>
-    /// Spec 65: units lost when vault health drops from oldHealth to newHealth.
-    /// One unit is lost for each step of damagePerUnit below max health that the drop crosses.
-    /// It needs no saved state, so it gives the same result after a load and on a client that joins late.
-    /// A repair raises health above the steps again, so later damage costs tech again, but the repair brings nothing back.
-    /// </summary>
-    public static int UnitsLostToDamage(int maxHealth, int oldHealth, int newHealth, float damagePerUnit)
-    {
-        if (damagePerUnit <= 0) throw new ArgumentOutOfRangeException(nameof(damagePerUnit), "must be above 0");
-        if (newHealth >= oldHealth) return 0;
-        int Steps(int health) => (int)Math.Floor((maxHealth - health) / (double)damagePerUnit);
-        return Steps(newHealth) - Steps(oldHealth);
-    }
 }

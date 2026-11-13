@@ -1,0 +1,23 @@
+# Chains (CHAINS.md section 4): the Salvage Race rivals guard their pod. Before the players accept the stage, they do not
+# come for the players. After the players accept and fly to the pod, the rivals attack.
+newgame run
+wait 8
+ev_set Enabled false
+chain_force magpie_rivalry
+expectstage race
+expect partdamage == 0
+expect vaultdamage == 0
+# 45 s at the start position with the offer open. Rivals with the hunter AI were in combat range after 40 s here.
+# The pod is 3,500 to 5,000 from the station and the rivals 900 to 1,300 from the pod, so 2,500 means they stayed at the pod.
+wait 45
+expect chain_accepted == 0
+expect chain_rival_dist > 2500
+expect partdamage == 0
+expect vaultdamage == 0
+# Accept, then fly to the pod: the rivals attack.
+chain_tostation
+chain_accept
+expect chain_accepted == 1
+chain_goto hc_ch_pod
+waitfor partdamage > 0 45
+quit

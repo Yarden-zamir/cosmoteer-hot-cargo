@@ -1,13 +1,13 @@
 HotCargoMissions
 {
 	Escort = "Convoy Duty"
-	EscortDesc = "The freighter {escort_ship} must reach a jump point in the {mission_location} system, and raiders know the route. Keep it in one piece and the {faction_name} pays {money}. A registered convoy also hides your trail from corporate scanners for a while. The freighter waits for its escort: stay close."
+	EscortDesc = "Escort the freighter {escort_ship} to the jump point.\nRaiders know the route. Stay close: it waits for you."
 	EscortCoverFmt = "Heat {0} (convoy cover)"
 	EscortCoverTip = "Flying in a registered convoy hides your trail. Heat changes when you collect the reward."
 	FleetAssault = "Joint Strike"
-	FleetAssaultDesc = "The {faction_name} navy found a raider stronghold in the {mission_location} system. It wants another gun on the line and will not check your cargo. Meet the strike group near the stronghold and destroy it together. The navy pays {money}."
+	FleetAssaultDesc = "Join the navy strike group and destroy the raider stronghold."
 	ShadyBounty = "Discreet Bounty"
-	ShadyBountyDesc = "A client with no name wants the <b>{target_ship}</b> class vessel in the {mission_location} system gone. No faction seal, no questions. The pay is {money}, well above the going rate. The client says to come alone."
+	ShadyBountyDesc = "Destroy the <b>{target_ship}</b>. No faction, no questions.\nIt can be a corporate trap."
 }
 
 HotCargoObjectives

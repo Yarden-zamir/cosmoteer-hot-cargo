@@ -171,7 +171,7 @@ public static class MpAutotest
             Autotest.WaitFor(() => Setup() is not null && Autotest.Game is null, 60, "the game setup screen", () => Start(2));
         };
 
-        // tunablesfile <rules text>: replaces the slot's tunables.rules, before mphost. Test slots only; deploy restores the repo file.
+        // tunablesfile <rules text>: replaces the slot's tunables.rules, before mphost or mid-run (a live file change). Test slots only; deploy restores the repo file.
         Autotest.Commands["tunablesfile"] = arg => File.WriteAllText(TunablesFile.FilePath, arg);
         // mpchoose <serial|marked> <choice number>: sends an event choice for any page serial, like a click on a page that another player
         // already answered. "marked": the page that was pending at the last ev_mark. The sim must ignore a serial that is not the pending page.
