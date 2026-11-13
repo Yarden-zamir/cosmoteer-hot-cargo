@@ -140,9 +140,9 @@ mprestart
 mp godmode off
 mp ev_set Enabled false
 mp tech_set LossGraceSeconds 600
-# Starting vaults are at full health: 4 units for each player.
+# Starting vaults are at full health: 4 units for each player. The tech count updates in the first sim tick of the new run.
+waitfor tech == 8 15
 expect vaultminhealth == 3000
-expect tech == 8
 expect vaultunits == 8
 expect mytech == 4
 on 1 expect vaultminhealth == 3000

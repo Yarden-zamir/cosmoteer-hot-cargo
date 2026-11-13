@@ -18,6 +18,9 @@ static class NativeSeams
             prefix: new HarmonyMethod(typeof(NativeSeams), nameof(LoadFromFile)));
         harmony.Patch(AccessTools.Method(typeof(TextureData), nameof(TextureData.LoadFrom), [typeof(string), typeof(PostProcessParams)]),
             prefix: new HarmonyMethod(typeof(NativeSeams), nameof(LoadFromFile)));
+        // FreeImage (TeximpNet): image encoding. Co-op setup sends the ship icon as PNG bytes (GameSetupScreen add-ship RPC).
+        harmony.Patch(AccessTools.Method(typeof(TextureData), nameof(TextureData.SaveTo), [typeof(Stream), typeof(ImageFileFormat), typeof(int)]),
+            prefix: new HarmonyMethod(typeof(NativeSeams), nameof(SaveBlankPng)));
         // nvtt (TeximpNet): GPU texture compression. The null graphics device never uploads textures.
         harmony.Patch(AccessTools.Method(typeof(TextureData), nameof(TextureData.Compress)),
             prefix: new HarmonyMethod(typeof(NativeSeams), nameof(Skip)));
@@ -34,6 +37,15 @@ static class NativeSeams
     }
 
     static bool Skip() => false;
+
+    /// <summary>Writes a blank PNG of the texture's size. The sim never reads icon pixels, and LoadFromStream decodes any PNG.</summary>
+    static bool SaveBlankPng(TextureData __instance, Stream stream)
+    {
+        var size = __instance.PixelSize;
+        using var image = new Image<Rgba32>(Math.Max(1, size.X), Math.Max(1, size.Y));
+        image.SaveAsPng(stream);
+        return false;
+    }
 
     /// <summary>
     /// Only the default roof texture gets a placeholder: ship metadata reads it, and saves write its file name.
