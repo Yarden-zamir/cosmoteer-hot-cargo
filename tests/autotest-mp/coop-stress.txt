@@ -2,7 +2,7 @@
 # cover among rocks, 60 wrecks, events and diplomacy hails on. selfprof and frameprof run on both machines (SELFPROF and FRAMEPROF lines).
 # See coop-core.txt for "on 1" and steps.
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 mp godmode on
 mp maxhunters 16
 mp strikeinterval 20

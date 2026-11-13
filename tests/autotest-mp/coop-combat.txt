@@ -5,7 +5,7 @@
 enemysetting 2.0
 client: enemysetting 1.0
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 mp godmode on
 mp ev_set Enabled false
 

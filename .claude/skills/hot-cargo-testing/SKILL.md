@@ -36,6 +36,7 @@ description: Build Hot Cargo, run unit tests, headless game tests and co-op test
 - Each `step <area>.<name>` reports on its own. The summary gives one reason: join failed, steps failed, desync, state differs, PC link. A state difference names the step and the `RunState` members that differ.
 - `as 1 <command>` runs a command in the sim as the client player. `on 1 <command>` runs it on the client's machine (its UI, its real inputs). Details: CONTRIBUTING.md, Co-op tests.
 - A new co-op check is a new step in the session that fits, not a new test. Keep each session under about 6 minutes.
+- 3 players: `scripts/autotest-all.sh 400 mp3:<session>` (or `PLAYERS=3 scripts/autotest-mp.sh ...`). It needs 3 slots, so run one at a time. Every client follows; `on 1` and `as 1` address the first client. `mpstart {PLAYERS}` starts with the player count, and a line that starts with `@3p ` or `@2p ` runs only with that count.
 - Frame and tick cost of Hot Cargo code: `selfprof on|reset|report <label>` (test `telemetry-stress`, session `coop-stress`). Headless slots draw nothing, so `frameprof on|report <label>` calls the draw-time hooks once per frame and logs time and bytes per frame.
 
 ## Infrastructure failures

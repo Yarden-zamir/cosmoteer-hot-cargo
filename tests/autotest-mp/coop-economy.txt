@@ -2,7 +2,7 @@
 # wanted, trade and loss. See coop-core.txt for "client:", "as 1", "on 1" and steps.
 # Events stay on until events.wanted (its trigger needs them). A run has no start event (#22): steps open named events.
 mphost {PORT}
-mpstart 2
+mpstart {PLAYERS}
 mp godmode on
 # The event window opens after the run intro closes (GUI only). The client's hover needs its window.
 closepanel

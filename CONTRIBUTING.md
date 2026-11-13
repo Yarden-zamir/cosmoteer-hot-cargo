@@ -44,6 +44,7 @@ Co-op tests are sessions: `tests/autotest-mp/<session>.txt` (`coop-core`, `coop-
 - The script takes two test slots. One slot hosts a co-op career, and the other slot joins it over UDP on `127.0.0.1`. Both run headless with `--nosteam`, through the LAN lobby and game setup screens.
 - The session file is the host's script and holds all choreography. The client runs `tests/autotest-mp/client.txt`: it joins, then follows the host. A `client: <command>` line in the session file runs on the client before it joins (local settings).
 - `{PORT}` in a script becomes the host's port (35870 + host slot number).
+- 3 players: `mp3:<session>` in `scripts/autotest-all.sh`, or `PLAYERS=3 scripts/autotest-mp.sh`. It takes 3 slots, and both clients follow. `{PLAYERS}` becomes the player count (`mpstart {PLAYERS}`). A line that starts with `@2p ` or `@3p ` runs only with that player count. `scripts/coop-report.sh` runs once for each client.
 - `step <area>.<name>` starts a step. Each step logs its own result. A failure skips only the rest of its step, so one failure does not hide the others. The area is the lowercase area folder name: `scripts/autotest-affected.sh` runs every session with a step of a changed area.
 - `end` closes the last step, sends the client away and quits.
 - Both machines log `MPHASH` and `MPFIELDS` lines every 150 sim ticks: a hash of every saved `RunState` member, money per player, ship and part counts and the sim random state. A desync that the game detects writes an `MP DESYNC` error line, in tests and in normal play.
