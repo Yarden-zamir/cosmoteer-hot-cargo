@@ -49,7 +49,7 @@ Actions: **smoke** (in the smoke tier), keep (full tier only), done (changed in 
 | events-hail | 78 s | ship hails, players hail, attack mid-dialogue | comms | — | keep |
 | events-outcomes | 89 s | every event renders, choices change money, heat, tech, flags | rules, MP input | EventModel | **smoke** |
 | events-research | 67 s | research offers from the tech tree | vanilla tech tree | EventModel.BuildResearchTrade | keep |
-| events-save | 79 s | pending event after save and load | save | — | keep |
+| events-save | 79 s | pending event after save and load | save | — | removed (see Removed tests) |
 | events-tow | 69 s | Dead in Space, Tow Job, live text tokens | missions, text | — | keep |
 | events-triggers | 77 s | Start, Arrival, Signal, Station triggers | game hooks | EventModel.CooldownOver | keep |
 | events-unavoidable | 67 s | every choice costs, per-run cap | rules | EventModel.UnderRunLimit | keep |
@@ -126,3 +126,21 @@ Medians from `../.state/logs` (November 2026). A co-op test counts as two slots 
 | `autotest-affected.sh` after a Core change | 100 tests, 12,257 s | 23 tests, 2,332 s (ideal 6.5 min) |
 | `autotest-affected.sh` after an Events change | 13 tests, 1,163 s | 3 tests, 408 s |
 | Unit tests | 145 | 149 |
+
+## Test history audit (November 2026)
+
+`uv run tools/test-audit.py` prints the evidence for every game test from `../.state/logs`, `../.state/flaky.log` and `git log`: runs, median cost on the PC and the Mac, game failures, infrastructure failures, flaky retries, and catches (a `fix` commit that names the test and changes game code, except the commit that added the test). `--md` prints a table. The test impact map (`../.state/coverage/map.json`) adds the methods that only one test runs.
+
+### Removed tests
+A test goes when it never caught a bug, never failed for a game reason, and runs no method that another test does not run.
+- `events-save`: a pending event after a save and a load. The co-op step `core.save-load` (tests/autotest-mp/coop-core.txt) loads a save with a pending event and checks it and the sprung trap.
+- `shipai-calls`: tactics rows on a hunter that calls for help. `ai-call` covers the call and the target; the tactics tests run the same rows.
+
+Kept although the map shows no unique method: `chains-blackbox` (a new feature, too few runs to judge) and `journey-jump` (a game failure in its history; it checks the jump hook that no other test reaches headless).
+
+### Made faster
+- Game speed 4x for game tests (`HOT_CARGO_TEST_SPEED`; `wait` counts game seconds). 8x changed a result (`ai-personality`: a check of the state between two lines saw a later moment), so 4x is the default. `# speed: 1` for the two telemetry tests, which measure real time.
+- 37 fixed `wait` + `expect` pairs became `waitfor` (12 kept: they check that something does not happen over time).
+- `tech-move` and `tech-outside` no longer log a full ship dump: its 22,000 lines took 15 minutes to fetch from the PC.
+- On the Mac, single-player tests run 6 at a time in one game process (`test` command); the process start and the rules load (about 19 s) happen once per batch.
+- The four PC-only tests run on the Mac with the real-time clock (`# clock: real`).

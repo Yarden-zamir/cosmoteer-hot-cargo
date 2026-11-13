@@ -28,6 +28,8 @@ public static class Autotest
     static double _waitUntil;
     /// <summary>Sim clock seconds at which the current "wait" ends (NaN: no game, the real-time bound alone).</summary>
     static double _waitSimUntil = double.NaN;
+    /// <summary>Real-time cap of the current "wait" (see Waiting).</summary>
+    static double _waitCap;
     /// <summary>
     /// Game speed (the game's own clock scale, MPSetClockScaleInput) for every game that this script starts. The test runners
     /// set it with "defaultspeed" (HOT_CARGO_TEST_SPEED); a test that measures real time keeps 1 ("# speed: 1").
@@ -151,6 +153,7 @@ public static class Autotest
     {
         _waitFor = null;
         _waitUntil = 0;
+        _waitCap = 0;
         if (Following && SkipTo("mpack"))
         {
             Log.Error($"AUTOTEST ON FAIL {what}", ex);
@@ -212,12 +215,19 @@ public static class Autotest
     {
         _waitUntil = App.Clock.Time.Seconds + seconds;
         _waitSimUntil = Game is { } g ? g.Sim.Clock.Time.Seconds + seconds : double.NaN;
+        _waitCap = App.Clock.Time.Seconds + seconds * 10 + 30;
     }
 
+    /// <summary>
+    /// A running game: until the sim clock reached the end, also when the sim runs slower than real time (a busy machine),
+    /// with a cap of 10 times the seconds + 30. A paused game, a menu or a load: the real seconds.
+    /// </summary>
     static bool Waiting()
     {
-        if (App.Clock.Time.Seconds >= _waitUntil) return false;
-        return double.IsNaN(_waitSimUntil) || Game is not { } g || g.Sim.Clock.Time.Seconds < _waitSimUntil;
+        double now = App.Clock.Time.Seconds;
+        if (now >= _waitCap) return false;
+        if (!double.IsNaN(_waitSimUntil) && Game is { } g && !g.Sim.IsPaused.Confirmed) return g.Sim.Clock.Time.Seconds < _waitSimUntil;
+        return now < _waitUntil;
     }
 
     /// <summary>Sends the default game speed once to each new game: single player, or the host of a co-op game.</summary>
@@ -461,6 +471,7 @@ public static class Autotest
             CloseStep();
             _waitFor = null;
             _waitUntil = 0;
+            _waitCap = 0;
             if (Game is { } game)
             {
                 if (_godmode is not null) game.EventHub.Tick -= _godmode;
