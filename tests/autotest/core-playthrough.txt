@@ -1,7 +1,7 @@
 # Core: a playthrough without cheats (spec 1004 to 1006). No godmode, no teleports, no test damage, no free money or tech.
 # Every command stands in for one player click: an order, a comms button, a trade window transfer, a build confirmation.
 # The run passes when the players reach sector 2 with tech and no invariant broke (every ERROR line fails a test).
-# timeout: 1500
+# timeout: 2100
 newgame run
 wait 8
 pt_watch 30
@@ -11,7 +11,9 @@ pt_status start
 # Ship AI tactics: a preset and the Auto switch, like the tactics editor.
 tactics Aggressive
 tacticsauto on
-# Fly to the nearest station and take a fight that the starting ship can win.
+# Fly to the nearest station and take the fight with the lowest threat: the lowest tier, then the fewest targets that use
+# the Disable tactic (it shoots thrusters and control parts, and the starter ship has no steel to rebuild them), then the
+# nearest. The log line "fights offered" shows the choice.
 pt_goto station 300
 pt_status station
 pt_accept
@@ -21,7 +23,8 @@ pt_fight 600
 pt_status fight
 expect pt_mission == 1
 # Back to the station: collect the bounty, sell 1 tech, unlock and build a hyperdrive, buy fuel.
-pt_goto station 300
+# A ship with shot thrusters still flies, slowly, so the way back may take long.
+pt_goto station 900
 pt_collect
 waitfor pt_mission == 2 30
 tech sell 1

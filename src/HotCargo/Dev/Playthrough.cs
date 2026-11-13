@@ -258,8 +258,10 @@ public static class Playthrough
     }
 
     /// <summary>
-    /// The accept button for one offer of the station: a local mission with enemies to fight that the player can afford,
-    /// the lowest tier first, then the nearest. A person picks a fight that the starting ship can win.
+    /// The accept button for one offer of the station: a local mission with enemies to fight that the player can afford.
+    /// A person picks the fight with the lowest threat: the lowest tier, then the fewest targets that use the Disable tactic,
+    /// then the nearest. A Disable target shoots the thrusters and control parts of the starter ship, which carries no steel
+    /// to rebuild them (spec 1004). A base has no personality, so a high-tier base never counts as safe.
     /// </summary>
     static void Accept()
     {
@@ -275,15 +277,50 @@ public static class Playthrough
             m.GetEnemyAllegiances(sim, enemies);
             return enemies.Count > 0;
         }
-        var pick = list
+        var fights = list
             .Where(m => m.IsLocal && m.CanAccept(sim) && Fight(m) && m.GetClosestObjective(out _) is not null
                 && Contracts.ContractBook.CanPay(run, m, run.Game.LocalPlayerIndex))
-            .OrderBy(m => m.GetTierRange(sim)?.Max ?? 0).ThenBy(m => m.GetDistanceToClosestObjective())
-            .FirstOrDefault() ?? throw new InvalidOperationException(
+            .Select(m => (Mission: m, Disablers: Disablers(run, sim, m)))
+            .OrderBy(f => f.Mission.GetTierRange(sim)?.Max ?? 0).ThenBy(f => f.Disablers).ThenBy(f => f.Mission.GetDistanceToClosestObjective())
+            .ToList();
+        Log.Info($"AUTOTEST playthrough: fights offered: {string.Join(", ", fights.Select(f => $"{f.Mission.MetatypeID} {f.Mission.MissionID} tier={f.Mission.GetTierRange(sim)?.Max} disable targets={f.Disablers} [{Targets(sim, f.Mission)}]"))}");
+        var pick = fights.Select(f => f.Mission).FirstOrDefault() ?? throw new InvalidOperationException(
                 $"{station.Name} has no local fight to accept; offers: {string.Join(", ", list.Select(m => $"{m.MetatypeID} local={m.IsLocal} accept={m.CanAccept(sim)}"))}");
         _mission = pick;
         run.Game.NetManager.EnqueueInput(new CommMissionsTab.MPAcceptMissionInput(CommMissionsTab.MissionSourceType.Ship, station, pick));
         Log.Info($"AUTOTEST playthrough: accepted {pick.MetatypeID} {pick.MissionID} '{Events.EventView.Plain(pick.Name.Text)}' at {station.Name}, {pick.GetDistanceToClosestObjective():0} away");
+    }
+
+    /// <summary>
+    /// The targets of a mission that will use the Disable tactic. Spec 363: the build fit of Disable is 1, so the personality roll and
+    /// jitter decide it, and both come from the group and the ship ID. That works for a target in stasis too.
+    /// </summary>
+    /// <summary>Logs only: each target with its fame, personality and jittered trait weights.</summary>
+    static string Targets(SimRoot sim, Mission m)
+    {
+        var objectives = new List<DefeatShipsObjective>();
+        m.GetObjectives(objectives);
+        return string.Join(" ", objectives.SelectMany(o => o.TargetShips).Select(t =>
+        {
+            t.GetTargetFameInfo(sim, out int fame, out _, applyDifficultyScaling: false);
+            var tt = Autotest.RequireRun().T.Tactics;
+            string group = t.GetTargetAllegiance(sim) is { } a ? Ai.PersonalityStrategy.GroupOf(a) : "?";
+            var w = Ai.PersonalityStrategy.Weights(group, t.ShipID, tt);
+            string weights = w is null ? "none" : string.Join("/", Enum.GetValues<Ai.Trait>().Select(tr => $"{tr}{w[(int)tr]:0.00}"));
+            return $"{t.GetPlainTargetName(sim)}:{t.ShipID}:fame{fame}:tier{t.GetTargetTier(sim)}:{Ai.PersonalityStrategy.Pick(group, t.ShipID, tt)?.Name}:{weights}";
+        }));
+    }
+
+    static int Disablers(Run run, SimRoot sim, Mission m)
+    {
+        var t = run.T.Tactics;
+        if (!t.PersonalitiesEnabled || !t.DisableEnabled) return 0;
+        var objectives = new List<DefeatShipsObjective>();
+        m.GetObjectives(objectives);
+        return objectives.SelectMany(o => o.TargetShips).Count(target =>
+            target.GetTargetAllegiance(sim) is { } allegiance
+            && Ai.PersonalityStrategy.Weights(Ai.PersonalityStrategy.GroupOf(allegiance), target.ShipID, t) is { } w
+            && w[(int)Ai.Trait.Disable] >= t.PersonalityThreshold);
     }
 
     /// <summary>The trade window's transfer from the station to the ship (CrewAndResourceTransferWindow.DoTransfer).</summary>
