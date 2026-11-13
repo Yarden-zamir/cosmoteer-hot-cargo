@@ -77,12 +77,14 @@ public static class EventHail
     {
         var s = run.State.Events;
         if (!run.T.Events.Enabled || EventLibrary.LoadError is not null || s.Pending is not null || run.State.Result != RunResult.Running) return [];
-        // The contact of an open hand-over shows its line until the hand-over ends, so a "not yet" can come back (spec 1102).
-        HailTarget? target = HandOverObjective.ForContact(run, callee.UniqueID) is not null ? HailTarget.Contact : TargetOf(callee, caller);
+        // The contact of an active hand-over shows its own page's line until the hand-over ends, so a "not yet" can come back (spec 1102).
+        var handOver = HandOverObjective.ForContact(run, callee.UniqueID);
+        HailTarget? target = handOver is not null ? HailTarget.Contact : TargetOf(callee, caller);
         if (target is null) return [];
         var snap = EventRunner.Snap(run, sim, run.Game.GetPlayerState(caller.Metadata.PlayerIndex, deterministic: true).Money, run.CurrentTier, EventRunner.CurrentTechValue(run));
         return EventLibrary.InOrder
-            .Where(e => e.Trigger == EventTrigger.Hail && e.HailTarget == target && (target == HailTarget.Contact || !s.HailUsed.Contains(UseKey(e.ID, callee.UniqueID))))
+            .Where(e => e.Trigger == EventTrigger.Hail && e.HailTarget == target)
+            .Where(e => handOver is not null ? e.ID == handOver.Page : !s.HailUsed.Contains(UseKey(e.ID, callee.UniqueID)))
             .Where(e => EventRunner.Eligible(run, e, snap))
             .ToList();
     }

@@ -353,6 +353,7 @@ Courier
 								{
 									Type = HotCargoHandOver
 									ResourceType = yarden_zamir.sealed_case
+									Page = courier_handover
 									ContactShipTag = { Mode=Latest; Tag=hc_courier_contact; }
 									ContactAreaTag = { Mode=Latest; Tag=hc_courier_area; }
 								}

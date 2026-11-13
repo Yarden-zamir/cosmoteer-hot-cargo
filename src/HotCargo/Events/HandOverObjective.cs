@@ -22,10 +22,11 @@ using HotCargo.Core;
 namespace HotCargo.Events;
 
 /// <summary>
-/// Rules type "HotCargoHandOver" (spec 1100 to 1105): the players carry one unit of Resource and hand it to the Contact ship.
-/// The accepting player's ship gets the unit when the mission is accepted (<see cref="MissionCargo"/>). The hand-over is a comms page on
-/// the contact (a Hail event with HailTarget = Contact); its outcome with HandOver = true calls <see cref="Deliver"/>.
-/// Fails when the contact dies, or when no unit is left in the players' ships or loose in the system.
+/// Rules type "HotCargoHandOver" (spec 1101 to 1103, 1105): an exchange with the Contact ship in its comms. Page is the Hail event
+/// (HailTarget = Contact) that the contact shows while this objective is active; its outcome with HandOver = true calls <see cref="Deliver"/>.
+/// With a ResourceType, the players carry one unit and hand it over: the accepting player's ship gets it on accept (<see cref="MissionCargo"/>),
+/// and the objective fails when no unit is left in the players' ships or loose in the system. Without one, LineKey names the exchange.
+/// Fails when the contact dies.
 /// Limit: the lost check counts units of the resource, not units of this mission. Two open jobs with the same item fail only when every
 /// unit is gone. Revisit when a second mission gives out the same item.
 /// </summary>
@@ -39,52 +40,64 @@ internal sealed class HandOverObjective : Objective
     [ReflectivePortableHashing(Explicit = true)]
     public sealed class Spawner : ObjectiveSpawner
     {
-        [Serialize, PortableHash] public ID<ResourceRules> ResourceType;
+        [Serialize(Optional = true), PortableHash] public ID<ResourceRules>? ResourceType;
         [Serialize, PortableHash] public SpawnedObjectSearch ContactShipTag = null!;
+        /// <summary>The Hail event (events.rules) that the contact's comms show for this exchange.</summary>
+        [Serialize, PortableHash] public string Page = "";
+        /// <summary>Objective line, a string key with {0} = the contact. Needed without a ResourceType.</summary>
+        [Serialize(Optional = true), PortableHash] public string? LineKey;
         /// <summary>A POI area around the contact. The map marks it until a player ship has the contact on radar, like vanilla GotoShip.</summary>
         [Serialize(Optional = true), PortableHash] public SpawnedObjectSearch? ContactAreaTag;
 
         public override Objective? CreateObjectiveImpl(SimRoot sim, Mission mission, Rand rand, SpawnedObjectCollection objects, Vector2 loc, out bool invalid)
         {
+            if (Page.Length == 0) throw new InvalidDataException("a HotCargoHandOver needs a Page (a Hail event with HailTarget = Contact)");
+            if (ResourceType is null && LineKey is null) throw new InvalidDataException("a HotCargoHandOver without a ResourceType needs a LineKey");
             invalid = !objects.TryFindObject(ContactShipTag, loc, rand, out var contact);
             if (invalid) return null;
             ObjectID id = contact!.UniqueID ?? throw new InvalidOperationException($"contact tag {ContactShipTag} found an object without an ID");
-            return new HandOverObjective(ResourceType, new ObjectiveTargetShip(sim.RequireGame(), sim.NodeId(), id))
+            return new HandOverObjective(ResourceType, new ObjectiveTargetShip(sim.RequireGame(), sim.NodeId(), id), Page)
             {
+                LineKey = LineKey,
                 AreaDoodadID = ContactAreaTag is null ? null : objects.FindObject(ContactAreaTag, loc, rand).UniqueID,
                 Tier = Math.Max(1, ((Cosmoteer.Modes.Career.CareerSimModeManager)sim.Mode).TierFields.GetTier(contact.Location.Center)),
             };
         }
     }
 
-    [Serialize] public ID<ResourceRules> ResourceType { get; private set; }
+    [Serialize(Optional = true)] public ID<ResourceRules>? ResourceType { get; private set; }
     [Serialize] public ObjectiveTargetShip Contact { get; private set; }
+    [Serialize] public string Page { get; private set; }
+    [Serialize(Optional = true)] public string? LineKey { get; private set; }
     [Serialize(Optional = true)] public int Tier { get; private set; } = 1;
     [Serialize(Optional = true)] public ObjectID? AreaDoodadID { get; private set; }
 
     public override string ScriptTypeName => "HotCargoHandOver";
 
-    public HandOverObjective(ID<ResourceRules> resourceType, ObjectiveTargetShip contact)
+    public HandOverObjective(ID<ResourceRules>? resourceType, ObjectiveTargetShip contact, string page)
     {
         ResourceType = resourceType;
         Contact = contact ?? throw new ArgumentNullException(nameof(contact));
+        Page = page.Length > 0 ? page : throw new ArgumentException("needs a page", nameof(page));
     }
 
     [GenericConstructor]
     HandOverObjective(GenericSerialReader reader)
     {
         Contact = null!;
+        Page = "";
         reader.ReflectiveRead(this);
     }
 
-    /// <summary>The open hand-over whose contact is this ship, or null.</summary>
+    /// <summary>The active hand-over whose contact is this ship, or null.</summary>
     public static HandOverObjective? ForContact(Run run, ObjectID shipId) => Open(run).FirstOrDefault(o => o.Contact.ShipID == shipId);
 
     public static IEnumerable<HandOverObjective> Open(Run run)
     {
         var found = new List<HandOverObjective>();
         foreach (Mission m in run.Mode.Missions) m.GetObjectives(found);
-        return found.Where(o => o.Completion == CompletionState.InProgress);
+        // Active: an exchange after other steps (kill the escorts first) shows its page only when its turn comes.
+        return found.Where(o => o.Completion == CompletionState.InProgress && o.IsActive);
     }
 
     /// <summary>The page outcome of a hand-over (HandOver = true) on this contact. The page cost already took the unit. Sim logic.</summary>
@@ -92,7 +105,7 @@ internal sealed class HandOverObjective : Objective
     {
         if (contact is not { } id || ForContact(run, id) is not { } o)
             throw new InvalidOperationException($"a HandOver outcome ran on ship {contact?.ToString() ?? "none"}, which is no open hand-over contact");
-        Log.Info($"hand-over: {o.ResourceType} delivered to {o.Contact.GetPlainTargetName(run.Game.Sim)}");
+        Log.Info($"hand-over: {o.Page} done with {o.Contact.GetPlainTargetName(run.Game.Sim)}");
         o.Complete();
     }
 
@@ -104,7 +117,7 @@ internal sealed class HandOverObjective : Objective
     public override void GetIntegrityHash(IntegrityHash iHash)
     {
         base.GetIntegrityHash(iHash);
-        ResourceType.GetIntegrityHash(iHash);
+        ResourceType?.GetIntegrityHash(iHash);
         Contact.GetIntegrityHash(iHash);
     }
 
@@ -135,10 +148,13 @@ internal sealed class HandOverObjective : Objective
 
     public override void GetDisplayLinesImpl(List<DisplayLine> lines, GameRoot game, CompletionState parentState)
     {
-        var r = ResourceType.GetResourceRules();
+        string contact = Contact.GetXmlTargetName(game.Sim);
+        var text = ResourceType?.GetResourceRules() is { } r
+            ? Strings.KeyStringFmt("HotCargoEventMissions/HandOverFmt", r.TextIconXml, r.NameKey, contact)
+            : Strings.KeyStringFmt(LineKey ?? throw new InvalidOperationException("a hand-over without an item has no LineKey"), contact);
         lines.Add(new DisplayLine
         {
-            Text = Strings.KeyStringFmt("HotCargoEventMissions/HandOverFmt", r.TextIconXml, r.NameKey, Contact.GetXmlTargetName(game.Sim)),
+            Text = text,
             State = Completion,
             CanFocus = CanFocusDisplayLine,
             OnFocused = OnDisplayLineFocused,
@@ -167,10 +183,10 @@ internal sealed class HandOverObjective : Objective
     {
         if (Mission?.Game is not { } game || Completion != CompletionState.InProgress || sim != game.Sim) return;
         MissionCargo.Watch(game);
-        if (UnitsLeft(sim, ResourceType) > 0) return;
-        Log.Info($"hand-over: no {ResourceType} left in the fleet or the system; the job fails");
+        if (ResourceType is not { } item || UnitsLeft(sim, item) > 0) return;
+        Log.Info($"hand-over: no {item} left in the fleet or the system; the job fails");
         // Fail() can take the mission out of the log at once, so read everything first.
-        string name = ResourceType.GetResourceRules().NameKey.Text;
+        string name = item.GetResourceRules().NameKey.Text;
         Fail();
         // UI only: tell the players why.
         Ux.UxKit.CenterText(game, Strings.FormatText("HotCargoEventMissions/HandOverLostFmt", name));
@@ -189,7 +205,7 @@ public static class MissionCargo
     {
         var found = new List<HandOverObjective>();
         m.GetObjectives(found);
-        return found.Select(o => o.ResourceType);
+        return found.Select(o => o.ResourceType).OfType<ID<ResourceRules>>();
     }
 
     public static bool HasItems(Mission m) => Items(m).Any();
@@ -236,8 +252,9 @@ public static class MissionCargo
         m.GetObjectives(open);
         foreach (var o in open.Where(o => o.Completion != CompletionState.Completed))
         {
-            int removed = Tech.Vaults.HumanShips(sim).OrderBy(s => s.UniqueID).Select(s => s.Resources.RemoveResources(o.ResourceType, 1)).FirstOrDefault(n => n > 0);
-            Log.Info($"mission cargo: {m.MetatypeID} {m.MissionID} left the log without the hand-over; removed {removed} {o.ResourceType}");
+            if (o.ResourceType is not { } item) continue;
+            int removed = Tech.Vaults.HumanShips(sim).OrderBy(s => s.UniqueID).Select(s => s.Resources.RemoveResources(item, 1)).FirstOrDefault(n => n > 0);
+            Log.Info($"mission cargo: {m.MetatypeID} {m.MissionID} left the log without the hand-over; removed {removed} {item}");
         }
     });
 }

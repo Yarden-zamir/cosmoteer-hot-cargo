@@ -125,6 +125,7 @@ public static class EventText
         UnmetKind.Tech => $"Needs {(int)u.Amount} Stolen Tech in vaults",
         UnmetKind.VaultSpace => $"Needs room for {(int)u.Amount} in Tech Vaults",
         UnmetKind.Crew => $"Needs {(int)u.Amount} crew",
+        UnmetKind.Bunks => (int)u.Amount == 1 ? "Needs a free bunk" : $"Needs {(int)u.Amount} free bunks",
         UnmetKind.MinHeat => $"Needs heat {u.Amount:0} or more",
         UnmetKind.MaxHeat => $"Only below heat {u.Amount:0}",
         UnmetKind.MinSector => $"Needs sector {u.Amount:0}",

@@ -79,6 +79,8 @@ public sealed class NeedRules
     [Serialize(Optional = true)] public int Tech;
     [Serialize(Optional = true)] public int VaultSpace;
     [Serialize(Optional = true)] public int Crew;
+    /// <summary>Free crew bunks (spec 1106), for a choice that brings someone aboard.</summary>
+    [Serialize(Optional = true)] public int Bunks;
     [Serialize(Optional = true)] public float MinHeat;
     [Serialize(Optional = true)] public float MaxHeat;
     [Serialize(Optional = true)] public int MinSector;
