@@ -2,6 +2,7 @@
 # contact's comms. Both machines see the same case count and the same hand-over, with no desync.
 mphost {PORT}
 mpstart 2
+mp godmode on
 mp ev_set StationEventChance 0
 mp ev_set ArrivalEventChance 0
 mp ev_tostation

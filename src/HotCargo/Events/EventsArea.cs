@@ -235,9 +235,7 @@ public static class EventsArea
         Autotest.Commands["ev_courier_goto"] = _ =>
         {
             var sim = RequireSim();
-            var contacts = SimQueries.TaggedShips(sim, CourierContactTag);
-            if (contacts.Count == 0) throw new InvalidOperationException("no courier contact in this system");
-            var contact = contacts[0];
+            var contact = CourierContact(sim);
             Log.Info($"AUTOTEST courier contact {contact.Id} live={contact.Live is not null} at {contact.Location}");
             // Ship sight is short (a small control room sees 400), so the ships stop just outside the contact's hull.
             float offset = (contact.Live?.WorldBoundingRadius ?? 300f) + 150f;
@@ -251,8 +249,7 @@ public static class EventsArea
         Autotest.Fields["ev_courier_seen"] = () =>
         {
             var run = RequireRun();
-            var contacts = SimQueries.TaggedShips(RequireSim(), CourierContactTag);
-            if (contacts.Count == 0 || contacts[0].Live is not { } ship) return -1;
+            if (CourierContact(RequireSim()).Live is not { } ship) return -1;
             int team = run.Game.GetPlayerState(run.Game.LocalPlayerIndex, deterministic: true).Team;
             return ship.IsWithinSightOfTeam(team) ? 1 : 0;
         };
@@ -442,6 +439,17 @@ public static class EventsArea
                     if (m.MetatypeID.Equals(CourierType)) yield return (list, m);
     }
 
+    /// <summary>The contact of the accepted Courier Job, else the first contact in the system. A system can hold two (a rolled and a forced offer).</summary>
+    static SimQueries.TaggedShip CourierContact(SimRoot sim)
+    {
+        var contacts = SimQueries.TaggedShips(sim, CourierContactTag);
+        if (contacts.Count == 0) throw new InvalidOperationException("no courier contact in this system");
+        var accepted = HandOverObjective.Open(RequireRun()).Select(o => (Cosmoteer.Game.ObjectID?)o.Contact.ShipID).FirstOrDefault();
+        if (accepted is not { } id) return contacts[0];
+        int i = contacts.FindIndex(c => c.Id == id);
+        return i >= 0 ? contacts[i] : throw new InvalidOperationException($"the accepted job's contact {id} is not in this system");
+    }
+
     static TowObjective? _lastTow;
 
     /// <summary>The latest tow objective in the mission log, or the last one seen: a completed mission leaves the log when it pays.</summary>
@@ -470,7 +478,7 @@ public static class EventsArea
         Ship? found = which switch
         {
             "carrier" => RequireRun().State.Events.Pending?.Carrier is { } id ? sim.Ships[id] : null,
-            "contact" => SimQueries.TaggedShips(sim, CourierContactTag).Select(t => t.Live).FirstOrDefault(l => l is not null),
+            "contact" => CourierContact(sim).Live,
             "station" => sim.Ships.Where(s => EventHail.TargetOf(s, caller) == HailTarget.Station).MinBy(s => s.DetWorldCenter.DistanceSquaredTo(caller.DetWorldCenter)),
             "faction" => sim.Ships.Where(s => EventHail.TargetOf(s, caller) == HailTarget.FactionShip).MinBy(s => s.DetWorldCenter.DistanceSquaredTo(caller.DetWorldCenter)),
             _ => throw new InvalidOperationException($"unknown comms target '{which}' (carrier, contact, station, faction)"),
