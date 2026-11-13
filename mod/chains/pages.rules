@@ -91,11 +91,11 @@ Events
 			}
 			{
 				Text = "The station's navy will want to talk to you."
-				Outcomes [ { Text = "Navy officers escort her off with polite smiles. The station commander sends thanks and a purse."; Crew = -1; Money = 0.5; ChainResult = navy } ]
+				Outcomes [ { Text = "Navy officers escort her off with polite smiles. The station commander sends thanks and a purse."; CrewLeaves = 1; Money = 0.5; ChainResult = navy } ]
 			}
 			{
 				Text = "The corporation pays well for its runaways."
-				Outcomes [ { Text = "The corporate liaison is very grateful, and the hunters get new orders. Okafor does not look at you as they take her."; Crew = -1; Money = 1.5; Heat = -20; ChainResult = sold } ]
+				Outcomes [ { Text = "The corporate liaison is very grateful, and the hunters get new orders. Okafor does not look at you as they take her."; CrewLeaves = 1; Money = 1.5; Heat = -20; ChainResult = sold } ]
 			}
 		]
 	}

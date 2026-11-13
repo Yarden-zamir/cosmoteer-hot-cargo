@@ -416,6 +416,7 @@ public static class EventRunner
         if (o.Heat != 0) ChangeHeat(run, sim, o.Heat * run.T.Events.HeatScale, lines);
         if (o.Tech != 0) ChangeTech(sim, o.Tech, lines);
         if (o.Crew != 0) ChangeCrew(sim, o.Crew, p.Seed, lines);
+        if (o.CrewLeaves > 0) ChangeCrew(sim, -o.CrewLeaves, p.Seed, lines, killed: false);
         foreach (var r in o.Resources) ChangeResource(sim, r.ID, r.At(p.Tier), lines);
         if (o.HullDamage > 0) DamageHull(sim, o.HullDamage, p.Seed, lines);
         if (o.Reputation != 0) ChangeReputation(run, sim, o.Reputation, p.Tier, lines);
@@ -502,7 +503,8 @@ public static class EventRunner
         if (done < amount) lines.Add(EventText.NoVaultRoom(amount - done));
     }
 
-    static void ChangeCrew(SimRoot sim, int amount, ulong seed, List<string> lines)
+    /// <summary>killed: false removes crew without the death path (no death stats, no casualty), for crew that leave alive.</summary>
+    static void ChangeCrew(SimRoot sim, int amount, ulong seed, List<string> lines, bool killed = true)
     {
         var ships = Vaults.HumanShips(sim).OrderBy(sh => sh.Metadata.PlayerIndex).ThenBy(sh => sh.UniqueID).ToList();
         int done = 0;
@@ -523,11 +525,11 @@ public static class EventRunner
             {
                 CrewSoul soul = pool[rand.Int32(0, pool.Count - 1)];
                 pool.Remove(soul);
-                soul.Delete(killed: true);
+                soul.Delete(killed);
                 done--;
             }
         }
-        if (done != 0) lines.Add(EventText.Crew(done));
+        if (done != 0) lines.Add(killed ? EventText.Crew(done) : EventText.CrewLeft(-done));
         if (amount > 0 && done < amount) lines.Add(EventText.NoBunk(amount - done));
     }
 

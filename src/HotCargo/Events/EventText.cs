@@ -34,6 +34,8 @@ public static class EventText
     public static string Crew(int amount) =>
         (amount > 0 ? W.GoodTextColor : W.BadTextColor).FormatWithXml($"{Signed(amount)} crew");
 
+    public static string CrewLeft(int amount) => W.BadTextColor.FormatWithXml(amount == 1 ? "1 crew left the ship" : $"{amount} crew left the ship");
+
     public static string Resource(ID<ResourceRules> id, int amount)
     {
         var r = GameApp.Rules.GetResourceRules(id);

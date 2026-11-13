@@ -146,6 +146,8 @@ public sealed class OutcomeRules
     [Serialize(Optional = true)] public bool ClearWanted;
     [Serialize(Optional = true)] public int Tech;
     [Serialize(Optional = true)] public int Crew;
+    /// <summary>Crew that leave the ship alive (a passenger handed on, spec 1109): removed without the death path.</summary>
+    [Serialize(Optional = true)] public int CrewLeaves;
     [Serialize(Optional = true)] public ResourceAmount[] Resources = [];
     /// <summary>Fraction of max health taken from a few random parts of the biggest player ship. Parts keep 1 health. Vaults are skipped.</summary>
     [Serialize(Optional = true)] public float HullDamage;
