@@ -88,7 +88,8 @@ static class TelemetryPatches
         ("MPUpdateShipInput", "build"), ("CommHireTab", "crew_hire"), ("CommTechsTab", "tech_unlock"),
         ("MPShipSurrenderedInput", "surrender"), ("MPTransferMoneyInput", "transfer"),
         ("FleeStrategy", "flee_jump"), ("AIExitSectorModule", "exit_sector"), ("AIDeleteSelfModule", "delete_self"),
-        ("AITradeShipModule", "trade_route"), ("VaultDamage", "vault_damage"),
+        ("AITradeShipModule", "trade_route"),
+        ("FameCapHeat", "fame_cap"), ("Deals", "diplomacy"),
     ];
 
     /// <summary>
@@ -105,6 +106,10 @@ static class TelemetryPatches
         int dot = frames[0].IndexOf('.');
         return dot > 0 ? frames[0][..dot] : frames[0];
     }
+
+    /// <summary>True for a source that a rule names (or a tick context, or a rate-limited lookup), false for a caller type fallback.</summary>
+    internal static bool IsKnownSource(string source) =>
+        source is "time" or "trail" or "rate_limited" || Sources.Any(s => s.Source == source);
 
     // ---- Heat
 
@@ -149,7 +154,9 @@ static class TelemetryPatches
                     _ => null,
                 };
                 string? caller = context is null ? Caller() : null;
-                s.HeatChanged(Source(context, caller ?? ""), caller, amount, __state, __instance.State.Heat);
+                string source = Source(context, caller ?? "");
+                s.HeatChanged(source, caller, amount, __state, __instance.State.Heat);
+                Dev.Invariants.HeatSource(source, caller, __instance.State.Heat - __state);
             }
             catch (Exception ex) { Errors.Report("telemetry heat", ex.Message, ex); }
             finally { Stats.Exit(t0); }
@@ -195,7 +202,7 @@ static class TelemetryPatches
     }
 
     /// <summary>
-    /// Hits on a Tech Vault that cost tech or destroyed it: damage, health and the tech it cost. Runs after the Tech area's damage patch.
+    /// Hits on a Tech Vault that cost tech (only the hit that destroys it, spec 65): damage, health and the tech it cost.
     /// Hits that cost nothing only add to the vault damage sums (combat.damage, side "vault"), because fire and repair loops make many of them.
     /// </summary>
     [HarmonyPatch(typeof(Part), "OnHealthChanged")]

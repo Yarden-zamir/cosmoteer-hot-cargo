@@ -17,8 +17,7 @@ expect hc_offers_shady >= 1
 expect hc_allies >= 2
 expect hc_allies_vs_player == 0
 expect hc_allies_vs_target >= 2
-# Escort: the freighter is a friend of the player; the raiders are enemies of both.
+# Escort: the freighter is a friend of the player. No raiders wait at the jump point: they spawn on the route after the accept (missions-escort-ambush).
 expect hc_escort_vs_player == 0
-expect hc_raiders_vs_escort >= 2
-expect hc_raiders_vs_player >= 2
+expect hc_escort_raiders == 0
 quit

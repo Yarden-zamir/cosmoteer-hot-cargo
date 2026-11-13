@@ -3,11 +3,7 @@
 render on
 newgame run 0
 wait 10
-# Option 3 of the start event keeps every crate. Then continue, and close the run intro.
-uxpick 3
-wait 1
-uxpick 1
-wait 1
+# Close the run intro.
 closepanel
 wait 1
 pause on

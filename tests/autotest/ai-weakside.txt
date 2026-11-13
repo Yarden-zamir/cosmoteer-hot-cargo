@@ -1,0 +1,36 @@
+# Weak sides (spec 1030-1033): a ship with its control room exposed at the back never kites, and when it flees it keeps
+# its strong side to the enemy instead of turning its back.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+tacticlog on
+aiset CallEnabled false
+aiset CallOnVanilla false
+aiset RegroupOnVanilla false
+aiset FallBackEnabled false
+aiset ProfileRefreshSeconds 1
+aispawn pirates 3 4
+wait 3
+# Strip the cells behind each control room: the back is weak, the front keeps its cover.
+aiweakback
+wait 3
+aiprofiles weakback
+expect ai_weak_back >= 1
+# Kite wants it, the weak back forbids it.
+aijitter 0
+aitrait Pirate Raiders Kite 1
+aitrait Pirate Ambushers Kite 1
+expect ai_weakback_kiters == 0
+# Every damaged ship flees and keeps fleeing. A plain flee would show the weak back to the player.
+aiset FleeChance 1
+aiset FleeHealthFraction 1
+aiset FleeRecoverFraction 1
+waitfor ai_flee_guarded >= 1 30
+wait 6
+expect ai_flee_weak_to_threat == 0
+# Switched off, the same ships no longer keep the strong side to the threat.
+aiset WeakSideEnabled false
+wait 8
+expect ai_flee_off_strong >= 1
+quit

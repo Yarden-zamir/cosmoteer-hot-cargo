@@ -4,10 +4,6 @@ newgame run
 wait 10
 ev_set Enabled false
 closepanel
-# The start event pauses the game: answer it and close its result page.
-choose last
-uxpick 1
-wait 1
 pause off
 godmode on
 tactics Sniper
@@ -18,7 +14,9 @@ screenshot shipai-card
 tactics_editor open
 wait 2
 screenshot shipai-editor
-spawnstage Patrol
+# Two ships of the sector tier: the Warning response of the last sector.
+stageset Warning EarlyScale 1
+spawnstage Warning
 waitfor tactics_target_row >= 0 60
 wait 3
 screenshot shipai-editor-live

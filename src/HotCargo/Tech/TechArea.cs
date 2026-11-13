@@ -13,11 +13,13 @@ public static class TechArea
     {
         Run.Hooks.CountFleetTech = Vaults.CountFleetTech;
         Run.Hooks.NewRunStarted += StartingVault.OnNewRun;
+        Run.Hooks.NewRunStarted += StartingResearch.OnNewRun;
         Run.Hooks.Tick += LossTimer.OnTick;
         Run.Hooks.Tick += HunterGrab.OnTick;
         TechMarkers.RegisterHolders(HunterGrab.Holders);
         DebugKeys.Extra += OnDebugKeys;
         TechAutotest.Register();
+        VaultDesigns.Register();
     }
 
     /// <summary>Spec 56: F11 adds one tech unit to a vault, Shift+F11 removes one.</summary>

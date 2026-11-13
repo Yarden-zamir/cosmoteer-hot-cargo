@@ -28,28 +28,22 @@ public class DiplomacyModelTests
     }
 
     [Fact]
-    public void More_units_raise_the_hand_over_chance_and_a_visible_rest_lowers_it()
+    public void Other_hunters_lower_the_pay_off_and_stop_it_above_the_limit()
     {
-        float one = DiplomacyModel.HandOverChance(1, 8, 0f, 0f, 0.15f, 0.95f, 0.5f, 0.15f);
-        float seven = DiplomacyModel.HandOverChance(7, 8, 0f, 0f, 0.15f, 0.95f, 0.5f, 0.15f);
-        float sevenVisible = DiplomacyModel.HandOverChance(7, 8, 0.125f, 0f, 0.15f, 0.95f, 0.5f, 0.15f);
-        Assert.Equal(0.15f, one, 4);
-        Assert.True(seven > one);
-        Assert.True(sevenVisible < seven);
-        Assert.Throws<ArgumentOutOfRangeException>(() => DiplomacyModel.HandOverChance(0, 8, 0, 0, 0, 1, 0, 0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => DiplomacyModel.HandOverChance(9, 8, 0, 0, 0, 1, 0, 0));
+        Assert.Equal(1f, DiplomacyModel.Crowd(0, 4));
+        Assert.Equal(0.6f, DiplomacyModel.Crowd(2, 4), 4);
+        Assert.Equal(0f, DiplomacyModel.Crowd(5, 4));
+        Assert.Throws<ArgumentOutOfRangeException>(() => DiplomacyModel.Crowd(-1, 4));
     }
 
     [Fact]
-    public void Deal_chance_falls_with_other_hunters_and_is_zero_above_the_limit()
+    public void Bluff_gives_a_share_of_the_stock_but_never_all_of_it()
     {
-        float alone = DiplomacyModel.DealChance(0, 4, 8, 8, 0.85f, 0.4f);
-        float two = DiplomacyModel.DealChance(2, 4, 8, 8, 0.85f, 0.4f);
-        float five = DiplomacyModel.DealChance(5, 4, 8, 8, 0.85f, 0.4f);
-        Assert.Equal(0.85f, alone, 4);
-        Assert.Equal(0.85f * 0.6f, two, 4);
-        Assert.Equal(0f, five);
-        Assert.True(DiplomacyModel.DealChance(0, 4, 1, 8, 0.85f, 0.4f) < alone);
+        Assert.Equal(2, DiplomacyModel.BluffUnits(8, 0.25f));
+        Assert.Equal(1, DiplomacyModel.BluffUnits(2, 0.25f));
+        Assert.Equal(2, DiplomacyModel.BluffUnits(3, 1f));
+        Assert.Equal(0, DiplomacyModel.BluffUnits(1, 0.25f));
+        Assert.Equal(0, DiplomacyModel.BluffUnits(0, 0.25f));
     }
 
     [Fact]

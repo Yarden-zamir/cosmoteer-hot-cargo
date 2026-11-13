@@ -13,7 +13,9 @@ expecttacticsany Defensive
 # The client edits in the editor window.
 waitfor mpmark >= 1 120
 expecttacticsany HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
-mp spawnstage Patrol
+# Two ships of the sector tier: the Warning response of the last sector.
+mp stageset Warning EarlyScale 1
+mp spawnstage Warning
 wait 40
 expect tactics_evals > 20
 expect desyncs == 0

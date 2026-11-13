@@ -8,8 +8,8 @@ public sealed class HunterTunables
     /// <summary>Response for each heat stage, matched to Heat.Stages by Name. The alert text is the string HotCargoUx/Stage{Name}.</summary>
     [Serialize(Optional = true)] public StageResponse[] Stages =
     [
-        new() { Name = "Warning", ShipCount = 1, TierOffset = 0 },
-        new() { Name = "Patrol", ShipCount = 2, TierOffset = 0 },
+        // Scouts: 1 ship in sector 1, 2 in the last sector.
+        new() { Name = "Warning", ShipCount = 2, TierOffset = 0, EarlyScale = 0.5f },
         new() { Name = "Hunt", ShipCount = 3, TierOffset = 1 },
         // Spec 190-191: 2 ships of tier + 1 in sector 1, 3 ships of tier + 2 in the last sector, one ship at a time.
         new() { Name = "Strike", ShipCount = 3, TierOffset = 2, EarlyScale = 0.67f, EarlyTierReduction = 1, Waves = 3, WaveGapSeconds = 45f },

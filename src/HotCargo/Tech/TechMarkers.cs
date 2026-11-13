@@ -26,11 +26,11 @@ public static class TechMarkers
 
     static bool On => Run.Current is { } run && run.T.Tech.TechMarkers;
 
-    /// <summary>Tech units that the ship's blip shows: tech in a human ship's vaults, plus the units of registered holders.</summary>
+    /// <summary>Tech units that the ship's blip shows: tech in the vaults of a human or derelict ship, plus the units of registered holders.</summary>
     public static int ShipUnits(Ship ship)
     {
         if (ship.Sim is not { } sim) return 0;
-        int units = sim.Mode.IsHumanPlayerShip(ship) ? ship.Resources.GetResourceTotal(Vaults.TechId, includeStored: true, includeCarried: false) : 0;
+        int units = Vaults.HoldsForPlayers(sim, ship) ? Vaults.ShipTech(ship) : 0;
         foreach (var source in HolderSources)
             foreach (var (holder, n) in source(sim))
                 if (holder == ship) units += n;
@@ -48,7 +48,7 @@ public static class TechMarkers
             {
                 int units = ShipUnits(__instance.Ship);
                 if (units <= 0) return;
-                string key = __instance.Ship.IsHumanPlayerShip ? "HotCargoTech/MarkerTag" : "HotCargoTech/MarkerHeldTag";
+                string key = __instance.Ship.IsHumanPlayerShip || __instance.Ship.IsJunk ? "HotCargoTech/MarkerTag" : "HotCargoTech/MarkerHeldTag";
                 string tag = string.Format(Strings.GetText(key), units);
                 result = result is null ? tag : tag + "\n" + result;
             });

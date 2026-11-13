@@ -39,6 +39,8 @@ public static class Mod
             MultiChoice.MultiChoiceArea.Register();
             Diplomacy.DiplomacyArea.Register();
             Telemetry.TelemetryArea.Register();
+            Dev.Invariants.Register();
+            Dev.Playthrough.Register();
             // Last: its run log hooks run after the hooks of the other areas.
             Onboarding.OnboardingArea.Register();
             Log.Info($"harmony patched {harmony.GetPatchedMethods().Count()} methods; mod root {ModRoot}");

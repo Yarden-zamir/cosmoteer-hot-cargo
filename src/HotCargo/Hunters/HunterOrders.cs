@@ -19,10 +19,30 @@ public static class HunterOrders
     /// <summary>Moves to a location. The current move stays if its destination is within tolerance of the new one.</summary>
     public static void MoveTo(Ship ship, Vector2 location, float tolerance)
     {
-        if (ship.Commands.CurConfirmedCommand is MoveCommand { Location: { } current } && current.DistanceTo(in location) <= tolerance) return;
+        if (ship.Commands.CurConfirmedCommand is MoveCommand { Location: { } current, ForceDestinationRotation: false } && current.DistanceTo(in location) <= tolerance) return;
         ship.Commands.EnqueueCommand(
             new MoveCommand(ship, ship.Commands.AllocGlobalCommandID(), location, null, CollisionAvoidanceFlags.All, isTentative: false),
             append: false, confirmed: true);
+    }
+
+    /// <summary>
+    /// Moves to a location and keeps one ship-local direction (radians, 0 = the ship's +X cell axis) toward the target, as
+    /// AIAggroEnemiesModule.TacticalRetreat does: a strafing move (forced rotation) with the target as its rotation target.
+    /// The current move stays if it already strafes toward the same target within tolerance.
+    /// </summary>
+    public static void MoveFacing(Ship ship, Vector2 location, float tolerance, Ship target, float localAngle)
+    {
+        Direction rotation = ship.DetWorldCenter.DirectionTo(target.DetWorldCenter) - localAngle;
+        if (ship.Commands.CurConfirmedCommand is MoveCommand { Location: { } current, ForceDestinationRotation: true } move
+            && current.DistanceTo(in location) <= tolerance && move.RotationTarget == target)
+        {
+            move.SetWorldRotation(rotation);
+            return;
+        }
+        var command = new MoveCommand(ship, ship.Commands.AllocGlobalCommandID(), location, null, CollisionAvoidanceFlags.All, isTentative: false,
+            forceDestinationRotation: true) { RotationTarget = target };
+        command.SetWorldRotation(rotation);
+        ship.Commands.EnqueueCommand(command, append: false, confirmed: true);
     }
 
     /// <summary>

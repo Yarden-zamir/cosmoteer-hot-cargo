@@ -17,13 +17,31 @@ public static class TunablesMenuArea
     {
         // A stale entry is a bug that the tests must catch, but it must not stop the game from starting.
         Errors.Guard("tunables timing", TunableTiming.Check);
+        Run.Hooks.Frame += TuneRequest.Poll;
         Autotest.Commands["menu"] = MenuCommand;
-        Autotest.Fields["menu_ready"] = () => Autotest.RequireRun() is { HostTunablesPending: false, HostTunablesInFlight: false } ? 1 : 0;
+        Autotest.Fields["menu_ready"] = () => Autotest.RequireRun() is { HostTunablesPending: false, HostSendsInFlight: 0 } ? 1 : 0;
         Autotest.Fields["menu_open"] = () => TunablesDialog.Open is null ? 0 : 1;
         Autotest.Fields["menu_rows"] = () => Dialog().Rows.Count;
         Autotest.Fields["menu_sections"] = () => Dialog().SectionCount;
         Autotest.Fields["menu_error"] = () => Dialog().Error is null ? 0 : 1;
         Autotest.Fields["menu_readonly"] = () => Dialog().ReadOnly ? 1 : 0;
+        // spawnstageindex N: starts the hunter response at index N of Hunters.Stages, so a test needs no stage name. Test only.
+        Autotest.Commands["spawnstageindex"] = arg =>
+        {
+            var run = Autotest.RequireRun();
+            Hunters.HunterSpawner.StartStage(run, run.Game.Sim, run.T.Hunters.Stages[int.Parse(arg, System.Globalization.CultureInfo.InvariantCulture)].Name);
+        };
+        Autotest.Fields["tunables_error"] = () => TunablesFile.LastError is null ? 0 : 1;
+        // tunerequest LINE | LINE: writes tune.request like scripts/tune.sh. tuneresult has|lacks TEXT: checks tune.result.
+        Autotest.Commands["tunerequest"] = arg => File.WriteAllText(Path.Combine(Mod.ModRoot, "tune.request"), string.Join("\n", arg.Split('|', StringSplitOptions.TrimEntries)));
+        Autotest.Commands["tuneresult"] = arg =>
+        {
+            var parts = arg.Split(' ', 2);
+            string path = Path.Combine(Mod.ModRoot, "tune.result");
+            string content = File.Exists(path) ? File.ReadAllText(path) : "";
+            bool want = parts[0] == "has";
+            Autotest.Check(content.Contains(parts[1]) == want, $"tune.result {parts[0]} '{parts[1]}' (content: {content.Trim()})");
+        };
     }
 
     /// <summary>Opens the window over the escape menu, as the button does.</summary>
@@ -38,6 +56,7 @@ public static class TunablesMenuArea
     /// menu reject PATH VALUE: the same, and fails unless the window rejects it.
     /// menu reset PATH | menu resetsection SECTION: clicks a reset button.
     /// menu value PATH OP NUMBER: checks the value in effect. menu file has|lacks TEXT: checks tunables.rules.
+    /// menu shows PATH TEXT: checks the text that the row of PATH shows.
     /// menu close: closes the window and the escape menu.
     /// </summary>
     static void MenuCommand(string arg)
@@ -97,6 +116,12 @@ public static class TunablesMenuArea
                 Autotest.Check(ok, $"{path} {rest} (actual {actual})");
                 break;
             }
+            case ["shows", var path, var text]:
+            {
+                string shown = Row(path).Shown();
+                Autotest.Check(shown == text, $"the row {path} shows '{text}' (shows '{shown}')");
+                break;
+            }
             case ["file", "has" or "lacks", var text]:
             {
                 string content = File.ReadAllText(TunablesFile.FilePath);
@@ -110,7 +135,7 @@ public static class TunablesMenuArea
                 if (App.Director.States.OfType<GameMenu>().FirstOrDefault() is { } open) App.Director.PopState(open);
                 break;
             default:
-                throw new InvalidOperationException("menu needs: escape | open | search TEXT | set PATH VALUE | reject PATH VALUE | reset PATH | resetsection NAME | value PATH OP N | file has|lacks TEXT | close");
+                throw new InvalidOperationException("menu needs: escape | open | search TEXT | set PATH VALUE | reject PATH VALUE | reset PATH | resetsection NAME | value PATH OP N | shows PATH TEXT | file has|lacks TEXT | close");
         }
     }
 

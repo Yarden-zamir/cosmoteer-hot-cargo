@@ -1,10 +1,11 @@
 # Courier Job (spec 85): the first trade station in a system puts the offer into its mission list; the contact is far away.
 newgame run
 wait 8
-expectevent getaway
 ev_set CourierChance 1
 ev_set StationEventChance 0
-choose 3 1
+ev_set ArrivalEventChance 0
+# The start station rolled at the start of the run. A new system gets a new roll.
+worlds jumpto hc_trade_hub
 ev_tostation
 wait 2
 expect ev_courier_offers == 1

@@ -19,6 +19,7 @@ public static class HunterArea
         Run.Hooks.StrikeWave += HunterSpawner.OnStrikeWave;
         Run.Hooks.Tick += HunterSpawner.OnTick;
         Run.Hooks.SystemEntered += HunterSpawner.OnSystemEntered;
+        Run.Hooks.TunablesApplied += HunterSpawner.OnTunablesApplied;
         // Hunter groups that wait to arrive in this system (spec 191).
         Autotest.Fields["hunterspending"] = () => Autotest.RequireRun().State.Hunters.Pending.Count;
         // Least FTL fuel on any live hunter (spec 192). -1 without hunters.
