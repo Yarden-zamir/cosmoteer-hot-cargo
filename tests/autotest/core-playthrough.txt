@@ -5,6 +5,8 @@
 newgame run
 wait 8
 pt_watch 30
+# Logs only: what enemy ships decide, so a failed run shows where a target went.
+tacticlog on
 pt_status start
 # Ship AI tactics: a preset and the Auto switch, like the tactics editor.
 tactics Aggressive
