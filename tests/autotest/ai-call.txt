@@ -32,8 +32,8 @@ wait 6
 expect ai_calling >= 1
 disrupt disruptor
 wait 1
+# The interrupt count shows the hit stopped the call. Another hunter off its 1 s cooldown can start its own call here.
 expect ai_call_interrupt >= 1
-expect ai_calling == 0
 # Damage starts a new call; one EMP missile hit cuts it off.
 damagehunters 0.9
 wait 3
