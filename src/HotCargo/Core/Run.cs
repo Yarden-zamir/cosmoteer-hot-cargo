@@ -207,10 +207,14 @@ public sealed class Run
         AddHeat(Math.Max(0f, T.Heat.Stages[State.StagesStarted].Heat - State.Heat), sim);
     }
 
+    bool AtStrike => T.Heat.Stages.Length > 0 && State.StagesStarted == T.Heat.Stages.Length && State.Heat >= HeatModel.MaxHeat;
+
+    /// <summary>Game seconds until the next Strike wave, or null while the run is not at full heat in the last stage.</summary>
+    public double? SecondsToStrikeWave => AtStrike ? Math.Max(0, T.Hunters.StrikeWaveIntervalSeconds - State.SecondsSinceStrikeWave) : null;
+
     void TickStrikeWaves(SimRoot sim, double dt)
     {
-        bool atTop = T.Heat.Stages.Length > 0 && State.StagesStarted == T.Heat.Stages.Length && State.Heat >= HeatModel.MaxHeat;
-        if (!atTop) { State.SecondsSinceStrikeWave = 0; return; }
+        if (!AtStrike) { State.SecondsSinceStrikeWave = 0; return; }
         State.SecondsSinceStrikeWave += dt;
         if (State.SecondsSinceStrikeWave < T.Hunters.StrikeWaveIntervalSeconds) return;
         State.SecondsSinceStrikeWave = 0;
