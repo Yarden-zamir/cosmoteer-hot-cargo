@@ -84,10 +84,12 @@ public static class SharedChoices
         {
             // A click sent just before the switch to vote mode arrives late. In vote mode only the vote decides.
             if (Voting(run)) { Log.Info($"shared choice ignored: a pick by player {playerIndex} in vote mode"); return; }
-            domain.Apply(run, sim, playerIndex, input.Serial, input.Option);
+            // A pick ends the advisory votes of listeners on that page (spec 1137).
+            if (domain.Apply(run, sim, playerIndex, input.Serial, input.Option)) s.Boxes.RemoveAll(b => b.Domain == input.Domain && b.Serial == input.Serial);
             return;
         }
-        if (!Voting(run)) { Log.Info($"shared choice ignored: {input.Action} by player {playerIndex} outside vote mode"); return; }
+        // Outside vote mode a vote is advisory (spec 1136): it shows on every page, and the tick never decides it.
+        if (input.Action == SharedChoiceAction.Force && !Voting(run)) { Log.Info($"shared choice ignored: force by player {playerIndex} outside vote mode"); return; }
         var box = s.Box(input.Domain, input.Serial);
         switch (input.Action)
         {
