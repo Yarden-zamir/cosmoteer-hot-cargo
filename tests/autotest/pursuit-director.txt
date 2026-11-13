@@ -1,0 +1,41 @@
+# Pursuit director (spec 901, 902, 905): weaker and rarer waves early, the fleet factor band, and the big event pacer.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+aiset FleeEnabled false
+aiset CallEnabled false
+dip_set DemandHailChance 0
+pu_set ScoutChance 0
+pu_set BlockadeChance 0
+# Sector 1: ramp = EarlyShipFactor, the strike interval x EarlyIntervalFactor, the fleet factor stays in 1 +- 0.15.
+expect sector == 1
+expect pu_ramp == 0.75
+expect pu_interval == 1.5
+expect pu_fleet >= 0.85
+expect pu_fleet <= 1.15
+# Ship counts: with factor 0.3 and no fleet factor, each stage up to Hunt sends 1 ship (at least 1).
+pu_set EarlyShipFactor 0.3
+pu_set FleetFactorMax 0
+heat 75
+wait 3
+expect stages == 2
+expect hunters == stages
+# Pacer: an outage may start; after it starts, the kind gap and the global gap hold other starts.
+expect pu_may_outage == 1
+expect pu_may_relaylockdown == 1
+pu_started Outage
+expect pu_count_outage == 1
+expect pu_may_outage == 0
+expect pu_may_blockade == 0
+expect pu_may_relaylockdown == 0
+pu_set MinEventGapSeconds 0
+expect pu_may_blockade == 1
+expect pu_may_outage == 0
+# The run limit: the hacker comes at most once.
+expect pu_may_hacker == 1
+pu_started Hacker
+expect pu_may_hacker == 0
+expect pu_events == 2
+log end
+quit

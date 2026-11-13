@@ -365,7 +365,7 @@ public static class Autotest
             Wait(5);
         };
         Commands["pause"] = arg => (Game ?? throw new InvalidOperationException("no game")).NetManager.EnqueueInput(new MPSetPausedInput(arg != "off"));
-        Commands["heat"] = arg => { var r = RequireRun(); r.AddHeat(float.Parse(arg, CultureInfo.InvariantCulture), r.Game.Sim); };
+        Commands["heat"] = arg => { var r = RequireRun(); r.AddHeat(float.Parse(arg, CultureInfo.InvariantCulture), r.Game.Sim, ignoreBlock: true); };
         Commands["stage"] = _ => { var r = RequireRun(); r.ForceNextStage(r.Game.Sim); };
         Commands["fame"] = arg => { var r = RequireRun(); r.Mode.PlayerFame += int.Parse(arg, CultureInfo.InvariantCulture); };
         Commands["log"] = arg =>

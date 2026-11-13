@@ -1,0 +1,34 @@
+# Relay blockade (spec 915 to 918): at Hunt the stage's ships park at the needed relay, chase when players come close, at most once per pacer gap.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+aiset FleeEnabled false
+aiset CallEnabled false
+aiset RegroupEnabled false
+dip_set DemandHailChance 0
+pu_set ScoutChance 0
+pu_set BlockadeChance 1
+heat 75
+wait 2
+expect pu_blockade == 1
+expect pu_blockaders >= 1
+expect pu_count_blockade == 1
+# They fly to the relay and do not chase while the players stay away.
+wait 30
+expect pu_blockaders >= 1
+expect pu_parkdist >= 0
+log parked
+# A player ship that comes close draws them out.
+pu_blockadenear 1200
+waitfor pu_blockaders == 0 20
+expect pu_blockade == 0
+# The pacer keeps a second Hunt from another blockade.
+heat -30
+wait 1
+stage
+wait 2
+expect pu_count_blockade == 1
+expect pu_blockade == 0
+log end
+quit

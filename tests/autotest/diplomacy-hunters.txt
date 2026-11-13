@@ -2,6 +2,7 @@
 # bluff success and failure; more hunters make a pay-off harder; the demand hail.
 newgame run
 wait 8
+pu_set Enabled false
 ev_set Enabled false
 godmode on
 aiset FleeEnabled false
