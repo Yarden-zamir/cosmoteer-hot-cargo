@@ -4,7 +4,8 @@ newgame run
 wait 8
 menu open
 tunablesfile Heat { HeatPerGameMinute = 7 }; Balance { StationFuelMinimum = 30 }
-wait 3
+# The mod polls the file once per real second; the headless sim runs game seconds faster than that.
+waitfor heatperminute == 7 30
 menu value Heat.HeatPerGameMinute == 7
 menu shows Heat.HeatPerGameMinute 7
 expect tunables_error == 0
