@@ -117,7 +117,7 @@ Every co-op test checks determinism (no desync, equal `MPSTATE` lines) and stays
 | core | host tunables reach the client, heat, stages, hunters | **smoke** |
 | diplomacy | hand-over and hire through the shared choice input | keep |
 | events | choice, late second click, tech cost | keep |
-| factions | trades at fence and markup prices | keep |
+| factions | trades at fence and markup prices, peace in ally space | keep |
 | hail | ship comms choice applies once | keep |
 | missions | offers, escort, shady trap roll | keep |
 | onboarding | co-op page, same run log | keep |
