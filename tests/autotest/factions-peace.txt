@@ -1,0 +1,38 @@
+# Factions (spec 1150): in corporate ally space the ally faction's ships and the hunters do not target each other, also while
+# the players fight the hunter. Control: in a system that is not ally space, a ship of the ally faction attacks the hunter (vanilla).
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+pause off
+aiset FleeEnabled false
+dip_set DemandHailChance 0
+dip_set MercChance 0
+maxhunters 1
+# Ally space: this system's controller is the corporation's ally.
+fa_roles here other
+expect fa_zone == 1
+spawnstage Patrol
+waitfor hunters >= 1 30
+hunternear 0 600
+dip_spawn ally 400
+fa_peace_watch ally
+wait 1
+expect fa_peace_ships >= 2
+# The ally faction's ship takes no hire contract here, so it has no topic for the players.
+expect dip_answers == 0
+wait 25
+hunters ally
+expect fa_peace_playerhits > 0
+expect fa_peace_allyhits == 0
+expect fa_peace_hunterhits == 0
+# Control: the ally is another faction, so this system is neutral space. Its controller's ships (the same ships as above) now
+# fight the hunter (vanilla) and take hire contracts again.
+fa_roles other -
+expect fa_zone == 0
+wait 1
+expect dip_answers == 1
+fa_peace_watch here
+waitfor fa_peace_allyhits > 0 40
+hunters control
+quit

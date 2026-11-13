@@ -25,6 +25,7 @@ public static class AllyPeace
     {
         Run.Hooks.Tick += OnTick;
         Run.Hooks.RunEnded += _ => _current = null;
+        AllyPeaceAutotest.Register();
     }
 
     // Limit: a hunter that leaves stasis is covered from the next tick, so for one tick the faction AI can see it as an enemy.
