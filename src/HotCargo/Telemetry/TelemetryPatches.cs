@@ -89,6 +89,7 @@ static class TelemetryPatches
         ("MPShipSurrenderedInput", "surrender"), ("MPTransferMoneyInput", "transfer"),
         ("FleeStrategy", "flee_jump"), ("AIExitSectorModule", "exit_sector"), ("AIDeleteSelfModule", "delete_self"),
         ("AITradeShipModule", "trade_route"),
+        ("FameCapHeat", "fame_cap"), ("Deals", "diplomacy"),
     ];
 
     /// <summary>
@@ -105,6 +106,10 @@ static class TelemetryPatches
         int dot = frames[0].IndexOf('.');
         return dot > 0 ? frames[0][..dot] : frames[0];
     }
+
+    /// <summary>True for a source that a rule names (or a tick context, or a rate-limited lookup), false for a caller type fallback.</summary>
+    internal static bool IsKnownSource(string source) =>
+        source is "time" or "trail" or "rate_limited" || Sources.Any(s => s.Source == source);
 
     // ---- Heat
 
@@ -149,7 +154,9 @@ static class TelemetryPatches
                     _ => null,
                 };
                 string? caller = context is null ? Caller() : null;
-                s.HeatChanged(Source(context, caller ?? ""), caller, amount, __state, __instance.State.Heat);
+                string source = Source(context, caller ?? "");
+                s.HeatChanged(source, caller, amount, __state, __instance.State.Heat);
+                Dev.Invariants.HeatSource(source, caller, __instance.State.Heat - __state);
             }
             catch (Exception ex) { Errors.Report("telemetry heat", ex.Message, ex); }
             finally { Stats.Exit(t0); }
