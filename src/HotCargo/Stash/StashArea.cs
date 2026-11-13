@@ -40,6 +40,14 @@ public static class StashArea
         Autotest.Fields["st_state"] = () => (int)Objective().State;
         Autotest.Fields["st_done"] = () => Objective().Completion == CompletionState.Completed ? 1 : 0;
         Autotest.Fields["st_chance"] = () => StashModel.Percent(Objective().FoundFirstNow(Autotest.RequireRun().Game));
+        // 1 when the objective line, formatted the way the vanilla mission log and HUD format it, shows the found-first line.
+        Autotest.Fields["st_shown"] = () =>
+        {
+            var game = Autotest.RequireRun().Game;
+            var lines = new List<Cosmoteer.Modes.Career.Missions.Objectives.Objective.DisplayLine>();
+            Objective().GetDisplayLinesImpl(lines, game, CompletionState.InProgress);
+            return lines.Count > 0 && Strings.KeyStringFmt("Objectives/InProgressFmt", lines[0].Text).Text.Contains(Objective().FindLine(game), StringComparison.Ordinal) ? 1 : 0;
+        };
         Autotest.Fields["st_ambushers"] = () => Objective().Ambushers.Count(a => a.IsAlive);
         Autotest.Fields["st_chance_param"] = () => TunablesFor(Autotest.RequireRun().Game).OfferChance;
         Autotest.Fields["st_group_chance"] = () => MissionArea.FindGroup(Sim(), GroupTag).SpawnChance;

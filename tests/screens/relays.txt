@@ -3,17 +3,14 @@ render on
 newgame run
 wait 10
 pause off
+# Close the run intro.
 closepanel
 wait 1
-uxpick 3
-wait 2
-uxpick 1
-wait 2
 ev_set Enabled false
 godmode on
 # The galaxy map with a marked neighbour.
 rl_mark pirates
-map on
+rl_mapfocus
 wait 3
 screenshot relays-map
 map off
@@ -30,6 +27,9 @@ rl_pick money price
 wait 1
 rl_pick res 20
 wait 1
+# Right next to a guard: a start ship has a short comms range.
+rl_toguard
+wait 1
 pause on
 rl_open
 wait 2
@@ -38,16 +38,17 @@ dip_close
 pause off
 rl_killguards
 wait 2
-# The stash offer in the station's Missions tab, 6 minutes after the offer.
+# The accepted stash in the mission log: the same live found-first line as the offer (spec 974).
+# The offer sits in a station list only when the system has a trade station, so the log is the stable view.
+st_set OfferChance 1
 st_generate
-st_tostation
-wait 2
-comms open
+expect st_offers >= 1
+st_accept
+st_age 6
+missionlog open
 wait 1
-commsmission
-wait 1
-st_select
+logselect Stash
 wait 2
-screenshot stash-offer
-comms close
+screenshot stash-log
+missionlog close
 quit

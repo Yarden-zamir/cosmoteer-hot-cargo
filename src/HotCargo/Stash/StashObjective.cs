@@ -165,9 +165,19 @@ internal sealed class StashObjective : Objective, Missions.IMissionMarkers
         foreach (var a in Ambushers) a.Killed -= OnAmbusherKilled;
     }
 
+    /// <summary>The found-first percent that the shown lines hold. UI state, not saved.</summary>
+    int _shownPercent = -1;
+
     void OnTick(object? sender, SimRoot sim)
     {
         if (Mission is null || State != StashState.Waiting || sim != Mission.Game.Sim) return;
+        // The mission log formats the line once when it builds it, so a new percent rebuilds the lines (spec 974).
+        int percent = StashModel.Percent(FoundFirstNow(Mission.Game));
+        if (percent != _shownPercent)
+        {
+            _shownPercent = percent;
+            OnDisplayLinesChanged();
+        }
         if (!sim.NodeId().Equals(NodeId) || SimQueries.NearestHumanShip(sim, Site) is not { } nearest) return;
         if (nearest.DetWorldCenter.DistanceTo(Site) <= TriggerDistance) Resolve(sim, nearest.DetWorldCenter);
     }

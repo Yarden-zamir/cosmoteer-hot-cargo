@@ -51,6 +51,9 @@ internal sealed class RelayHail : IHailProvider
             page.AddChoice(RelaysArea.Format("FeePayFmt", RelaysArea.Cost(run, fee)), (int)RelayOption.PayFee, ok, ok ? null : RelaysArea.Text("NoMoney"), close: true);
             return;
         }
+        // The bribe replaces the vanilla pirate surrender (its lower price would undercut the bribe), so the page has only relay options.
+        page.PrimaryDialogue = "";
+        page.Buttons.Clear();
         page.Multi = (RelayMultiDomain.Name, serial);
         int price = RelaysArea.BribePrice(run);
         page.AddText(RelaysArea.Format("BribeAskFmt", callee.Metadata.XmlShipName, RelaysArea.Cost(run, price)));

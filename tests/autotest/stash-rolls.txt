@@ -17,6 +17,8 @@ st_age 6
 expect st_chance >= 34
 expect st_chance <= 35
 st_line
+# The mission log formats the line into a string: it shows the text, not a type name.
+expect st_shown == 1
 
 # Loot without tech: money and no tech.
 st_set LootTechChance 0

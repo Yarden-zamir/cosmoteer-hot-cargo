@@ -133,6 +133,9 @@ public sealed class LiveText(Func<string> text) : ITextProvider
 {
     public string Text => text();
 
+    /// <summary>Vanilla formats some providers into a string once (FormattedKeyString), which calls ToString.</summary>
+    public override string ToString() => Text;
+
     // The value is computed on read, so there is never a change to announce.
     public event EventHandler<ValueChangedEventArgs<string>>? TextChanged { add { } remove { } }
 }

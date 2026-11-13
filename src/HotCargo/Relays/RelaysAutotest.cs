@@ -33,6 +33,8 @@ static class RelaysAutotest
         };
         // rl_mark closed|fee|pirates: marks the first unvisited neighbour with that kind, like a roll.
         Autotest.Commands["rl_mark"] = arg => RelaysArea.Mark(R(), Next(), Enum.Parse<LockKind>(arg, ignoreCase: true));
+        // rl_mapfocus: opens the galaxy map centred on the marked system. GUI only, for screenshots.
+        Autotest.Commands["rl_mapfocus"] = _ => MarkedNode().FocusCamera(playSound: false);
         // rl_here closed|fee|pirates: starts a lockdown of that kind in this system, as if the players just jumped in.
         Autotest.Commands["rl_here"] = arg =>
         {
