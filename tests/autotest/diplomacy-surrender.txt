@@ -83,5 +83,5 @@ wait 1
 expect dip_moneyspent > 0
 expect dip_enemyhostile == 0
 quit
-# The Mac sim always draws the same hunters. With them the hunter hail ends before the check (docs/mac-sim-spike.md).
+# Fails most runs in the Mac sim: the Mac draws the same hunters each run, and the hail of the beaten one ends before the check (docs/mac-sim-spike.md).
 # runner: pc

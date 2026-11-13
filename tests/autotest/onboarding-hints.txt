@@ -91,5 +91,5 @@ lose
 wait 1
 expect runlog_lost == 1
 quit
-# The Mac sim always draws the same hunters. With them combat blocks the save (docs/mac-sim-spike.md).
+# Fails every run in the Mac sim: the Mac draws the same hunters each run, and their combat blocks the save (docs/mac-sim-spike.md).
 # runner: pc

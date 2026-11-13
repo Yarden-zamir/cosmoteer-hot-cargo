@@ -4,7 +4,8 @@
 # - No test names: every tests/autotest/*.txt. Co-op tests (mp:<name>) need the PC: autotest-all.sh.
 # - Same pass rule as autotest.sh: the log has "telename <name>", AUTOTEST DONE, and no AUTOTEST FAIL or ERROR line.
 # - Same log place as the PC runner: <container>/.state/logs/<worktree>/<name>.<time>.mac.log, summary in run-mac-<time>/.
-# - No retry: the sim uses a fixed-step clock, so a rerun repeats the same result.
+# - Retries a failed run once, like autotest.sh. A pass on the retry prints FLAKY and goes to ../.state/flaky.log.
+#   The fixed-step clock repeats most sim values, but background work (jumps, spawns, the telemetry writer) runs in real time.
 # - Parallel runs: HOT_CARGO_MAC_JOBS, default from the cores and the memory (see below). The limit is for the whole Mac:
 #   runs of every worktree share the slot locks /tmp/hot_cargo_mac_slot_<n>.lock.
 # Needs the game files in ../.game (scripts/pull-game.sh). Exit code 0 only if every test passed.
@@ -20,7 +21,7 @@ for t in "${TESTS[@]}"; do
   [[ "$t" != mp:* && -f "tests/autotest/$t.txt" ]] || { echo "autotest-mac: no single-player test $t (co-op tests run on the PC)" >&2; exit 2; }
 done
 
-# One run takes about one core and 1.5 GB at its peak. Two cores stay free for the agents and the build.
+# One run takes about one core and 2 GB at its peak. Two cores stay free for the agents and the build.
 CORES="$(sysctl -n hw.ncpu)"
 MEM_GB=$(( $(sysctl -n hw.memsize) / 1024 / 1024 / 1024 ))
 JOBS="${HOT_CARGO_MAC_JOBS:-$(( CORES - 2 < MEM_GB / 2 ? CORES - 2 : MEM_GB / 2 ))}"
@@ -46,7 +47,8 @@ take_mac_slot() {
   done
 }
 
-run_test() {
+# One run. Prints the log path; returns 0 on a pass.
+run_once() {
   local name="$1" log save lock rc=0 t0=$SECONDS
   # $BASHPID: this run's process. take_mac_slot runs in a subshell that exits at once.
   lock="$(take_mac_slot "$BASHPID")"
@@ -55,13 +57,23 @@ run_test() {
   { echo "telename $name"; cat "tests/autotest/$name.txt"; } > "$save/script.txt"
   MAC_SIM_STAGE="$STAGE" MAC_SIM_SAVE="$save" timeout "$TIMEOUT" tools/mac-sim/run.sh autotest "$save/script.txt" > "$log" 2>&1 || rc=$?
   rm -rf "$lock"
-  local game_log="$save/Mods/hot_cargo/csharp/hot_cargo_log.txt"
-  { echo; echo "=== hot_cargo_log.txt"; cat "$game_log" 2>/dev/null; } >> "$log"
+  { echo; echo "=== hot_cargo_log.txt"; cat "$save/Mods/hot_cargo/csharp/hot_cargo_log.txt" 2>/dev/null; } >> "$log"
   [[ $rc -eq 124 ]] && echo "== timeout after $TIMEOUT s" >> "$log"
   echo "== timing $name total=$((SECONDS - t0))" >> "$log"
   rm -rf "$save"
-  if [[ $rc -eq 0 ]] && log_passed < "$log" && grep -qF "telename $name" "$log"; then echo "PASS $name"; return; fi
-  { echo "== AUTOTEST FAILED $name (log $log)"; failure_lines "$log"; } > "$RUN_DIR/$name.out"
+  echo "$log"
+  [[ $rc -eq 0 ]] && log_passed < "$log" && grep -qF "telename $name" "$log"
+}
+
+run_test() {
+  local name="$1" first log
+  if first="$(run_once "$name")"; then echo "PASS $name"; return; fi
+  if log="$(run_once "$name")"; then
+    echo "$(date +%F\ %T) $name $first" >> "$STATE_DIR/flaky.log"
+    echo "FLAKY $name"
+    return
+  fi
+  { echo "== AUTOTEST FAILED $name (log $log, first log $first)"; failure_lines "$log"; } > "$RUN_DIR/$name.out"
   echo "FAIL $name"
 }
 
@@ -75,6 +87,8 @@ run_test() {
 
 FAILED="$(grep '^FAIL ' "$RUN_DIR/summary.txt" | cut -d' ' -f2- | tr '\n' ' ')"
 echo "== $(grep -c . "$RUN_DIR/summary.txt") tests, $JOBS parallel, wall $((SECONDS - SUITE_START)) s ($RUN_DIR)"
+FLAKY="$(grep '^FLAKY ' "$RUN_DIR/summary.txt" | cut -d' ' -f2- | tr '\n' ' ')"
+[[ -n "$FLAKY" ]] && echo "== flaky on the Mac (passed on retry): $FLAKY"
 if [[ -z "$FAILED" ]]; then echo "== all passed on the Mac"; exit 0; fi
 for t in $FAILED; do echo "--- $t"; head -40 "$RUN_DIR/$t.out"; done
 echo "== failed on the Mac: $FAILED"

@@ -28,12 +28,13 @@ The mod checks at the first frame of a run that each trigger has a page and each
 
 ## Build and test
 
-1. Create `scripts/pc.local.sh` with `PC_MACHINE="<T3 name of the PC>"` (see the top of `scripts/pc.sh`). Then run `scripts/pull-game.sh` once. It copies the game DLLs and rules from the PC to `../.game` and decompiles them to `../.game/decompiled`.
+1. Create `scripts/pc.local.sh` with `PC_MACHINE="<T3 name of the PC>"` (see the top of `scripts/pc.sh`). Then run `scripts/pull-game.sh` once. It copies the game DLLs, rules, ship designs and name generator files from the PC to `../.game` and decompiles them to `../.game/decompiled`.
 2. Build: `dotnet build src/HotCargo/HotCargo.csproj -c Release`.
 3. Unit tests (pure math only): `cd tests/HotCargo.Tests && dotnet run`.
 4. Game test on the PC: `scripts/autotest.sh tests/autotest/<name>.txt`. It deploys, turns the mod on, runs the game headless in a test slot and prints the result and a `== timing` line (seconds per phase). Commands are in `src/HotCargo/Dev/Autotest.cs`.
 5. Other PC scripts: `deploy.sh`, `run.sh`, `stop.sh`, `logs.sh`, `mod-toggle.sh on|off`. `stage.sh <dir>` builds and stages the mod with a content hash. The PC keeps the 30 newest builds in `%USERPROFILE%\HotCargoSlots\_builds\<hash>`, so `deploy.sh` uploads a build only once. The PC side of a deploy is `scripts/slot-install.ps1`; it ships inside the build, because the T3 link allows only 8192 characters for a command.
 6. Suites: `scripts/autotest-all.sh [--detach] [timeout] [tests...]` and `scripts/autotest-affected.sh [--detach]`. A suite stages once, and all its tests run that build. `--detach` runs it safe from a killed shell; `scripts/suite-wait.sh <log>` waits for it.
+   - Mac sim: `scripts/autotest-mac.sh [timeout] [tests...]` runs single-player tests on this Mac, in parallel, with no PC (`tools/mac-sim`, `docs/mac-sim-spike.md`). `autotest-affected.sh` runs single-player tests there and the rest on the PC. A test whose last line is `# runner: pc` stays on the PC. `integrate.sh` runs every test on the PC (`AUTOTEST_MAC=0`).
 7. Telemetry: every game writes a JSONL file per session (TELEMETRY.md). `scripts/pull-telemetry.sh` copies the files to `../.telemetry`, and `cd tools/telemetry && uv run hc-telemetry` writes a report. `scripts/autotest-all.sh --telemetry` does both after a test pass.
 
 ### Co-op (multiplayer) tests
