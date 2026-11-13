@@ -139,7 +139,7 @@ For your own analysis, each line is one JSON object: for example `jq -c 'select(
 
 ## Autotest
 
-`scripts/autotest.sh` and `scripts/autotest-mp.sh` send `telename <script name>` first, so `session.start` has the test name in `label`.
+`scripts/autotest.sh` and `scripts/autotest-mp.sh` send `telename <script name>` first (`<session>.host` and `<session>.client` for co-op), so `session.start` has the test name in `label`.
 
 - Commands: `telename <name>`, `damagehostiles <fraction>` (test only: weakens nearby hostile ships so the player wins the fight), `shieldplayers on|off` (test only: human ship parts lose no health and human crew do not die), `teleflush` (wait until the writer wrote every queued event), `telesnap [why]`, `telecount <event> <op> <n>` (counts events of the current run in its files), `telestats` (logs the overhead numbers).
 - Fields: `tele_active`, `tele_events`, `tele_dropped`, `tele_nested_dropped`, `tele_overhead_ms`, `tele_overhead_pct` (telemetry time in percent of the session's real time), `tele_trace_missing`, `tele_trace_patched`.

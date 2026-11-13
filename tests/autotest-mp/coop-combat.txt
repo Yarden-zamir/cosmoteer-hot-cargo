@@ -1,0 +1,265 @@
+# Co-op session: enemy scaling, diplomacy, missions, AI personalities, currents, the loss timer and the win.
+# See coop-core.txt for "client:", "as 1", "on 1" and steps.
+# Before the join: the host's enemy slider is 2.0 and the client's is 1.0. The host's value counts, so every step of this
+# session runs with an enemy factor of 2 (2 players).
+enemysetting 2.0
+client: enemysetting 1.0
+mphost {PORT}
+mpstart 2
+mp godmode on
+mp ev_set Enabled false
+# The Pursuit stays off, so the hunter counts stay exact (spec 943). The step pursuit.coop turns it on in its own run.
+mp pu_set Enabled false
+
+step scaling.generation
+# Spec 330 to 336: the host's value reaches the client. Both machines generate the first system with factor 2:
+# pirate wanderers are [9, 11] (mod/contracts/actions.rules), so 18 to 22. The state hash compares the ship counts.
+expect enemysetting == 2
+expect enemyfactor == 2
+on 1 expect enemysetting == 2
+on 1 expect enemyfactor == 2
+counttag pirate
+expect tagcount >= 18
+
+step diplomacy.payoff
+# Spec 587 (#25): the client ticks tech on the hunter page, and the draft is shared, so the host adds money to it. The client
+# sends the pay-off through the shared choice input. Both machines see the hunters leave and the same vault tech.
+mp aiset FleeEnabled false
+mp aiset CallEnabled false
+mp dip_set DemandHailChance 0
+mp dip_set MercChance 0
+mp dip_set HunterLeaveSeconds 2
+mp dip_set HireChanceBase 5
+mp dip_set PayChanceCap 1
+mp dip_set PayMoneyChance 5
+# Factor 2 sends 2 hunters, and each other hunter near the hailed one lowers the chance (the crowd factor). The step needs a sure pay-off.
+mp dip_set PayMaxOtherHunters 1000
+as 1 spawnstage Warning
+waitfor hunters >= 1 30
+as 1 dip_near hunters
+wait 2
+as 1 dip_pick hunter tech 2
+waitfor dip_picks >= 1 30
+dip_pick hunter money 5
+waitfor dip_picks >= 2 30
+as 1 dip_payoff hunter
+waitfor dip_vaulttech == 6 30
+waitfor dip_leaving >= 1 60
+waitfor hunters == 0 60
+
+step diplomacy.hire
+as 1 dip_spawn friend 250
+wait 3
+as 1 dip hire friend 0
+waitfor dip_friendhired == 1 30
+waitfor dip_hires >= 1 30
+
+step scaling.waves
+# A hunter wave and an event group get twice the ships on both machines.
+# Two ships of the sector tier: the Warning response of the last sector (#19 removed the Patrol stage).
+mp stageset Warning EarlyScale 1
+mp spawnstage Warning
+waitfor hunters >= 4 30
+expect hunters == 4
+mp ev_spawn TollGuards
+wait 3
+counttag hc_ev_toll
+expect tagcount == 6
+
+step missions.escort
+# Offers and sides, then the escort: the freighter steers to the jump point when a player is near, and arrival completes it.
+mp hc_generate all
+waitfor hc_offers_escort >= 1 20
+expect hc_allies_vs_player == 0
+expect hc_allies_vs_target >= 2
+expect hc_escort_vs_player == 0
+expect hc_escort_raiders == 0
+mp hc_accept escort
+waitfor hc_active_escort == 1 20
+mp hc_escort_goto
+wait 5
+expect hc_escort_steering == 1
+# Spec 36 (#16): the convoy ambush spawns in the sim on both machines.
+mp hc_escort_ambush
+waitfor hc_escort_raiders >= 2 20
+expect hc_raiders_vs_player >= 2
+expect hc_raiders_vs_escort >= 2
+mp hc_escort_arrive
+waitfor hc_escort_done == 1 30
+expect hc_escort_marker == 0
+
+step missions.shady-roll
+# The client accepts the shady offer and flies there. The trap rolls on arrival with sim.Rand and the heat formula.
+mp heat 50
+as 1 hc_accept shady
+as 1 hc_shady_goto
+waitfor hc_trap_state >= 1 30
+
+step missions.trap
+# A forced trap. The client kills the ambush; the reward pays both players. Spec 331 raises the base 2 ambushers.
+mp hc_generate shady
+mp hc_accept shady
+waitfor hc_trap_state == 0 20
+mp hc_shady_spring
+waitfor hc_trap_state == 2 20
+expect hc_ambushers >= 2
+hc_mark
+on 1 hc_mark
+as 1 hc_kill_ambush
+waitfor hc_trap_done == 1 30
+expect hc_money_gain > 0
+on 1 expect hc_money_gain > 0
+
+step ai.personalities
+# Spec 369: hostile pirates and hunters with personalities, cover rocks and teams fight both players' ships.
+mp tacticlog on
+mp airocks 6 600
+mp aispawn pirates 3 2
+mp spawnstage Strike
+mp aispawn monolith 3 2
+wait 40
+aiprofiles host
+expect ai_personality > 0
+on 1 aiprofiles client
+on 1 expect ai_personality > 0
+
+step worlds.current
+# Spec 221, 227: a current painted on both machines pushes the host's ship the same way on both. Co-op tests cannot jump,
+# so "worlds paint" makes the current in the starting system.
+mp worlds paint
+mp worlds goto current
+wait 3
+expect worlds_ship_in_current > 0.5
+wait 5
+expect worlds_flow_speed > 2
+on 1 expect worlds_ship_in_current > 0.5
+on 1 expect worlds_flow_speed > 2
+
+step pursuit.coop
+# Spec 912, 934, in a new run: the client's stage start sends a reporting scout, and its report raises heat on both machines.
+# Then the client pays the hacker through the shared choice input: only the client pays, and both machines start the same
+# outage. The paid outage is not a natural one in the pacer.
+mprestart
+mp ev_set Enabled false
+mp aiset FleeEnabled false
+mp aiset CallEnabled false
+mp aiset RegroupEnabled false
+mp dip_set DemandHailChance 0
+mp pu_set ScoutChance 1
+mp pu_set BlockadeChance 0
+as 1 stage
+waitfor pu_scouts == 1 30
+mp pu_scoutnear 300
+waitfor pu_scouts == 0 60
+# Warning starts at 40, the report adds 15.
+expect heat >= 54.5
+on 1 expect heat >= 54.5
+mp pu_hacker
+waitfor pu_hacker == 1 30
+mp pu_setmoney 50000
+mp pu_hacker_near 400
+wait 3
+pu_money
+on 1 pu_money
+on 1 pu_hacker_pick pay
+waitfor pu_outage >= 200 30
+expect pu_count_outage == 0
+expect pu_hacker_done == 1
+expect pu_moneyspent == 0
+on 1 expect pu_moneyspent == 30000
+on 1 expect pu_outage >= 200
+
+step tech.coop-count
+# Spec 65, 442, 449, in a new run: each player holds a different amount, a vault is destroyed, the client's ship becomes a
+# derelict. Both machines show the same total, equal to the units in the vault storage. "mytech" is the local player's tech.
+mprestart
+mp pu_set Enabled false
+mp godmode off
+mp ev_set Enabled false
+mp tech_set LossGraceSeconds 600
+# Starting vaults are at full health: 4 units for each player.
+expect vaultminhealth == 3000
+expect tech == 8
+expect vaultunits == 8
+expect mytech == 4
+on 1 expect vaultminhealth == 3000
+on 1 expect mytech == 4
+mp tech remove 1
+wait 1
+expect tech == 7
+expect vaultunits == 7
+expect mytech == 3
+# Damage costs no tech while the vault stands. A destroyed vault drops its units as crates, in every machine's count.
+mp tech_set VaultTechLossChance 0
+mp vault damage 0.6
+wait 1
+expect tech == 7
+expect vaultunits == 7
+# The host's first vault holds 1 unit after the removal.
+mp vault destroy
+wait 1
+expect tech == 6
+expect vaultunits == 6
+expect techcrates == 1
+expect mytech == 2
+on 1 expect tech == 6
+on 1 expect vaultunits == 6
+on 1 expect techcrates == 1
+on 1 expect mytech == 4
+# The client's ship becomes a derelict. Its 4 units still count, the loss timer stays off, and its blip shows them.
+as 1 tech derelict
+wait 2
+expect tech == 6
+expect vaultunits == 6
+expect derelicttech == 4
+expect derelicttag == 4
+expect losstimer == 0
+on 1 expect derelicttech == 4
+on 1 expect derelicttag == 4
+on 1 expect losstimer == 0
+
+step tech.loss-timer
+# Spec 443, in a new run (8 tech): tech at 0 starts the timer on both machines, tech back stops it, and the timer ends the run.
+mprestart
+mp pu_set Enabled false
+# The loss must happen: godmode blocks it, and its switch stays on across a restart.
+mp godmode off
+mp ev_set Enabled false
+mp tech_set LossGraceSeconds 30
+mp tech drop 8
+waitfor losstimer == 1 30
+expect techcrates == 8
+expect losstimerleft <= 30
+on 1 expect losstimer == 1
+on 1 expect techcrates == 8
+as 1 tech add 2
+waitfor losstimer == 0 30
+expect lost == 0
+mp tech remove 2
+waitfor losstimer == 1 30
+waitfor lost == 1 60
+on 1 waitfor lost == 1 30
+
+step journey.buyer-win
+# A new run: the Buyer appears, the client flies to it and sells tech from its own machine, and the run is won on both.
+mprestart
+mp pu_set Enabled false
+mp ev_set Enabled false
+mp buyer spawn
+waitfor buyers == 1 30
+# The first goto loads the Buyer out of stasis, the second puts the client's ship next to it.
+as 1 buyer goto
+wait 15
+as 1 buyer goto
+wait 3
+on 1 expect buyertrades == 1
+on 1 buyer sell 2
+waitfor won == 1 90
+expect delivered >= 1
+expect score > 0
+# Heat stays off after the win.
+mp heat -100
+wait 10
+expect heat == 0
+
+end
