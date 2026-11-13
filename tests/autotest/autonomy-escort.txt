@@ -16,6 +16,7 @@ waitfor tactics_move_row == 3 20
 heat 55
 waitfor hunters >= 1 30
 waitfor tactics_target_row >= 1 120
+godmode off
 tactics_damage 0.3
 waitfor tactics_move_row == 0 20
 waitfor auto_home_dist <= 600 120

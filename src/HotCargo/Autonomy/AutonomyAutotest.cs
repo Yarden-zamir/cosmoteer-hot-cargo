@@ -205,6 +205,10 @@ internal static class AutonomyAutotest
             "player" => home.DetWorldCenter,
             "station" => AutonomyWorld.Stations(home).FirstOrDefault(s => s.Live is not null).Live?.DetWorldCenter
                          ?? throw new InvalidOperationException("no live trading station"),
+            // 1,500 from the first own ship, on the far side from the nearest station: out of hail range.
+            "away" => AutonomyWorld.Stations(home).MinBy(st => st.Center.DistanceTo(home.DetWorldCenter)) is { } st
+                ? home.DetWorldCenter + Vector2.FromAngle(st.Center.DirectionTo(home.DetWorldCenter)) * 1500f
+                : home.DetWorldCenter + new Vector2(1500f, 0f),
             "asteroid" => sim.Ships.AllShips.Where(s => s.Rules.IsAsteroid && s.Parts.Count > 0).MinBy(s => s.DetWorldCenter.DistanceTo(home.DetWorldCenter))?.DetWorldCenter
                           ?? throw new InvalidOperationException("no live asteroid"),
             _ => home.DetWorldCenter + Offset(tokens[1]),
