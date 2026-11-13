@@ -116,7 +116,7 @@ Native libraries and missing files (`NativeSeams.cs`):
 13. `SoundStream.FromFile` opens `*.wav`, `*.ogg` and `*.music` files, which exist only on the PC. A missing file becomes a short silent stereo stream.
 14. `ShipRoofRules.LoadRoofTextures` and `BuildRoofDecalsAtlas` list PNG folders. The host adds one placeholder for the default roof texture and skips the decal atlas. `DecalsManager.LoadSaveData` (ship paint) is skipped.
 15. `TextureData.SaveTo` encodes images with FreeImage. Co-op setup sends the ship icon as PNG bytes; the host writes a blank PNG with ImageSharp.
-16. Linux file names keep letter case, Windows and macOS ignore it. Some vanilla rules refer to a file with another case (`<tractor_Beam.rules>`). On Linux, `OTFile.GetReferencedFile` resolves such a reference to the file that matches without case (`CaseInsensitivePaths.cs`).
+16. Linux file names keep letter case; Windows and macOS ignore it, and the vanilla rules rely on that (`<tractor_Beam.rules>` for `tractor_beam.rules`, `Ghost hardware.ship.png`). CI puts the game files on an ext4 folder with case folding (`mkfs.ext4 -O casefold`, `chattr +F`), so every file access ignores case as on Windows.
 
 The spike also had fallbacks for missing ship designs and name generator files. `scripts/pull-game.sh` now copies the real files, so the fallbacks are gone. A missing file now fails the run. Limit: `tar.exe` skips one design-contest ship whose name is outside the Windows ANSI code page. No test needs it.
 

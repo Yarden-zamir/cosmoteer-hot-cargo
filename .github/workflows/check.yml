@@ -50,6 +50,20 @@ jobs:
           repository: Yarden-zamir/cosmoteer-hot-cargo-game-refs
           ssh-key: ${{ secrets.GAME_REFS_DEPLOY_KEY }}
           path: .game
+      # Windows and macOS ignore letter case in file names, and the vanilla rules rely on that (for example
+      # <tractor_Beam.rules> for tractor_beam.rules). So the game files go on an ext4 folder with case folding.
+      - name: Game files on a case-insensitive folder
+        run: |
+          truncate -s 2G "$RUNNER_TEMP/game.img"
+          mkfs.ext4 -q -O casefold "$RUNNER_TEMP/game.img"
+          sudo mkdir /mnt/game
+          sudo mount -o loop "$RUNNER_TEMP/game.img" /mnt/game
+          sudo chown "$(id -u):$(id -g)" /mnt/game
+          mkdir /mnt/game/files
+          chattr +F /mnt/game/files
+          cp -a .game/Bin .game/Data .game/StandardMods /mnt/game/files/
+          rm -rf .game
+          ln -s /mnt/game/files .game
       - uses: actions/setup-dotnet@v6.1.0
         with:
           global-json-file: repo/global.json

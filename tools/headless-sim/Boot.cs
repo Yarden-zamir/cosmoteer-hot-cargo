@@ -31,7 +31,6 @@ static class Boot
         Harmony.Patch(AccessTools.Method(typeof(Platform), nameof(Platform.Create), Type.EmptyTypes),
             prefix: new HarmonyMethod(typeof(Boot), nameof(CreatePlatformPrefix)));
         NativeSeams.Apply(Harmony);
-        CaseInsensitivePaths.Apply(Harmony);
         GameApp.InitializePhysicsSettings();
         GameApp.Instance = new GameApp();
         NativeSeams.PlaceholderTextures();
