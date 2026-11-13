@@ -61,7 +61,8 @@ internal static class ShipAiController
     /// <summary>The tactics input (spec 409). Clears the old decision, so the new rows decide from scratch at the next tick.</summary>
     internal static void Set(Ship ship, string text, bool auto, SimRoot sim)
     {
-        ShipAiModel.Decode(text);
+        var rows = ShipAiModel.Decode(text);
+        if (Run.Current is { } run && ShipAiModel.StageError(rows, run.T.Heat.Stages.Length) is { } error) throw new FormatException(error);
         var t = ShipTactics.For(ship);
         Release(ship, t);
         t.SetRows(text);

@@ -366,7 +366,7 @@ internal sealed class TacticsEditor : WindowBox
             v => EditTerm(i, j, t => ShipAiModel.WithCond(t, (Cond)v))), 14f, 18f);
         var kind = ShipAiModel.ParamOf(term.Cond);
         if (kind != ParamKind.None)
-            Place(line, Choices(ShipAiModel.ChoicesOf(kind), term.Param, v => ParamName(kind, v), v => EditTerm(i, j, t => t with { Param = v })), 32f, 9f);
+            Place(line, Choices(ShipAiModel.ChoicesOf(kind, _run.T.Heat.Stages.Length), term.Param, v => ParamName(kind, v), v => EditTerm(i, j, t => t with { Param = v })), 32f, 9f);
         if (row.Terms.Length > 1) Place(line, NewButton("RemoveTerm", () => Edit(i, ShipAiModel.RemoveTerm(_rows[i], j))), 41f, 3f);
     }
 
@@ -380,7 +380,7 @@ internal sealed class TacticsEditor : WindowBox
             v => Edit(i, ShipAiModel.WithAct(_rows[i], (Act)v))), 46f, 20f);
         var actKind = ShipAiModel.ParamOf(row.Act);
         if (actKind != ParamKind.None)
-            Place(line, Choices(ShipAiModel.ChoicesOf(actKind), row.ActParam, v => ParamName(actKind, v), v => Edit(i, _rows[i] with { ActParam = v })), 66f, 10f);
+            Place(line, Choices(ShipAiModel.ChoicesOf(actKind, _run.T.Heat.Stages.Length), row.ActParam, v => ParamName(actKind, v), v => Edit(i, _rows[i] with { ActParam = v })), 66f, 10f);
         var addTerm = NewButton("AddTerm", () => Edit(i, ShipAiModel.AddTerm(_rows[i])));
         addTerm.SelfInputActive = row.Terms.Length < ShipAiModel.MaxTerms;
         Place(line, addTerm, 76f, 9f);
