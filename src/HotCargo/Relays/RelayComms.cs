@@ -91,13 +91,19 @@ internal sealed class RelayChoiceDomain : ISharedChoiceDomain
     }
 
     /// <summary>Open while the callee still gets a relay page from some human ship in comms range.</summary>
+    /// <summary>Diagnostics: the last logged reason, so a closed page logs once per change, not once per frame.</summary>
+    static string? _lastWhy;
+
     public int OptionCount(Run run, int serial)
     {
         if (run.Game.Sim is not { } sim || Callee(sim, serial) is not { } callee) { Log.Info($"relays: page {serial} has no callee"); return 0; }
         var career = (CareerSimModeManager)sim.Mode;
         if (sim.Ships.HumanPlayerShips.Any(h => career.CanShipCallShip(h, callee) && RelayHail.Instance.Answers(h, callee))) return 4;
-        Log.Info($"relays: page {serial} closed: " + string.Join("; ", sim.Ships.HumanPlayerShips.Select(h =>
-            $"{h.Metadata.PlainShipName} d={h.DetWorldCenter.DistanceTo(callee.DetWorldCenter):0} call={career.CanShipCallShip(h, callee)} answers={RelayHail.Instance.Answers(h, callee)}")));
+        string why = string.Join("; ", sim.Ships.HumanPlayerShips.Select(h =>
+            $"p{h.Metadata.PlayerIndex} comms={h.Sensors.DetWorldCommsCircle.IntersectsWith(callee.DetWorldBoundingCircle)} enemy={h.IsEnemiesWith(callee)} " +
+            $"sight={callee.IsWithinSightOfPlayer(h.Metadata.PlayerIndex)} radar={callee.IsWithinRadarOfPlayer(h.Metadata.PlayerIndex)} hidden={callee.IsHiddenToSight} ai={callee.AI?.CanBeCalledBy(h)}"));
+        if (why != _lastWhy) Log.Info($"relays: page {serial} closed: {why}");
+        _lastWhy = why;
         return 0;
     }
 

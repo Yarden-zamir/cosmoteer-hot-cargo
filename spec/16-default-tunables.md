@@ -38,8 +38,11 @@
 | `Events.WantedWarningMinStage`, `WantedEventChance` | 1, 0.7 | 470, 471 |
 | `Events.ResearchRate`, `ResearchMinRate`, `ResearchMaxUnits`, `ResearchMaxTechs` | 1.5, 1.2, 2, 3 | 760 |
 | `Events.ResearchSalePremium`, `ResearchSaleCap`, `ResearchWeightScale` | 1.3, 1.5, 1 | 761, 762 |
-| `Events.AbandonedEventChance`, `AbandonedTriggerDistance` | 0.6, 800 | 764 |
+| `Events.HulkLootChance`, `AbandonedTriggerDistance`, `HulkBlastRadius` | 0.6, 800, 300 | 764, 1124 to 1126 |
 | `Events.RelicEnabled`, `RelicMinSector`, `RelicMessageDistance`, `RelicBoardDistance` | true, 2, 3000, 900 | 765 |
+| `Events.ListenSeconds`, `ListenRange`, `ListenChanceAtNoHeat`, `ListenChanceAtMaxHeat` | 8 s, 1500, 1, 0.6 | 1122, 1123 |
+| `Events.ListenSuccessHeat`, `ListenFailHeat`, `ListenCombatRadius`, `ListenCombatSeconds` | -4, 5, 800, 5 s | 1123 |
+| `Events.RescueFee`, `RescueHeat`, `RescueTowLength`, `RescueTowPull`, `RescueSunMargin`, `RescueTugLeaveSeconds` | 0.4, 10, 150, 1, 300, 20 s | 1147, 1148 |
 | `Events.CooldownSeconds`, `MaxEventsPerSystem` | 120 s, 2 | 70 |
 | `Events.MoneyScale`, `FameScale`, `HeatScale` | 1, 1, 1 | 73 |
 | `Contracts.TrailFreeContracts`, `TrailHeatPerContractMinute` | 3, 1 | 101 |
@@ -59,7 +62,8 @@
 | `Hunters.MinFuel` | 60 | 192 |
 | `FleeHealthFraction`, `FleeChance` | 0.25, 0.5 | 193 |
 | `FleeDistance`, `FleeJumpSeconds`, `FleeRecoverFraction` | 1500, 25 s, 0.6 | 195 |
-| `CallSeconds`, `CallRange`, `CallCooldownSeconds` | 15 s, 6000, 60 s | 196, 197 |
+| `CallSeconds`, `CallRange`, `CallCooldownSeconds` | 22 s, 6000, 60 s | 196, 197, 1300 |
+| `CallInterceptSeconds`, `CallInterceptParts` | 30 s, `cosmoteer.sensor_array` | 1300 |
 | `CallAssistSeconds` | 60 s | 198 |
 | `CallBlockedInNebulas`, `CallStormStrength` | [ion_storm, electron], 0.5 | 199 |
 | `FocusWeakFactor` | 1.5 | 200 |
@@ -77,7 +81,7 @@
 | `Mechanics.SurveyScanSeconds` | 15 s | 136 |
 | `Mechanics.ScanRange`, `IntensivePayBonus`, `MaxIntensivePerWave` | 3500, 0.25, 2 | 140 |
 | Archetype weights | rules values in `mod/worlds/archetypes.rules`, restart needed | 220 |
-| `Worlds.CurrentFlowSpeed`, `CurrentAccel`, `CurrentArrows` | 45, 9, on | 221 |
+| `Worlds.CurrentFlowSpeed`, `CurrentAccel`, `CurrentSideShare`, `CurrentArrows` | 45, 9, 0.25, on | 221 |
 | `Worlds.PassHoldSeconds`, `PassLostSeconds`, `PassWaveSeconds`, `PassWaveDistance` | 120 s, 15 s, 35 s, 2500 | 222 |
 | `Worlds.SundiveSalvageSeconds`, `HeatWarnDepth` | 5 s, 0.5 | 223 |
 | `Worlds.LairDiscoverDistance` | 2000 | 224 |
@@ -92,7 +96,7 @@
 | `Factions.AllyFaction`, `RivalFaction` | picked from the galaxy seed | 640 |
 | `Factions.AllyHeatFactor`, `AllyMoneyFactor`, `AllyNotorietyFactor` | 1.5, 1.3, 1.5 | 641, 642 |
 | `Factions.ShelterReputation`, `ShelterHeatFactor` | 500, 0.6 | 643 |
-| `Factions.WatchHeatFactor` | 1.5 | 664 |
+| `Factions.WatchHeatFactor` | 1.1 | 664 |
 | `Factions.RivalFencePremium` | 1.5 | 644 |
 | `Factions.RelayWatchedHeatCut`, `RelayClearHeatCut`, `BlindHeatCut`, `RelayWatchRadius` | 0.75, 0.85, 0.9, 3500 | 650 |
 | `Factions.BlindFuelFactor`, `BlindSpinUpFactor`, `BlindDamageChance`, `BlindDamageParts`, `BlindDamageFraction` | 1.5, 2, 0.35, 3, 0.4 | 651 |

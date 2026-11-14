@@ -67,6 +67,7 @@ HotCargoShipAi
 	Preset_SupplyRunner = "Supply runner (autonomous)"
 	Preset_Salvager = "Salvager (autonomous)"
 	Preset_EscortDrone = "Escort drone (autonomous)"
+	Preset_Formation = "Formation"
 
 	// Conditions
 	Cond_Always = "Always"
@@ -97,6 +98,8 @@ HotCargoShipAi
 	Cond_AsteroidWithin = "Asteroid (my ores) within"
 	Cond_WreckWithin = "Wreck within"
 	Cond_FleetBeyond = "My crewed ship is further than"
+	Cond_AllyWithin = "An ally within"
+	Cond_AllyInLineOfFire = "An ally is in my line of fire"
 
 	// Actions
 	Act_TargetNearest = "Target: nearest"
@@ -120,6 +123,8 @@ HotCargoShipAi
 	Act_Mine = "Move: mine asteroid"
 	Act_Salvage = "Move: salvage wreck"
 	Act_ReturnToFleet = "Move: return to my crewed ship"
+	Act_HoldFormation = "Move: hold formation slot"
+	Act_KeepSpacing = "Move: keep spacing from allies"
 	Act_FireAtWill = "Fire: at will"
 	Act_FocusTarget = "Fire: focus"
 	Act_TargetWeapons = "Fire: at their weapons"

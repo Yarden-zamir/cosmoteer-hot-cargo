@@ -113,11 +113,13 @@ public static class JourneyArea
             }
         };
         // Single player only: jumps the human ships to an unvisited neighbor system, without the FTL animation or fuel.
-        Autotest.Commands["jump"] = _ =>
+        // "jump back": to a visited neighbor instead (the system the ships came from).
+        Autotest.Commands["jump"] = arg =>
         {
             var run = Autotest.RequireRun();
-            var next = run.Game.CurrentMapNode.Connections.FirstOrDefault(n => !run.State.VisitedNodes.Contains(n.UniqueID))
-                ?? throw new InvalidOperationException("no unvisited neighbor system");
+            bool back = arg.Trim() == "back";
+            var next = run.Game.CurrentMapNode.Connections.FirstOrDefault(n => run.State.VisitedNodes.Contains(n.UniqueID) == back)
+                ?? throw new InvalidOperationException(back ? "no visited neighbor system" : "no unvisited neighbor system");
             Autotest.JumpWhenAllowed(run, next, "jump");
         };
         Autotest.Commands["maptiers"] = _ =>

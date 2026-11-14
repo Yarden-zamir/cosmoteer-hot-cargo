@@ -23,17 +23,19 @@ public static class AiArea
     // TacticsLog event names. Each one is an autotest field "ai_<name>" that counts the events.
     public const string Flee = "flee", FleeStay = "flee_stay", FleeEnd = "flee_end", FleeJump = "flee_jump";
     public const string CallStart = "call_start", CallComplete = "call_complete", CallInterrupt = "call_interrupt";
-    public const string CallBlocked = "call_blocked", CallAssist = "call_assist";
+    public const string CallBlocked = "call_blocked", CallAssist = "call_assist", CallIntercept = "call_intercept";
     public const string Regroup = "regroup", RegroupEnd = "regroup_end";
     public const string PersonalityEvent = "personality";
 
     static readonly string[] EventNames =
-        [Flee, FleeStay, FleeEnd, FleeJump, CallStart, CallComplete, CallInterrupt, CallBlocked, CallAssist, Regroup, RegroupEnd, PersonalityEvent];
+        [Flee, FleeStay, FleeEnd, FleeJump, CallStart, CallComplete, CallInterrupt, CallBlocked, CallAssist, CallIntercept, Regroup, RegroupEnd, PersonalityEvent];
 
     public static void Register()
     {
         foreach (string name in EventNames) Autotest.Fields[$"ai_{name}"] = () => TacticsLog.Count(name);
         Autotest.Fields["ai_calling"] = () => Sim().Ships.Count(s => s.AI?.GetStrategyModule<CallStrategy>() is { Calling: true });
+        // Spec 1300: the longest running call, in seconds (0 with no call).
+        Autotest.Fields["ai_call_seconds"] = () => Sim().Ships.Select(s => s.AI?.GetStrategyModule<CallStrategy>()).OfType<CallStrategy>().Where(m => m.Calling).Select(m => (double)m.CallSeconds).DefaultIfEmpty(0).Max();
         PersonalityAutotest.Register();
         Autotest.Fields["ai_fleeing"] = () => Sim().Ships.Count(s => s.AI?.GetStrategyModule<FleeStrategy>() is { Fleeing: true });
 
@@ -99,15 +101,15 @@ public static class AiArea
                 _ => throw new InvalidOperationException("disrupt needs: disruptor|emp"),
             });
         };
-        // hunternear <index> <distance>: moves hunter <index> to this distance from the first human ship, so a screenshot shows it. Test only.
+        // hunternear <index>|all <distance>: moves hunter <index>, or every hunter, to this distance from the first human ship. Test only.
         Autotest.Commands["hunternear"] = arg =>
         {
             var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length != 2) throw new InvalidOperationException("hunternear needs: index distance");
-            var ship = HunterAt(parts[0]);
+            if (parts.Length != 2) throw new InvalidOperationException("hunternear needs: index|all distance");
             var player = Tech.TechAutotest.PlayerShip();
             float d = float.Parse(parts[1], CultureInfo.InvariantCulture);
-            Autotest.Teleport(ship, Autotest.ClearSpotNear(Sim(), player.WorldCenter, d, ship.WorldBoundingRadius));
+            foreach (var ship in parts[0] == "all" ? HunterSpawner.Hunters(Sim()).OrderBy(h => h.UniqueID).ToList() : [HunterAt(parts[0])])
+                Autotest.Teleport(ship, Autotest.ClearSpotNear(Sim(), player.WorldCenter, d, ship.WorldBoundingRadius));
         };
         // storm <index>|all: puts an ion storm around hunter <index>, or around every hunter. Test only.
         Autotest.Commands["storm"] = arg =>
