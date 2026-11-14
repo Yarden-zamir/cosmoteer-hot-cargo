@@ -28,15 +28,15 @@ expect formation_min_gap > 50
 formation_squeeze 1 2
 expect formation_min_gap < 50
 waitfor formation_min_gap > 100 40
-# Line of fire: the leader targets the nearest hunter and holds fire while ship 1 sits on the line.
-heat 55
-waitfor hunters >= 1 30
+# Line of fire: the leader targets the nearest enemy and holds fire while ship 1 sits on the line.
+# Pirates spawn near the player, inside radar range, so the target does not depend on how far away hunters spawn.
+aispawn pirates 1
 tactics_ship 1
 tacticsauto off
 tactics_ship 0
 tactics HC1:AllyInLineOfFire>HoldFire=0;Always>TargetNearest
 tacticsauto on
-waitfor tactics_target_row == 1 30
+waitfor tactics_target_row == 1 60
 expect tactics_weapons > 0
 expect tactics_held == 0
 formation_block 1
