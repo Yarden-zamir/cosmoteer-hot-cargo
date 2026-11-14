@@ -1,0 +1,29 @@
+# Hulk loot (spec 1124, 1125): the approach message of an abandoned ship, and its cargo drifting loose after the hold breaks open.
+# Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
+render on
+newgame run 0
+wait 10
+# Close the run intro.
+closepanel
+wait 1
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+ev_hulk_force abandoned_ship 1
+ev_abandoned
+wait 2
+ev_abandoned_goto 250
+ev_hulk_camera
+wait 2
+expect ev_hulk_messaged == 1
+pause on
+wait 1
+screenshot hulk-approach
+pause off
+ev_hulk_wreck shoot
+wait 1
+ev_hulk_camera
+pause on
+wait 1
+screenshot hulk-drops
+quit

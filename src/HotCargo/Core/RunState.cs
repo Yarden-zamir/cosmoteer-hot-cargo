@@ -21,6 +21,11 @@ public sealed partial class RunState
     [Serialize] public int SectorIndex = 1;
     [Serialize] public HashSet<ObjectID> VisitedNodes = new();
     [Serialize] public Dictionary<ObjectID, float> NodeHeat = new();
+    /// <summary>
+    /// Spec 1145: target area markers of missions that ended while the players were in another system, by the system that holds them.
+    /// The next arrival there removes them.
+    /// </summary>
+    [Serialize(Optional = true)] public Dictionary<ObjectID, HashSet<ObjectID>> EndedMarkers = new();
     /// <summary>Game time of the run, summed from simulation ticks across systems.</summary>
     [Serialize] public double GameSeconds;
     /// <summary>

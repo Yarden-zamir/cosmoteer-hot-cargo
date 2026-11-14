@@ -31,6 +31,8 @@ done
 echo $$ > "$LOCK/pid"
 trap 'rm -rf "$LOCK"' EXIT
 source "$LIB_DIR/pc.sh"
+# Before any change: the backup and mod-toggle.sh below change the player's files before deploy.sh would refuse.
+refuse_if_player_hold start
 
 if [[ -n "$(pc "$PS_PATHS"'Get-SlotProcess' </dev/null)" ]]; then echo "the player's game runs; nothing changed. Try again when it is closed."; exit 2; fi
 

@@ -1,0 +1,34 @@
+// Hulk loot (spec 1124 to 1126, EVENTS.md 30 and 31). C# reads this file (Events/Hulks.cs) on first use; a change needs a game restart.
+// A vanilla abandoned ship rolls a kind (Weight, MaxPerRun: 0 = no limit) and one of its Loot outcomes when it first shows up live.
+// Loot weights: Weight + WeightPerHeat × heat, never below 0.
+// Cargo: { ID; Amount; PerTier } with PerTier added per sector tier above 1. It goes into the hulk's storage; the players wreck or
+// salvage the hulk and tractor in what drops (vanilla drop rates; a Tracer Beacon drops only from salvage, spec 1116).
+// Text: the approach message, once per hulk. Loot Text: the message when the hold breaks open. {0} = the hulk's name.
+// Blast: when the hold breaks open, each player ship within Events.HulkBlastRadius takes this fraction of max health on its nearest parts.
+Hulks
+[
+	{
+		ID = abandoned_ship
+		Weight = 10
+		Text = "{0} drifts with its lights out and its hatches open. No life signs. Wreck it and tractor in what drops."
+		Loot
+		[
+			{ Weight = 40; Text = "The hold of {0} breaks open: the cargo is still there."; Cargo = [{ ID = steel; Amount = 30; PerTier = 6 }, { ID = processor; Amount = 5; PerTier = 1 }] }
+			{ Weight = 30; Text = "The hold of {0} breaks open: its tanks still hold fuel."; Cargo = [{ ID = hyperium; Amount = 25; PerTier = 5 }] }
+			{ Weight = 15; Text = "The hold of {0} breaks open: empty. Someone got here first." }
+			// The corporate trap: bait steel and a Tracer Beacon. Shots destroy the beacon; careful salvage brings it aboard. Space it.
+			{ Weight = 15; WeightPerHeat = 0.25; Text = "The hold of {0} breaks open. A corporate tracer beacon blinks among the crates. It was bait."; Cargo = [{ ID = steel; Amount = 15; PerTier = 3 }, { ID = yarden_zamir.tracer_beacon; Amount = 1 }] }
+		]
+	}
+	{
+		ID = cold_hulk
+		Weight = 5
+		MaxPerRun = 2
+		Text = "{0} is cold, its fuel tanks still pressurized, next to a reactor that is not quite dead. Salvage it from a distance."
+		Loot
+		[
+			{ Weight = 70; Text = "The tanks of {0} break open. The fuel drifts free."; Cargo = [{ ID = hyperium; Amount = 40; PerTier = 8 }] }
+			{ Weight = 30; Text = "The reactor of {0} coughs, and its tanks blow."; Cargo = [{ ID = hyperium; Amount = 15; PerTier = 3 }]; Blast = 0.2 }
+		]
+	}
+]

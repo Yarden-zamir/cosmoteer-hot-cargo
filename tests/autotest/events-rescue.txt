@@ -1,0 +1,51 @@
+# Rescue Beacon (spec 1146): a station sells it in its comms, the fire action shows the fee and heat, and a tug tows the ship to
+# the nearest friendly station. Without money the tug comes anyway. A lost tug ends the tow with a message.
+newgame run
+wait 8
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+godmode on
+worlds jumpto hc_trade_hub
+ev_tostation
+wait 2
+# A clear deal in the station's comms.
+expectcomms station Buy a rescue beacon 1
+ev_mark
+ev_comms station Buy a rescue beacon
+expectevent rescue_beacon_sale
+ev_comms carrier Buy the beacon
+expect ev_res_yarden_zamir.rescue_beacon_gain == 1
+expect ev_money_gain < 0
+# The action button shows while the beacon's part is selected; its tooltip shows the fee.
+item_select yarden_zamir.rescue_beacon
+expect item_button == 1
+expect ev_rescue_tip == 1
+ev_tostation 3000
+wait 2
+# Fire: the fee, the heat, a tug. It reaches the ship, takes it on the line and tows it to the station.
+ev_mark
+item_action yarden_zamir.rescue_beacon fire
+expect ev_res_yarden_zamir.rescue_beacon_gain == -1
+expect ev_money_gain < 0
+expect ev_heat_gain >= 9
+expect ev_rescues == 1
+pause off
+waitfor ev_rescue_pulling == 1 90
+wait 2
+expect ev_tug_speed > 1
+waitfor ev_rescue_arrivals == 1 300
+expect ev_rescues == 0
+# No money: the tug takes nothing and comes anyway. Then the tug is lost: the tow ends, the mission stays for the players.
+ev_tostation 3000
+wait 2
+item_give yarden_zamir.rescue_beacon
+ev_money_zero
+ev_mark
+item_action yarden_zamir.rescue_beacon fire
+expect ev_money_gain == 0
+expect ev_rescues == 1
+ev_tug_kill
+wait 2
+expect ev_rescues == 0
+quit
