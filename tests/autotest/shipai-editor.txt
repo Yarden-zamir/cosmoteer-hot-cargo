@@ -6,6 +6,10 @@ godmode on
 tactics_presets_reset
 tactics_editor open
 tactics_editor apply Aggressive
+# Spec 419: at the smallest window, every condition and action name fits its list on one line.
+tactics_editor minsize
+wait 1
+tactics_editor fit
 # Row 1: HealthBelow=20 AND NOT CarryingTech OR EnemiesAtLeast=3 -> RetreatRepair.
 tactics_editor addterm 1
 tactics_editor cond 1 CarryingTech 2
