@@ -65,11 +65,6 @@ expect ux_comms_open == 0
 expect paused == 0
 map off
 wait 1
-# Wanted (last: it makes the station hostile): the line names the faction and the timer state.
-wanted
-wait 2
-wantedline
-expect ux_wanted_line > 0
 # Key 1 picks the first option of the event, which is still open.
 expect ev_pending == 1
 uxpick 1
@@ -100,6 +95,11 @@ uxsubmit
 wait 2
 expect ev_pending == 0
 expect ev_heat_gain > 0
+# Wanted (after the event keys: the hostile station can destroy the damaged vaults): the line names the faction and the timer state.
+wanted
+wait 2
+wantedline
+expect ux_wanted_line > 0
 # The win panel is centered and inside the screen.
 win
 wait 2

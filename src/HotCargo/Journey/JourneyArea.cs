@@ -118,8 +118,7 @@ public static class JourneyArea
             var run = Autotest.RequireRun();
             var next = run.Game.CurrentMapNode.Connections.FirstOrDefault(n => !run.State.VisitedNodes.Contains(n.UniqueID))
                 ?? throw new InvalidOperationException("no unvisited neighbor system");
-            run.Game.JumpToNode(next, doFtlAnimation: false, run.Game.Sim.Ships.HumanPlayerShips.ToList())
-                .ContinueWith(t => Log.Error("AUTOTEST jump failed", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+            Autotest.JumpWhenAllowed(run, next, "jump");
         };
         Autotest.Commands["maptiers"] = _ =>
         {

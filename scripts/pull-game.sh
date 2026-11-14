@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Copy game DLLs, symbols, .rules files, ship designs (*.ship.png) and name generator files (*.markov) from the PC into ../.game,
-# then decompile. The Mac sim (tools/mac-sim) needs the ship and name files. Only copies files: safe while the player plays.
+# then decompile. The headless sim (tools/headless-sim) needs the ship and name files. Only copies files: safe while the player plays.
 # Run again after a game update.
 source "$(dirname "$0")/pc.sh"
 mkdir -p "$SHARED_GAME/Bin" "$SHARED_GAME/Data" "$SHARED_GAME/StandardMods"

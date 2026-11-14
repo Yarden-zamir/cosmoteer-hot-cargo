@@ -15,7 +15,7 @@ using Halfling.Windows.Null;
 /// Replaces the Windows platform (HalflingPlatformWDX: Direct3D, XAudio2, Win32). Every device is the game's own
 /// null device, the same ones that GameApp uses under --headless.
 /// </summary>
-sealed class MacPlatform : Platform
+sealed class HeadlessPlatform : Platform
 {
     public override MachineID MachineID { get; } = new(1, 1);
 
@@ -33,7 +33,7 @@ sealed class MacPlatform : Platform
         Console.Error.WriteLine($"{message}\n{details}");
 
     public override SystemInfo GetSystemInfo() =>
-        new("macOS", System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString(), Environment.OSVersion.VersionString,
+        new(System.Runtime.InteropServices.RuntimeInformation.OSDescription, System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString(), Environment.OSVersion.VersionString,
             "", Environment.ProcessorCount, Environment.ProcessorCount, 0, "null", 0, "", null);
 
     public override string? GetClipboardText() => null;
@@ -48,5 +48,5 @@ sealed class MacPlatform : Platform
         return true;
     }
 
-    public override string GetDebugText() => nameof(MacPlatform);
+    public override string GetDebugText() => nameof(HeadlessPlatform);
 }

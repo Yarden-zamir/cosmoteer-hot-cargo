@@ -186,7 +186,12 @@ public static class MpAutotest
         };
 
         // tunablesfile <rules text>: replaces the slot's tunables.rules, before mphost or mid-run (a live file change). Test slots only; deploy restores the repo file.
-        Autotest.Commands["tunablesfile"] = arg => File.WriteAllText(TunablesFile.FilePath, arg);
+        Autotest.Commands["tunablesfile"] = arg =>
+        {
+            File.WriteAllText(TunablesFile.FilePath, arg);
+            // The next frame checks the file: the mod polls it once per real second, and the sim's game clock can run faster.
+            TunablesFile.PollNow();
+        };
         // mpchoose <serial|marked> <choice number>: sends an event choice for any page serial, like a click on a page that another player
         // already answered. "marked": the page that was pending at the last ev_mark. The sim must ignore a serial that is not the pending page.
         Autotest.Commands["mpchoose"] = arg =>

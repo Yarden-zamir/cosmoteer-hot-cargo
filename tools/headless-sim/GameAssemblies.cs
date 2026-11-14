@@ -6,7 +6,7 @@ using TypeAttributes = Mono.Cecil.TypeAttributes;
 using MethodAttributes = Mono.Cecil.MethodAttributes;
 
 /// <summary>
-/// The game ships win-x64 ReadyToRun images. CoreCLR on macOS arm64 refuses them ("The data is invalid").
+/// The game ships win-x64 ReadyToRun images. CoreCLR outside Windows refuses them (macOS arm64: "The data is invalid").
 /// This resolver rewrites each game assembly to an IL-only AnyCPU copy and loads that copy instead.
 /// It also serves stand-ins (standins/) for game dependencies whose exact version is not on NuGet (Steamworks.NET),
 /// and the WindowsDesktop reference assemblies (WinForms) as stubs that throw.
@@ -53,7 +53,7 @@ static class GameAssemblies
             if (marker is not null) module.Assembly.CustomAttributes.Remove(marker);
             module.Architecture = TargetArchitecture.I386;
             module.Attributes = ModuleAttributes.ILOnly;
-            // A temp name per process: parallel runs (scripts/autotest-mac.sh) can write the same copy at the same time.
+            // A temp name per process: parallel runs (scripts/autotest-sim.sh) can write the same copy at the same time.
             module.Write($"{target}.{Environment.ProcessId}.tmp");
         }
         File.Move($"{target}.{Environment.ProcessId}.tmp", target, overwrite: true);
