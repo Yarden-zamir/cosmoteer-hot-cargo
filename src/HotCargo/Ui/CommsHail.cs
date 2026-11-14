@@ -123,6 +123,20 @@ public static class CommsHail
     /// <summary>Real seconds that the buttons stay locked after a first pick: longer than the MP input delay, like the event window.</summary>
     const double LockSeconds = 3.0;
 
+    /// <summary>
+    /// The provider whose own page this player opened on a ship (for example the loan talk at a station), by callee. Local UI state,
+    /// never saved and never sent: the page's choices still go through the shared choice input.
+    /// Limit: a player who listens in on a hail (section 47) sees the speaker's normal page, not the opened one.
+    /// </summary>
+    static readonly Dictionary<ObjectID, IHailProvider> Opened = new();
+
+    /// <summary>Shows only this provider's part on the callee's page, until <see cref="CloseOwnPage"/> or until it has no options.</summary>
+    public static void OpenOwnPage(Ship callee, IHailProvider provider) => Opened[callee.UniqueID] = provider;
+
+    public static void CloseOwnPage(Ship callee) => Opened.Remove(callee.UniqueID);
+
+    public static bool IsOwnPageOpen(Ship callee, IHailProvider provider) => Opened.TryGetValue(callee.UniqueID, out var p) && p == provider;
+
     public static int SliderValue(Ship callee, SliderSpec spec) =>
         spec.Snap(Values.TryGetValue((callee.UniqueID, spec.Key), out int v) ? v : spec.Default);
 
@@ -145,14 +159,20 @@ public static class CommsHail
     {
         if (!AnyAnswers(caller, callee)) return null;
         var page = new HailPage();
-        if (vanilla is not null)
+        // A provider that owns the callee (sim state), or whose own page this player opened (UI state), builds the page alone,
+        // without the vanilla part.
+        var owner = Providers.FirstOrDefault(p => p.Answers(caller, callee) && p.Owns(caller, callee));
+        if (owner is null && Opened.TryGetValue(callee.UniqueID, out var opened))
+        {
+            if (opened.Answers(caller, callee)) owner = opened;
+            else Opened.Remove(callee.UniqueID);
+        }
+        if (vanilla is not null && owner is null)
         {
             page.PrimaryDialogue = vanilla.PrimaryDialogue;
             page.OverridePrimaryDialogueIcon = vanilla.OverridePrimaryDialogueIcon;
             page.Buttons.AddRange(vanilla.Buttons);
         }
-        // A provider that owns the callee builds the page alone.
-        var owner = Providers.FirstOrDefault(p => p.Answers(caller, callee) && p.Owns(caller, callee));
         foreach (var p in owner is null ? Providers : [owner])
         {
             try { if (p.Answers(caller, callee)) p.Build(caller, callee, page); }

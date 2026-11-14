@@ -24,9 +24,27 @@ public sealed class DebtHailProvider : IHailProvider
     /// <summary>Spec 1407: a collector's page is the debt page only.</summary>
     public bool Owns(Ship caller, Ship callee) => Run.Current is { } run && Lenders.CollectorOf(run, callee) is not null;
 
+    /// <summary>
+    /// Spec 1416: a station's normal page shows one line that opens the debt page; the debt page shows only the debt part and Back.
+    /// A collector's page is always the debt page.
+    /// </summary>
     public void Build(Ship caller, Ship callee, HailPage page)
     {
         if (Run.Current is not { } run) return;
+        bool collectorPage = Lenders.CollectorOf(run, callee) is not null;
+        if (!collectorPage && !CommsHail.IsOwnPageOpen(callee, this))
+        {
+            bool talk = Lenders.DebtAt(run, callee) is not null || Lenders.Refinances(run, callee).Count > 0;
+            page.AddButton(DebtArea.Text(talk ? "DebtLine" : "LoanLine"), () => CommsHail.OpenOwnPage(callee, this));
+            return;
+        }
+        DebtPage(run, callee, page);
+        if (!collectorPage) page.AddButton(DebtArea.Text("Back"), () => CommsHail.CloseOwnPage(callee));
+    }
+
+    /// <summary>Spec 1402 to 1408 and 1421: the loan offer, the refinance offers, the debt state, the pay row and "Not now".</summary>
+    static void DebtPage(Run run, Ship callee, HailPage page)
+    {
         // Limit: one shared choice domain per page (CommsHail). A page that another area owns shows no debt choices.
         if (page.Shared is { } other && other.Domain != DebtChoiceDomain.Name) return;
         page.Shared = (DebtChoiceDomain.Name, DebtChoiceDomain.Serial(callee));

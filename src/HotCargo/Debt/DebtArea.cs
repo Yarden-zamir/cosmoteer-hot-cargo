@@ -78,6 +78,18 @@ public static class DebtArea
     }
 
     static long _marked;
+    static string _looked = "loan";
+
+    /// <summary>The comms page of the ship that debt_look named, as the dialogue tab gets it for the acting ship.</summary>
+    static HailPage LookedPage()
+    {
+        var me = Autotest.ActingShip(Sim()) ?? throw new InvalidOperationException("no acting ship");
+        var target = Target(_looked);
+        return target.AI?.GetDialogueExchange(me) as HailPage ?? throw new InvalidOperationException($"{target.Metadata.PlainShipName} has no Hot Cargo page");
+    }
+
+    static bool IsDebtLine(Cosmoteer.Ships.AI.CommsModules.AIDialogueModule.DialogueButton b) =>
+        b.Text == DebtArea.Text("LoanLine") || b.Text == DebtArea.Text("DebtLine") || b.Text == DebtArea.Text("Back");
     static string _oldFaction = "";
     static int _oldRep;
 
@@ -98,6 +110,20 @@ public static class DebtArea
         Autotest.Fields["debt_wanted"] = () => Lenders.Wants(Sim(), First().Faction) ? 1 : 0;
         Autotest.Fields["debt_collectors"] = () => R().State.Debt.Collectors.Count;
         // Spec 1407: 1 when the first collector's comms page is the debt page alone (no other area claims its choices).
+        // Spec 1416. debt_look loan|lender|collector names the ship that the debt_page_* fields read.
+        Autotest.Commands["debt_look"] = arg => _looked = arg.Trim();
+        // The lines that open or leave the debt page.
+        Autotest.Fields["debt_page_line"] = () => LookedPage().Buttons.Count(b => IsDebtLine(b) && b.Text != DebtArea.Text("Back"));
+        // Debt choices and rows on the page.
+        Autotest.Fields["debt_page_debt_parts"] = () =>
+            LookedPage() is { Shared.Domain: DebtChoiceDomain.Name } page ? page.Buttons.OfType<HailChoice>().Count() + page.Rows.Count : 0;
+        // Lines of other areas and of the vanilla dialogue.
+        Autotest.Fields["debt_page_other_lines"] = () => LookedPage() is var page && page.Shared?.Domain == DebtChoiceDomain.Name
+            ? page.Buttons.Count(b => b is not HailChoice && !IsDebtLine(b))
+            : page.Buttons.Count(b => !IsDebtLine(b));
+        // debt_open_page / debt_close_page: like a click on the debt line or on Back of the looked-at ship.
+        Autotest.Commands["debt_open_page"] = _ => CommsHail.OpenOwnPage(Target(_looked), DebtHailProvider.Instance);
+        Autotest.Commands["debt_close_page"] = _ => CommsHail.CloseOwnPage(Target(_looked));
         Autotest.Fields["debt_collector_page"] = () =>
         {
             var me = Autotest.ActingShip(Sim()) ?? throw new InvalidOperationException("no acting ship");
