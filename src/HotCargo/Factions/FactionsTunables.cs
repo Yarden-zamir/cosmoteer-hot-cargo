@@ -59,7 +59,7 @@ public sealed class FactionsTunables
     [Serialize(Optional = true)] public float RefuseChance = 0.5f;
 
     /// <summary>Spec 664: time heat in a system under corporate watch (a neighbor of a system where the Strike stage started).</summary>
-    [Serialize(Optional = true)] public float WatchHeatFactor = 1.5f;
+    [Serialize(Optional = true)] public float WatchHeatFactor = 1.1f;
 
     /// <summary>Spec 660: the galaxy map marks the targets of events and contracts.</summary>
     [Serialize(Optional = true)] public bool MapMarkers = true;

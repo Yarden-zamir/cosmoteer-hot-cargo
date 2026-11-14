@@ -39,11 +39,13 @@ waitfor pt_unlocked == 1 30
 pt_buy 300 part cosmoteer.hyperdrive_small
 pt_build cosmoteer.hyperdrive_small
 waitfor pt_drives == 1 240
-# The jump to sector 2 used 2 hyperium (playthrough log). 5 leaves room; a station can hold less than 20 (one CI run had 17).
+# The jump to sector 2 uses 3 hyperium (to Negero, playthrough log). 5 leaves room; a station can hold less than 20 (one CI run had 17).
 # Revisit if a jump of the starter ship costs more than 5.
 pt_buy 300 hyperium 5
 pt_status drive
-# The relay toward an unvisited system: fly there, right click it, wait for the drives, press ENGAGE.
+# The relay toward an unvisited system with the fewest enemies near the route (the log line "relays" shows the choice): fly
+# there, right click it, wait for the drives, press ENGAGE. The relay to Tau Codemo has a pirate nest; a fight there under
+# the drive spin-up decided the run by a few ticks.
 pt_goto relay 400
 pt_relayjump
 waitfor pt_ready == 1 180

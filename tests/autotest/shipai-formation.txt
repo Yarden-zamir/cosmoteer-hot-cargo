@@ -1,0 +1,44 @@
+# Formations (spec 423 to 427): two copies of the starting ship hold slots of a V behind the first ship, keep their spacing when
+# pushed together, and the first ship holds fire while an ally is in its line of fire.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+shipai Log on
+aiset FleeEnabled false
+aiset CallEnabled false
+aiset RegroupEnabled false
+tactics_ally
+tactics_ally
+# Ships 1 and 2 follow ship 0 (the lowest ID) in the V.
+tactics_ship 1
+tactics Formation
+tacticsauto on
+tactics_ship 2
+tactics Formation
+tacticsauto on
+waitfor formation_followers == 2 30
+# The leader flies off; the V follows and the ships keep apart.
+tactics_ship 0
+tactics_manual
+wait 20
+expect formation_followers == 2
+expect formation_min_gap > 50
+# Keep spacing: ship 2 is put right next to ship 1; the keep-spacing row moves them apart.
+formation_squeeze 1 2
+expect formation_min_gap < 50
+waitfor formation_min_gap > 100 40
+# Line of fire: the leader targets the nearest enemy and holds fire while ship 1 sits on the line.
+# Pirates spawn near the player, inside radar range, so the target does not depend on how far away hunters spawn.
+aispawn pirates 1
+tactics_ship 1
+tacticsauto off
+tactics_ship 0
+tactics HC1:AllyInLineOfFire>HoldFire=0;Always>TargetNearest
+tacticsauto on
+waitfor tactics_target_row == 1 60
+expect tactics_weapons > 0
+expect tactics_held == 0
+formation_block 1
+waitfor tactics_held == tactics_weapons 20
+quit
