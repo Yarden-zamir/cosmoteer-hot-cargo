@@ -30,6 +30,8 @@ namespace HotCargo.Dev;
 public static class Playthrough
 {
     static Mission? _mission;
+    /// <summary>The relay that Relay() chose, for the system that it chose it in.</summary>
+    static (ObjectID Node, ObjectID Destination)? _relay;
     static Func<Circle?>? _target;
 
     internal static void Register()
@@ -155,7 +157,7 @@ public static class Playthrough
         };
         Autotest.Fields["pt_drives"] = () => TechAutotest.PlayerShip().Ftl.HasFtlDrives ? 1 : 0;
         Autotest.Fields["pt_fuel"] = () => TechAutotest.PlayerShip().Ftl.GetTotalFuel();
-        // pt_relayjump: a right click on the relay toward the first unvisited neighbor. The drives spin up on the relay.
+        // pt_relayjump: a right click on the relay that Relay() chose. The drives spin up on the relay.
         Autotest.Commands["pt_relayjump"] = _ =>
         {
             var ship = TechAutotest.PlayerShip();
@@ -304,12 +306,39 @@ public static class Playthrough
     static bool BuyPending(ID<ResourceRules> resource) =>
         TechAutotest.PlayerShip().Resources.ManualTransferJobs.Any(j => j.TradeType == TradeType.Buy && j.ResourceType == resource);
 
+    /// <summary>Enemy ships nearer than this to the straight route from the ship to a relay count against that relay.</summary>
+    const float RouteMargin = 2500f;
+
+    /// <summary>
+    /// Spec 1004: the relay toward an unvisited system with the fewest enemy ships near the straight route from the player ship,
+    /// then the nearest. A person avoids a known pirate nest. Ships in stasis count too, so this knows more than the map shows.
+    /// The choice stays fixed for the system, so the target does not change while the ship flies.
+    /// </summary>
     static MetaFtlGate Relay()
     {
         var run = Autotest.RequireRun();
-        var next = run.Game.CurrentMapNode.Connections.FirstOrDefault(n => !run.State.VisitedNodes.Contains(n.UniqueID))
-            ?? throw new InvalidOperationException("no unvisited neighbor system");
-        return FtlGate.GetGateForDestination(run.Game.Sim, next) ?? throw new InvalidOperationException($"no relay toward {next.Name}");
+        var sim = run.Game.Sim;
+        var node = run.Game.CurrentMapNode.UniqueID;
+        var relays = FtlGate.GetGates(sim).Where(g => !run.State.VisitedNodes.Contains(g.DestinationID)).OrderBy(g => g.DestinationID).ToList();
+        if (_relay is { } kept && kept.Node.Equals(node))
+        {
+            int i = relays.FindIndex(g => g.DestinationID.Equals(kept.Destination));
+            return i >= 0 ? relays[i] : throw new InvalidOperationException("the chosen relay is gone");
+        }
+        if (relays.Count == 0) throw new InvalidOperationException("no relay toward an unvisited system");
+        var ship = TechAutotest.PlayerShip();
+        int me = ship.Metadata.PlayerIndex;
+        var from = ship.DetWorldCenter;
+        var enemies = sim.Ships.Where(s => !s.IsJunk && s.IsEnemiesWith(ship)).Select(s => s.DetWorldCenter)
+            .Concat(sim.Stasis.Where(s => SimQueries.StasisTags(s) is not null && sim.Mode.AreEnemies(s.ObjectAllegiance, me)).Select(s => s.Location))
+            .ToList();
+        int Threat(MetaFtlGate g) => enemies.Count(e =>
+            Worlds.WorldsModel.DistanceToSegment(e.X, e.Y, from.X, from.Y, g.DetWorldCenter.X, g.DetWorldCenter.Y) < RouteMargin);
+        var chosen = relays.OrderBy(Threat).ThenBy(g => g.DetWorldCenter.DistanceSquaredTo(from)).First();
+        Log.Info("AUTOTEST playthrough: relays " + string.Join(", ", relays.Select(g =>
+            $"{g.DestinationNode?.Name} enemies={Threat(g)} distance={g.DetWorldCenter.DistanceTo(from):0}")) + $"; chosen {chosen.DestinationNode?.Name}");
+        _relay = (node, chosen.DestinationID);
+        return chosen;
     }
 
     /// <summary>

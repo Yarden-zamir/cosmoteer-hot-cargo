@@ -92,7 +92,7 @@
 | `Factions.AllyFaction`, `RivalFaction` | picked from the galaxy seed | 640 |
 | `Factions.AllyHeatFactor`, `AllyMoneyFactor`, `AllyNotorietyFactor` | 1.5, 1.3, 1.5 | 641, 642 |
 | `Factions.ShelterReputation`, `ShelterHeatFactor` | 500, 0.6 | 643 |
-| `Factions.WatchHeatFactor` | 1.5 | 664 |
+| `Factions.WatchHeatFactor` | 1.1 | 664 |
 | `Factions.RivalFencePremium` | 1.5 | 644 |
 | `Factions.RelayWatchedHeatCut`, `RelayClearHeatCut`, `BlindHeatCut`, `RelayWatchRadius` | 0.75, 0.85, 0.9, 3500 | 650 |
 | `Factions.BlindFuelFactor`, `BlindSpinUpFactor`, `BlindDamageChance`, `BlindDamageParts`, `BlindDamageFraction` | 1.5, 2, 0.35, 3, 0.4 | 651 |

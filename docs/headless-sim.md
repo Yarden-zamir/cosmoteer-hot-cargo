@@ -1,6 +1,6 @@
 # Cosmoteer headless sim (macOS and Linux)
 
-The spike below ran on the Mac. The same host (tools/headless-sim) now also runs on Linux: CI runs every game test with it (`.github/workflows/check.yml`, `scripts/ci-sim-tests.sh`), with the game files from the private refs repo (`scripts/refresh-game-refs.sh`).
+The spike below ran on the Mac. The same host (tools/headless-sim) now also runs on Linux: CI runs every game test with it in the merge queue (`.github/workflows/check.yml`, `scripts/ci-sim-tests.sh`), with the game files from the private refs repo (`scripts/refresh-game-refs.sh`).
 
 Question: can a .NET 10 host on macOS (arm64) run the real game logic with Hot Cargo, so that game tests do not need the Windows PC?
 
