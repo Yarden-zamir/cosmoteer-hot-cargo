@@ -70,7 +70,7 @@ The game runs on a Windows PC that a person also uses. `autotest.sh` runs headle
 
 ## Git
 
-- Feature work: push a feature branch and open a pull request. CI builds it and runs the unit tests, the private-data check and the game tests in the headless sim (`game-tests`). The owner runs the affected tests outside CI that the merge depends on (`# runner: pc`; the PR template has the box), then turns on auto-merge (`gh pr merge --auto --merge`). `main` requires the checks and an up-to-date branch, so GitHub orders the merges. Small fixes go through a short PR too.
+- Feature work: push a feature branch and open a pull request. CI builds it and runs the unit tests, the private-data check and the game tests in the headless sim (`game-tests`). The owner runs the affected tests outside CI that the merge depends on (`# runner: pc`; the PR template has the box), then turns on auto-merge (`gh pr merge --auto --merge`). `main` requires the checks. `main` has a merge queue: it tests each PR on top of the newest `main` and the PRs ahead of it, then merges it. A PR does not have to be up to date with `main`. Small fixes go through a short PR too.
 - Use conventional commits (`feat:`, `fix:`, `docs:`, `chore:`).
 
 Parallel autotests work, also from one worktree: `deploy.sh` holds a build lock. `scripts/autotest-affected.sh` runs the smoke tests of the areas a change touches (`tests/TIERS.md`); name a test after its area folder (`tech-sell` for `src/HotCargo/Tech`).

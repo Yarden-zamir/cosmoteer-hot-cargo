@@ -35,7 +35,7 @@ description: Build Hot Cargo, run unit tests, headless game tests and co-op test
 ## Before a merge (CI)
 - CI (`.github/workflows/check.yml`) runs every game test and co-op session in the headless sim on Linux, in 16 parallel shards (`scripts/ci-sim-tests.sh`), for each push and same-repo PR. The check `game-tests` passes when every shard passed. Each shard's job summary lists its results; the logs are an artifact (`scripts/ci-check-logs.sh` lets only text logs in).
 - Not in CI: tests with the line `# runner: pc`. That one marker is the only skip. `LIST_ONLY=1 RUNNER=pc scripts/autotest-affected.sh` lists the affected ones; the `game-tests` job summary of a PR lists them too. The owner runs only those the merge depends on, on the PC, and ticks the box of the PR template.
-- Then `gh pr merge --auto --merge` (CLAUDE.md, Git). When `main` moves, merge it into the branch, adapt, push; CI runs again.
+- Then `gh pr merge --auto --merge` (CLAUDE.md, Git). The merge queue tests the PR on the newest `main`. When `main` moves, merge it into the branch only for a conflict or a change that the PR must adapt to.
 - Game files for CI: the private repo `cosmoteer-hot-cargo-game-refs` (`Bin/`, `Data/`, `StandardMods/example_mod/`). After a game update: `scripts/pull-game.sh`, then `scripts/refresh-game-refs.sh --push`.
 - A release tags a tested commit: `scripts/release.sh <version>` takes the newest commit on `origin/main` whose required checks all passed (`--commit <sha>` picks one), and builds the zip at that commit. No merge freeze is needed.
 
