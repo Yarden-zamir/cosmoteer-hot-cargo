@@ -287,16 +287,13 @@ Reads as: tech units are also research currency. Spending one buys parts now and
 
 ### Abandoned ships (spec 764-765)
 
-Vanilla 0.30.5 spawns abandoned civilian ships. Flying close to one rolls an event once (60 %).
+Vanilla 0.30.5 spawns abandoned civilian ships. 60 % of them hold Hot Cargo loot (spec 1124 to 1126, `mod/events/hulks.rules`). No dialog: the loot is real cargo in the hulk's storage and tanks, rolled when the hulk first shows up live. Flying within 800 shows the hulk's message. Wreck it or salvage it the vanilla way and tractor in what drops (vanilla drop rates). When the hold breaks open, a message names the outcome.
 
-#### 30. Abandoned Ship (Abandoned; no run limit)
-| Choice | Need | Outcomes |
-|---|---|---|
-| Board it | 2 crew | 40 % steel and processors, 30 % hyperium, 15 % nothing, 15 % + 0.25 × heat a corporate trap (heat +10, corporate patrol). |
-| Leave it | — | Nothing. The hull is still there to salvage. |
+#### 30. Abandoned Ship (hulk loot; weight 10; no run limit)
+Loot: 40 % steel and processors, 30 % hyperium, 15 % nothing, 15 % + 0.25 × heat the corporate trap: bait steel and a Tracer Beacon (spec 1116). Shots destroy the beacon; careful salvage drops it, and once aboard it calls home each minute until you space it.
 
-#### 31. Cold Hulk (Abandoned; twice per run; weight 5)
-Drain the tanks (1 crew): 70 % hyperium, 30 % less hyperium and hull damage 20 %. Or leave.
+#### 31. Cold Hulk (hulk loot; weight 5; twice per run)
+Loot: 70 % hyperium, 30 % less hyperium and a reactor that coughs: when the hold breaks open, the tanks blow. Each player ship within 300 loses 20 % of max health on its 6 parts nearest to the hulk. Salvage it from a distance.
 
 #### 32. Dead Courier (the run's relic ship)
 One per run, in a sector from 2 to the one before the Buyer. Within 3,000 the vault senses it: "Your vault hums: stolen tech nearby". Within 900 the event opens; leaving and coming back opens it again until you take the crate.

@@ -189,6 +189,18 @@ expect ev_res_yarden_zamir.sealed_case_gain == 0
 on 1 waitfor ev_res_yarden_zamir.access_codes_gain == 1 30
 on 1 waitfor ev_res_yarden_zamir.opened_case_gain == 1 30
 
+step events.hulk-loot
+# Spec 1124, 1125: a hulk rolls its loot in the sim, so both machines see the same cargo; the broken hold reveals it on both.
+mp ev_hulk_force abandoned_ship 1
+mp ev_abandoned
+waitfor ev_hulk_stocked == 1 20
+expect ev_hulk_steel >= 30
+on 1 waitfor ev_hulk_stocked == 1 30
+on 1 expect ev_hulk_steel >= 30
+mp ev_hulk_wreck shoot
+waitfor ev_hulk_stocked == 0 20
+on 1 waitfor ev_hulk_stocked == 0 30
+
 step events.research-trade
 # Spec 760 to 763: the offer is built the same on both machines, the client trades from its own machine, the techs unlock on both.
 ev_researched_mark

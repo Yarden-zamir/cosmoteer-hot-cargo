@@ -599,6 +599,16 @@ public static class EventsArea
             Log.Info($"AUTOTEST hulk wreck {arg.Trim()}: hold {string.Join(", ", hold.Select(c => hulk.Parts[c.Cell] is { } x ? $"{x.Rules.ID}@{x.Location} health {x.Health}" : $"{c.Cell} gone"))}");
             Autotest.Wait(1);
         };
+        // ev_hulk_camera: test only. The camera stops following ships and shows the test hulk (screenshots).
+        Autotest.Commands["ev_hulk_camera"] = _ =>
+        {
+            var hulk = TestHulk();
+            var view = RequireSim().Camera.ViewController;
+            view.ClearFocus(clearFramesOfReferenceAndRotation: true);
+            view.FRLocation = hulk.WorldCenter;
+            float size = Math.Max(60f, hulk.WorldBoundingRadius * 2.5f);
+            view.ZoomToFit(new Vector2(size, size), instant: true);
+        };
         // ev_hulk_stocked: 1 while the test hulk has loot whose hold did not break open. ev_hulk_messaged: 1 once its approach message showed.
         Autotest.Fields["ev_hulk_stocked"] = () => _hulk is { } id && RequireRun().State.Events.Hulks.ContainsKey(id) ? 1 : 0;
         Autotest.Fields["ev_hulk_messaged"] = () => _hulk is { } id && RequireRun().State.Events.Hulks.TryGetValue(id, out var h) && h.Messaged ? 1 : 0;
