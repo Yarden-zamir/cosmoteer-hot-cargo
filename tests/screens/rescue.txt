@@ -1,0 +1,40 @@
+# Rescue Beacon (spec 1147, 1148): the fire button with its tooltip (fee and heat), and the tug towing the ship to the station.
+# Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
+render on
+newgame run 0
+wait 10
+# Close the run intro.
+closepanel
+wait 1
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+godmode on
+worlds jumpto hc_trade_hub
+ev_tostation
+wait 2
+ev_tostation 3000
+wait 2
+item_give yarden_zamir.rescue_beacon
+wait 1
+item_select yarden_zamir.rescue_beacon
+wait 2
+expect item_button == 1
+tipshow item
+wait 1
+screenshot rescue-button
+tipclear
+item_action yarden_zamir.rescue_beacon fire
+waitfor ev_rescue_pulling == 1 90
+wait 5
+ev_rescue_camera
+pause on
+wait 1
+screenshot rescue-tow
+pause off
+waitfor ev_rescue_arrivals == 1 240
+wait 1
+pause on
+wait 1
+screenshot rescue-arrived
+quit

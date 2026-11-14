@@ -21,8 +21,6 @@ public enum EventTrigger
     Station,
     /// <summary>When the players become wanted while heat is at stage 1 or more (spec 471).</summary>
     Wanted,
-    /// <summary>When a human ship first comes near a vanilla abandoned ship (spec 764).</summary>
-    Abandoned,
     /// <summary>When a human ship comes close to the run's relic ship (spec 765).</summary>
     Relic,
     /// <summary>A line in the comms of a station or faction ship (HailLine, HailTarget). Clicking it opens the page there (spec 769).</summary>
@@ -159,6 +157,11 @@ public sealed class OutcomeRules
     /// <summary>Crew that leave the ship alive (a passenger handed on, spec 1109): removed without the death path.</summary>
     [Serialize(Optional = true)] public int CrewLeaves;
     [Serialize(Optional = true)] public ResourceAmount[] Resources = [];
+    /// <summary>
+    /// A ship tag (spec 1141). The Tech and resource gains drift loose as crates beside the ship with this tag that is nearest to the
+    /// fleet (live, wreck or in stasis), not into the hold. Empty: gains go into the hold.
+    /// </summary>
+    [Serialize(Optional = true)] public string DropNear = "";
     /// <summary>Fraction of max health taken from a few random parts of the biggest player ship. Parts keep 1 health. Vaults are skipped.</summary>
     [Serialize(Optional = true)] public float HullDamage;
     /// <summary>A generator name in mod/events/spawns.rules. It spawns around the player fleet.</summary>
@@ -177,6 +180,8 @@ public sealed class OutcomeRules
     [Serialize(Optional = true)] public bool Chat;
     /// <summary>On a chain page (mod/chains/pages.rules): the result that this outcome gives the chain stage. Empty elsewhere.</summary>
     [Serialize(Optional = true)] public string ChainResult = "";
+    /// <summary>Spec 1360: a C# effect that an area adds to EventRunner.Effects. It runs after the other effects and adds its result lines.</summary>
+    [Serialize(Optional = true)] public string Effect = "";
 
     /// <summary>
     /// A copy with Money, MoneyTech and Fame × k (spec 812). With <paramref name="all"/> also Heat, Reputation, Tech, Crew,
@@ -417,8 +422,8 @@ public static class EventLibrary
             if (opt.RiskChance > 0 != opt.Risk is not null) throw new InvalidDataException($"{oat}: RiskChance and Risk go together");
             ValidateNeed(opt.Need, oat);
             foreach (var fx in new[] { opt.Effect, opt.Once, opt.Risk })
-                if (fx is not null && (fx.Next.Length > 0 || fx.Spawn.Length > 0 || fx.ChainResult.Length > 0 || fx.BuyerPrice > 0 || fx.UnlockOffer || fx.OfferPrice))
-                    throw new InvalidDataException($"{oat}: option effects take numbers, flags and text only (no Next, Spawn, ChainResult, BuyerPrice or offers)");
+                if (fx is not null && (fx.Next.Length > 0 || fx.Spawn.Length > 0 || fx.ChainResult.Length > 0 || fx.BuyerPrice > 0 || fx.UnlockOffer || fx.OfferPrice || fx.Effect.Length > 0))
+                    throw new InvalidDataException($"{oat}: option effects take numbers, flags and text only (no Next, Spawn, ChainResult, BuyerPrice, offers or Effect)");
         }
         for (int c = 0; c < e.Choices.Length; c++)
         {
@@ -446,6 +451,7 @@ public static class EventLibrary
                 if (outcome.BuyerPrice is < 0 or > 1) throw new InvalidDataException($"{oat}: BuyerPrice must be 0 (no change) or above 0 and at most 1");
                 foreach (var r in outcome.Resources) ValidateResource(r.ID, oat);
                 if (outcome.Spawn.Length > 0) Spawn(outcome.Spawn);
+                if (outcome.Effect.Length > 0 && !EventRunner.Effects.ContainsKey(outcome.Effect)) throw new InvalidDataException($"{oat}: no effect '{outcome.Effect}' (EventRunner.Effects)");
                 if (outcome.HandOverPay < 0 || outcome.HandOverPay > 0 && !outcome.HandOver) throw new InvalidDataException($"{oat}: HandOverPay needs HandOver and must not be negative");
                 if (outcome.ContactTurns != ContactReaction.None && (outcome.HandOver || e.HailTarget != HailTarget.Contact))
                     throw new InvalidDataException($"{oat}: ContactTurns needs a Contact page and no HandOver");

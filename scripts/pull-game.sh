@@ -12,3 +12,9 @@ pc 'tar.exe -cf - -C "'"$PC_GAME_DIR"'\Standard Mods" example_mod' | tar -xf - -
 rm -rf "$SHARED_GAME/decompiled"; mkdir -p "$SHARED_GAME/decompiled"
 for a in Cosmoteer HalflingCore; do ilspycmd -p -o "$SHARED_GAME/decompiled/$a" --nested-directories -r "$SHARED_GAME/Bin" "$SHARED_GAME/Bin/$a.dll" >/dev/null; done
 echo "game files in $SHARED_GAME"
+# The game declares its version in Cosmoteer.Versions.GameVersion. A version that the mod does not target means a game update.
+GAME_VERSION="$(grep -F 'const string GameVersion = ' "$SHARED_GAME/decompiled/Cosmoteer/Cosmoteer/Versions.cs" | cut -d'"' -f2)"
+[[ -n "$GAME_VERSION" ]] || { echo "pull-game: no GameVersion in the decompiled Versions.cs" >&2; exit 1; }
+TARGET="$("$REPO_ROOT/scripts/game-version.sh")"
+if [[ ", $TARGET, " == *", $GAME_VERSION, "* ]]; then echo "game version $GAME_VERSION (targeted)"
+else echo "pull-game: game version $GAME_VERSION is not in CompatibleGameVersions ($TARGET). Follow the hot-cargo-game-update skill."; fi

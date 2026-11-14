@@ -12,6 +12,8 @@ public enum Cond
     HeatStageAtLeast, HuntersInSystem, StrikeWithin, LossTimerRunning, CratesWithin, EnemyHoldsTech, EnemyCalling,
     // Autonomous ships (spec 1066)
     CargoAbove, CargoToSell, LootWithin, StationInRange, AsteroidWithin, WreckWithin, FleetBeyond,
+    // Formations (spec 423, 424)
+    AllyWithin, AllyInLineOfFire,
 }
 
 /// <summary>Spec 402, 414. A tactic action. ShipAiModel.KindOf gives its kind from its place in this list.</summary>
@@ -22,6 +24,8 @@ public enum Act
     // Move
     Kite, CloseIn, HoldPosition, RetreatToAlly, RetreatRepair, FleeJump, FollowLeader, Guard, CollectTech,
     CollectLoot, GoToStation, Mine, Salvage, ReturnToFleet,
+    // Formations (spec 425, 426): the parameter is the spacing.
+    HoldFormation, KeepSpacing,
     // Weapons (the parameter is the weapon group: 0 = all weapons, 1 to 10 = part control group)
     FireAtWill, FocusTarget, TargetWeapons, TargetEngines, PointDefenseOnly, HoldFire, FireDisruptors,
     // Facing (the parameter is the side that faces the target)
@@ -48,7 +52,7 @@ public enum Side { Nose, BroadsideLeft, BroadsideRight, Stern }
 /// <summary>Spec 1069. Which trading station "go to station" picks.</summary>
 public enum StationPick { Nearest, BestPrice, Cheapest }
 
-public enum Preset { Aggressive, Defensive, Sniper, Escort, VaultGuard, Looter, Miner, SupplyRunner, Salvager, EscortDrone }
+public enum Preset { Aggressive, Defensive, Sniper, Escort, VaultGuard, Looter, Miner, SupplyRunner, Salvager, EscortDrone, Formation }
 
 /// <summary>
 /// One condition term of a row (spec 416). Not inverts it. Or joins it to the previous term with OR, else with AND.
@@ -100,7 +104,9 @@ public sealed record ShipFacts(
     bool StationInRange = false,
     float NearestAsteroid = float.PositiveInfinity,
     float NearestWreck = float.PositiveInfinity,
-    float NearestFleet = float.PositiveInfinity);
+    float NearestFleet = float.PositiveInfinity,
+    float NearestAlly = float.PositiveInfinity,
+    bool AllyInLineOfFire = false);
 
 /// <summary>The last value of one term and the game second it took that value (spec 418). Rows keep one per term, in term order.</summary>
 public readonly record struct TermMemory(bool On, double Since);
@@ -144,7 +150,7 @@ public static class ShipAiModel
     public static ActKind KindOf(Act act) => act switch
     {
         <= Act.TargetCaller => ActKind.Target,
-        <= Act.ReturnToFleet => ActKind.Move,
+        <= Act.KeepSpacing => ActKind.Move,
         <= Act.FireDisruptors => ActKind.Weapons,
         Act.Face => ActKind.Facing,
         _ => ActKind.Trade,
@@ -154,7 +160,7 @@ public static class ShipAiModel
     {
         Cond.HealthBelow or Cond.ShieldsBelow or Cond.AmmoBelow or Cond.BatteryBelow or Cond.CargoAbove => ParamKind.Percent,
         Cond.EnemyWithin or Cond.EnemyBeyond or Cond.CratesWithin or Cond.LootWithin or Cond.AsteroidWithin or Cond.WreckWithin
-            or Cond.FleetBeyond => ParamKind.Distance,
+            or Cond.FleetBeyond or Cond.AllyWithin => ParamKind.Distance,
         Cond.EnemiesAtLeast => ParamKind.Count,
         Cond.PartLost => ParamKind.PartKind,
         Cond.EnemyClassNear => ParamKind.ShipClass,
@@ -168,6 +174,7 @@ public static class ShipAiModel
         Act.Guard => ParamKind.GuardWho,
         Act.Face => ParamKind.Side,
         Act.GoToStation => ParamKind.Station,
+        Act.HoldFormation or Act.KeepSpacing => ParamKind.Distance,
         _ when KindOf(act) == ActKind.Weapons => ParamKind.Group,
         _ => ParamKind.None,
     };
@@ -200,7 +207,7 @@ public static class ShipAiModel
     public static int[] ChoicesOf(ParamKind kind, int stages) => kind switch
     {
         ParamKind.Percent => [5, 10, 20, 25, 30, 40, 50, 60, 75, 90, 95],
-        ParamKind.Distance => [300, 500, 800, 1000, 1500, 2000, 3000, 5000, 10000, 20000],
+        ParamKind.Distance => [100, 150, 200, 300, 500, 800, 1000, 1500, 2000, 3000, 5000, 10000, 20000],
         ParamKind.Count => [1, 2, 3, 4, 5, 6, 8],
         ParamKind.Stage => Enumerable.Range(1, Math.Clamp(stages, 1, MaxStage)).ToArray(),
         ParamKind.Seconds => [10, 20, 30, 60, 90, 120],
@@ -268,6 +275,8 @@ public static class ShipAiModel
             Cond.AsteroidWithin => f.NearestAsteroid <= p * (1f + m),
             Cond.WreckWithin => f.NearestWreck <= p * (1f + m),
             Cond.FleetBeyond => f.NearestFleet > p * (1f - m),
+            Cond.AllyWithin => f.NearestAlly <= p * (1f + m),
+            Cond.AllyInLineOfFire => f.AllyInLineOfFire,
             _ => throw new ArgumentOutOfRangeException(nameof(term), term.Cond, null),
         };
     }
@@ -516,6 +525,15 @@ public static class ShipAiModel
             new(Cond.AllyUnderAttack, 0, Act.TargetAllyAttacker, 0),
             new(Cond.EnemyWithin, 1500, Act.TargetNearest, 0),
             new(Cond.Always, 0, Act.Guard, (int)GuardWho.Flagship),
+        ],
+        // Spec 427: no friendly fire, no ramming, a V behind the first ship.
+        Preset.Formation =>
+        [
+            new(Cond.AllyInLineOfFire, 0, Act.HoldFire, 0),
+            new(Cond.HealthBelow, 25, Act.RetreatToAlly, 0),
+            new(Cond.EnemyWithin, 1500, Act.TargetNearest, 0),
+            new(Cond.Always, 0, Act.KeepSpacing, 150),
+            new(Cond.Always, 0, Act.HoldFormation, 300),
         ],
         _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, null),
     };

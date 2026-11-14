@@ -1,0 +1,27 @@
+# Spec 1141: chain rewards that the stage text calls cargo drift loose as crates. They do not go straight into the hold.
+# Okafor's Depot drops a tech crate, Take It Back drops the processors. chain_kill removes the ships without wrecks, so the crates
+# drift beside the fleet; in play they drift beside the nearest wreck.
+newgame run
+wait 8
+ev_set Enabled false
+chain_force quiet_defector
+chain_jump depot
+chain_due
+wait 12
+expect chain_accepted == 1
+ev_mark
+chain_kill
+wait 3
+expect ev_tech_gain == 0
+expect ev_loose_yarden_zamir.stolen_tech_gain == 1
+chain_force magpie_rivalry
+chain_jump ambush
+chain_due
+wait 12
+expect chain_accepted == 1
+ev_mark
+chain_kill
+wait 3
+expect ev_res_processor_gain == 0
+expect ev_loose_processor_gain == 3
+quit

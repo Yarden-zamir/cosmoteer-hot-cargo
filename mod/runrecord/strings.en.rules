@@ -1,0 +1,11 @@
+HotCargoRunRecord
+{
+	Header = "<fame_color>PAST RUNS</fame_color>  <gray>on this machine</gray>"
+	Empty = "<gray>No finished runs yet.</gray>"
+	NoBest = "<gray>No win yet.</gray>"
+	BestFmt = "Best score: <good>{0}</good>  ({1})"
+	RowWonFmt = "<gray>{0}</gray>  <good>WON</good>  {1}   {2}   sector {3}/{4}   {5}   peak heat {6}   {7} vaults lost"
+	RowLostFmt = "<gray>{0}</gray>  <bad>LOST</bad>   {2}   sector {3}/{4}   {5}   peak heat {6}   {7} vaults lost"
+	NoJob = "no job"
+	ThisRun = "\n<fame_color>THIS RUN</fame_color>"
+}

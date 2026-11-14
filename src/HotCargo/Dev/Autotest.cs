@@ -25,7 +25,16 @@ public static class Autotest
     public static readonly Dictionary<string, Command> Commands = new(StringComparer.OrdinalIgnoreCase);
 
     static Queue<(string Name, string Arg, int Line)>? _script;
-    static double _waitUntil;
+    /// <summary>
+    /// Game speed (the game's own clock scale, MPSetClockScaleInput, as the speed bar sends it) for every game that this script
+    /// starts. The runners set it with "defaultspeed" (HOT_CARGO_TEST_SPEED). Waits count game seconds, so a script means the
+    /// same at every speed.
+    /// </summary>
+    static float _defaultSpeed = 1f;
+    static GameRoot? _speedApplied;
+
+    /// <summary>The end of the current "wait", or null when the script does not wait.</summary>
+    static Deadline? _wait;
     static WaitCondition? _waitFor;
     static int _line;
     static EventHandler<Cosmoteer.Simulation.SimRoot>? _godmode;
@@ -36,8 +45,60 @@ public static class Autotest
     /// <summary>
     /// A condition that the script waits for. Then runs after the condition holds and may start the next wait.
     /// OnTimeout, when set, runs in place of the failure when the deadline passes (for example a second join try).
+    /// Context, when set, describes the state for the failure message, so a timeout shows why the condition did not hold.
     /// </summary>
-    sealed record WaitCondition(Func<bool> Done, double Deadline, string What, Action? Then, Action? OnTimeout);
+    sealed record WaitCondition(Func<bool> Done, Deadline Deadline, string What, Action? Then, Action? OnTimeout, Func<string>? Context);
+
+    /// <summary>
+    /// The end of a wait. Game: the run's game seconds (NaN: real time only). Real: real seconds, used while the sim does not
+    /// tick (title, menus, loading, a paused game, a co-op join). Cap: the real-time budget, so a hung game still fails.
+    /// </summary>
+    readonly record struct Deadline(double Game, double Real, double Cap);
+
+    /// <summary>Real-time budget of a game-time wait: this many times its seconds, plus CapExtraSeconds. A sim that runs at
+    /// a tenth of real time or slower on a loaded machine fails its waits; raise the factor if that becomes normal.</summary>
+    const double CapFactor = 10, CapExtraSeconds = 30;
+
+    /// <summary>The run's game seconds while its sim ticks; null when no run is active or its sim is paused.</summary>
+    static double? GameNow() =>
+        Run.Current is { } run && Game is { } game && run.Game == game && !game.Sim.IsPaused.Confirmed ? run.State.GameSeconds : null;
+
+    /// <summary>A deadline in game seconds while a run is active, else in real seconds (requirement 1007).</summary>
+    static Deadline GameAfter(double seconds)
+    {
+        double now = App.Clock.Time.Seconds;
+        double game = Run.Current is { } run && run.Game == Game ? run.State.GameSeconds + seconds : double.NaN;
+        return new(game, now + seconds, now + seconds * CapFactor + CapExtraSeconds);
+    }
+
+    /// <summary>A deadline in real seconds, for waits on files, the network or other processes.</summary>
+    static Deadline RealAfter(double seconds)
+    {
+        double end = App.Clock.Time.Seconds + seconds;
+        return new(double.NaN, end, end);
+    }
+
+    /// <summary>The end of a "wait": its game seconds while the sim ticks, else its real seconds.</summary>
+    static bool Passed(Deadline d)
+    {
+        double now = App.Clock.Time.Seconds;
+        if (now >= d.Cap) return true;
+        if (!double.IsNaN(d.Game) && GameNow() is { } game) return game >= d.Game;
+        return now >= d.Real;
+    }
+
+    /// <summary>
+    /// The end of a timeout: both its game seconds and its real seconds passed. A timeout only guards against a condition
+    /// that never comes, so it takes the longer of the two: a slow sim gets its game seconds, and work outside the sim
+    /// (another co-op process, a file, a background thread) gets its real seconds.
+    /// </summary>
+    static bool TimedOut(Deadline d)
+    {
+        double now = App.Clock.Time.Seconds;
+        if (now >= d.Cap) return true;
+        if (now < d.Real) return false;
+        return double.IsNaN(d.Game) || GameNow() is not { } game || game >= d.Game;
+    }
 
     /// <summary>The step that runs now (see the "step" command). Null before the first step: then a failure ends the script.</summary>
     static string? _step;
@@ -97,16 +158,18 @@ public static class Autotest
 
     static void OnFrame(object? sender, EventArgs e)
     {
-        if (_script is null || App.Clock.Time.Seconds < _waitUntil) return;
+        if (_script is null) return;
+        ApplyDefaultSpeed();
+        if (_wait is { } d) { if (!Passed(d)) return; _wait = null; }
         if (_waitFor is { } w)
         {
             try
             {
                 if (!Holds(w.Done))
                 {
-                    if (App.Clock.Time.Seconds <= w.Deadline) return;
+                    if (!TimedOut(w.Deadline)) return;
                     if (w.OnTimeout is { } retry) { _waitFor = null; retry(); return; }
-                    throw new TimeoutException($"timed out waiting for {w.What}; states: {StateNames()}");
+                    throw new TimeoutException($"timed out waiting for {w.What}; states: {StateNames()}{ContextOf(w)}");
                 }
                 _waitFor = null;
                 Log.Info($"AUTOTEST waited for {w.What}");
@@ -136,7 +199,7 @@ public static class Autotest
     static void Fail(string what, Exception ex)
     {
         _waitFor = null;
-        _waitUntil = 0;
+        _wait = null;
         if (Following && SkipTo("mpack"))
         {
             Log.Error($"AUTOTEST ON FAIL {what}", ex);
@@ -189,15 +252,55 @@ public static class Autotest
     internal static string StateNames() => string.Join(", ", App.Director.States.Select(s =>
         s is Halfling.Gui.Dialogs.OneButtonDialog d ? $"OneButtonDialog \"{d.MessageLabel.Text}\"" : s.GetType().Name));
 
-    /// <summary>Pauses the script for real seconds.</summary>
-    public static void Wait(double seconds) => _waitUntil = App.Clock.Time.Seconds + seconds;
+    /// <summary>Sends the default game speed once to each new run: single player, or the host of a co-op game.</summary>
+    static void ApplyDefaultSpeed()
+    {
+        if (_defaultSpeed == 1f || Game is not { } g || g == _speedApplied || Run.Current?.Game != g) return;
+        if (g.NetManager is BaseMPManager { IsHost: false }) return;
+        _speedApplied = g;
+        g.NetManager.EnqueueInput(new MPSetClockScaleInput(_defaultSpeed));
+        Log.Info($"AUTOTEST game speed {_defaultSpeed}x");
+    }
+
+    /// <summary>Pauses the script for game seconds while a run is active (else real seconds), see GameAfter.</summary>
+    public static void Wait(double seconds) => _wait = GameAfter(seconds);
+
+    /// <summary>Pauses the script for real seconds: for files, the network or another process.</summary>
+    public static void WaitReal(double seconds) => _wait = RealAfter(seconds);
 
     /// <summary>
-    /// Pauses the script until the condition holds, then runs then. After timeout real seconds it runs onTimeout,
-    /// or fails the test when onTimeout is null.
+    /// Pauses the script until the condition holds, then runs then. After timeout seconds of both game time (while a run is
+    /// active and its sim ticks) and real time (TimedOut) it runs onTimeout, or fails the test when onTimeout is null.
     /// </summary>
-    public static void WaitFor(Func<bool> done, double timeoutSeconds, string what, Action? then = null, Action? onTimeout = null) =>
-        _waitFor = new(done, App.Clock.Time.Seconds + timeoutSeconds, what, then, onTimeout);
+    public static void WaitFor(Func<bool> done, double timeoutSeconds, string what, Action? then = null, Action? onTimeout = null,
+        Func<string>? context = null) =>
+        _waitFor = new(done, GameAfter(timeoutSeconds), what, then, onTimeout, context);
+
+    /// <summary>Like WaitFor, with a timeout in real seconds: for files, the network or another process.</summary>
+    public static void WaitForReal(Func<bool> done, double timeoutSeconds, string what, Action? then = null, Action? onTimeout = null,
+        Func<string>? context = null) =>
+        _waitFor = new(done, RealAfter(timeoutSeconds), what, then, onTimeout, context);
+
+    /// <summary>The context for a timeout message. A context that throws gives its error, so the timeout still reports.</summary>
+    static string ContextOf(WaitCondition w)
+    {
+        if (w.Context is not { } context) return "";
+        try { return $"; context: {context()}"; }
+        catch (Exception ex) { return $"; context failed: {ex.Message}"; }
+    }
+
+    static void WaitForField(string arg, bool real)
+    {
+        var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length is not (3 or 4)) throw new InvalidOperationException("waitfor needs: field op value [timeout]");
+        if (!Fields.ContainsKey(parts[0])) throw new InvalidOperationException($"unknown field '{parts[0]}'");
+        Compare(0, parts[1], parts[2]);
+        double timeout = parts.Length == 4 ? double.Parse(parts[3], CultureInfo.InvariantCulture) : 60;
+        Func<bool> done = () => Compare(Field(parts[0]), parts[1], parts[2]);
+        string what = $"{parts[0]} {parts[1]} {parts[2]}";
+        var context = WaitContext.GetValueOrDefault(parts[0]);
+        if (real) WaitForReal(done, timeout, what, context: context); else WaitFor(done, timeout, what, context: context);
+    }
 
     /// <summary>
     /// Test jumps: moves the human ships to <paramref name="next"/> without the FTL animation or fuel. Vanilla refuses a node switch
@@ -337,7 +440,14 @@ public static class Autotest
 
     static void AddBaseCommands()
     {
+        // wait <seconds>: game seconds while a run is active, else real seconds. waitreal <seconds>: real seconds (files, network).
         Commands["wait"] = arg => Wait(double.Parse(arg, CultureInfo.InvariantCulture));
+        Commands["waitreal"] = arg => WaitReal(double.Parse(arg, CultureInfo.InvariantCulture));
+        // speed <x>: the game speed now (the speed bar offers 0.125 to 8). defaultspeed <x>: the speed of every run that the
+        // script starts, this one too. The runners send defaultspeed from HOT_CARGO_TEST_SPEED.
+        Commands["speed"] = arg => (Game ?? throw new InvalidOperationException("no game")).NetManager.EnqueueInput(
+            new MPSetClockScaleInput(float.Parse(arg, CultureInfo.InvariantCulture)));
+        Commands["defaultspeed"] = arg => { _defaultSpeed = float.Parse(arg, CultureInfo.InvariantCulture); _speedApplied = null; };
         Commands["newgame"] = arg =>
         {
             // arg: [map size index, or "run" / nothing for the Hot Cargo run map] [starter ship index, default 0].
@@ -397,16 +507,10 @@ public static class Autotest
             double actual = Field(parts[0]);
             Check(Compare(actual, parts[1], parts[2]), $"{parts[0]} {parts[1]} {parts[2]} (actual {actual})");
         };
-        Commands["waitfor"] = arg =>
-        {
-            // waitfor <field> <op> <value> [timeout seconds, default 60]: waits until the check holds. Use it to sync two MP instances.
-            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length is not (3 or 4)) throw new InvalidOperationException("waitfor needs: field op value [timeout]");
-            if (!Fields.ContainsKey(parts[0])) throw new InvalidOperationException($"unknown field '{parts[0]}'");
-            Compare(0, parts[1], parts[2]);
-            double timeout = parts.Length == 4 ? double.Parse(parts[3], CultureInfo.InvariantCulture) : 60;
-            WaitFor(() => Compare(Field(parts[0]), parts[1], parts[2]), timeout, $"{parts[0]} {parts[1]} {parts[2]}");
-        };
+        // waitfor <field> <op> <value> [timeout seconds, default 60]: waits until the check holds. Use it to sync two MP instances.
+        // The timeout counts game seconds while a run is active. waitforreal: the same with a timeout in real seconds.
+        Commands["waitfor"] = arg => WaitForField(arg, real: false);
+        Commands["waitforreal"] = arg => WaitForField(arg, real: true);
         // openspace <distance>: moves the fleet to the nearest point at least <distance> from every station (live or in stasis) and
         // clear of suns, on rings around the fleet. For fights that must not depend on which faction owns a nearby station.
         Commands["openspace"] = arg =>
@@ -474,10 +578,17 @@ public static class Autotest
         };
     }
 
+    /// <summary>
+    /// Optional state descriptions by field name. When "waitfor" on that field times out, the failure message includes the
+    /// description, so a failed CI run shows why the value did not change.
+    /// </summary>
+    public static readonly Dictionary<string, Func<string>> WaitContext = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Numeric fields for "expect". Areas add fields here.</summary>
     public static readonly Dictionary<string, Func<double>> Fields = new(StringComparer.OrdinalIgnoreCase)
     {
         ["heat"] = () => RequireRun().State.Heat,
+        ["speed"] = () => (Game ?? throw new InvalidOperationException("no game")).Sim.ClockScale.Confirmed,
         ["stages"] = () => RequireRun().State.StagesStarted,
         ["stagecount"] = () => RequireRun().T.Heat.Stages.Length,
         ["sector"] = () => RequireRun().State.SectorIndex,

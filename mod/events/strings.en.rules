@@ -24,10 +24,14 @@ HotCargoEventMissions
 	Courier = "Courier Job"
 	CourierDesc = "Carry a sealed case to the contact across the system and hail it, within {time_limit_minutes} min.\nThe case needs a free storage slot."
 	SiegeDesc = "Drive the raiders off a pinned freighter before its shields fail."
+	RescueTow = "Rescue Tow"
+	RescueTowDesc = "A tug tows your ship to the nearest friendly station. Keep the tug alive."
 }
 
 HotCargoEvents
 {
+	// Spec 1125: the name in a hulk's outcome message when the hulk is no longer in the sim.
+	HulkGone = "The hulk"
 	WantedWarning = "Wanted and hunted"
 	WantedHintFmt = "Wanted by {0}, and the corporation hunts you. Ways out: pay the bounty (hail their police), leave the system, outlast the search, or find a smuggler who fixes records."
 	WantedCleared = "Wanted cleared"
@@ -59,4 +63,33 @@ HotCargoItems
 	SpaceTracerTip = "Throw the tracer beacon out of the airlock. It stops calling home."
 	SpacedTracerFmt = "{0} spaced the tracer beacon."
 	TracerPingFmt = "The tracer beacon calls home: heat +{0}."
+	// Spec 1147, 1148. {0} = the ship.
+	RescueBeacon = "Rescue Beacon"
+	RescueBeaconPlural = "Rescue Beacons"
+	RescueBeaconDesc = "Fire it when your ship cannot fly on. A tug tows the ship to the nearest friendly station, for a fee. The whole sector hears the call."
+	FireRescue = "Fire the beacon"
+	FireRescueTip = "Call a tug. It tows this ship to the nearest friendly station."
+	RescueTipFmt = "Fee: {0} credits (or all you have). Heat +{1}."
+	RescueFiredFmt = "{0} fires its rescue beacon. A tug is on the way. The tug crew bills {1} credits; the call adds heat {2}."
+	RescueNoStationFmt = "{0} fires its rescue beacon, but no friendly station answers. The beacon is still in the hold."
+	RescueBusyFmt = "A tug already comes for {0}. The beacon is still in the hold."
+	RescueArrivedFmt = "The tug drops {0} at the station and leaves."
+	RescueTugLostFmt = "The tug is gone. Get {0} to the station on your own."
+}
+
+// Patrol listen (spec 1122, 1123). {0} = the listening ship or the faction ship, as each line says.
+HotCargoListen
+{
+	Name = "Listen to patrol chatter"
+	Tip = "Tune this sensor array to the nearest faction ship's channel for a few seconds. Stay in range and out of a fight. With more heat, they are more likely to notice."
+	NeedIdle = "Your crew already listens to a channel."
+	NeedWorking = "The sensor array is destroyed."
+	NeedTarget = "No faction ship in range that you have not heard yet."
+	StartFmt = "{0} listens to the chatter of {1}."
+	SuccessFmt = "You overhear the patrol routes of {0} and plot around them. Heat {1}."
+	FailFmt = "{0} notices the tap and logs it. The corporation reads those logs. Heat {1}."
+	BrokeSensor = "The listen stops: the sensor array is down."
+	BrokeChannel = "The listen stops: the channel goes dead."
+	BrokeRangeFmt = "The listen stops: {0} is out of range."
+	BrokeCombat = "The listen stops: weapons fire drowns out the channel."
 }

@@ -44,6 +44,10 @@ public static class EventsArea
         Run.Hooks.Tick += EventRunner.OnTick;
         Run.Hooks.Tick += MissionCargo.OnTick;
         Run.Hooks.Tick += TracerBeacon.OnTick;
+        Run.Hooks.Tick += PatrolListen.OnTick;
+        Run.Hooks.Frame += PatrolListen.OnFrame;
+        Run.Hooks.Tick += RescueBeacon.OnTick;
+        ItemActions.Handlers.Add("rescue", new RescueBeacon.Handler());
         Run.Hooks.NewRunStarted += Abandoned.OnNewRun;
         Ui.CommsHail.Providers.Add(new EventHailProvider());
         Run.Hooks.SystemEntered += Abandoned.OnSystemEntered;
@@ -99,6 +103,15 @@ public static class EventsArea
         {
             string actual = RequireRun().State.Events.Pending?.EventId ?? "none";
             Autotest.Check(actual == arg, $"pending event is {arg} (actual {actual})");
+        };
+        // waitevent <event id> [timeout seconds, default 20]: waits until that event is pending. Use it after "mp event": the event
+        // starts in the sim some ticks after the line, later on a slow machine.
+        Autotest.Commands["waitevent"] = arg =>
+        {
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length is not (1 or 2)) throw new InvalidOperationException("waitevent needs: event id [timeout]");
+            double timeout = parts.Length == 2 ? double.Parse(parts[1], CultureInfo.InvariantCulture) : 20;
+            Autotest.WaitFor(() => RequireRun().State.Events.Pending?.EventId == parts[0], timeout, $"pending event {parts[0]}");
         };
         // expectchoice <choice number> enabled|disabled|hidden: checks the dialog view of the pending page for the local player.
         Autotest.Commands["expectchoice"] = arg =>
@@ -195,7 +208,7 @@ public static class EventsArea
             Autotest.Wait(3);
         };
         // ev_tostation: moves the player ships next to the nearest ship tagged trade_station (not any ship that trades).
-        Autotest.Commands["ev_tostation"] = _ =>
+        Autotest.Commands["ev_tostation"] = arg =>
         {
             var sim = RequireSim();
             var ships = sim.Ships.HumanPlayerSignificantShips.ToList();
@@ -207,7 +220,9 @@ public static class EventsArea
                 [] => throw new InvalidOperationException("no trade station in this system"),
             };
             // A station in stasis has no known size; 1,200 clears a trade station and stays inside StationTriggerDistance.
-            float offset = station.Live is { } live ? live.WorldBoundingRadius + 300f : 1200f;
+            // ev_tostation <distance>: this far from the station's hull (from its center while it is in stasis).
+            float offset = arg.Trim().Length > 0 ? (station.Live?.WorldBoundingRadius ?? 0f) + float.Parse(arg, CultureInfo.InvariantCulture)
+                : station.Live is { } live ? live.WorldBoundingRadius + 300f : 1200f;
             foreach (var s in ships) { Autotest.Teleport(s, station.Location + new Halfling.Geometry.Vector2(offset + s.WorldBoundingRadius, 0)); offset += 2 * s.WorldBoundingRadius + 100f; }
             Log.Info($"AUTOTEST moved next to station {station.Id} (live: {station.Live is not null})");
             Autotest.Wait(2);
@@ -449,6 +464,105 @@ public static class EventsArea
         };
         Autotest.Fields["item_button"] = () =>
             _selectedItem is { } r && ItemActionButton.Target(RequireRun().Game, r.GetResourceRules()) is not null ? 1 : 0;
+        // Patrol listen (spec 1122, 1123). Test only.
+        // ev_sensor_build: builds a vanilla sensor array next to the acting player's first ship. ev_sensor_works: 1 while one can listen.
+        Autotest.Commands["ev_sensor_build"] = _ =>
+        {
+            var ship = PlayerShips(RequireSim()).FirstOrDefault() ?? throw new InvalidOperationException($"player {ActingPlayer()} has no ship");
+            RequireRun().Mode.Techs.UnlockTech(new ID<Cosmoteer.Modes.Career.TechTree.TechRules>(PatrolListen.SensorArrayId.ToString()));
+            var at = StartingVault.PlaceOutside(ship, ship.Rules.PartsByID[PatrolListen.SensorArrayId], requireCrewPath: false);
+            Log.Info($"AUTOTEST sensor array on {ship.Metadata.PlainShipName} at {at}");
+        };
+        Autotest.Fields["ev_sensor_works"] = () => SensorArray(RequireSim()) is { } p && PatrolListen.Works(p) ? 1 : 0;
+        // ev_sensor_select: selects the local player's sensor array, as a click does. ev_listen_button: 1 while its listen button can start.
+        Autotest.Commands["ev_sensor_select"] = _ => RequireSim().PlayerInput.SelectSinglePart(SensorArray(RequireSim()) ?? throw new InvalidOperationException("no sensor array"));
+        Autotest.Fields["ev_listen_button"] = () =>
+            PatrolListenButton.Selected(RequireRun().Game) is { } p && PatrolListenButton.Unmet(RequireRun(), p) is null ? 1 : 0;
+        // ev_sensor_camera: test only. The camera stops following ships and shows the ship with the sensor array (screenshots).
+        Autotest.Commands["ev_sensor_camera"] = _ =>
+        {
+            var ship = SensorArray(RequireSim())?.Ship ?? throw new InvalidOperationException("no sensor array");
+            var view = RequireSim().Camera.ViewController;
+            view.ClearFocus(clearFramesOfReferenceAndRotation: true);
+            view.FRLocation = ship.WorldCenter;
+            float size = Math.Max(120f, ship.WorldBoundingRadius * 3f);
+            view.ZoomToFit(new Vector2(size, size), instant: true);
+        };
+        // ev_listen: the acting player's sensor array starts a listen (the real MP input).
+        Autotest.Commands["ev_listen"] = _ =>
+        {
+            var sensor = SensorArray(RequireSim()) ?? throw new InvalidOperationException($"player {ActingPlayer()} has no sensor array");
+            RequireRun().Game.NetManager.EnqueueInput(new PatrolListenInput(sensor));
+            Autotest.Wait(1);
+        };
+        // ev_listen_force 1|0: the next listen succeeds or fails. ev_listen_forget: the heard faction ships can be heard again.
+        Autotest.Commands["ev_listen_force"] = arg => PatrolListen.Forced = arg.Trim() == "1";
+        Autotest.Commands["ev_listen_forget"] = _ => RequireRun().State.Events.Listened.Clear();
+        Autotest.Fields["ev_listening"] = () => RequireRun().State.Events.Listen is null ? 0 : 1;
+        Autotest.Fields["ev_listen_progress"] = () => PatrolListen.Progress(RequireRun()) ?? -1;
+        Autotest.Fields["ev_listened"] = () => RequireRun().State.Events.Listened.Count;
+        // 1 while the acting player's first ship has a faction ship to listen to.
+        Autotest.Fields["ev_listen_target"] = () =>
+            PlayerShips(RequireSim()).FirstOrDefault() is { } s && PatrolListen.TargetFor(RequireRun(), RequireSim(), s) is not null ? 1 : 0;
+        // 1 when the nearest faction ship was heard, and the listen target (if any) is another ship.
+        Autotest.Fields["ev_faction_heard"] = () =>
+        {
+            var nearest = CommsTarget("faction");
+            var target = PlayerShips(RequireSim()).FirstOrDefault() is { } s ? PatrolListen.TargetFor(RequireRun(), RequireSim(), s) : null;
+            return RequireRun().State.Events.Listened.Contains(nearest.UniqueID) && target != nearest ? 1 : 0;
+        };
+        // ev_faction_goto <distance>: puts the player ships this far from the hull of the nearest faction ship.
+        Autotest.Commands["ev_faction_goto"] = arg =>
+        {
+            var ship = CommsTarget("faction");
+            MoveNextTo(RequireSim(), ship.WorldCenter, ship.WorldBoundingRadius + float.Parse(arg, CultureInfo.InvariantCulture));
+        };
+        // Rescue Beacon (spec 1147, 1148). Test only.
+        // ev_money_zero: the acting player's money goes to 0. ev_rescue_tip: 1 when the fire action's tooltip lines show the fee.
+        Autotest.Commands["ev_money_zero"] = _ =>
+        {
+            var state = RequireRun().Game.GetPlayerState(ActingPlayer(), deterministic: true);
+            state.AddMoney(-state.Money);
+        };
+        Autotest.Fields["ev_rescue_tip"] = () =>
+        {
+            var run = RequireRun();
+            var part = ItemPart(RequireSim(), new ID<Cosmoteer.Resources.ResourceRules>("yarden_zamir.rescue_beacon")) ?? throw new InvalidOperationException("no rescue beacon aboard");
+            string tip = ItemActions.Handlers["rescue"].ToolTip(run, part) ?? "";
+            Log.Info($"AUTOTEST rescue tip: {tip}");
+            return tip.Contains(RescueBeacon.Fee(run).ToString("N0"), StringComparison.Ordinal) ? 1 : 0;
+        };
+        Autotest.Fields["ev_rescues"] = () => RequireRun().State.Events.Rescues.Count(r => r.LeaveAt < 0);
+        Autotest.Fields["ev_rescue_pulling"] = () => RequireRun().State.Events.Rescues.Any(r => r.Pulling && r.LeaveAt < 0) ? 1 : 0;
+        Autotest.Fields["ev_rescue_arrivals"] = () => RescueBeacon.Arrivals;
+        // The first running rescue: the towed ship's distance to its station, and the tug's speed.
+        Autotest.Fields["ev_rescue_dist"] = () => RequireRun().State.Events.Rescues.FirstOrDefault(x => x.LeaveAt < 0) is { } r && RequireSim().Ships[r.Towed] is { } t
+            ? t.DetWorldCenter.DistanceTo(r.Destination) : -1;
+        Autotest.Fields["ev_tug_dist"] = () => RequireRun().State.Events.Rescues.FirstOrDefault(x => x.LeaveAt < 0) is { } r && RequireSim().Ships[r.Tug] is { } tug
+            ? tug.DetWorldCenter.DistanceTo(r.Destination) : -1;
+        Autotest.Fields["ev_tug_speed"] = () => RequireRun().State.Events.Rescues.FirstOrDefault(x => x.LeaveAt < 0) is { } r && RequireSim().Ships[r.Tug] is { } tug
+            ? tug.Physics.Body.LinearVelocity.Length() : -1;
+        // ev_rescue_camera: test only. The camera stops following ships and frames the tug and the towed ship (screenshots).
+        Autotest.Commands["ev_rescue_camera"] = _ =>
+        {
+            var sim = RequireSim();
+            var r = RequireRun().State.Events.Rescues.FirstOrDefault(x => x.LeaveAt < 0) ?? throw new InvalidOperationException("no running rescue");
+            var tug = sim.Ships[r.Tug] ?? throw new InvalidOperationException("the tug is not live");
+            var towed = sim.Ships[r.Towed] ?? throw new InvalidOperationException("the towed ship is not live");
+            var view = sim.Camera.ViewController;
+            view.ClearFocus(clearFramesOfReferenceAndRotation: true);
+            view.FRLocation = (tug.WorldCenter + towed.WorldCenter) / 2f;
+            float size = tug.WorldCenter.DistanceTo(towed.WorldCenter) + tug.WorldBoundingRadius + towed.WorldBoundingRadius + 100f;
+            view.ZoomToFit(new Vector2(size, size), instant: true);
+        };
+        // ev_tug_kill: removes the tug of the first running rescue, as if it was destroyed.
+        Autotest.Commands["ev_tug_kill"] = _ =>
+        {
+            var sim = RequireSim();
+            var r = RequireRun().State.Events.Rescues.FirstOrDefault(x => x.LeaveAt < 0) ?? throw new InvalidOperationException("no running rescue");
+            sim.Ships.Remove(sim.Ships[r.Tug] ?? throw new InvalidOperationException("the tug is not live"), dispose: true, handleLostShip: false);
+            Autotest.Wait(1);
+        };
         // item_force <n>: the next item action picks content n (1-based). ev_force_outcome <n>: the next event roll picks outcome n.
         Autotest.Commands["item_force"] = arg => ItemActions.ForcedContent = int.Parse(arg.Trim()) - 1;
         Autotest.Commands["ev_force_outcome"] = arg => EventRunner.ForcedOutcome = int.Parse(arg.Trim()) - 1;
@@ -570,15 +684,49 @@ public static class EventsArea
             if (found.Count == 0) throw new InvalidOperationException("no relic ship in this system");
             MoveNextTo(sim, found[0].Location, found[0].Radius + float.Parse(arg, CultureInfo.InvariantCulture));
         };
-        // ev_abandoned: spawns a vanilla abandoned ship (the sector generator's own spawner) 1,500 from the fleet; ev_abandoned_goto flies next to it.
+        // ev_abandoned: spawns a vanilla abandoned ship (the sector generator's own spawner) 1,500 from the fleet and marks it as the
+        // test hulk. ev_abandoned_goto [distance]: puts the player ships this far from its hull (default 150).
         Autotest.Commands["ev_abandoned"] = _ => SpawnVanillaAbandoned();
-        Autotest.Commands["ev_abandoned_goto"] = _ =>
+        Autotest.Commands["ev_abandoned_goto"] = arg =>
         {
-            var sim = RequireSim();
-            var wreck = sim.Ships.Where(s => s.HasLabel(Abandoned.Label) && !s.HasTag(Abandoned.RelicTag)).OrderBy(s => s.UniqueID).FirstOrDefault()
-                ?? throw new InvalidOperationException("no live abandoned ship in this system");
-            MoveNextTo(sim, wreck.WorldCenter, wreck.WorldBoundingRadius + 150f);
+            var wreck = TestHulk();
+            MoveNextTo(RequireSim(), wreck.WorldCenter, wreck.WorldBoundingRadius + (arg.Trim().Length > 0 ? float.Parse(arg, CultureInfo.InvariantCulture) : 150f));
         };
+        // Hulk loot (spec 1124 to 1126). ev_hulk_force <kind> <loot number>: the next hulk gets this loot (all machines in co-op: mp).
+        Autotest.Commands["ev_hulk_force"] = arg =>
+        {
+            var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (p.Length != 2) throw new InvalidOperationException("usage: ev_hulk_force <kind> <loot number>");
+            Hulks.Forced = (Hulks.Kind(p[0]).ID, Int(p[1]) - 1);
+        };
+        // ev_hulk_wreck shoot|salvage: destroys the hold of the test hulk (the parts with its loot), by weapons (vanilla destroyed drop rates) or by
+        // salvage (salvage drop rates: a Tracer Beacon drops only then).
+        Autotest.Commands["ev_hulk_wreck"] = arg =>
+        {
+            bool salvage = arg.Trim() switch { "shoot" => false, "salvage" => true, _ => throw new InvalidOperationException("ev_hulk_wreck needs: shoot|salvage") };
+            var hulk = TestHulk();
+            // Vanilla hits (Part.OnHit), like a weapon or a salvage beam, until the part is gone. Resistances can shrink a hit, so it repeats.
+            var hold = RequireRun().State.Events.Hulks.TryGetValue(hulk.UniqueID, out var h) ? h.Hold : throw new InvalidOperationException("the test hulk has no loot");
+            foreach (var part in hold.Select(x => hulk.Parts[x.Cell]).OfType<Cosmoteer.Ships.Parts.Part>().ToList())
+                for (int i = 0; i < 20 && !part.IsDestroyed; i++)
+                    part.OnHit(part.Rules.MaxHealth, salvage ? Cosmoteer.DamageType.Salvage : null);
+            Log.Info($"AUTOTEST hulk wreck {arg.Trim()}: hold {string.Join(", ", hold.Select(c => hulk.Parts[c.Cell] is { } x ? $"{x.Rules.ID}@{x.Location} health {x.Health}" : $"{c.Cell} gone"))}");
+            Autotest.Wait(1);
+        };
+        // ev_hulk_camera: test only. The camera stops following ships and shows the test hulk (screenshots).
+        Autotest.Commands["ev_hulk_camera"] = _ =>
+        {
+            var hulk = TestHulk();
+            var view = RequireSim().Camera.ViewController;
+            view.ClearFocus(clearFramesOfReferenceAndRotation: true);
+            view.FRLocation = hulk.WorldCenter;
+            float size = Math.Max(60f, hulk.WorldBoundingRadius * 2.5f);
+            view.ZoomToFit(new Vector2(size, size), instant: true);
+        };
+        // ev_hulk_stocked: 1 while the test hulk has loot whose hold did not break open. ev_hulk_messaged: 1 once its approach message showed.
+        Autotest.Fields["ev_hulk_stocked"] = () => _hulk is { } id && RequireRun().State.Events.Hulks.ContainsKey(id) ? 1 : 0;
+        Autotest.Fields["ev_hulk_messaged"] = () => _hulk is { } id && RequireRun().State.Events.Hulks.TryGetValue(id, out var h) && h.Messaged ? 1 : 0;
+        // ev_hulk_<resource>: units of it in the test hulk's storage and tanks. SpawnVanillaAbandoned adds these fields, because rules load after Register.
         // Comms (spec 767-771). ev_comms <target> <button text>: clicks the comms button whose plain text contains the text.
         Autotest.Commands["ev_comms"] = arg =>
         {
@@ -670,6 +818,13 @@ public static class EventsArea
         Autotest.Wait(2);
     }
 
+    /// <summary>The abandoned ship that ev_abandoned spawned last.</summary>
+    static Cosmoteer.Game.ObjectID? _hulk;
+    static int _hulkSpawns;
+
+    static Ship TestHulk() =>
+        (_hulk is { } id ? RequireSim().Ships[id] : null) ?? throw new InvalidOperationException("no live test hulk (ev_abandoned first)");
+
     static void SpawnVanillaAbandoned()
     {
         var sim = RequireSim();
@@ -677,15 +832,23 @@ public static class EventsArea
         var spawner = All(mode.SectorType.SystemGenerator.Spawners).OfType<ShipSpawner>().FirstOrDefault(s => s.Labels?.Contains(Abandoned.Label) == true)
             ?? throw new InvalidOperationException("no vanilla abandoned-ship spawner in the sector generator");
         var at = SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no player ships");
+        var old = sim.Ships.Where(s => s.HasLabel(Abandoned.Label)).Select(s => s.UniqueID).ToHashSet();
         // Test distance, restored after, like SpawnSignal.
         var saved = spawner.Distance;
         try
         {
             spawner.Distance = new Halfling.Range<float>(1500f, 1500f);
-            new SimulationGenerator { Spawners = [spawner] }.Generate(sim, new Halfling.Random.FastRand(99UL), loadInstantly: true, rootLoc: at);
+            new SimulationGenerator { Spawners = [spawner] }.Generate(sim, new Halfling.Random.FastRand(99UL + (ulong)++_hulkSpawns), loadInstantly: true, rootLoc: at);
         }
         finally { spawner.Distance = saved; }
-        Log.Info($"AUTOTEST vanilla abandoned ship spawned; abandoned ships: {sim.Ships.Count(s => s.HasLabel(Abandoned.Label))}");
+        _hulk = sim.Ships.Where(s => s.HasLabel(Abandoned.Label) && !s.HasTag(Abandoned.RelicTag) && !old.Contains(s.UniqueID)).MaxBy(s => s.UniqueID)?.UniqueID
+            ?? throw new InvalidOperationException($"the abandoned-ship spawner made no live ship (in stasis: {sim.Stasis.Count(st => !old.Contains(st.ReservedObjectID))})");
+        foreach (var res in GameApp.Rules.Resources)
+        {
+            var rid = res.ID;
+            Autotest.Fields[$"ev_hulk_{rid}"] = () => TestHulk().Resources.GetResourceTotal(rid, includeStored: true, includeCarried: false);
+        }
+        Log.Info($"AUTOTEST vanilla abandoned ship {_hulk} spawned; abandoned ships: {sim.Ships.Count(s => s.HasLabel(Abandoned.Label))}");
         Autotest.Wait(2);
     }
 
@@ -720,6 +883,10 @@ public static class EventsArea
 
     /// <summary>The player that a test command acts for: the "as" player inside the sim, else the local player.</summary>
     static int ActingPlayer() => Autotest.SimPlayer ?? RequireRun().Game.LocalPlayerIndex;
+
+    /// <summary>The acting player's first vanilla sensor array, by ship ID and part location.</summary>
+    static Cosmoteer.Ships.Parts.Part? SensorArray(SimRoot sim) =>
+        PlayerShips(sim).SelectMany(s => s.Parts.OrderBy(x => x.Location.X).ThenBy(x => x.Location.Y)).FirstOrDefault(x => x.Rules.ID == PatrolListen.SensorArrayId);
 
     static IEnumerable<Ship> PlayerShips(SimRoot sim) =>
         Vaults.HumanShips(sim).Where(s => s.Metadata.PlayerIndex == ActingPlayer()).OrderBy(s => s.UniqueID);
@@ -796,6 +963,8 @@ public static class EventsArea
         yield return ("tech", () => Vaults.All(RequireSim()).Sum(g => g.Resources));
         yield return ("fame", () => RequireRun().Mode.PlayerFame);
         yield return ("crew", () => { var r = RequireRun(); return r.Game.HumanPlayersIndexes.Sum(RequireSim().Crew.CountCrewForPlayer); });
+        // Missing health over all parts of the human ships.
+        yield return ("damage", () => Vaults.HumanShips(RequireSim()).SelectMany(sh => sh.Parts).Sum(x => x.Rules.MaxHealth - x.Health));
         foreach (var res in GameApp.Rules.Resources)
         {
             var id = res.ID;

@@ -170,6 +170,23 @@
 		ProportionalSize = true
 	}
 }
+// Rescue tow (spec 1147).
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoRescueTow
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_magnet.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
 // Courier job.
 {
 	Action = Add

@@ -101,7 +101,7 @@ static class WorldsAutotest
         Autotest.Fields["worlds_sundive_done"] = () => State(Objective<SundiveObjective>());
         Autotest.Fields["worlds_lair_found"] = () => State(Objective<FindLairObjective>());
         Autotest.Fields["worlds_sundive_salvage"] = () => Objective<SundiveObjective>().SalvageSeconds;
-        Autotest.Fields["worlds_sundive_carrier"] = () => Objective<SundiveObjective>().Carrier is null ? 0 : 1;
+        Autotest.Fields["worlds_sundive_held"] = () => Objective<SundiveObjective>().Held ? 1 : 0;
         // Ring radii of the smaller systems (spec 105), from the system center. The trade station ring lies inside the gate ring,
         // and no station is in a sun's heat zone.
         Autotest.Fields["worlds_gate_min"] = () => Radii(Gate).Min();

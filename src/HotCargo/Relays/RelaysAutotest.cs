@@ -62,8 +62,18 @@ static class RelaysAutotest
             var sim = run.Game.Sim;
             var me = Autotest.ActingShip(sim) ?? throw new InvalidOperationException("no acting ship");
             var guards = RelaysArea.ActiveHere(run)?.Guards ?? [];
+            // A start ship has a short comms range (about 430), and a guard fights from its weapon range, so a free guard hovers at
+            // the edge of comms range and its page opens and closes. Held guards stay inside it: they keep still and pick no target.
+            _held.Clear();
             foreach (var id in guards)
-                if (RelaysArea.Guard(sim, id) is { } g) Autotest.Teleport(g, Autotest.ClearSpotNear(sim, me.DetWorldCenter, 900f, g.WorldBoundingRadius));
+                if (RelaysArea.Guard(sim, id) is { } g)
+                {
+                    var at = Autotest.ClearSpotNear(sim, me.DetWorldCenter, 200f, g.WorldBoundingRadius);
+                    Autotest.Teleport(g, at);
+                    if (g.AI is { } ai)
+                        ai.Parameters = new Cosmoteer.Ships.AI.AIParameters { PatrolOrigin = at, PatrolRadius = 0f, TargetAcquireRangeFromOrigin = 0f, TargetUnacquireRangeFromOrigin = 0f };
+                    _held.Add(id);
+                }
             foreach (var s in GuardsInStasis(sim, guards)) s.Location = Autotest.ClearSpotNear(sim, me.DetWorldCenter, 900f, 150f);
         };
         // rl_pay: the shared choice that pays the fee at the nearest fee station.
@@ -133,8 +143,16 @@ static class RelaysAutotest
         Autotest.Fields["rl_live"] = () => RelaysArea.ActiveHere(R())?.Guards.Count(id => RelaysArea.Guard(R().Game.Sim, id) is not null) ?? 0;
         Autotest.Fields["rl_bribefailed"] = () => RelaysArea.ActiveHere(R())?.BribeFailed == true ? 1 : 0;
         // The first live guard's page is open for the players: some human ship can call it (comms range and sight).
-        Autotest.Fields["rl_callable"] = () => RelaysArea.ActiveHere(R())?.Guards.Select(id => RelaysArea.Guard(R().Game.Sim, id)).FirstOrDefault(g => g is not null) is { } g
-            && RelayChoiceDomain.Instance.OptionCount(R(), RelayChoiceDomain.Serial(g)) > 0 ? 1 : 0;
+        // The acting player's own ship can call the first guard: the check that the bribe input makes for its chooser.
+        Autotest.Fields["rl_callable"] = () =>
+        {
+            var run = R();
+            var sim = run.Game.Sim;
+            if (FindGuard() is not { } g) return 0;
+            var career = (Cosmoteer.Modes.Career.CareerSimModeManager)sim.Mode;
+            int player = Autotest.ActingPlayerIndex;
+            return sim.Ships.HumanPlayerShips.Any(h => h.Commands.CanExecuteCrewCommandsFrom(player) && career.CanShipCallShip(h, g) && RelayHail.Instance.Answers(h, g)) ? 1 : 0;
+        };
         Autotest.Fields["rl_bribed"] = () => RelaysArea.ActiveHere(R())?.Bribed == true ? 1 : 0;
         Autotest.Fields["rl_picks"] = () => R().State.MultiChoice.Drafts.Where(d => d.Domain == RelayMultiDomain.Name).Sum(d => d.Picks.Count);
         Autotest.Fields["rl_ready"] = () => R().Game.PlayersReadyToJump.Count;
@@ -168,12 +186,19 @@ static class RelaysAutotest
     static List<Cosmoteer.Simulation.Stasis.StasisSpawner> GuardsInStasis(SimRoot sim, List<ObjectID> guards) =>
         sim.Stasis.Where(s => guards.Contains(s.ReservedObjectID)).OrderBy(s => s.ReservedObjectID).ToList();
 
-    static Ship FirstGuard()
+    /// <summary>Guards that rl_guardsnear holds next to the acting ship. Set in the sim on every machine, so both pick the same guard.</summary>
+    static readonly HashSet<ObjectID> _held = [];
+
+    /// <summary>The first live guard that rl_guardsnear holds, else the first live guard, or null.</summary>
+    static Ship? FindGuard()
     {
         var run = R();
-        var a = RelaysArea.ActiveHere(run) ?? throw new InvalidOperationException("no lockdown here");
-        return a.Guards.Select(id => RelaysArea.Guard(run.Game.Sim, id)).FirstOrDefault(g => g is not null) ?? throw new InvalidOperationException("no live guard");
+        if (RelaysArea.ActiveHere(run) is not { } a) return null;
+        var live = a.Guards.Select(id => RelaysArea.Guard(run.Game.Sim, id)).OfType<Ship>().ToList();
+        return live.FirstOrDefault(g => _held.Contains(g.UniqueID)) ?? live.FirstOrDefault();
     }
+
+    static Ship FirstGuard() => FindGuard() ?? throw new InvalidOperationException("no live guard here");
 
     static void MoveNear(Ship target)
     {

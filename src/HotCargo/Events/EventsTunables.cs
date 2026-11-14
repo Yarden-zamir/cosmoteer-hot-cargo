@@ -42,9 +42,40 @@ public sealed class EventsTunables
     [Serialize(Optional = true)] public float ResearchSaleCap = 1.5f;
     /// <summary>Multiplies the trigger weight of research events: 0 turns them off, 2 doubles them.</summary>
     [Serialize(Optional = true)] public float ResearchWeightScale = 1f;
-    /// <summary>Chance that coming near a vanilla abandoned ship opens an Abandoned event (once per ship).</summary>
-    [Serialize(Optional = true)] public float AbandonedEventChance = 0.6f;
+    /// <summary>Chance that a vanilla abandoned ship holds Hot Cargo loot (spec 1124). Else it keeps its vanilla cargo and gives no message.</summary>
+    [Serialize(Optional = true)] public float HulkLootChance = 0.6f;
+    /// <summary>Distance at which a hulk with loot shows its message (once per hulk).</summary>
     [Serialize(Optional = true)] public float AbandonedTriggerDistance = 800f;
+    /// <summary>Patrol listen (spec 1122): game seconds that a sensor array listens to a faction ship.</summary>
+    [Serialize(Optional = true)] public float ListenSeconds = 8f;
+    /// <summary>Patrol listen: the most hull-to-hull distance between the listening ship and the faction ship.</summary>
+    [Serialize(Optional = true)] public float ListenRange = 1500f;
+    /// <summary>Patrol listen: success chance at heat 0. The chance falls in a line to ListenChanceAtMaxHeat at heat 100.</summary>
+    [Serialize(Optional = true)] public float ListenChanceAtNoHeat = 1f;
+    /// <summary>Patrol listen: success chance at heat 100.</summary>
+    [Serialize(Optional = true)] public float ListenChanceAtMaxHeat = 0.6f;
+    /// <summary>Patrol listen: heat change on a success (they give away the patrol routes).</summary>
+    [Serialize(Optional = true)] public float ListenSuccessHeat = -4f;
+    /// <summary>Patrol listen: heat change on a failure (they log your question).</summary>
+    [Serialize(Optional = true)] public float ListenFailHeat = 5f;
+    /// <summary>Patrol listen: weapons fire within this distance of the listening ship breaks the listen.</summary>
+    [Serialize(Optional = true)] public float ListenCombatRadius = 800f;
+    /// <summary>Patrol listen: a shot counts as combat for this many game seconds.</summary>
+    [Serialize(Optional = true)] public float ListenCombatSeconds = 5f;
+    /// <summary>A hulk whose tanks blow (spec 1126) damages player ships within this hull-to-hull distance.</summary>
+    [Serialize(Optional = true)] public float HulkBlastRadius = 300f;
+    /// <summary>Rescue Beacon (spec 1147): the tug's fee in event money units (standard mission pay at the tier). Too little money: it takes what there is.</summary>
+    [Serialize(Optional = true)] public float RescueFee = 0.4f;
+    /// <summary>Rescue Beacon: heat that the broadcast adds.</summary>
+    [Serialize(Optional = true)] public float RescueHeat = 10f;
+    /// <summary>Rescue Beacon: hull-to-hull length of the tow line between the tug and the towed ship.</summary>
+    [Serialize(Optional = true)] public float RescueTowLength = 150f;
+    /// <summary>Rescue Beacon: how hard the tow line pulls the towed ship back to its length, per game second.</summary>
+    [Serialize(Optional = true)] public float RescueTowPull = 1f;
+    /// <summary>Rescue Beacon: the tug keeps this far outside the heat zone of a star on its way to the station.</summary>
+    [Serialize(Optional = true)] public float RescueSunMargin = 300f;
+    /// <summary>Rescue Beacon: game seconds that the tug flies off before it leaves the sim.</summary>
+    [Serialize(Optional = true)] public float RescueTugLeaveSeconds = 20f;
     /// <summary>One relic ship per run holds 1 tech unit. Off: new runs get none.</summary>
     [Serialize(Optional = true)] public bool RelicEnabled = true;
     /// <summary>The relic ship appears in a random sector from this one up to the sector before the Buyer.</summary>

@@ -24,6 +24,7 @@ public static class Mod
             Missions.Mechanics.MechanicsArea.Register();
             Tactics.TacticsArea.Register();
             Events.EventsArea.Register();
+            Friendly.FriendlyArea.Register();
             Chains.ChainsArea.Register();
             SharedChoice.SharedChoiceArea.Register();
             Contracts.ContractsArea.Register();
@@ -39,6 +40,7 @@ public static class Mod
             MultiChoice.MultiChoiceArea.Register();
             // Relays registers its comms provider before Diplomacy, so a relay page owns its shared choices (spec 958).
             Relays.RelaysArea.Register();
+            Debris.DebrisArea.Register();
             Stash.StashArea.Register();
             Diplomacy.DiplomacyArea.Register();
             // After Hunters: its stage hooks read the ships that the Hunters area just spawned.
@@ -48,6 +50,7 @@ public static class Mod
             Dev.Playthrough.Register();
             // Last: its run log hooks run after the hooks of the other areas.
             StartJobs.StartJobsArea.Register();
+            RunRecord.RunRecordArea.Register();
             Onboarding.OnboardingArea.Register();
             Log.Info($"harmony patched {harmony.GetPatchedMethods().Count()} methods; mod root {ModRoot}");
         }

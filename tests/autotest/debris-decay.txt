@@ -1,0 +1,31 @@
+# Debris decay (spec 1240 to 1246), single player: small loose junk glows, then burns up. A wreck with more than MaxParts parts
+# and tech crates stay. With the switch off, junk stays and nothing is tracked.
+# tier: smoke
+newgame run
+wait 5
+ev_set Enabled false
+godmode on
+debris_set DecaySeconds 20
+debris_set GlowSeconds 10
+debris_set CheckSeconds 1
+debris_set MaxParts 6
+# 3 small pieces, 1 big piece (8 parts, above MaxParts) and 2 tech crates.
+debris_spawn 3 3
+debris_spawn 1 8
+tech drop 2
+waitfor techcrates == 2 10
+expect junk >= 4
+waitfor debris_tracked == 3 10
+expect debris_candidates == 3
+waitfor debris_glowing == 3 20
+waitfor debris_removed == 3 30
+expect debris_tracked == 0
+expect junk >= 1
+expect techcrates == 2
+# Switch off: new pieces stay and nothing is tracked.
+debris_set Enabled false
+debris_spawn 2 3
+wait 25
+expect debris_tracked == 0
+expect debris_removed == 3
+quit

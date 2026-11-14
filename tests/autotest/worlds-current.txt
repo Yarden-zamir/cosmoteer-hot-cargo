@@ -4,6 +4,8 @@
 newgame run
 wait 8
 ev_set Enabled false
+# The idle ship waits about 400 s in the system: keep hostiles from wrecking it before it drifts out.
+godmode on
 tech_set LossGraceSeconds 900
 worlds jumpto hc_trade_hub
 pause off
@@ -22,17 +24,19 @@ tech drop 1
 wait 1
 expect worlds_items_in_current >= 1
 expect worlds_crate_along < 1500
+expect worlds_crate_across < 600
 expect worlds_sim_seconds > 0
 wait 4
 expect worlds_item_flow_speed > 5
 # An idle ship brakes against the drift, but it keeps drifting downstream.
 wait 5
 expect worlds_flow_speed > 2
-# The crate leaves the band at its near side: across the flow, before the band's end (half length 3000).
+# The crate leaves the band. With the side share 0.25, drift from near the axis leaves near the far end (half length 3000),
+# and it moves away from the axis on the way out.
 waitfor worlds_items_in_current == 0 300
 expect worlds_sim_seconds > 0
-expect worlds_crate_along < 3000
-expect worlds_crate_across > 900
-waitfor worlds_ship_in_current < 0.01 800
+expect worlds_crate_along > 2500
+expect worlds_crate_across > 500
+waitfor worlds_ship_in_current < 0.01 1100
 expect worlds_sim_seconds > 0
 quit

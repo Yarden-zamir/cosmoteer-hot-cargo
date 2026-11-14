@@ -287,16 +287,13 @@ Reads as: tech units are also research currency. Spending one buys parts now and
 
 ### Abandoned ships (spec 764-765)
 
-Vanilla 0.30.5 spawns abandoned civilian ships. Flying close to one rolls an event once (60 %).
+Vanilla 0.30.5 spawns abandoned civilian ships. 60 % of them hold Hot Cargo loot (spec 1124 to 1126, `mod/events/hulks.rules`). No dialog: the loot is real cargo in the hulk's storage and tanks, rolled when the hulk first shows up live. Flying within 800 shows the hulk's message. Wreck it or salvage it the vanilla way and tractor in what drops (vanilla drop rates). When the hold breaks open, a message names the outcome.
 
-#### 30. Abandoned Ship (Abandoned; no run limit)
-| Choice | Need | Outcomes |
-|---|---|---|
-| Board it | 2 crew | 40 % steel and processors, 30 % hyperium, 15 % nothing, 15 % + 0.25 × heat a corporate trap (heat +10, corporate patrol). |
-| Leave it | — | Nothing. The hull is still there to salvage. |
+#### 30. Abandoned Ship (hulk loot; weight 10; no run limit)
+Loot: 40 % steel and processors, 30 % hyperium, 15 % nothing, 15 % + 0.25 × heat the corporate trap: bait steel and a Tracer Beacon (spec 1116). Shots destroy the beacon; careful salvage drops it, and once aboard it calls home each minute until you space it.
 
-#### 31. Cold Hulk (Abandoned; twice per run; weight 5)
-Drain the tanks (1 crew): 70 % hyperium, 30 % less hyperium and hull damage 20 %. Or leave.
+#### 31. Cold Hulk (hulk loot; weight 5; twice per run)
+Loot: 70 % hyperium, 30 % less hyperium and a reactor that coughs: when the hold breaks open, the tanks blow. Each player ship within 300 loses 20 % of max health on its 6 parts nearest to the hulk. Salvage it from a distance.
 
 #### 32. Dead Courier (the run's relic ship)
 One per run, in a sector from 2 to the one before the Buyer. Within 3,000 the vault senses it: "Your vault hums: stolen tech nearby". Within 900 the event opens; leaving and coming back opens it again until you take the crate.
@@ -316,13 +313,25 @@ Events do not only pop up. Ships carry them and talk:
 Sell 1 to 3 crates (an option; keeps the last one): each 0.85 × tech value and heat −10. Or change your mind.
 
 #### 34. Patrol Chatter (Hail line, faction ships; heat 10+)
-Pay 0.2 money units for patrol logs (heat −8), ask nicely (50 %: heat −4; 50 % + 0.3 × heat: heat +5, they log your question), or never mind.
+Pay 0.2 money units for patrol logs (heat −8), or never mind. A clear deal only.
+
+The gamble is in the world (spec 1122, 1123): select a sensor array and press "Listen to patrol chatter" while a faction ship is within 1,500. A bar above the sensor array fills for 8 seconds. Distance over 1,500, weapons fire within 800 (the listening ship's own shots too), a lost sensor array or a channel that goes dead (the ship leaves or turns hostile) stop it. Success: heat −4. Failure, "they log your question": heat +5. The chance falls in a line from 100 % at heat 0 to 60 % at heat 100. Each faction ship is heard once; a stopped listen can start again.
 
 Hunter demands ("hand over the tech") are the diplomacy area's, through the same comms hook.
 
 Page options (spec 810 to 812): the "options" above are rows of a multiselect page. Players select them and set their amounts, then pick the submit choice. The old choices cost the same for the same result.
 
+#### 35. Rescue Beacon (Hail line, trade stations; an item, spec 1146 to 1148)
+Trade stations sell it in their comms: "Buy a rescue beacon." for 0.3 money units (a clear deal, once per station per run). In the hold, select its storage and press "Fire the beacon". The button tooltip shows the fee (0.4 money units in credits) and the heat (+10). A tug comes, takes the ship on a tow line and tows it to the nearest trade station that is not hostile, around the heat zones of stars. The mission log shows the Rescue Tow. Too little money: the tug takes what there is and comes anyway. No friendly station in the system: nothing happens, and the beacon stays. The tug destroyed: the tow stops, and the mission stays for the players.
+
 All catalog items are implemented.
+
+### Friendly encounters (spec 1360 to 1399)
+
+Friendly ships carry their page in comms and ask for something. Every choice is a clear deal; the result shows on the ship and in a message.
+
+#### Join Request (Arrival; weight 5)
+A small armed crew asks to fly under your colors. Take them in for 1 money unit: the ship becomes yours (spec 1361). Or not now.
 
 ## 4. Content rules for authors
 

@@ -212,6 +212,12 @@ internal static class ShipAiController
                 if (Autonomy.Autonomous.FirstCrewed(ship) is { } home) Follow(ship, t, home);
                 else Stop(ship, t);
                 return null;
+            case Act.HoldFormation:
+                HoldSlot(ship, t, view, moveParam);
+                return null;
+            case Act.KeepSpacing:
+                KeepSpacing(ship, t, view, moveParam);
+                return null;
             case null or Act.Kite or Act.CloseIn when target is not null:
                 var ac = Attack(ship, t, target, fresh);
                 if (move == Act.Kite && HunterOrders.MaxWeaponRange(ship, onlyActive: true) is var range and > 0f)
@@ -305,11 +311,12 @@ internal static class ShipAiController
     static void WorkOn(Ship ship, ShipTactics t, View view, Ship target, Autonomy.CargoSettings? mine)
     {
         var tun = view.Autonomy;
-        Vector2 dir = Vector2.FromAngle(target.DetWorldCenter.DirectionTo(ship.DetWorldCenter));
-        var spot = target.DetWorldCenter + dir * (target.WorldBoundingRadius + ship.WorldBoundingRadius + tun.MineDistance);
-        var face = ship.DetWorldCenter.DirectionTo(target.DetWorldCenter);
-        if (Current(ship, t) is not MoveCommand { Location: { } at } || at.DistanceTo(in spot) > tun.MineDistance * 0.5f)
-            Issue(ship, t, new MoveCommand(ship, ship.Commands.AllocGlobalCommandID(), spot, face, CollisionAvoidanceFlags.All, isTentative: false));
+        // Spec 1070: hold beside the work part with the laser aimed at it. The spot follows the part as the target turns; a new order
+        // only when it moved more than a quarter of MineDistance or the rotation changed by more than 10 degrees.
+        if (Autonomy.AutonomyWorld.WorkSpot(ship, target, mine, tun.MineDistance, tun.MineReach) is { } work
+            && (Current(ship, t) is not MoveCommand { Location: { } at, Rotation: { } rot }
+                || at.DistanceTo(work.Spot) > tun.MineDistance * 0.25f || (float)rot.AngularDistanceTo(work.Rotation) > 10f * MathF.PI / 180f))
+            Issue(ship, t, new MoveCommand(ship, ship.Commands.AllocGlobalCommandID(), work.Spot, work.Rotation, CollisionAvoidanceFlags.All, isTentative: false));
         if (HunterOrders.EdgeDistance(ship, target) <= tun.MineDistance * 3f) Autonomy.AutonomyWorld.OrderSalvage(ship, target, mine, tun.SalvageJobs);
     }
 
@@ -382,6 +389,43 @@ internal static class ShipAiController
         if (Current(ship, t) is MoveCommand { Location: { } at } && at.DistanceTo(in location) <= tolerance) return;
         Issue(ship, t, new MoveCommand(ship, ship.Commands.AllocGlobalCommandID(), location, null, CollisionAvoidanceFlags.All, isTentative: false));
     }
+
+    /// <summary>
+    /// Spec 425: a vanilla follow order on the leader, held at a slot of a V behind it (FormationModel.SlotOf): the slot angle from the
+    /// leader's nose and rank × spacing, edge to edge, facing where the leader faces. The vanilla follow keeps the slot as the
+    /// leader moves and turns, with its own pathfinding and collision avoidance.
+    /// </summary>
+    static void HoldSlot(Ship ship, ShipTactics t, View view, int spacing)
+    {
+        var leader = view.Leader ?? throw new InvalidOperationException("HoldFormation ran without a leader");
+        var slot = FormationModel.SlotOf(view.FormationIndex);
+        // FollowAngle is relative to the leader's rotation; its nose points at that rotation plus its FlightDirection.
+        var angle = new Direction(slot.AngleDegrees * MathF.PI / 180f + (float)leader.FlightDirection);
+        float radius = slot.Rank * (float)spacing;
+        var face = new Direction((float)leader.FlightDirection - (float)ship.FlightDirection);
+        if (Current(ship, t) is FollowCommand f && f.Target == leader && f.FollowAngle == angle && f.EdgeToEdgeFollowRadius == radius) return;
+        Issue(ship, t, new FollowCommand(ship, ship.Commands.AllocGlobalCommandID(), leader, CollisionAvoidanceFlags.All, isTentative: false)
+        {
+            FollowAngle = angle,
+            UseWorldRelativeFollowAngle = false,
+            EdgeToEdgeFollowRadius = radius,
+            RotationMode = FollowRotationMode.TargetRotationRelative,
+            Rotation = face,
+        });
+    }
+
+    /// <summary>Spec 426: moves straight away from the nearest ally that is nearer than the spacing (FormationModel.SpacingTarget).</summary>
+    static void KeepSpacing(Ship ship, ShipTactics t, View view, int spacing)
+    {
+        var ally = view.NearestAllyShip ?? throw new InvalidOperationException("KeepSpacing ran without an ally");
+        float gap = HunterOrders.EdgeDistance(ship, ally);
+        var (x, y) = FormationModel.SpacingTarget(ship.DetWorldCenter.X, ship.DetWorldCenter.Y, ally.DetWorldCenter.X, ally.DetWorldCenter.Y,
+            gap, spacing, SpacingMargin);
+        MoveTo(ship, t, new Vector2(x, y), SpacingMargin * 0.5f);
+    }
+
+    /// <summary>Keep spacing moves this far beyond the spacing, so the ship does not stop right at the threshold.</summary>
+    const float SpacingMargin = 50f;
 
     static void Follow(Ship ship, ShipTactics t, Ship who)
     {
@@ -680,6 +724,30 @@ internal static class ShipAiController
             }
         }
 
+        public Ship? NearestAllyShip => NearestAlly;
+
+        /// <summary>
+        /// Spec 425: this ship's slot among the ships of its player that have a formation row, by ID, without the leader. Every machine
+        /// reads the same rows and IDs, so every machine gives the same slots.
+        /// </summary>
+        public int FormationIndex => Allies.Append(_self)
+            .Where(s => s.Metadata.PlayerIndex == _self.Metadata.PlayerIndex && s != Leader
+                        && ShipTactics.Of(s) is { } t && t.Rows.Any(r => r.Act == Act.HoldFormation))
+            .OrderBy(s => s.UniqueID).ToList().IndexOf(_self) is var i and >= 0 ? i
+            : throw new InvalidOperationException("a ship with a formation row is not in its own formation");
+
+        /// <summary>
+        /// Spec 424: an ally's hull crosses the line from this ship to its attack target, or to the nearest enemy without one.
+        /// </summary>
+        bool AllyInLine()
+        {
+            var target = AttackTarget(_self) ?? NearestEnemy;
+            if (target is null) return false;
+            var a = _self.DetWorldCenter;
+            var b = target.DetWorldCenter;
+            return Allies.Any(ally => FormationModel.BlocksLine(a.X, a.Y, b.X, b.Y, ally.DetWorldCenter.X, ally.DetWorldCenter.Y, ally.WorldBoundingRadius));
+        }
+
         public ShipFacts Facts()
         {
             long shield = 0, shieldMax = 0;
@@ -718,7 +786,9 @@ internal static class ShipAiController
                 StationInRange: _uses.Contains(Cond.StationInRange) && InRange is not null,
                 NearestAsteroid: _uses.Contains(Cond.AsteroidWithin) && Asteroid is { } rock ? EdgeTo(rock.Center, rock.Radius) : float.PositiveInfinity,
                 NearestWreck: _uses.Contains(Cond.WreckWithin) && Wreck is { } wreck ? Distance(wreck) : float.PositiveInfinity,
-                NearestFleet: _uses.Contains(Cond.FleetBeyond) && NearestCrewed is { } home ? Distance(home) : float.PositiveInfinity);
+                NearestFleet: _uses.Contains(Cond.FleetBeyond) && NearestCrewed is { } home ? Distance(home) : float.PositiveInfinity,
+                NearestAlly: NearestAlly is { } ally ? Distance(ally) : float.PositiveInfinity,
+                AllyInLineOfFire: _uses.Contains(Cond.AllyInLineOfFire) && AllyInLine());
         }
 
         // ---- Autonomous ship facts (spec 1066). Each one is read once per tick, when a row needs it.
@@ -795,6 +865,8 @@ internal static class ShipAiController
                 Act.GoToStation => Station((StationPick)row.ActParam) is not null,
                 Act.Mine => Asteroid is not null && CargoRoom,
                 Act.Salvage => Wreck is not null,
+                Act.HoldFormation => Leader is not null,
+                Act.KeepSpacing => NearestAlly is { } near && Distance(near) < row.ActParam,
                 _ => true,
             },
             ActKind.Trade => row.Act switch

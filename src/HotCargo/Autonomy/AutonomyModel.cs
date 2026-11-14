@@ -205,4 +205,29 @@ public static class AutonomyModel
         }
         return best;
     }
+
+    /// <summary>
+    /// Spec 1070: how far a mining laser stands from its target part, along the part's outward line (rock center to part). depth: how
+    /// far the part lies inside the rock's bounding circle (0 or more). The laser keeps gap outside the circle, but comes closer when its
+    /// reach (range × MineReach) needs it, and never goes inside the circle.
+    /// </summary>
+    public static float LaserStandOff(float depth, float gap, float reach)
+    {
+        if (depth < 0f || gap < 0f || reach < 0f) throw new ArgumentOutOfRangeException(nameof(depth), $"depth {depth}, gap {gap}, reach {reach}: none is negative");
+        return Math.Max(depth, Math.Min(reach, depth + gap));
+    }
+
+    /// <summary>
+    /// Spec 1070: where the ship goes so that its laser stands standOff from the part (px, py) along the outward unit line (nx, ny), with
+    /// the center of the laser's arc pointing at the part. (offX, offY): the laser's world offset from the ship center now; arcAngle: the
+    /// world direction of the arc center now (radians). Returns the ship center and the turn (radians) to add to the ship's rotation.
+    /// </summary>
+    public static (float X, float Y, float Turn) LaserSpot(float px, float py, float nx, float ny, float standOff, float offX, float offY, float arcAngle)
+    {
+        float lx = px + nx * standOff, ly = py + ny * standOff;
+        float turn = MathF.Atan2(-ny, -nx) - arcAngle;
+        float cos = MathF.Cos(turn), sin = MathF.Sin(turn);
+        float rx = offX * cos - offY * sin, ry = offX * sin + offY * cos;
+        return (lx - rx, ly - ry, turn);
+    }
 }

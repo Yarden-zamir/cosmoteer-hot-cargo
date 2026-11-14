@@ -9,7 +9,7 @@ namespace HotCargo.Events;
 
 /// <summary>
 /// Abandoned ships (spec 764, 765). Vanilla 0.30.5 spawns abandoned civilian ships (junk allegiance, label "abandoned").
-/// Coming near one rolls an Abandoned event once per ship. Each run also has one relic ship (spawns.rules "Relic") with 1 tech unit:
+/// They carry loot (Hulks, spec 1124). Each run also has one relic ship (spawns.rules "Relic") with 1 tech unit:
 /// the vault senses it with a special message, and the Relic event opens when a ship comes close.
 /// </summary>
 public static class Abandoned
@@ -60,13 +60,12 @@ public static class Abandoned
         return result;
     }
 
-    /// <summary>Proximity checks for abandoned ships and the relic. Runs in the sim tick, twice a game second.</summary>
+    /// <summary>Proximity checks for the relic. Runs in the sim tick, twice a game second.</summary>
     internal static void Check(Run run, SimRoot sim)
     {
         var s = State(run);
         var ships = sim.Ships.HumanPlayerSignificantShips.ToList();
         if (ships.Count == 0) return;
-        float Nearest(Ship target) => ships.Min(h => h.DetWorldBoundingCircle.DistanceTo(target.DetWorldBoundingCircle));
         var t = run.T.Events;
 
         foreach (var (location, radius) in RelicLocations(sim))
@@ -85,14 +84,6 @@ public static class Abandoned
                 s.RelicInside = true;
                 EventRunner.TriggerUnlimited(run, sim, EventTrigger.Relic, 1f);
             }
-        }
-
-        foreach (var wreck in sim.Ships.Where(sh => sh.HasLabel(Label) && !sh.HasTag(RelicTag)).OrderBy(sh => sh.UniqueID).ToList())
-        {
-            if (s.Pending is not null) return;
-            if (s.AbandonedSeen.Contains(wreck.UniqueID) || Nearest(wreck) > t.AbandonedTriggerDistance) continue;
-            s.AbandonedSeen.Add(wreck.UniqueID);
-            EventRunner.TriggerUnlimited(run, sim, EventTrigger.Abandoned, t.AbandonedEventChance);
         }
     }
 }

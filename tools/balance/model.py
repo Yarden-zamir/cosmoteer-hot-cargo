@@ -1,7 +1,7 @@
 """Hot Cargo economy model (BALANCE.md).
 
 Reads the vanilla numbers from the game data (tier tables, economy levels, tech costs) and the measured numbers from the
-balance autotests (tests/autotest/balance-*.txt logs), then models one run sector by sector for the old and the new tunables.
+balance measurement scripts (logs of tests/balance/*.txt), then models one run sector by sector for the old and the new tunables.
 Writes tools/balance/model.json, which docs/balance.html embeds.
 
 Usage: uv run --no-project tools/balance/model.py <game Data folder> <census log before> <hunters log> <census log after>

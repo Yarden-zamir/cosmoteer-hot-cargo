@@ -47,6 +47,9 @@ public static class EventRunner
         if (sim != run.Game.Sim) return;
         CheckWanted(run, sim);
         CheckCarrier(run, sim);
+        double at = run.State.GameSeconds;
+        // Hulk loot is world content, not an event page: it runs while events are off or a page waits.
+        if (Math.Floor(at / ProximityCheckSeconds) != Math.Floor((at - dt) / ProximityCheckSeconds)) Errors.Guard("hulk loot", () => Hulks.Check(run, sim));
         if (!t.Enabled || EventLibrary.LoadError is not null || s.Pending is not null) return;
         double now = run.State.GameSeconds;
         if (s.ArrivalDueSeconds >= 0 && now >= s.ArrivalDueSeconds)
@@ -191,7 +194,7 @@ public static class EventRunner
         Open(run, sim, candidates[pick], lead: "", carrier, carrierHails: carrier is not null);
     }
 
-    /// <summary>A trigger without the cooldown and the per-system cap: Abandoned and Relic (the player chose to fly there).</summary>
+    /// <summary>A trigger without the cooldown and the per-system cap: Relic (the player chose to fly there).</summary>
     internal static void TriggerUnlimited(Run run, SimRoot sim, EventTrigger trigger, float chance) =>
         TryTrigger(run, sim, trigger, chance, limited: false);
 
@@ -515,6 +518,12 @@ public static class EventRunner
         foreach (var r in cost.Resources) ChangeResource(sim, r.ID, -r.At(p.Tier), lines);
     }
 
+    /// <summary>
+    /// Spec 1360: C# outcome effects by name, for the outcome field Effect. Areas add theirs in Register, before the events load.
+    /// An effect runs in the choice input (sim logic, every machine): run, sim, the chooser, the page, the result lines.
+    /// </summary>
+    public static readonly Dictionary<string, Action<Run, SimRoot, int, PendingEvent, List<string>>> Effects = new(StringComparer.Ordinal);
+
     /// <summary>Applies the effects of an outcome and adds one result line per effect. Also used by the Chains area for stage results.</summary>
     internal static void ApplyOutcome(Run run, SimRoot sim, int playerIndex, OutcomeRules o, PendingEvent p, List<string> lines)
     {
@@ -522,10 +531,16 @@ public static class EventRunner
         if (credits != 0) ChangeMoney(run, playerIndex, credits, lines);
         if (o.Fame != 0) ChangeFame(run, FameAmount(run, o.Fame, p.Tier), lines);
         if (o.Heat != 0) ChangeHeat(run, sim, o.Heat * run.T.Events.HeatScale, lines);
-        if (o.Tech != 0) ChangeTech(sim, o.Tech, lines);
+        if (o.Tech > 0 && o.DropNear.Length > 0) DropNear(sim, o.DropNear, Vaults.TechId, o.Tech, lines);
+        else if (o.Tech != 0) ChangeTech(sim, o.Tech, lines);
         if (o.Crew != 0) ChangeCrew(sim, o.Crew, p.Seed, lines);
         if (o.CrewLeaves > 0) ChangeCrew(sim, -o.CrewLeaves, p.Seed, lines, killed: false);
-        foreach (var r in o.Resources) ChangeResource(sim, r.ID, r.At(p.Tier), lines);
+        foreach (var r in o.Resources)
+        {
+            int amount = r.At(p.Tier);
+            if (amount > 0 && o.DropNear.Length > 0) DropNear(sim, o.DropNear, new ID<ResourceRules>(r.ID), amount, lines);
+            else ChangeResource(sim, r.ID, amount, lines);
+        }
         if (o.HullDamage > 0) DamageHull(sim, o.HullDamage, p.Seed, lines);
         if (o.Reputation != 0) ChangeReputation(run, sim, o.Reputation, p.Tier, lines);
         if (o.BuyerPrice > 0) ChangeBuyerPrice(run, o.BuyerPrice, lines);
@@ -541,6 +556,7 @@ public static class EventRunner
         if (o.Spawn.Length > 0) Spawn(run, sim, o.Spawn, p.Seed);
         if (o.HandOver) HandOverObjective.Deliver(run, p.Carrier, o.HandOverPay);
         if (o.ContactTurns != ContactReaction.None) HandOverObjective.React(run, sim, p.Carrier, o.ContactTurns);
+        if (o.Effect.Length > 0) Effects[o.Effect](run, sim, playerIndex, p, lines);
         // UI only: the chat tells every player the result.
         if (o.Chat && o.Text.Length > 0) Ux.UxKit.ChatLine(run.Game, EventText.Fill(o.Text, run.State.FleetTech, p));
     }
@@ -656,6 +672,26 @@ public static class EventRunner
         int done = Math.Sign(amount) * (Math.Abs(amount) - left);
         if (done != 0) lines.Add(EventText.Resource(rid, done));
         if (amount > 0 && left > 0) lines.Add(EventText.NoStorage(rid, left));
+    }
+
+    /// <summary>
+    /// Spec 1141: a gain drifts loose beside the ship with the tag that is nearest to the fleet: live, a wreck (it keeps its tags), or in
+    /// stasis. With no such ship in the system (all of it gone), the crates drift beside the fleet, and the log says so.
+    /// </summary>
+    static void DropNear(SimRoot sim, string tagName, ID<ResourceRules> resource, int amount, List<string> lines)
+    {
+        var tag = new ID<SimObjectSpawner>(tagName);
+        var fleet = SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("a DropNear gain with no player ship in the system");
+        var ship = Enumerable.Range(0, sim.Ships.Count).Select(i => sim.Ships[i]).Where(s => s.HasTag(tag))
+            .OrderBy(s => s.DetWorldCenter.DistanceSquaredTo(fleet)).ThenBy(s => s.UniqueID).FirstOrDefault();
+        var stasis = ship is null ? SimQueries.TaggedShips(sim, tag).OrderBy(t => t.Location.DistanceSquaredTo(fleet)).ThenBy(t => t.Id).Select(t => (Vector2?)t.Location).FirstOrDefault() : null;
+        // A ship in stasis has no known size; 300 clears most hulls.
+        (Vector2 at, float radius) = ship is not null ? (ship.DetWorldCenter, ship.WorldBoundingRadius)
+            : stasis is { } loc ? (loc, 300f)
+            : (fleet, 300f);
+        if (ship is null && stasis is null) Log.Info($"event: no ship tagged {tagName}; {amount} {resource} drift beside the fleet");
+        SimQueries.DropLoose(sim, at, radius, resource, amount);
+        lines.Add(EventText.Loose(resource, amount));
     }
 
     /// <summary>Takes fraction × max health from up to 6 random parts of the biggest human ship. Parts keep 1 health; vaults are skipped.</summary>

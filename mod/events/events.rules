@@ -718,55 +718,28 @@ Events
 		]
 	}
 
-	// ---- Abandoned ships (spec 764): vanilla abandoned ships roll these once each when a player ship comes near.
+	// Abandoned ships (spec 764) carry real loot now (mod/events/hulks.rules, spec 1124). No dialog.
 
-	{
-		ID = abandoned_ship
-		Trigger = Abandoned
-		MaxPerRun = 0
-		Title = "Abandoned Ship"
-		Text = "A ship drifts with its lights out and its hatches open. No life signs. Whatever happened here, it happened fast."
-		Choices
-		[
-			{
-				Text = "Board it."
-				Need { Crew = 2 }
-				Outcomes
-				[
-					{ Weight = 40; Text = "The hold is still full."; Resources = [{ ID = steel; Amount = 30; PerTier = 6 }, { ID = processor; Amount = 5; PerTier = 1 }] }
-					{ Weight = 30; Text = "The fuel tanks are still full."; Resources = [{ ID = hyperium; Amount = 25; PerTier = 5 }] }
-					{ Weight = 15; Text = "Someone got here first. Nothing left but scratches on the deck." }
-					{ Weight = 15; WeightPerHeat = 0.25; Text = "Corporate beacons light up across the hull. It was bait."; Heat = 10; Spawn = CorporatePatrol }
-				]
-			}
-			{
-				Text = "Leave it."
-				Outcomes [ { Text = "You leave it to drift. The hull is still there to salvage." } ]
-			}
-		]
-	}
+	// ---- Friendly encounters (spec 1360 and later). Ships that carry their page and ask for something.
 
+	// Spec 1361: a crew asks to join the fleet. A clear deal: pay their debts, and the ship is yours.
 	{
-		ID = abandoned_tanks
-		Trigger = Abandoned
-		MaxPerRun = 2
+		ID = join_request
+		Trigger = Arrival
 		Weight = 5
-		Title = "Cold Hulk"
-		Text = "An abandoned hauler, its fuel tanks still pressurized. Draining them is slow work next to a reactor that is not quite dead."
+		Carrier = Recruit
+		Title = "Join Request"
+		Text = "A small crew hails you. \"Our captain sold us to the corporation and ran. We heard who you are. Clear our dock debts, and we fly under your colors.\""
 		Choices
 		[
 			{
-				Text = "Drain the tanks."
-				Need { Crew = 1 }
-				Outcomes
-				[
-					{ Weight = 70; Text = "The fuel transfers without a hitch."; Resources = [{ ID = hyperium; Amount = 40; PerTier = 8 }] }
-					{ Weight = 30; Text = "The reactor coughs while you work. You get some fuel, and some damage."; Resources = [{ ID = hyperium; Amount = 15; PerTier = 3 }]; HullDamage = 0.2 }
-				]
+				Text = "Take them in."
+				Cost { Money = 1 }
+				Outcomes [ { Text = "They paint your colors on the hull."; Effect = join } ]
 			}
 			{
-				Text = "Leave it."
-				Outcomes [ { Text = "Not worth the risk." } ]
+				Text = "Not now."
+				Outcomes [ { Text = "\"Your loss.\" They turn away." } ]
 			}
 		]
 	}
@@ -852,6 +825,31 @@ Events
 		]
 	}
 
+	// Spec 1147: stations sell the Rescue Beacon, a clear deal. Limit: the price is paid even when the hold has no room (the result
+	// line says so); revisit if players lose money this way.
+	{
+		ID = rescue_beacon_sale
+		Trigger = Hail
+		HailTarget = Station
+		HailLine = "Buy a rescue beacon."
+		MaxPerRun = 0
+		Title = "Rescue Beacon"
+		Text = "The dock officer slides a scuffed beacon across. \"Fire it when you're dead in space. A tug tows you to the nearest friendly dock. The tug crew bills you, and the whole sector hears the call.\""
+		Choices
+		[
+			{
+				Text = "Buy the beacon."
+				Cost { Money = 0.3 }
+				Outcomes [ { Text = "The beacon goes into your hold."; Resources = [{ ID = yarden_zamir.rescue_beacon; Amount = 1 }] } ]
+			}
+			{
+				Text = "Not now."
+				Outcomes [ { Text = "\"Hope you never need one.\"" } ]
+			}
+		]
+	}
+
+	// Spec 46: the gamble ("ask nicely") is a world action now, a sensor array that listens to the ship (spec 1122). This page is the clear deal.
 	{
 		ID = hunter_intel
 		Trigger = Hail
@@ -867,14 +865,6 @@ Events
 				Text = "Pay for their patrol logs."
 				Cost { Money = 0.2 }
 				Outcomes [ { Text = "They send the corporate patrol routes. You plot around them."; Heat = -8 } ]
-			}
-			{
-				Text = "Ask nicely."
-				Outcomes
-				[
-					{ Weight = 50; Text = "\"Fine. They went that way.\" It helps a little."; Heat = -4 }
-					{ Weight = 50; WeightPerHeat = 0.3; Text = "They log your question. The corporation reads those logs."; Heat = 5 }
-				]
 			}
 			{
 				Text = "Never mind."
