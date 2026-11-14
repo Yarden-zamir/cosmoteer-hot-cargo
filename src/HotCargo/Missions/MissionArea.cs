@@ -27,6 +27,14 @@ public static class MissionArea
         ["shady"] = "HotCargoShadyBounty",
     };
 
+    static List<Cosmoteer.Game.ObjectID> _markedMarkers = [];
+
+    static Mission LatestOfType(string metatype)
+    {
+        var id = new ID<MissionMetatype>(metatype);
+        return RequireRun().Mode.Missions.LastOrDefault(m => m.MetatypeID.Equals(id)) ?? throw new InvalidOperationException($"no {metatype} mission in the log");
+    }
+
     public static void Register()
     {
         MissionMarkers.Register();
@@ -37,6 +45,19 @@ public static class MissionArea
             Autotest.Fields[$"hc_active_{name}"] = () => RequireRun().Mode.Missions.Count(m => m.MetatypeID.Equals(id) && m.Completion == CompletionState.InProgress);
             Autotest.Fields[$"hc_completed_{name}"] = () => RequireRun().Mode.Missions.Count(m => m.MetatypeID.Equals(id) && m.Completion == CompletionState.Completed);
         }
+        // Spec 1126. hc_markers_mark <metatype ID>: remembers the markers of the latest mission of that type in the log; the field
+        // hc_markers_left counts how many of them are in the current system. hc_abandon <metatype ID>: abandons that mission (MP input).
+        Autotest.Commands["hc_markers_mark"] = arg =>
+        {
+            _markedMarkers = [.. MissionMarkers.Of(LatestOfType(arg.Trim()))];
+            if (_markedMarkers.Count == 0) throw new InvalidOperationException($"the latest {arg.Trim()} mission owns no marker");
+        };
+        Autotest.Fields["hc_markers_left"] = () => _markedMarkers.Count(id => RequireSim().Doodads[id] is not null);
+        Autotest.Commands["hc_abandon"] = arg =>
+        {
+            RequireRun().Game.NetManager.EnqueueInput(new Cosmoteer.Modes.Career.Missions.MissionLogTab.MPAbandonMissionInput(LatestOfType(arg.Trim())));
+            Autotest.Wait(2);
+        };
         Autotest.Commands["hc_generate"] = TestGenerate;
         Autotest.Commands["hc_accept"] = TestAccept;
         Autotest.Commands["hc_escort_goto"] = _ => TeleportPlayers(RequireEscort().Escort.Location ?? throw new InvalidOperationException("escort is not in this system"));
