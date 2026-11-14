@@ -1,20 +1,20 @@
-# Checks pull requests, the merge queue of main, and pushes to main: private data, build against the game references, unit tests, and the game
-# tests in the headless sim (tools/headless-sim) on Linux. Tests with the line "# runner: pc" need the Windows PC: the PR
+# Checks pull requests and the merge queue of main: private data, build against the game references and unit tests on
+# every run; the game tests in the headless sim (tools/headless-sim) on Linux only in the merge queue and in manual runs. Tests with the line "# runner: pc" need the Windows PC: the PR
 # owner runs the affected ones (LIST_ONLY=1 RUNNER=pc scripts/autotest-affected.sh) and ticks the PR template's box.
-# Game files: the private repo Yarden-zamir/cosmoteer-hot-cargo-game-refs (read-only deploy key). Only pushes and pull
-# requests from this repo get the key; never pull_request_target. Game files never go into a cache or an artifact.
+# Game files: the private repo Yarden-zamir/cosmoteer-hot-cargo-game-refs (read-only deploy key). Only runs of this repo
+# get the key (pull requests from forks do not); never pull_request_target. Game files never go into a cache or an artifact.
 name: check
 on:
-  # Only main: a pull request commit gets one run (the pull_request one), not a second push run that competes for jobs.
-  # release.sh reads the checks of main commits; dev-release.yml has its own trigger.
-  push:
-    branches: [main]
+  # No push trigger: main moves only through the merge queue, and main gets the exact commit that the queue tested, with
+  # its checks. release.sh reads those checks. dev-release.yml has its own trigger.
   pull_request:
   # The merge queue of main: it tests each pull request on top of main and the pull requests ahead of it.
   merge_group:
     types: [checks_requested]
-# A newer push to a pull request cancels its older run: the game tests take about 17 of the ~20 parallel jobs a free
-# account gets, so stale runs only delay the others. Pushes (main included) are never cancelled.
+  # A full run of a branch on request (gh workflow run check.yml --ref <branch>), for example before a risky pull request
+  # enters the queue.
+  workflow_dispatch:
+# A newer push to a pull request cancels its older run. Merge queue groups and manual runs are never cancelled.
 concurrency:
   group: check-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -31,24 +31,22 @@ jobs:
     outputs:
       game-tests: ${{ steps.scope.outputs.game-tests }}
     steps:
-      # Depth 2: a pull request checks out a merge commit, and its first parent is the base branch.
       - uses: actions/checkout@v7.0.1
-        with:
-          fetch-depth: 2
-      # Pushes to main always run the game tests. A pull request or a merge queue group skips them when it changes only
-      # docs or scripts that the game tests do not run (scripts/ci-needs-game-tests.sh). A change to this file always
-      # runs them. A merge queue group compares with the main commit that it starts from.
+      # The game tests run in the merge queue and in manual runs, not on pull requests: the owner picks the tests to run
+      # before a push. A merge queue group skips them when it changes only docs or scripts that the game tests do not run
+      # (scripts/ci-needs-game-tests.sh); it compares with the main commit that it starts from. A change to this file
+      # always runs them.
       - id: scope
         env:
           QUEUE_BASE: ${{ github.event.merge_group.base_sha }}
         run: |
           case "${{ github.event_name }}" in
-            pull_request) base=HEAD^1 ;;
-            merge_group) git fetch -q --depth=1 origin "$QUEUE_BASE"; base="$QUEUE_BASE" ;;
-            *) base="" ;;
+            pull_request) result="false (pull request: the game tests run in the merge queue)" ;;
+            merge_group) git fetch -q --depth=1 origin "$QUEUE_BASE"
+              result="$(git diff --name-only --no-renames "$QUEUE_BASE" HEAD | scripts/ci-needs-game-tests.sh)" ;;
+            workflow_dispatch) result="true (manual run)" ;;
+            *) echo "check: unexpected event ${{ github.event_name }}"; exit 1 ;;
           esac
-          if [[ -n "$base" ]]; then result="$(git diff --name-only --no-renames "$base" HEAD | scripts/ci-needs-game-tests.sh)"
-          else result="true (push)"; fi
           echo "game tests: $result"
           echo "game-tests=${result%% *}" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v7.0.1
@@ -63,17 +61,19 @@ jobs:
         env:
           CosmoteerBin: ${{ github.workspace }}/.game-refs/Bin
       - run: dotnet run --project tests/HotCargo.Tests
-  # The game tests, split over parallel shards so that the whole set takes under 10 minutes (scripts/ci-sim-tests.sh).
+  # The game tests, split over a few full jobs (scripts/ci-sim-tests.sh). A runner has 4 cores and 16 GB, and one sim takes
+  # about one core and 2 GB, so each job runs 4 sims at once. 6 jobs: two merge queue groups (9 jobs each) fit in the ~20
+  # parallel jobs of the free plan. More jobs make one group shorter but make the second group wait.
   game-tests-shard:
     runs-on: ubuntu-latest
     # After build, so that the cheap required checks never wait in the job queue behind the shards. Forks: no secrets, no run.
     needs: build
     if: needs.build.outputs.game-tests == 'true'
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        shard: [1, 2, 3, 4, 5, 6]
     steps:
       # The repo in repo/ and the game files in .game/, so that the scripts find ../.game as on a developer machine.
       - uses: actions/checkout@v7.0.1
@@ -101,11 +101,11 @@ jobs:
       - uses: actions/setup-dotnet@v6.1.0
         with:
           global-json-file: repo/global.json
-      - name: Game tests, shard ${{ matrix.shard }} of 16
+      - name: Game tests, shard ${{ matrix.shard }} of ${{ strategy.job-total }}
         working-directory: repo
         env:
-          HOT_CARGO_SIM_JOBS: "3"
-        run: scripts/ci-sim-tests.sh ${{ matrix.shard }} 16
+          HOT_CARGO_SIM_JOBS: "4"
+        run: scripts/ci-sim-tests.sh ${{ matrix.shard }} ${{ strategy.job-total }}
       # Only text logs, checked for game data (scripts/ci-check-logs.sh); never the game files or the staged mod.
       - name: Collect logs
         if: always()
