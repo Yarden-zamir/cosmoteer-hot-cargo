@@ -30,6 +30,6 @@ Only the coordinator does this, and only while the hold is off:
 
 ## Main
 
-- Agents merge their own PRs (`hot-cargo-pr-flow`). There is no merge queue.
+- Agents merge their own PRs (`hot-cargo-pr-flow`). The GitHub merge queue of `main` orders the merges. No agent runs a merge queue of its own.
 - `scripts/integrate.sh` stays for release and maintenance runs in the main worktree. Read its header first.
 - Releases: `hot-cargo-release`.
