@@ -136,6 +136,18 @@ public static class UxArea
             }
         };
         Autotest.Commands["map"] = arg => { var r = Autotest.RequireRun(); r.Game.ShowMap = arg != "off"; };
+        // camera <x> <y> <size>: test only. The sim camera stops following ships, centers on the world point and zooms to fit a
+        // square of that size (for whole-system screenshots).
+        Autotest.Commands["camera"] = arg =>
+        {
+            var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (p.Length != 3) throw new InvalidOperationException("camera needs: x y size");
+            float F(string s) => float.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
+            var view = Autotest.RequireRun().Game.Sim.Camera.ViewController;
+            view.ClearFocus(clearFramesOfReferenceAndRotation: true);
+            view.FRLocation = new Halfling.Geometry.Vector2(F(p[0]), F(p[1]));
+            view.ZoomToFit(new Halfling.Geometry.Vector2(F(p[2]), F(p[2])), instant: true);
+        };
 
         // kill: test only, single player. Destroys every part of the first own ship.
         Autotest.Commands["kill"] = _ =>
