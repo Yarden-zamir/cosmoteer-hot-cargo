@@ -24,6 +24,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
       - run: scripts/check-private.sh
+      # Section and requirement numbers stay unique. In the merge queue this catches two pull requests that picked the same numbers.
+      - run: scripts/check-spec-numbers.sh
   build:
     runs-on: ubuntu-latest
     # Pull requests from forks get no secrets, so they cannot read the private game references.
