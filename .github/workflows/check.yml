@@ -7,6 +7,11 @@ name: check
 on:
   push:
   pull_request:
+# A newer push to a pull request cancels its older run: the game tests take about 17 of the ~20 parallel jobs a free
+# account gets, so stale runs only delay the others. Pushes (main included) are never cancelled.
+concurrency:
+  group: check-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   private-data:
     runs-on: ubuntu-latest
