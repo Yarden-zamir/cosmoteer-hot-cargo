@@ -45,8 +45,7 @@ internal static class Resupply
 
     /// <summary>
     /// Spec 1305: the resources that the ship lacks for all its repairs, by resource ID. ownOnly: count only the ship's own storage,
-    /// not the loose nuggets and own-player ships nearby that the vanilla repair can also use (a station supply, so that ships at
-    /// one station do not count each other's supply).
+    /// not the loose nuggets and own-player ships nearby that the vanilla repair counts too. Crews reach those only through airlocks.
     /// </summary>
     public static Dictionary<string, int> Lacking(Ship ship, bool ownOnly = false)
     {

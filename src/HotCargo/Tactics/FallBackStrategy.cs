@@ -44,7 +44,7 @@ internal sealed class FallBackStrategy : AIStrategyModule
     /// <summary>The donor ship or the station of the plan.</summary>
     [Serialize(Optional = true)] ObjectID _target;
     [Serialize(Alias = "Rock", Optional = true)] Ship? _rock;
-    /// <summary>True after the station supplied the ship on this visit (spec 1308).</summary>
+    /// <summary>The plan's one-time step is done: the station supplied the ship, the donor gave, or the ship reached its cover.</summary>
     [Serialize(Optional = true)] bool _supplied;
 
     public FallBackStrategy(FallBackStrategyRules rules)

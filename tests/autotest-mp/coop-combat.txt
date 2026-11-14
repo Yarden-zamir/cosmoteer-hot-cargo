@@ -179,6 +179,8 @@ mp airocks 6 600
 mp aispawn pirates 3 2
 mp spawnstage Strike
 mp aispawn monolith 3 2
+# Spec 1313: the spawned pirates and Monolith ships fall back and pick repair plans on both machines.
+mp aidamage new 0.3
 wait 40
 aiprofiles host
 expect ai_personality > 0
@@ -186,6 +188,8 @@ on 1 aiprofiles client
 on 1 expect ai_personality > 0
 expect ai_call_intercept >= 1
 on 1 expect ai_call_intercept >= 1
+expect tactic_fallback >= 1
+on 1 expect tactic_fallback >= 1
 
 step worlds.current
 # Spec 221, 227: a current painted on both machines pushes the host's ship the same way on both. Co-op tests cannot jump,
