@@ -20,7 +20,7 @@ The rules are in CLAUDE.md (Git, Spec, Agents) and CONTRIBUTING.md (Git). This s
 
 ## A failure that looks unrelated
 
-1. Check the same test on `main` first: the full suite runs there every 3 hours (`gh run list --workflow check --event schedule --limit 5`), and queue runs show other PRs (`--event merge_group`). Read the job summary of a recent run.
+1. Check the same test on `main` first: the full suite runs there at most 3 hours after a merge (`gh run list --workflow check --branch main --event workflow_dispatch --limit 5`; also `--event schedule`), and queue runs show other PRs (`--event merge_group`). Read the job summary of a recent run.
 2. If the test passes on `main`, the failure belongs to the PR. Fix it. A PR once merged with 4 real regressions that its owner called unrelated.
 3. If the test is flaky (it passes on its retry or on a rerun) or the failure is an infrastructure failure, it counts as passing. On the PR's own run, rerun the failed jobs: `gh run rerun <run id> --failed`. In the merge queue, add the PR again: `gh pr merge --auto --squash`. Note it in the PR in one line.
 4. If the test also fails on `main`, `main` is broken. Do not merge over it. Tell the coordinator.
