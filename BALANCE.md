@@ -20,7 +20,7 @@ uv run --no-project tools/balance/render.py
 
 Units: **std** = one standard mission's money (or fame) at the sector tier, with the economy factors and `RewardScale`. **TVM(T)** = the vanilla ship value maximum of tier T (tier 1: 60,000; tier 7: 230,000; tier 12: 800,000).
 
-Limit: the model is a single representative run. It does not model travel time, failed missions or ship losses. The telemetry branch (`feat/telemetry`) records real runs; check these numbers against it when it lands.
+Limit: the model is a single representative run. It does not model travel time, failed missions or ship losses. Telemetry records real runs (TELEMETRY.md); check these numbers against it.
 
 ## Findings
 

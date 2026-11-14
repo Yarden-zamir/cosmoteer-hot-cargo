@@ -9,6 +9,13 @@ Procedures are skills in `.claude/skills/`:
 - `hot-cargo-release`: publish a GitHub release.
 - `hot-cargo-new-area`: add a feature area (entry point, tunables, rules, strings).
 - `hot-cargo-tune`: change tunables in the player's running game on request (`scripts/tune.sh`), also as the co-op host.
+- `hot-cargo-pr-flow`: from branch to merged PR (checks, tests outside CI, failures that look unrelated, install).
+- `hot-cargo-pc`: manual PC work: slots, deploy, start, stop, logs, the player hold, slot locks.
+- `hot-cargo-telemetry`: pull and read telemetry after a playtest, and turn findings into work.
+- `hot-cargo-balance`: change balance defaults with the economy model, the balance tests and `BALANCE.md`.
+- `hot-cargo-game-update`: bring the mod to a new Cosmoteer version.
+- `hot-cargo-player-ships`: Tech Vaults in the player's saved ships or the starter ships (coordinator only).
+- `hot-cargo-coordinate`: the agent watch, the player hold and main-slot work (coordinator only).
 
 ## Git
 
@@ -18,9 +25,9 @@ Procedures are skills in `.claude/skills/`:
   1. Push the branch and open the PR. CI runs only on PRs and on `main`, so a branch without a PR gets no checks. A newer push cancels the PR's older run.
   2. Tests outside CI: `LIST_ONLY=1 RUNNER=pc scripts/autotest-affected.sh` lists the affected tests that CI does not run (the `game-tests` job summary lists them too). Run only those the merge depends on, on the PC (`scripts/autotest-all.sh 400 <names>`), and tick the box of the PR template. Lean toward the minimum.
   3. `gh pr merge --auto --merge`. Watch the PR instead of polling it.
-  4. When `main` moves, GitHub marks the PR out of date. Merge `origin/main` into the branch, read what the new commits and PRs intend (`git log`, `gh pr view`), adapt the change to them, and push. CI runs again; auto-merge does the rest.
+  4. When `main` moves, GitHub marks the PR out of date. If the new commits do not touch your area, `gh pr update-branch`. Otherwise merge `origin/main` into the branch, read what the new commits and PRs intend (`git log`, `gh pr view`), adapt the change to them, and push. CI runs again; auto-merge does the rest.
 - Tests a PR needs: what CI runs, the affected tests outside CI that the merge depends on, plus anything the change calls for (a new test, a co-op step for sim changes, screenshots for visible changes).
-- Unrelated failures: a flaky or infrastructure failure in a test that the PR does not touch counts as passing; say so in the PR. A failure in a touched test, or one that also fails on `main`, blocks the merge.
+- Unrelated failures: before you call a failure unrelated, check the same test on `main`. A flaky or infrastructure failure in a test that the PR does not touch counts as passing; rerun the failed jobs and say so in the PR in one line. A failure that shows only with the change, a failure in a touched test, or one that also fails on `main` blocks the merge (`hot-cargo-pr-flow`).
 - Never push to `main` directly; `scripts/integrate.sh` stays for the release and maintenance runs that the coordinator starts.
 - Never credit an AI, model or tool in commits or files.
 - Never commit personal machine data. `scripts/check-private.sh` checks this, and CI runs it.
