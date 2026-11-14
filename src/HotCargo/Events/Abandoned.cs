@@ -25,8 +25,6 @@ public static class Abandoned
     internal static void OnNewRun(Run run)
     {
         var t = run.T.Events;
-        // Limit: the relic sector rolls at the run start, before the start job can move the Buyer (spec 1201). A job with fewer
-        // sectors can put the relic at or past the Buyer, so the run has no relic. Revisit if relics matter for short jobs.
         int last = run.T.Journey.RunSectorCount - 1;
         State(run).RelicSector = t.RelicEnabled && last >= t.RelicMinSector ? run.Game.Sim.Rand.Int32(Math.Max(1, t.RelicMinSector), last) : -1;
         Log.Info($"relic ship sector: {State(run).RelicSector}");

@@ -15,7 +15,6 @@ using Halfling.Random;
 using HotCargo.Core;
 using HotCargo.Tech;
 using HotCargo.Ux;
-using HotCargo.StartJobs;
 
 namespace HotCargo.Relays;
 
@@ -129,7 +128,7 @@ public static class RelaysArea
     {
         var s = run.State.Relays;
         var t = run.T.Relays;
-        if (s.MarkedNode is not null || run.State.SectorIndex + 1 >= run.SectorCount()) return;
+        if (s.MarkedNode is not null || run.State.SectorIndex + 1 >= run.T.Journey.RunSectorCount) return;
         foreach (var next in node.Connections.OrderBy(c => c.UniqueID))
         {
             if (run.State.VisitedNodes.Contains(next.UniqueID) || !s.Rolled.Add(next.UniqueID)) continue;

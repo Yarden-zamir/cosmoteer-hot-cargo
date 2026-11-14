@@ -19,14 +19,14 @@ public static class RecordRows
             lines.Add(Text("Empty"));
             return lines;
         }
-        lines.Add(RunRecordModel.Best(runs) is { } best ? Format("BestFmt", best.Score.ToString("N0", CultureInfo.CurrentCulture), Job(best)) : Text("NoBest"));
+        lines.Add(RunRecordModel.Best(runs) is { } best ? Format("BestFmt", best.Score.ToString("N0", CultureInfo.CurrentCulture)) : Text("NoBest"));
         lines.AddRange(RunRecordModel.Rows(runs).Select(Row));
         return lines;
     }
 
     static string Row(RunEntry e) =>
         Format(e.Won ? "RowWonFmt" : "RowLostFmt", e.Ended.LocalDateTime.ToString("d MMM", CultureInfo.CurrentCulture),
-            Cell(e, RunColumn.Score), Job(e), e.Sector, e.Sectors, Cell(e, RunColumn.Time), Cell(e, RunColumn.PeakHeat), e.VaultsLost);
+            Cell(e, RunColumn.Score), e.Sector, e.Sectors, Cell(e, RunColumn.Time), Cell(e, RunColumn.PeakHeat), e.VaultsLost);
 
     /// <summary>Spec 1225, 1229: the text of one value of an entry, the same in the career log block and in the Past Runs table.</summary>
     public static string Cell(RunEntry e, RunColumn column)
@@ -35,7 +35,6 @@ public static class RecordRows
         return column switch
         {
             RunColumn.Date => e.Ended.LocalDateTime.ToString("d MMM yyyy", CultureInfo.CurrentCulture),
-            RunColumn.Job => Job(e),
             RunColumn.Result => Text(e.Won ? "Won" : "Lost"),
             RunColumn.Score => e.Score.ToString("N0", CultureInfo.CurrentCulture),
             RunColumn.Delivered => e.Delivered.ToString(CultureInfo.CurrentCulture),
@@ -46,8 +45,6 @@ public static class RecordRows
             _ => throw new ArgumentOutOfRangeException(nameof(column), column, null),
         };
     }
-
-    static string Job(RunEntry e) => e.JobName.Length > 0 ? Halfling.StringTools.EscapeForXml(e.JobName) : Text("NoJob");
 
     internal static string Text(string key) => Strings.GetText("HotCargoRunRecord/" + key);
     internal static string Format(string key, params object?[] args) => Strings.FormatText("HotCargoRunRecord/" + key, args);

@@ -12,7 +12,6 @@ using Halfling;
 using Halfling.Geometry;
 using HotCargo.Core;
 using HotCargo.RunModes;
-using HotCargo.StartJobs;
 
 namespace HotCargo.Hunters;
 
@@ -116,7 +115,7 @@ public static class HunterSpawner
     /// the difficulty factors (spec 682). Spec 305: the route tier floor.</summary>
     static (int Ships, int Tier) Plan(Run run, SimRoot sim, StageResponse r)
     {
-        float progress = WaveModel.Progress(run.State.SectorIndex, run.SectorCount());
+        float progress = WaveModel.Progress(run.State.SectorIndex, run.T.Journey.RunSectorCount);
         int ships = run.Pressure().Ships(ScaleShips(run, sim, WaveModel.ShipCount(r.ShipCount, r.EarlyScale, progress)));
         int tier = BaseTier(run) + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + RunModes.Difficulty.ExtraHunterTiers(run);
         return (ships, tier);

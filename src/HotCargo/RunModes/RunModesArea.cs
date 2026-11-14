@@ -10,7 +10,6 @@ using HotCargo.Core;
 using HotCargo.Dev;
 using HotCargo.Hunters;
 using HotCargo.Tech;
-using HotCargo.StartJobs;
 
 namespace HotCargo.RunModes;
 
@@ -185,7 +184,7 @@ public static class RunModesArea
     {
         var r = run.T.Hunters.Stages.Single(s => s.Name == stage);
         var rows = RowsNow(run);
-        float progress = WaveModel.Progress(run.State.SectorIndex, run.SectorCount());
+        float progress = WaveModel.Progress(run.State.SectorIndex, run.T.Journey.RunSectorCount);
         float shipFactor = rows.Aggregate(1f, (f, row) => f * row.HunterShips);
         int ships = Math.Max(1, (int)MathF.Round(WaveModel.ShipCount(r.ShipCount, r.EarlyScale, progress) * shipFactor, MidpointRounding.AwayFromZero));
         int tier = Hunters.HunterSpawner.BaseTier(run) + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + rows.Sum(row => row.HunterTiers);
@@ -224,7 +223,7 @@ public static class RunModesArea
         {
             var (ships, tier) = ExpectedStage(run, s.Name);
             var r = s;
-            float progress = WaveModel.Progress(run.State.SectorIndex, run.SectorCount());
+            float progress = WaveModel.Progress(run.State.SectorIndex, run.T.Journey.RunSectorCount);
             int actualShips = run.Pressure().Ships(WaveModel.ShipCount(r.ShipCount, r.EarlyScale, progress));
             int actualTier = Hunters.HunterSpawner.BaseTier(run) + WaveModel.TierOffset(r.TierOffset, r.EarlyTierReduction, progress) + Difficulty.ExtraHunterTiers(run);
             Autotest.Check(actualShips == ships && actualTier == tier, $"{label}: {s.Name} {ships} ships of tier {tier} (actual {actualShips} of tier {actualTier})");

@@ -29,7 +29,7 @@ public static class RunRecordArea
         };
         Autotest.Fields["rr_entries"] = () => Recorder.Load()?.Count ?? -1;
         Autotest.Fields["rr_peakheat_state"] = () => Autotest.RequireRun().State.RunRecord.PeakHeat;
-        // The entry of the current run in the file: present, won, score, peak heat, lost vaults, delivered units, sectors, and 1 when it names the run's job.
+        // The entry of the current run in the file: present, won, score, peak heat, lost vaults, delivered units and sectors.
         Autotest.Fields["rr_has"] = () => ThisRun() is null ? 0 : 1;
         Autotest.Fields["rr_won"] = () => ThisRun()?.Won == true ? 1 : 0;
         Autotest.Fields["rr_score"] = () => ThisRun()?.Score ?? -1;
@@ -37,7 +37,6 @@ public static class RunRecordArea
         Autotest.Fields["rr_vaultslost"] = () => ThisRun()?.VaultsLost ?? -1;
         Autotest.Fields["rr_delivered"] = () => ThisRun()?.Delivered ?? -1;
         Autotest.Fields["rr_sectors"] = () => ThisRun()?.Sectors ?? -1;
-        Autotest.Fields["rr_job_matches"] = () => ThisRun() is { } e && e.Job == Autotest.RequireRun().State.StartJobs.Job ? 1 : 0;
         Autotest.Fields["rr_tab_rows"] = () => RecordRows.Shown;
         AddPastRunsAutotest();
     }
@@ -53,9 +52,9 @@ public static class RunRecordArea
             var day = new DateTimeOffset(2026, 11, 10, 20, 0, 0, TimeSpan.Zero);
             List<RunEntry> runs =
             [
-                new("3", day.AddDays(2), false, 0, 0, 1500, 4, 6, 100f, 3, "rush", "Rush Order", 2),
-                new("2", day.AddDays(1), true, 340_000, 6, 5400, 10, 10, 95f, 1, "deep_space", "Deep Space Buyer", 1),
-                new("1", day, true, 120_000, 4, 4200, 8, 8, 80f, 0, "contract", "The Contract", 1),
+                new("3", day.AddDays(2), false, 0, 0, 1500, 4, 6, 100f, 3, 2),
+                new("2", day.AddDays(1), true, 340_000, 6, 5400, 10, 10, 95f, 1, 1),
+                new("1", day, true, 120_000, 4, 4200, 8, 8, 80f, 0, 1),
             ];
             Directory.CreateDirectory(Path.GetDirectoryName(Recorder.FilePath)!);
             File.WriteAllText(Recorder.FilePath, RunRecordModel.Write(runs));

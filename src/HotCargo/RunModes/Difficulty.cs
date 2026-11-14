@@ -11,8 +11,8 @@ namespace HotCargo.RunModes;
 /// </summary>
 public static class Difficulty
 {
-    /// <summary>The combined factors of the career's current combat, economy and crew levels, and of the run's start job (spec 1201).</summary>
-    public static Pressure Pressure(this Run run) => For(run.T.RunModes, Levels(run.Mode)).Combine(StartJobs.StartJobs.Pressure(run));
+    /// <summary>The combined factors of the career's current combat, economy and crew levels.</summary>
+    public static Pressure Pressure(this Run run) => For(run.T.RunModes, Levels(run.Mode));
 
     /// <summary>Spec 682: tiers that the difficulty adds to each hunter stage response.</summary>
     public static int ExtraHunterTiers(Run run) => run.Pressure().HunterTiers;
@@ -53,9 +53,7 @@ public static class Difficulty
     public static string Tooltip(Run run)
     {
         var parts = FactorTexts(run.Pressure());
-        string tip = Fmt("TipFmt", LevelNames(run.Mode), parts.Count == 0 ? Text("TipNeutral") : string.Join("\n", parts));
-        // Spec 1205: the factors above include the job's; this line names it.
-        return StartJobs.StartJobs.Job(run) is { } job ? $"{tip}\n{StartJobs.StartJobs.Format("TipFmt", StartJobs.StartJobs.Name(job))}" : tip;
+        return Fmt("TipFmt", LevelNames(run.Mode), parts.Count == 0 ? Text("TipNeutral") : string.Join("\n", parts));
     }
 
     static string LevelNames(CareerGameModeManager m) =>

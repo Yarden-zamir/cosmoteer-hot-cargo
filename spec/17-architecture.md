@@ -22,7 +22,6 @@ src/HotCargo/
   Scavenge/                scavenging (section 56): the age check, the shared find, salvage, collect and sell steps (Scavenger), the HcScavenge AI module
   Pursuit/                 the Pursuit director: wave ramp, fleet factor, big event pacer (Pacer), reporting scout, relay blockade, network outage, hacker
   Debt/                    debt (section 55): loans, interest, collectors, the hostile lender, the comms pages and shared choice domain
-  StartJobs/               start jobs (section 48): the offer, the job rules, the intro panel with the jobs, shared choice domain
   RunRecord/               run record (section 49): past runs in the save folder, rows in the career log tab and the Past Runs window of the main menu
   Debris/                  debris decay (section 50): old loose junk glows, then burns up (DebrisModel, DebrisGlow)
   Friendly/                friendly encounters (section 54): the outcome effects of friendly ship pages (join, and later ones)

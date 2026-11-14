@@ -14,7 +14,6 @@ using HotCargo.Events;
 using HotCargo.Journey;
 using HotCargo.Tech;
 using HotCargo.Ux;
-using HotCargo.StartJobs;
 
 namespace HotCargo.Onboarding;
 
@@ -67,10 +66,10 @@ public static class RunLog
         {
             if (!firstVisit) return;
             var sector = run.Mode.GetMapNodeData(run.Game.CurrentMapNode).SectorType;
-            Add(run, RunLogKind.Sector, Format("SectorFmt", run.State.SectorIndex, run.SectorCount(),
+            Add(run, RunLogKind.Sector, Format("SectorFmt", run.State.SectorIndex, run.T.Journey.RunSectorCount,
                 Escape(run.Game.CurrentMapNode.Name), sector.NameKey.Text));
         };
-        Run.Hooks.NewRunStarted += run => Add(run, RunLogKind.Sector, Format("StartFmt", run.T.Tech.StartingTechUnits, run.SectorCount()));
+        Run.Hooks.NewRunStarted += run => Add(run, RunLogKind.Sector, Format("StartFmt", run.T.Tech.StartingTechUnits, run.T.Journey.RunSectorCount));
         Run.Hooks.RunEnded += run =>
         {
             if (run.State.Result == RunResult.Won) Add(run, RunLogKind.Won, Format("WonFmt", run.State.Score.ToString("N0")));
