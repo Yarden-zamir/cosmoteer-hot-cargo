@@ -48,6 +48,11 @@ tactics_editor actparam 7 1
 tactics_editor savepreset Tech runner
 wait 2
 screenshot shipai-editor-chains
+# Spec 419: the smallest window; every condition, action and parameter text fits its list.
+tactics_editor minsize
+wait 1
+tactics_editor fit
+screenshot shipai-editor-min
 tactics_editor close
 tactics_presets_reset
 # Spec 415: Face=1 (+90 degrees) turns the left side of the ship to the target.

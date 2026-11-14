@@ -27,16 +27,23 @@ internal sealed class ShipTactics
 {
     public const string SavePath = "HotCargoTactics";
     const string DesignAutoPath = "HotCargoTacticsAuto";
+    const string DesignCargoPath = "HotCargoTacticsCargo";
 
     /// <summary>The rows in ShipAiModel text form. Set only through SetRows, so Rows always matches it.</summary>
     [Serialize(Optional = true)] public string Text { get; private set; } = "";
     [Serialize(Optional = true)] public bool Auto;
+    /// <summary>Spec 1062, 1063: the cargo settings in AutonomyModel text form. Set only through SetCargo.</summary>
+    [Serialize(Optional = true)] public string CargoText { get; private set; } = "";
+    /// <summary>Spec 1064: "return to me". The ship ignores its move rows and returns to the owner's first crewed ship.</summary>
+    [Serialize(Optional = true)] public bool Recall;
     [Serialize(Optional = true)] public Time NextTick;
     /// <summary>A manual order is in the ship's queue, so the tactics wait (spec 408).</summary>
     [Serialize(Optional = true)] public bool Waiting;
     [Serialize(Optional = true)] public int TargetRow = -1;
     [Serialize(Optional = true)] public int MoveRow = -1;
     [Serialize(Optional = true)] public int FacingRow = -1;
+    /// <summary>Spec 1067: the trade row of the last decision.</summary>
+    [Serialize(Optional = true)] public int TradeRow = -1;
     /// <summary>Bit i = row i matched in the last decision. Weapon modes come from it (ShipAiModel.WeaponAct).</summary>
     [Serialize(Optional = true)] public int Matched;
     [Serialize(Optional = true)] public ObjectID? Target;
@@ -65,7 +72,18 @@ internal sealed class ShipTactics
     /// <summary>Weapons that may not fire now (HoldFire, PointDefenseOnly). Derived from Matched and the part groups; null = build again.</summary>
     internal HashSet<Weapon>? Held;
 
-    public bool IsEmpty => Text.Length == 0 && !Auto;
+    public bool IsEmpty => Text.Length == 0 && !Auto && CargoText.Length == 0 && !Recall;
+
+    Autonomy.CargoSettings? _cargo;
+    public Autonomy.CargoSettings Cargo => _cargo ??= Autonomy.Cargo.Decode(CargoText);
+
+    /// <summary>Throws FormatException on bad text, before anything changes.</summary>
+    public void SetCargo(string text)
+    {
+        var cargo = Autonomy.Cargo.Decode(text);
+        CargoText = text;
+        _cargo = cargo;
+    }
 
     public bool[] MatchedRows => Enumerable.Range(0, Rows.Count).Select(i => (Matched & (1 << i)) != 0).ToArray();
 
@@ -81,9 +99,12 @@ internal sealed class ShipTactics
     {
         iHash.AddHash(ShipAiModel.StableHash(Text));
         iHash.AddHash(Auto ? 1 : 0);
+        iHash.AddHash(ShipAiModel.StableHash(CargoText));
+        iHash.AddHash(Recall ? 1 : 0);
         iHash.AddHash(Waiting ? 1 : 0);
         iHash.AddHash(Matched);
         iHash.AddHash(TargetRow * 10000 + MoveRow * 100 + FacingRow);
+        iHash.AddHash(TradeRow);
         for (int i = 0; i < MemoryOn.Count; i++) iHash.AddHash(MemoryOn[i] ? 1 : 0);
         iHash.AddHash((int)(NextTick.Seconds * 10));
     }
@@ -102,11 +123,12 @@ internal sealed class ShipTactics
     static bool ReadOn => !VanillaRead && Activation.IsModEnabled();
 
     /// <summary>Checks the text of a loaded node. Bad text drops the tactics of that ship and shows the error; the ship still loads.</summary>
-    static bool Valid(string text, string where)
+    static bool Valid(string text, string cargo, string where)
     {
         try
         {
             ShipAiModel.Decode(text);
+            Autonomy.Cargo.Decode(cargo);
             return true;
         }
         catch (FormatException ex)
@@ -136,7 +158,7 @@ internal sealed class ShipTactics
         static void Postfix(Ship __instance, GenericSerialReader reader) => Errors.Guard("ship tactics read", () =>
         {
             if (!ReadOn || !reader.TryReadFromPath<ShipTactics>(SavePath, out var t) || t is null) return;
-            if (Valid(t.Text, "in a save")) Attach(__instance, t);
+            if (Valid(t.Text, t.CargoText, "in a save")) Attach(__instance, t);
         });
     }
 
@@ -159,6 +181,7 @@ internal sealed class ShipTactics
             if (Of(__instance) is not { IsEmpty: false } t) return;
             App.ObjectBitsSerializer.Write(node.GetOrMakeChild(SavePath), t.Text);
             App.ObjectBitsSerializer.Write(node.GetOrMakeChild(DesignAutoPath), t.Auto);
+            if (t.CargoText.Length > 0) App.ObjectBitsSerializer.Write(node.GetOrMakeChild(DesignCargoPath), t.CargoText);
         });
     }
 
@@ -170,9 +193,11 @@ internal sealed class ShipTactics
         {
             if (!ReadOn || !node.ContainsChild(SavePath)) return;
             string text = App.ObjectBitsSerializer.ReadFromPath<string>(node, SavePath);
-            if (!Valid(text, "in a ship design")) return;
+            string cargo = node.ContainsChild(DesignCargoPath) ? App.ObjectBitsSerializer.ReadFromPath<string>(node, DesignCargoPath) : "";
+            if (!Valid(text, cargo, "in a ship design")) return;
             var t = new ShipTactics { Auto = node.ContainsChild(DesignAutoPath) && App.ObjectBitsSerializer.ReadFromPath<bool>(node, DesignAutoPath) };
             t.SetRows(text);
+            t.SetCargo(cargo);
             Attach(__result, t);
         });
     }
@@ -188,7 +213,8 @@ internal sealed class ShipTactics
         static void Postfix(ShipUpdateInfo __instance, Ship fromShip) => Errors.Guard("ship tactics load replace", () =>
         {
             if (Of(fromShip) is not { } t || Run.Current is not { } run || __instance.Ship.Game != run.Game) return;
-            run.Game.NetManager.EnqueueInput(new TacticsInput(__instance.Ship, t.Text, t.Auto));
+            var live = Of(__instance.Ship);
+            run.Game.NetManager.EnqueueInput(new TacticsInput(__instance.Ship, t.Text, t.Auto, t.CargoText, live?.Recall ?? false));
             Log.Info($"ship tactics: design tactics go to {__instance.Ship.Metadata.PlainShipName}: auto={t.Auto} {t.Text}");
         });
     }
