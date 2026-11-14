@@ -82,8 +82,9 @@ mp sc_reset
 votemode on
 waitfor sc_votemode == 1 10
 mp dip_near hunter0
-# Sight and comms range need a moment after the move.
-wait 3
+# Sight and comms range need a moment after the move: wait for the vanilla call rules, not for a fixed time.
+listen_target hunter0
+waitfor listen_reach == 1 30
 dip_open hunter0
 on 1 waitfor listen_hails == 1 30
 on 1 listen 1
