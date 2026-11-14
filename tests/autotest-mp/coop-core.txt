@@ -156,6 +156,18 @@ mp spawnstage Warning
 wait 30
 expect tactics_evals > 20
 
+step debris.decay
+# Spec 1245: junk decay is sim state. Pieces of both players start to age on both machines at the same tick; the state hash
+# compares the ages (RunState.Debris) and the ship counts. They are still young at the resync below.
+mp debris_set DecaySeconds 40
+mp debris_set GlowSeconds 15
+mp debris_set CheckSeconds 1
+mp debris_set MaxParts 6
+mp debris_spawn 3 3
+as 1 debris_spawn 2 3
+waitfor debris_tracked >= 5 15
+on 1 waitfor debris_tracked >= 5 15
+
 step core.resync
 # The resync that follows a desync (and a late join): every machine reloads the host's game. A pending event, a sprung trap,
 # the stage and the ship tactics come back on both machines.
@@ -185,6 +197,14 @@ on 1 expectevent smuggler_den
 on 1 expect hc_trap_state == 2
 on 1 expect tactics_snapshot_kept >= 1
 on 1 expect tactics_snapshot_changed == 0
+
+step debris.resync
+# Spec 1245: the ages came back with the host's game, so the pieces glow and burn up at the same tick on both machines.
+waitfor debris_glowing >= 5 60
+on 1 waitfor debris_glowing >= 5 60
+# Junk from the fight above decays too, so more pieces than the test pieces can burn up.
+waitfor debris_removed >= 5 60
+on 1 waitfor debris_removed >= 5 60
 
 step core.save-load
 # Back to the game setup with the connection kept, load the save (from before the resync) for both players, start.

@@ -32,11 +32,15 @@ public static class Playthrough
     static Mission? _mission;
     /// <summary>The relay that Relay() chose, for the system that it chose it in.</summary>
     static (ObjectID Node, ObjectID Destination)? _relay;
+
+    /// <summary>The clock of the repeated orders: the run's game seconds, so an order comes at the same point of the game
+    /// at any machine load (requirement 1007).</summary>
+    static double GameSeconds() => Autotest.RequireRun().State.GameSeconds;
     static Func<Circle?>? _target;
 
     internal static void Register()
     {
-        // pt_goto station|mission|relay <timeout seconds>: a right click order, again every 20 seconds until the ship is near (pt_near).
+        // pt_goto station|mission|relay <timeout seconds>: a right click order, again every 20 game seconds until the ship is near (pt_near).
         // A far station is in stasis, so its size is a guess; a person clicks again when it is in view.
         Autotest.Commands["pt_goto"] = arg =>
         {
@@ -54,7 +58,7 @@ public static class Playthrough
             Autotest.WaitFor(() =>
             {
                 if (Near()) return true;
-                double now = Halfling.App.Clock.Time.Seconds;
+                double now = GameSeconds();
                 if (now >= next)
                 {
                     next = now + 20;
@@ -79,7 +83,7 @@ public static class Playthrough
         Autotest.Fields["pt_unlocked"] = () => Autotest.RequireRun().Mode.Techs.IsTechUnlocked(new ID<TechRules>("cosmoteer.hyperdrive_small")) ? 1 : 0;
         // pt_buy <timeout seconds> <resource id> <total> [<resource id> <total> ...]: the trade window, station to ship, until the ship
         // stores each total. Vanilla cancels and refunds a transfer that the crew did not finish, for example when the ship chases an
-        // attacker out of trade range. A person then flies back and buys the rest: every 20 seconds, each missing resource with no
+        // attacker out of trade range. A person then flies back and buys the rest: every 20 game seconds, each missing resource with no
         // transfer on its way is bought again, after a move order back to the picked station if the ship is not near it.
         // pt_buy <timeout seconds> part <part id>: the totals are the part's build cost from its rules, as the build window shows it.
         Autotest.Commands["pt_buy"] = arg =>
@@ -96,7 +100,7 @@ public static class Playthrough
             {
                 var missing = wants.Where(w => Stored(w.Resource) < w.Total).ToList();
                 if (missing.Count == 0) return true;
-                double now = Halfling.App.Clock.Time.Seconds;
+                double now = GameSeconds();
                 if (now < next) return false;
                 next = now + 20;
                 if (!Near()) GoTo("station");
@@ -106,7 +110,7 @@ public static class Playthrough
         };
         // pt_repair <timeout seconds>: the repair-all button of the build window (BuildToolbox.OnRepairAllClicked: repair damaged parts,
         // rebuild destroyed ones), then the trade window for the resources that it costs. A person repairs at the station before a long
-        // flight: a ship with shot thrusters crawls. Ends when no repair or rebuild is left. Every 20 seconds, a resource of the
+        // flight: a ship with shot thrusters crawls. Ends when no repair or rebuild is left. Every 20 game seconds, a resource of the
         // repair that the ship has run out of, with no buy on its way, is bought again (RepairTopUp units), after a move order back
         // to the station if the ship AI chased an attacker away.
         Autotest.Commands["pt_repair"] = arg =>
@@ -133,11 +137,11 @@ public static class Playthrough
                 Game().NetManager.EnqueueInput(new MPUpdateShipInput(sui, flags));
                 Log.Info($"AUTOTEST playthrough: repair queued, cost {string.Join(", ", cost.Resources.Select(r => $"{r.Value} {r.Key}"))}");
             }
-            double next = Halfling.App.Clock.Time.Seconds + 20;
+            double next = GameSeconds() + 20;
             Autotest.WaitFor(() =>
             {
                 if (!Repairing(TechAutotest.PlayerShip())) return true;
-                double now = Halfling.App.Clock.Time.Seconds;
+                double now = GameSeconds();
                 if (now < next) return false;
                 next = now + 20;
                 if (!Near()) GoTo("station");
@@ -166,7 +170,7 @@ public static class Playthrough
             Game().NetManager.EnqueueInput(new MPEnqueueCommandsInput(jump, append: false, playLocalSound: false));
         };
         Autotest.Fields["pt_ready"] = () => TechAutotest.PlayerShip().Ftl.IsReadyToJump ? 1 : 0;
-        // pt_fight <timeout seconds>: right clicks the mission's nearest live target ship, again every 20 seconds as it moves,
+        // pt_fight <timeout seconds>: right clicks the mission's nearest live target ship, again every 20 game seconds as it moves,
         // until no fight step is left: the mission ended, or only a step such as ReceiveRewards is left (pt_collect).
         // A target in stasis or out of sight gets a move order to the objective area instead.
         Autotest.Commands["pt_fight"] = arg =>
@@ -176,7 +180,7 @@ public static class Playthrough
             {
                 var m = _mission ?? throw new InvalidOperationException("no accepted mission");
                 if (m.Completion != CompletionState.InProgress || !FightLeft(m)) return true;
-                double now = Halfling.App.Clock.Time.Seconds;
+                double now = GameSeconds();
                 if (now >= next)
                 {
                     next = now + 20;
@@ -196,7 +200,7 @@ public static class Playthrough
             double every = double.Parse(arg, CultureInfo.InvariantCulture), next = 0;
             Halfling.App.Director.FrameEnded += (_, _) =>
             {
-                double now = Halfling.App.Clock.Time.Seconds;
+                double now = GameSeconds();
                 // No acting ship during a jump (between systems) or after the ship is lost: nothing to report.
                 if (now < next || Run.Current is not { Game.Sim: { } sim } || Autotest.ActingShip(sim) is null) return;
                 next = now + every;

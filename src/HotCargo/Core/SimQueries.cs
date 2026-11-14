@@ -66,6 +66,14 @@ public static class SimQueries
     public static Ship? FirstHumanShip(SimRoot sim) =>
         sim.Ships.HumanPlayerShips.OrderBy(s => s.Metadata.PlayerIndex).ThenBy(s => s.UniqueID).FirstOrDefault();
 
+    /// <summary>Drops exactly <paramref name="amount"/> as loose nuggets just outside a circle (a ship's hull), with no drop roll.</summary>
+    public static void DropLoose(SimRoot sim, Vector2 center, float radius, ID<Cosmoteer.Resources.ResourceRules> resource, int amount)
+    {
+        if (amount <= 0) throw new ArgumentOutOfRangeException(nameof(amount), amount, "must be above 0");
+        var rect = new RotRect(center + new Vector2(radius + 30f, 0f), new Vector2(40f, 40f), Direction.Zero);
+        sim.Nuggets.DropNuggets(resource, amount, rect, Vector2.Zero, randomVelocity: true);
+    }
+
     /// <summary>The significant human ship nearest to a point, or null when the players have none in this system.</summary>
     public static Ship? NearestHumanShip(SimRoot sim, Vector2 at) =>
         sim.Ships.HumanPlayerSignificantShips.MinBy(s => s.DetWorldCenter.DistanceSquaredTo(at));
