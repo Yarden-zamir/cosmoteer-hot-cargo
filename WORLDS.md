@@ -34,7 +34,7 @@ With the defaults, about 3 of 4 systems are archetypes. The start system stays b
 - Items: loose nuggets (resources, loot, tech crates) in the cloud get the same push, and the vanilla nugget drag (0.5 per second) does not apply there, so they move like ships without engines. With the drag, the push fades in the soft cloud edge and items stopped there. Outside the cloud the drag stops them again. Junk capsules and wrecks are ships and get the ship push.
 - Exceptions: stations, asteroids and megaroids do not drift.
 - Look: the vanilla cloud with a teal tint and full sight, plus arrows that drift in the drift direction (they lean toward the nearer side). The vanilla nebula HUD shows "current" while a ship is inside.
-- Found in tests: an idle player ship brakes against the drift and settles at about 5.5 units per second downstream; from the middle of the band it still drifts out, in about 400 s of game time. A tech crate dropped near the band axis leaves near the far end in about 67 s, 3,340 along the flow from the center and 740 across (side share 0.25). With the old share 0.5 it left at the near side in about 57 s. A ship that maneuvers gets the full push.
+- Found in tests: an idle player ship brakes against the drift and settles at about 5.5 units per second downstream; from the middle of the band it still drifts out, in about 400 to 600 s of game time. A tech crate dropped near the band axis leaves near the far end in about 67 s, 3,340 along the flow from the center and 740 across (side share 0.25). With the old share 0.5 it left at the near side in about 57 s. A ship that maneuvers gets the full push.
 
 ### Dense belt and passes (Mining Belt)
 

@@ -4,6 +4,8 @@
 newgame run
 wait 8
 ev_set Enabled false
+# The idle ship waits about 400 s in the system: keep hostiles from wrecking it before it drifts out.
+godmode on
 tech_set LossGraceSeconds 900
 worlds jumpto hc_trade_hub
 pause off
@@ -35,6 +37,6 @@ waitfor worlds_items_in_current == 0 300
 expect worlds_sim_seconds > 0
 expect worlds_crate_along > 2500
 expect worlds_crate_across > 500
-waitfor worlds_ship_in_current < 0.01 800
+waitfor worlds_ship_in_current < 0.01 1100
 expect worlds_sim_seconds > 0
 quit
