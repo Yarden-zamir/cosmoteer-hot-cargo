@@ -329,7 +329,7 @@ public static class MpAutotest
     {
         if (Autotest.Game is not { NetManager: BaseMPManager { IsHost: true } mp }) return false;
         mp.EnqueueInput(new AutotestInput("mpend"));
-        Autotest.WaitFor(() => mp._connections.ConnectionCount == 0, 120, "the client to quit", () => Autotest.Inject(["quit"]),
+        Autotest.WaitForReal(() => mp._connections.ConnectionCount == 0, 120, "the client to quit", () => Autotest.Inject(["quit"]),
             onTimeout: () => { Log.Info("AUTOTEST the client did not quit"); Autotest.Inject(["quit"]); });
         return true;
     }

@@ -4,6 +4,7 @@ HotCargoAi
 	CallStartFmt = "{0} calls for help. Disruptor or EMP cuts it."
 	CallCompleteFmt = "{0} got its call out. More ships inbound."
 	CallStoppedFmt = "{0}'s call was cut off."
+	CallInterceptFmt = "{0}: distress call from {1} intercepted early. It takes longer."
 	JumpedOutFmt = "{0} jumped away."
 
 	// Labels on the ship marker: player-facing threats only, never the enemy plan (spec 368).

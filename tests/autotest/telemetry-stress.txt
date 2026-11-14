@@ -1,3 +1,4 @@
+# speed: 1
 # Heavy fight for a performance measure (spec 870 to 873), single player: 3 player ships, enemy scaling for 3 players,
 # the Strike stage with repeat waves, personalities, teams and cover among rocks, 60 wrecks, events and diplomacy on.
 # selfprof times every Hot Cargo entry point; the SELFPROF lines compare our time with the sim tick time.

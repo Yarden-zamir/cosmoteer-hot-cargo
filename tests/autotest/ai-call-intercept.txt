@@ -1,0 +1,30 @@
+# Call interception (spec 1300-1303): a call takes CallSeconds, or CallInterceptSeconds when a player sensor part reaches the caller.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+tacticlog on
+aiset FleeEnabled false
+aiset RegroupEnabled false
+aiset FallBackEnabled false
+aiset CallCooldownSeconds 1
+stageset Strike WaveGapSeconds 300
+# Calls stay off while the hunters move next to the player ship, so the first call starts close to it.
+aiset CallEnabled false
+spawnstage Strike
+wait 1
+hunternear all 500
+aiset CallEnabled true
+# The starting ship has no sensor array: the call takes CallSeconds.
+waitfor ai_calling >= 1 30
+expect ai_call_seconds == 22
+expect ai_call_intercept == 0
+disrupt disruptor
+wait 2
+# The starting control room stands in for the sensor array. Damage starts a new call, which the control room intercepts.
+aiset CallInterceptParts cosmoteer.control_room_small
+damagehunters 0.9
+waitfor ai_call_intercept >= 1 30
+expect ai_call_seconds == 30
+expect ai_calling >= 1
+quit

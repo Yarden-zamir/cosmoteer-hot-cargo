@@ -175,7 +175,9 @@ on 1 expect hc_money_gain > 0
 
 step ai.personalities
 # Spec 369: hostile pirates and hunters with personalities, cover rocks and teams fight both players' ships.
+# Spec 1303: the starting control room stands in for the sensor array, so calls in this fight are intercepted on both machines.
 mp tacticlog on
+mp aiset CallInterceptParts cosmoteer.control_room_small
 mp airocks 6 600
 mp aispawn pirates 3 2
 mp spawnstage Strike
@@ -185,6 +187,8 @@ aiprofiles host
 expect ai_personality > 0
 on 1 aiprofiles client
 on 1 expect ai_personality > 0
+expect ai_call_intercept >= 1
+on 1 expect ai_call_intercept >= 1
 
 step worlds.current
 # Spec 221, 227: a current painted on both machines pushes the host's ship the same way on both. Co-op tests cannot jump,

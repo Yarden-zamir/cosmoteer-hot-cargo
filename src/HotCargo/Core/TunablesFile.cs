@@ -116,6 +116,7 @@ public static class TunablesFile
         t.Factions.Validate(Require);
         t.Relays.Validate(Require);
         Require(t.Autonomy.MineReach is > 0f and <= 1f && t.Autonomy.MineDistance >= 0f, "Autonomy.MineReach must be above 0 and at most 1, MineDistance not negative");
+        t.Debris.Validate(Require);
         t.Stash.Validate(Require);
         t.Telemetry.Validate(Require);
         t.Pursuit.Validate(Require, stages);

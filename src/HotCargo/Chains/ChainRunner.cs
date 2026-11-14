@@ -420,7 +420,7 @@ public static class ChainRunner
         !c.Ended && chain.Stage(c.Stage) is { Kind: StageKind.Page, Where: StageWhere.Station } && !c.HoldUntilNextVisit
         && run.State.Events.Pending is null && sim.NodeId() == c.NodeId && PlayerNear(run, sim, c);
 
-    static void Advance(Run run, ChainRules chain, ChainInstance c, string next)
+    internal static void Advance(Run run, ChainRules chain, ChainInstance c, string next)
     {
         bool loop = next == c.Stage;
         c.Stage = next;
