@@ -1,0 +1,25 @@
+	// Spec 663: every system has a trade station of its controlling faction. The second station (ParentIndex 1, by distance
+	// to the spawn point) takes the controller's faction; the first one (the starting station in the first system) rolls as in
+	// vanilla. Every system has at least 2 trade stations (mod/contracts/actions.rules), so the second one exists.
+	{
+		Action = Overrides
+		OverrideIn = "<modes/career/sectors/sysgen_trade_stations.rules>/SubSpawners/5/SubSpawners/1"
+		Overrides { Conditions { ParentIndex = [2, 999]; } } // was [1, 999]
+	}
+	{
+		Action = Add
+		AddTo = "<modes/career/sectors/sysgen_trade_stations.rules>/SubSpawners/5/SubSpawners"
+		ToAdd
+		{
+			Type = HotCargoControllerFaction
+			Conditions { ParentIndex = 1; }
+			SynchronizeFactions = true
+			ShipTags = &<./Data/modes/career/sectors/sysgen_trade_stations.rules>/BaseStation/ShipCriteria/Tags
+			RandomSubSpawnerCount = 1
+			SubSpawners
+			[
+				&<./Data/modes/career/sectors/sysgen_trade_stations.rules>/FreeStation
+				&<./Data/modes/career/sectors/sysgen_trade_stations.rules>/CapturedStation
+			]
+		}
+	}

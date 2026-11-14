@@ -39,7 +39,7 @@
 | `Events.ResearchRate`, `ResearchMinRate`, `ResearchMaxUnits`, `ResearchMaxTechs` | 1.5, 1.2, 2, 3 | 760 |
 | `Events.ResearchSalePremium`, `ResearchSaleCap`, `ResearchWeightScale` | 1.3, 1.5, 1 | 761, 762 |
 | `Events.HulkLootChance`, `AbandonedTriggerDistance`, `HulkBlastRadius` | 0.6, 800, 300 | 764, 1124 to 1126 |
-| `Events.RelicEnabled`, `RelicMinSector`, `RelicMessageDistance`, `RelicBoardDistance` | true, 2, 3000, 900 | 765 |
+| `Events.RelicEnabled`, `RelicMinSector`, `RelicMessageDistance`, `RelicBoardDistance` | true, 2, 2000, 900 | 765 |
 | `Events.ListenSeconds`, `ListenRange`, `ListenChanceAtNoHeat`, `ListenChanceAtMaxHeat` | 8 s, 1500, 1, 0.6 | 1122, 1123 |
 | `Events.ListenSuccessHeat`, `ListenFailHeat`, `ListenCombatRadius`, `ListenCombatSeconds` | -4, 5, 800, 5 s | 1123 |
 | `Events.RescueFee`, `RescueHeat`, `RescueTowLength`, `RescueTowPull`, `RescueSunMargin`, `RescueTugLeaveSeconds` | 0.4, 10, 150, 1, 300, 20 s | 1147, 1148 |

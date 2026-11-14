@@ -35,6 +35,9 @@ expect ai_weakback_kiters == 0
 aiset ProfileRefreshSeconds 1
 aiheavy
 wait 4
+# Again: faction patrols near a station can turn hostile in the meantime (the players are wanted by their faction).
+aiheavy
+wait 1
 aiprofiles heavy
 expect ai_heavy >= 5
 expect ai_g_bait == 0
