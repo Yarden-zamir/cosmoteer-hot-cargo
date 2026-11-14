@@ -1,0 +1,20 @@
+# Spec 1145: a job that ends while the players are in another system loses its markers on the next arrival in its system.
+# The Black Box's first chain stage owns target area markers (the guarded wreck). The players accept it, leave, abandon the job
+# in the other system, and come back.
+newgame run
+wait 8
+ev_set Enabled false
+chain_force black_box
+chain_tostation
+chain_accept
+expect chain_accepted == 1
+hc_markers_mark HotCargoChain
+expect hc_markers_left >= 1
+jump
+wait 8
+chain_abandon
+expect chain_accepted == 0
+jump back
+wait 8
+expect hc_markers_left == 0
+quit
