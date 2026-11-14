@@ -264,6 +264,9 @@ internal sealed class HandOverObjective : Objective, Missions.IMissionMarkers, I
     public static int FleetUnits(SimRoot sim, ID<ResourceRules>[] forms) => forms.Sum(f => FleetUnits(sim, f));
     public static int UnitsLeft(SimRoot sim, ID<ResourceRules>[] forms) => forms.Sum(f => UnitsLeft(sim, f));
 
+    /// <summary>False while no human ship is in this system, for example during a jump. Item counts then read 0 without a loss.</summary>
+    public static bool FleetHere(SimRoot sim) => Tech.Vaults.HumanShips(sim).Any();
+
     /// <summary>Units in the players' ships, stored or carried by crew.</summary>
     public static int FleetUnits(SimRoot sim, ID<ResourceRules> resource) =>
         Tech.Vaults.HumanShips(sim).Sum(s => s.Resources.GetResourceTotal(resource, includeStored: true, includeCarried: true, includeOffShipCarried: true));
@@ -382,6 +385,8 @@ internal sealed class HandOverObjective : Objective, Missions.IMissionMarkers, I
             return;
         }
         if (ResourceType is not { } item) return;
+        // During a jump the ships are in limbo: no human ship is in any system, so the fleet holds 0 units. Not a loss (spec 1103).
+        if (!FleetHere(sim)) return;
         if (!Held)
         {
             if (FleetUnits(sim, Forms(item)) == 0)

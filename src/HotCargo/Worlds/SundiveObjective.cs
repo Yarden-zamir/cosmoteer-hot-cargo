@@ -144,7 +144,8 @@ internal sealed class SundiveObjective : Objective, IMissionMarkers, Events.IMis
         if (sim.MapNode?.UniqueID != NodeID) return;
         if (Held)
         {
-            if (Events.HandOverObjective.UnitsLeft(sim, Recorder) == 0)
+            // During a jump no human ship is in any system, so the count reads 0 without a loss.
+            if (Events.HandOverObjective.FleetHere(sim) && Events.HandOverObjective.UnitsLeft(sim, Recorder) == 0)
             {
                 Log.Info("sundive: no recorder left in the fleet or the system; the job fails");
                 var game = Mission.Game;
