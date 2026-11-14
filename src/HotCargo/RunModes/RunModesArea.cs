@@ -301,8 +301,7 @@ public static class RunModesArea
                 .OfType<Journey.TierCapSpawner>().Single().MaxChangeableLowTier;
             var next = (arg == "low" ? options.OrderBy(Tier) : options.Where(n => Tier(n) <= maxTier).OrderByDescending(Tier)).FirstOrDefault()
                 ?? throw new InvalidOperationException("no unvisited neighbor system");
-            run.Game.JumpToNode(next, doFtlAnimation: false, run.Game.Sim.Ships.HumanPlayerShips.ToList())
-                .ContinueWith(t => Log.Error("AUTOTEST rm_route failed", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+            Autotest.JumpWhenAllowed(run, next, "rm_route");
         };
     }
 }
