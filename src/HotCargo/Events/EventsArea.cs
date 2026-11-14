@@ -465,6 +465,16 @@ public static class EventsArea
         Autotest.Commands["ev_sensor_select"] = _ => RequireSim().PlayerInput.SelectSinglePart(SensorArray(RequireSim()) ?? throw new InvalidOperationException("no sensor array"));
         Autotest.Fields["ev_listen_button"] = () =>
             PatrolListenButton.Selected(RequireRun().Game) is { } p && PatrolListenButton.Unmet(RequireRun(), p) is null ? 1 : 0;
+        // ev_sensor_camera: test only. The camera stops following ships and shows the ship with the sensor array (screenshots).
+        Autotest.Commands["ev_sensor_camera"] = _ =>
+        {
+            var ship = SensorArray(RequireSim())?.Ship ?? throw new InvalidOperationException("no sensor array");
+            var view = RequireSim().Camera.ViewController;
+            view.ClearFocus(clearFramesOfReferenceAndRotation: true);
+            view.FRLocation = ship.WorldCenter;
+            float size = Math.Max(120f, ship.WorldBoundingRadius * 3f);
+            view.ZoomToFit(new Vector2(size, size), instant: true);
+        };
         // ev_listen: the acting player's sensor array starts a listen (the real MP input).
         Autotest.Commands["ev_listen"] = _ =>
         {

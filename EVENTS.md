@@ -316,7 +316,9 @@ Events do not only pop up. Ships carry them and talk:
 Sell 1 to 3 crates (an option; keeps the last one): each 0.85 × tech value and heat −10. Or change your mind.
 
 #### 34. Patrol Chatter (Hail line, faction ships; heat 10+)
-Pay 0.2 money units for patrol logs (heat −8), ask nicely (50 %: heat −4; 50 % + 0.3 × heat: heat +5, they log your question), or never mind.
+Pay 0.2 money units for patrol logs (heat −8), or never mind. A clear deal only.
+
+The gamble is in the world (spec 1122, 1123): select a sensor array and press "Listen to patrol chatter" while a faction ship is within 1,500. A bar above the sensor array fills for 8 seconds. Distance over 1,500, weapons fire within 800 (the listening ship's own shots too), a lost sensor array or a channel that goes dead (the ship leaves or turns hostile) stop it. Success: heat −4. Failure, "they log your question": heat +5. The chance falls in a line from 100 % at heat 0 to 60 % at heat 100. Each faction ship is heard once; a stopped listen can start again.
 
 Hunter demands ("hand over the tech") are the diplomacy area's, through the same comms hook.
 
