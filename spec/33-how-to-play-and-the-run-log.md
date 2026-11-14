@@ -31,7 +31,7 @@ Players of the mod likely know the base game. So the Hot Cargo mechanics join th
 726. The autotest `onboarding-hints` checks each trigger, that each page shows once (also after a load), the wait of the vanilla tutorials and its end, the button order, and the "Show tutorials" switch.
 730. The run log. The run state saves a list of lines (`RunState.Log`): game time, sector index, kind and text. At most 400 lines; the oldest drop.
 731. Lines: the run start, each new sector (name and system type), each heat stage and strike wave, each event result (title and result lines; a choice that leads to a follow-up page logs nothing), each contract accept (fee, withdrawn rivals) and informant sell-out, each chain stage result (story line, result lines, chain end), each tech sale and buy-back at a station, each start job pick (section 48), each Buyer delivery, each destroyed vault (its tech dropped as crates or burned), and the win or the loss. Areas add lines with `Onboarding.RunLog.Add` (or a named helper) from sim logic.
-732. The vanilla career log window gets a third tab, "Hot Cargo run", with the Stolen Tech icon. It lists the lines newest first: sector, game time and text.
+732. The vanilla career log window gets a third tab, "Hot Cargo run", with the Stolen Tech icon. It lists the lines newest first: sector, game time and text. Above the lines, the tab shows the past runs of this machine (requirement 1225).
 733. Lines are written in sim logic on every machine, so co-op players see the same lines. The text is in the language of each machine. The log is not in the integrity hash.
 734. The autotest `onboarding-log` checks each line kind, the tab rows and that the log loads with the save.
 
