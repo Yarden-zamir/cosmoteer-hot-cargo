@@ -50,7 +50,8 @@ static class Boot
             postfix: new HarmonyMethod(typeof(Boot), nameof(TrackJump)));
     }
 
-    static int s_jumpsRunning;
+    /// <summary>The running jumps: the game that jumps and the task of GameRoot.JumpToNode. Main thread only.</summary>
+    static readonly List<(Cosmoteer.Game.GameRoot Game, Task Task)> s_jumps = [];
 
     /// <summary>
     /// GameRoot.JumpToNode loads the new system on a background thread, and a test waits for it in game seconds.
@@ -58,15 +59,24 @@ static class Boot
     /// every frame takes at least one frame of real time, like on the PC. Limit: the number of frames that a jump takes
     /// varies from run to run. Revisit if a test needs exact sim values across a jump.
     /// </summary>
-    static void TrackJump(Task __result)
+    static void TrackJump(Cosmoteer.Game.GameRoot __instance, Task __result) => s_jumps.Add((__instance, __result));
+
+    /// <summary>
+    /// True while a jump of the current game (the topmost GameRoot) runs. A test that starts a new game during a jump pushes
+    /// it over the old one, and the old game's jump task never ends (its FTL animation waits for frames that the headless
+    /// host does not draw). Such a jump does not count, or every later frame of the process sleeps (about 5 times slower).
+    /// The old game stays under the new one: popping it during the jump crashes its pending jump continuation.
+    /// </summary>
+    static bool JumpRunning()
     {
-        Interlocked.Increment(ref s_jumpsRunning);
-        __result.ContinueWith(_ => Interlocked.Decrement(ref s_jumpsRunning), TaskContinuationOptions.ExecuteSynchronously);
+        var current = Halfling.App.Director.States.OfType<Cosmoteer.Game.GameRoot>().FirstOrDefault();
+        s_jumps.RemoveAll(j => j.Task.IsCompleted || j.Game != current);
+        return s_jumps.Count > 0;
     }
 
     static bool AdvanceFixed(Halfling.Timing.RealTimeClock __instance)
     {
-        if (Volatile.Read(ref s_jumpsRunning) > 0) Thread.Sleep(TimeSpan.FromSeconds(FrameSeconds));
+        if (JumpRunning()) Thread.Sleep(TimeSpan.FromSeconds(FrameSeconds));
         __instance.Advance(new Halfling.Timing.Time(FrameSeconds));
         return false;
     }
