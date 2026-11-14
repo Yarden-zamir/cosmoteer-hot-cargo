@@ -9,6 +9,24 @@ expect debt_loan_stations >= 1
 expect debt_count == 0
 debt_goto loan
 wait 2
+# Spec 1416: the station's normal page has one debt line and its other lines (events on: "Sell a crate off the books."),
+# but no debt choices. The debt page has only the debt part.
+ev_set ArrivalEventChance 0
+ev_set StationEventChance 0
+ev_set CourierChance 0
+ev_set Enabled true
+debt_look loan
+expect debt_page_line == 1
+expect debt_page_debt_parts == 0
+expect debt_page_other_lines >= 1
+debt_open_page
+expect debt_page_line == 0
+expect debt_page_debt_parts >= 1
+expect debt_page_other_lines == 0
+debt_close_page
+expect debt_page_debt_parts == 0
+ev_set Enabled false
+debt_open_page
 debt_page loan
 debt_loan
 wait 1
@@ -34,6 +52,9 @@ waitfor debt_collectors == 1 10
 waitfor debt_hailed == 1 15
 debt_page collector
 expect debt_collector_page == 1
+debt_look collector
+expect debt_page_other_lines == 0
+expect debt_page_debt_parts >= 2
 debt_notnow
 wait 1
 expect debt_collectors == 0

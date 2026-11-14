@@ -1,0 +1,25 @@
+# Debt page (spec 1416): a station's normal comms page with its debt line and its other lines (events on), then its debt page.
+# Run on main first for the "before" shot: there the loan shows on the normal page next to "Sell a crate off the books.".
+# Windowed test slot.
+render on
+newgame run
+wait 10
+ev_set ArrivalEventChance 0
+ev_set StationEventChance 0
+ev_set CourierChance 0
+closepanel
+godmode on
+debt_set LoanStationChance 1
+debt_goto loan
+wait 3
+pause on
+debt_open loan
+wait 2
+screenshot debt-page-normal
+debt_close
+debt_look loan
+debt_open_page
+debt_open loan
+wait 2
+screenshot debt-page-loan
+quit
