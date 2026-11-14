@@ -13,7 +13,7 @@ HotCargoRunRecord
 	ErrorFmt = "<bad>The run record does not read: {0}</bad>"
 
 	// Past Runs window on the main menu (spec 1227 to 1233).
-	MenuButton = "Past Runs"
+	MenuButton = "PAST RUNS"
 	Title = "Past Runs"
 	SummaryFmt = "{0} runs on this machine. Click a column to sort by it."
 	BestMark = "<good>BEST</good>"
