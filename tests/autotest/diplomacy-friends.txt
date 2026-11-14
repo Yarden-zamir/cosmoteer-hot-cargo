@@ -6,6 +6,8 @@ ev_set Enabled false
 aiset FleeEnabled false
 aiset CallEnabled false
 aiset RegroupEnabled false
+# Personalities roll with the start world; a cover or bait personality would keep the hired ship from attacking.
+aiset PersonalitiesEnabled false
 dip_set DemandHailChance 0
 dip_set MercChance 0
 expect dip_vaulttech == 8
