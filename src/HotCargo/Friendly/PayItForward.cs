@@ -133,7 +133,7 @@ static class PayItForward
         {
             ship.Metadata.PlayerIndex = Allegiance;
             foreach (var crew in ship.Crew.Assigned) crew.PlayerIndex = Allegiance;
-            run.State.Diplomacy.Hires.Add(new Hire { Ship = ship.UniqueID, Player = player, Until = until, Merc = true });
+            run.State.Diplomacy.Hires.Add(new Hire { Ship = ship.UniqueID, Player = player, Until = until, Merc = true, HideLabel = true });
             S(run).Wayfarers.Add(ship.UniqueID);
         }
         FriendlyArea.Say(run.Game, FriendlyArea.Text("WayfarersArriveFmt", fleet.Count));
