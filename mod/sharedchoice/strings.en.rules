@@ -13,6 +13,7 @@ HotCargoSharedChoice
 	// Listen-in (spec 1131 and later)
 	StatusListenFirstPick = "<gray>Listening. Your click is a vote; {0} picks.</gray>"
 	ListenInFmt = "Listen in: {0} talks to {1}"
+	JoinFmt = "Join: {0} talks to {1}"
 	ListenStopFmt = "Stop listening: {0} talks to {1}"
 	ListenTitleFmt = "Listening: {0}"
 	ListenClosedFmt = "{0} closed the channel."

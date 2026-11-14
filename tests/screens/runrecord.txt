@@ -1,0 +1,20 @@
+# Run record (spec 1225): the past runs above the run log in the career log tab. Windowed test slot (needs graphics).
+render on
+newgame run
+wait 10
+pause off
+closepanel
+ev_set Enabled false
+camera 6000 6000 3000
+rr_clear
+sj_pick grudge
+wait 1
+heat 45
+wait 2
+win
+wait 3
+closepanel
+careerlog
+wait 2
+screenshot runrecord-tab
+quit

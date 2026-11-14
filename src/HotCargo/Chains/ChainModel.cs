@@ -50,6 +50,12 @@ public static class ChainModel
         if (result != Any) yield return Any;
     }
 
+    /// <summary>
+    /// Spec 665: a chain that ends on this result ends well when the result is no failure kind (it does not fall back to "fail")
+    /// and its row does not lower the reputation with the station's faction.
+    /// </summary>
+    public static bool EndsWell(string result, float rowReputation) => rowReputation >= 0 && !Keys(result).Contains(Fail);
+
     /// <summary>The index of the row that handles the result with the given chain flags, or -1.</summary>
     public static int Match(IReadOnlyList<ResultRow> rows, string result, IReadOnlySet<string> flags)
     {

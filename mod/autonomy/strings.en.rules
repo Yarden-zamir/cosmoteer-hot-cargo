@@ -3,7 +3,7 @@ HotCargoAutonomy
 	Computer = "Computer"
 	ComputerIcon = "Computer"
 	ComputerDesc = "Flies a ship with no crew. A ship with a Computer and no control room runs only on its AI rows (Ctrl+K): you cannot give it orders. "\
-	               "It also operates the one crewed part in front of its arrow, as if that part had its full crew. Needs power."
+	               "It also counts as 1 crew member in the crewed part in front of its arrow: enough for a 1-crew part, others need more crew. Needs power."
 	TargetedReactor = "Targeted Reactor"
 	TargetedReactorIcon = "Targeted Reactor"
 	TargetedReactorDesc = "Makes half the power of a Small Reactor and sends it straight into the parts that touch its sides. "\
