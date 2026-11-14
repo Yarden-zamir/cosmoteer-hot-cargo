@@ -852,6 +852,7 @@ Events
 		]
 	}
 
+	// Spec 46: the gamble ("ask nicely") is a world action now, a sensor array that listens to the ship (spec 1122). This page is the clear deal.
 	{
 		ID = hunter_intel
 		Trigger = Hail
@@ -867,14 +868,6 @@ Events
 				Text = "Pay for their patrol logs."
 				Cost { Money = 0.2 }
 				Outcomes [ { Text = "They send the corporate patrol routes. You plot around them."; Heat = -8 } ]
-			}
-			{
-				Text = "Ask nicely."
-				Outcomes
-				[
-					{ Weight = 50; Text = "\"Fine. They went that way.\" It helps a little."; Heat = -4 }
-					{ Weight = 50; WeightPerHeat = 0.3; Text = "They log your question. The corporation reads those logs."; Heat = 5 }
-				]
 			}
 			{
 				Text = "Never mind."

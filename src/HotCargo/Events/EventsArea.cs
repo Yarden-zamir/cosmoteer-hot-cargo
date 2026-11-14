@@ -44,6 +44,8 @@ public static class EventsArea
         Run.Hooks.Tick += EventRunner.OnTick;
         Run.Hooks.Tick += MissionCargo.OnTick;
         Run.Hooks.Tick += TracerBeacon.OnTick;
+        Run.Hooks.Tick += PatrolListen.OnTick;
+        Run.Hooks.Frame += PatrolListen.OnFrame;
         Run.Hooks.NewRunStarted += Abandoned.OnNewRun;
         Ui.CommsHail.Providers.Add(new EventHailProvider());
         Run.Hooks.SystemEntered += Abandoned.OnSystemEntered;
@@ -449,6 +451,49 @@ public static class EventsArea
         };
         Autotest.Fields["item_button"] = () =>
             _selectedItem is { } r && ItemActionButton.Target(RequireRun().Game, r.GetResourceRules()) is not null ? 1 : 0;
+        // Patrol listen (spec 1122, 1123). Test only.
+        // ev_sensor_build: builds a vanilla sensor array next to the acting player's first ship. ev_sensor_works: 1 while one can listen.
+        Autotest.Commands["ev_sensor_build"] = _ =>
+        {
+            var ship = PlayerShips(RequireSim()).FirstOrDefault() ?? throw new InvalidOperationException($"player {ActingPlayer()} has no ship");
+            RequireRun().Mode.Techs.UnlockTech(new ID<Cosmoteer.Modes.Career.TechTree.TechRules>(PatrolListen.SensorArrayId.ToString()));
+            var at = StartingVault.PlaceOutside(ship, ship.Rules.PartsByID[PatrolListen.SensorArrayId], requireCrewPath: false);
+            Log.Info($"AUTOTEST sensor array on {ship.Metadata.PlainShipName} at {at}");
+        };
+        Autotest.Fields["ev_sensor_works"] = () => SensorArray(RequireSim()) is { } p && PatrolListen.Works(p) ? 1 : 0;
+        // ev_sensor_select: selects the local player's sensor array, as a click does. ev_listen_button: 1 while its listen button can start.
+        Autotest.Commands["ev_sensor_select"] = _ => RequireSim().PlayerInput.SelectSinglePart(SensorArray(RequireSim()) ?? throw new InvalidOperationException("no sensor array"));
+        Autotest.Fields["ev_listen_button"] = () =>
+            PatrolListenButton.Selected(RequireRun().Game) is { } p && PatrolListenButton.Unmet(RequireRun(), p) is null ? 1 : 0;
+        // ev_listen: the acting player's sensor array starts a listen (the real MP input).
+        Autotest.Commands["ev_listen"] = _ =>
+        {
+            var sensor = SensorArray(RequireSim()) ?? throw new InvalidOperationException($"player {ActingPlayer()} has no sensor array");
+            RequireRun().Game.NetManager.EnqueueInput(new PatrolListenInput(sensor));
+            Autotest.Wait(1);
+        };
+        // ev_listen_force 1|0: the next listen succeeds or fails. ev_listen_forget: the heard faction ships can be heard again.
+        Autotest.Commands["ev_listen_force"] = arg => PatrolListen.Forced = arg.Trim() == "1";
+        Autotest.Commands["ev_listen_forget"] = _ => RequireRun().State.Events.Listened.Clear();
+        Autotest.Fields["ev_listening"] = () => RequireRun().State.Events.Listen is null ? 0 : 1;
+        Autotest.Fields["ev_listen_progress"] = () => PatrolListen.Progress(RequireRun()) ?? -1;
+        Autotest.Fields["ev_listened"] = () => RequireRun().State.Events.Listened.Count;
+        // 1 while the acting player's first ship has a faction ship to listen to.
+        Autotest.Fields["ev_listen_target"] = () =>
+            PlayerShips(RequireSim()).FirstOrDefault() is { } s && PatrolListen.TargetFor(RequireRun(), RequireSim(), s) is not null ? 1 : 0;
+        // 1 when the nearest faction ship was heard, and the listen target (if any) is another ship.
+        Autotest.Fields["ev_faction_heard"] = () =>
+        {
+            var nearest = CommsTarget("faction");
+            var target = PlayerShips(RequireSim()).FirstOrDefault() is { } s ? PatrolListen.TargetFor(RequireRun(), RequireSim(), s) : null;
+            return RequireRun().State.Events.Listened.Contains(nearest.UniqueID) && target != nearest ? 1 : 0;
+        };
+        // ev_faction_goto <distance>: puts the player ships this far from the hull of the nearest faction ship.
+        Autotest.Commands["ev_faction_goto"] = arg =>
+        {
+            var ship = CommsTarget("faction");
+            MoveNextTo(RequireSim(), ship.WorldCenter, ship.WorldBoundingRadius + float.Parse(arg, CultureInfo.InvariantCulture));
+        };
         // item_force <n>: the next item action picks content n (1-based). ev_force_outcome <n>: the next event roll picks outcome n.
         Autotest.Commands["item_force"] = arg => ItemActions.ForcedContent = int.Parse(arg.Trim()) - 1;
         Autotest.Commands["ev_force_outcome"] = arg => EventRunner.ForcedOutcome = int.Parse(arg.Trim()) - 1;
@@ -720,6 +765,10 @@ public static class EventsArea
 
     /// <summary>The player that a test command acts for: the "as" player inside the sim, else the local player.</summary>
     static int ActingPlayer() => Autotest.SimPlayer ?? RequireRun().Game.LocalPlayerIndex;
+
+    /// <summary>The acting player's first vanilla sensor array, by ship ID and part location.</summary>
+    static Cosmoteer.Ships.Parts.Part? SensorArray(SimRoot sim) =>
+        PlayerShips(sim).SelectMany(s => s.Parts.OrderBy(x => x.Location.X).ThenBy(x => x.Location.Y)).FirstOrDefault(x => x.Rules.ID == PatrolListen.SensorArrayId);
 
     static IEnumerable<Ship> PlayerShips(SimRoot sim) =>
         Vaults.HumanShips(sim).Where(s => s.Metadata.PlayerIndex == ActingPlayer()).OrderBy(s => s.UniqueID);
