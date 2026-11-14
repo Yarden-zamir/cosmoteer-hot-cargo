@@ -33,6 +33,7 @@ debt_age 2400
 waitfor debt_collectors == 1 10
 waitfor debt_hailed == 1 15
 debt_page collector
+expect debt_collector_page == 1
 debt_notnow
 wait 1
 expect debt_collectors == 0

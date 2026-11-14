@@ -21,6 +21,9 @@ public sealed class DebtHailProvider : IHailProvider
     internal static bool Offers(Run run, Ship callee) =>
         Lenders.OffersLoan(run, callee) || Lenders.DebtAt(run, callee) is not null || Lenders.Refinances(run, callee).Count > 0;
 
+    /// <summary>Spec 1407: a collector's page is the debt page only.</summary>
+    public bool Owns(Ship caller, Ship callee) => Run.Current is { } run && Lenders.CollectorOf(run, callee) is not null;
+
     public void Build(Ship caller, Ship callee, HailPage page)
     {
         if (Run.Current is not { } run) return;

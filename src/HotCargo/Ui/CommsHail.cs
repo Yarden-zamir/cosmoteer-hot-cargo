@@ -82,6 +82,12 @@ public interface IHailProvider
 {
     bool Answers(Ship caller, Ship callee);
     void Build(Ship caller, Ship callee, HailPage page);
+
+    /// <summary>
+    /// True when the callee is this provider's own ship (for example a debt collector), so its page shows only this provider's part:
+    /// other providers' offers (hire, hold tech) make no sense there. Sim state only, like <see cref="Answers"/>.
+    /// </summary>
+    bool Owns(Ship caller, Ship callee) => false;
 }
 
 /// <summary>
@@ -145,7 +151,9 @@ public static class CommsHail
             page.OverridePrimaryDialogueIcon = vanilla.OverridePrimaryDialogueIcon;
             page.Buttons.AddRange(vanilla.Buttons);
         }
-        foreach (var p in Providers)
+        // A provider that owns the callee builds the page alone.
+        var owner = Providers.FirstOrDefault(p => p.Answers(caller, callee) && p.Owns(caller, callee));
+        foreach (var p in owner is null ? Providers : [owner])
         {
             try { if (p.Answers(caller, callee)) p.Build(caller, callee, page); }
             catch (Exception ex) { Errors.Report($"hail page {p.GetType().Name}", ex.Message, ex); }
