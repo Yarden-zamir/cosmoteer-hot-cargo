@@ -90,5 +90,5 @@ telestats
 expect tele_dropped == 0
 expect tele_overhead_pct < 1
 quit
-# Real time: the perf event and the telemetry writer thread run on real time, the Mac sim runs faster (docs/mac-sim-spike.md).
+# Real time: the perf event and the telemetry writer thread run on real time, the headless sim runs faster (docs/headless-sim.md).
 # runner: pc

@@ -95,5 +95,5 @@ wait 1
 expect runlog_lost == 1
 quit
 # tier: smoke
-# Fails every run in the Mac sim: the Mac draws the same hunters each run, and their combat blocks the save (docs/mac-sim-spike.md).
+# Fails every run in the headless sim: the Mac draws the same hunters each run, and their combat blocks the save (docs/headless-sim.md).
 # runner: pc

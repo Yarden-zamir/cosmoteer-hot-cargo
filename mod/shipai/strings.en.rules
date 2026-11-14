@@ -13,6 +13,7 @@ HotCargoShipAi
 	AddTerm = "+ cond"
 	RemoveTerm = "x"
 	If = "IF"
+	Then = "THEN"
 	And = "AND"
 	Or = "<limited_color>OR</limited_color>"
 	ConnectorTip = "AND or OR with the condition above. AND goes first: A AND B OR C is (A and B) or C."
