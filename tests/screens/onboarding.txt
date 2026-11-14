@@ -1,4 +1,4 @@
-# How to Play pages and the run log tab. Main slot only (needs graphics).
+# How to Play pages and the run log tab. Windowed test slot (needs graphics).
 # codex_reset and codex_restore keep the player's own tutorial states and "Show tutorials" setting.
 render on
 codex_reset

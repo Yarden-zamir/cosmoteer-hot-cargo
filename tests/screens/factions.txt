@@ -1,4 +1,4 @@
-# Factions screenshots (spec 645, 652, 656, 659, 660). Main slot only (needs graphics): see the hot-cargo-screenshots skill.
+# Factions screenshots (spec 645, 652, 656, 659, 660). Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
 render on
 newgame run
 wait 10

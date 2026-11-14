@@ -1,22 +1,20 @@
 ---
 name: hot-cargo-screenshots
-description: Take in-game screenshots of Hot Cargo in the player's game slot (the only slot with graphics), with the shared slot lock, and pull them to the Mac. Use for any visual check, README images or UI review.
+description: Take in-game screenshots of Hot Cargo in a windowed test slot on the PC (never the player's game slot) and pull them to the Mac. Use for any visual check, PR screenshots, README images or UI review.
 ---
 
 # Screenshots
 
-Headless test slots draw nothing. Screenshots need the player's own game slot (`SLOT=main`). The player may be using it.
+A PR agent takes its own screenshots in a test slot. Never use slot main: it is the player's game.
 
-1. Take the lock: `until mkdir /tmp/hot_cargo_main_slot.lock 2>/dev/null; do sleep 15; done; echo $$ > /tmp/hot_cargo_main_slot.lock/pid`.
-2. Check the game is closed: `source scripts/pc.sh; SLOT=main; pc "$PS_PATHS"'Get-SlotProcess'` must print nothing. If it runs, release the lock and try later.
-3. Deploy: `SLOT=main scripts/deploy.sh`.
-4. Install a script as `autotest.txt` in the main slot mod folder: `pc "$PS_PATHS"'$in = [Console]::In.ReadToEnd(); [IO.File]::WriteAllText((Join-Path $modDir "autotest.txt"), $in)' < tests/screens/<name>.txt`. Scripts start with `render on` and use `screenshot NAME`.
-5. Run: `SLOT=main scripts/run.sh` (minimized, no focus). Wait until `Get-SlotProcess` prints nothing.
-6. Pull: `pc "$PS_PATHS"'tar.exe -cf - -C (Join-Path $modDir "screenshots") .' | tar -xf - -C <local folder>`. Look at the PNGs with the Read tool.
-7. Release the lock: `rm -rf /tmp/hot_cargo_main_slot.lock`, also on failure.
+1. Write a script `tests/screens/<name>.txt`. It starts with `render on` (the game draws only with it) and uses `screenshot NAME`.
+2. Run: `scripts/screens.sh tests/screens/<name>.txt <local folder> [timeout]`. It takes a free test slot (or `SLOT=tN`), deploys this worktree, starts the game with graphics, minimized, with the slot's own save folder, runs the script, and copies the PNGs and the log to the folder. PC calls need an active turn: a background Bash call and `t3_background_wait` for long scripts.
+3. Look at the PNGs with the Read tool. For a PR, use the `gh-pr-images` skill.
 
-Co-op screenshots: `scripts/screens-mp.sh tests/screens/<name>.host.txt tests/screens/<name>.client.txt <local folder>` does steps 1 to 7. The host runs in the main slot, the client in a headless test slot.
+While `.state/player-hold` exists, `screens.sh` refuses (exit 3): a window in a test slot could take focus or GPU time from the player. Headless tests stay allowed. Try again when the hold ends, or ask the coordinator.
+
+Co-op screenshots: `scripts/screens-mp.sh tests/screens/<name>.host.txt tests/screens/<name>.client.txt <local folder>`. The host runs in a windowed test slot, the client in a headless test slot.
 
 Rules:
-- Keep sessions short. Leave the player's settings and saves as you found them.
+- Keep sessions short.
 - Images for the repo go to `docs/screenshots/` as JPEG. Crop out anything personal: user names, paths, Steam names.

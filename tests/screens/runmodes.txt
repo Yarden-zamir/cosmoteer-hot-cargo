@@ -1,4 +1,4 @@
-# Heat panel difficulty tooltip (spec 684). Main slot only (needs graphics).
+# Heat panel difficulty tooltip (spec 684). Windowed test slot (needs graphics).
 render on
 newgame run
 wait 10

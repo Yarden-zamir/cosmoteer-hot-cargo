@@ -63,7 +63,7 @@ Fractions use typed capacity only, because cargo holds count as capacity for any
 
 ## Screenshots
 
-`scripts/screens.sh tests/screens/<name>.txt <out-dir>` takes the screenshots of one script in the player's game (slot main) and copies the PNGs to `<out-dir>`.
+`scripts/screens.sh tests/screens/<name>.txt <out-dir>` takes the screenshots of one script in a windowed test slot (never slot main) and copies the PNGs to `<out-dir>`.
 It waits for the lock `/tmp/hot_cargo_main_slot.lock`, stops a running main-slot game, deploys this worktree, runs the script minimized and quits the game.
 Look at each image before you commit it. Crop anything that shows a user name, a file path or a Steam name.
 `docs/screenshots/polish/` holds before and after pairs of the visual pass (`<name>-before.jpg`, `<name>-after.jpg`).
@@ -77,7 +77,7 @@ Look at each image before you commit it. Crop anything that shows a user name, a
 
 ### How the capture works (no focus, no visible window)
 
-1. The scripts start the main-slot game minimized. Headless test slots have no graphics device (`NullGraphicsManager` throws on a screenshot), so screenshots need the main slot.
+1. `scripts/screens.sh` starts the game of a test slot with graphics, minimized (`SLOT_WINDOWED=1` in `scripts/pc.sh`). A headless slot has no graphics device (`NullGraphicsManager` throws on a screenshot). Test slots run with `--nosteam`, so `render on` also closes the vanilla Steam notice.
 2. The D3D11 graphics manager skips all drawing while the window is minimized: `CanRender => !Window.IsMinimized` (HalflingPlatformWDX), read by `Director.DoDraw`.
 3. The autotest command `render on` patches that getter to return true (`Ux/Screenshot.cs`). The game then draws each frame into the swap chain back buffer, which keeps the last window size. `Present` still skips, because DXGI reports the minimized window as occluded. Nothing shows on the screen, and the window never gets focus.
 4. `screenshot NAME` waits for the end of a frame, copies the back buffer (`GraphicsManager.GetEndOfFrameScreenShot`) and saves `Mods/hot_cargo/screenshots/NAME.png`. It hides the hover tooltips for that frame, because the real cursor rests somewhere over the hidden window. It never moves the real cursor.
@@ -88,4 +88,4 @@ Look at each image before you commit it. Crop anything that shows a user name, a
 - `tests/autotest/ux-basic.txt` (headless slot): heat panel on and off, two stage alerts, hull integrity after damage, map open and close, comms pause (pause on open, unpause on close, a pause by hand stays), one ship alert when the own ship is destroyed, the loss path through the patched game-over screen. Any failed UI patch logs an ERROR line and fails the test.
 - `tests/autotest/ux-more.txt` (headless slot): dialogue key 1 picks an event option, the watched supplies (battery in, carbon out), the several-parts info, a damage ping, one low supply alert (thresholds raised above 100 %, no second alert), the trade hints at a station, comms over the map with the comms pause (on and off), the wanted line, and on a multiselect event page a digit that toggles a row and Enter that submits.
 - `tests/autotest/ux-missions.txt` (headless slot): kind icons in the comms missions list, the chain badge, the filter, and that the filter stays for the next comms window.
-- `tests/screens/*.txt` (main slot only): the screenshots above.
+- `tests/screens/*.txt` (windowed test slot): the screenshots above.

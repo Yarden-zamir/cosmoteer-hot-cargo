@@ -1,5 +1,5 @@
 # Visual pass, part 1: run intro, events, heat panel states, HUD alerts, comms, tooltips, run end.
-# Main slot only (needs graphics): scripts/screens.sh tests/screens/hud.txt <out-dir>
+# Windowed test slot (needs graphics): scripts/screens.sh tests/screens/hud.txt <out-dir>
 render on
 newgame run
 wait 8

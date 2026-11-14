@@ -4,7 +4,7 @@ Hot Cargo is a Cosmoteer career mod: C# Harmony code plus `.rules` content. Read
 
 Procedures are skills in `.claude/skills/`:
 - `hot-cargo-testing`: build, unit tests, headless game tests, co-op tests, infrastructure failures.
-- `hot-cargo-screenshots`: screenshots in the player's game slot, with the slot lock.
+- `hot-cargo-screenshots`: screenshots in a windowed test slot (never the player's game slot).
 - `hot-cargo-install`: install a build into the player's own game.
 - `hot-cargo-release`: publish a GitHub release.
 - `hot-cargo-new-area`: add a feature area (entry point, tunables, rules, strings).
@@ -63,7 +63,7 @@ Procedures are skills in `.claude/skills/`:
 - A change is done when the spec lines it touches are true. Patch stale lines in place. Never renumber requirements. A new feature gets a new file in `spec/` with the next free section number and a new requirement number range.
 
 ## Agents
-- Never start, stop or restart the game in slot main (the player's game): no `screens.sh`, `vault-saved-ships.sh`, `run.sh`, `stop.sh` or deploy with `SLOT=main`. While `.state/player-hold` exists, the scripts refuse it (exit 3). Do not remove that file and do not work around it. Ask the coordinator for main-slot work; the coordinator runs it when the player says the PC is free.
+- Never start, stop or restart the game in slot main (the player's game): no `vault-saved-ships.sh`, `run.sh`, `stop.sh` or deploy with `SLOT=main`. While `.state/player-hold` exists, the scripts refuse it (exit 3). They also refuse a windowed test slot (`screens.sh`, `screens-mp.sh`) while that file exists: a window could take focus from the player. Headless test slots stay allowed. Do not remove that file and do not work around it. Ask the coordinator for main-slot work; the coordinator runs it when the player says the PC is free.
 
 - An agent works only in its own worktree and branch. At the end it pushes its branch, opens a PR, runs `scripts/game-check.sh` and merges its own PR with auto-merge (Git section). It never pushes to `main` directly.
 - Tests: run `scripts/autotest-affected.sh` (the smoke tests of your areas, their co-op tests, `core`, and any test you changed) and the unit tests. Put logic in a `*Model.cs` file with unit tests (`tests/TIERS.md`). `scripts/game-check.sh` runs every test of the touched areas before a merge.
