@@ -99,7 +99,13 @@ public static class FactionsArea
     public static void ShelterAfterChain(Run run, int stationPlayerIndex, string chainTitle)
     {
         var f = GameApp.Rules.Factions.FirstOrDefault(x => x.MatchesPlayer(stationPlayerIndex));
-        if (f is null || IsAlly(run, f) || !run.State.Factions.ChainShelters.Add(f.ID.ToString())) return;
+        // The corporation's ally never shelters the players (spec 643).
+        if (f is null || IsAlly(run, f))
+        {
+            Log.Info($"factions: chain {chainTitle} ended well, but its station's faction ({f?.ID.ToString() ?? "none"}) gives no shelter");
+            return;
+        }
+        if (!run.State.Factions.ChainShelters.Add(f.ID.ToString())) return;
         Log.Info($"factions: {f.ID} shelters the players after chain {chainTitle}");
         string line = Format("ChainShelterFmt", Name(f), chainTitle, run.T.Factions.ShelterHeatFactor);
         Run.OnNextFrame(() => UxKit.ChatLine(run.Game, line));
