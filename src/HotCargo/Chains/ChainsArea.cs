@@ -222,7 +222,19 @@ public static class ChainsArea
         Autotest.Fields["chain_part"] = () => Test().Part;
         Autotest.Fields["chain_story"] = () => Test().Story.Count;
         Autotest.Fields["chain_mission"] = () => Test().MissionId is null ? 0 : 1;
-        Autotest.Fields["chain_accepted"] = () => Test().MissionId is { } id && RequireRun().Mode.Missions[id] is not null ? 1 : 0;
+        // Spec 1127. chain_held: ships of the test chain's offer held neutral. chain_guard_hostile: live hc_ch_enemy ships that are enemies
+        // of the players. chain_guard_attacks: live chain ships with an attack command on a player ship.
+        Autotest.Fields["chain_held"] = () => Test().HeldShips.Count;
+        Autotest.Fields["chain_guard_hostile"] = () =>
+        {
+            var sim = RequireSim();
+            var me = SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("no player ship");
+            return SimQueries.TaggedShips(sim, new Cosmoteer.Data.ID<Cosmoteer.Generators.Simulation.SimObjectSpawner>("hc_ch_enemy")).Count(t => t.Live is { } s && s.IsEnemiesWith(me));
+        };
+        Autotest.Fields["chain_guard_attacks"] = () => RequireSim().Ships.Count(s => !s.IsHumanPlayerShip && !s.IsJunk
+            && s.Tags is { } tags && tags.Any(t => t.ToString().StartsWith("hc_ch_", StringComparison.Ordinal))
+            && s.Commands.ConfirmedCommands.OfType<Cosmoteer.Ships.Commands.IAttackCommand>().Any(c => c.Target is { IsHumanPlayerShip: true }));
+        Autotest.Fields["chain_accepted"] =() => Test().MissionId is { } id && RequireRun().Mode.Missions[id] is not null ? 1 : 0;
         Autotest.Fields["chain_awaiting"] = () => Test().AwaitingSerial > 0 ? 1 : 0;
         Autotest.Fields["chain_count"] = () => RequireRun().State.Chains.Instances.Count;
         Autotest.Fields["chain_here"] = () => RequireRun().State.Chains.Instances.Count(i => i.NodeId == RequireSim().NodeId());
