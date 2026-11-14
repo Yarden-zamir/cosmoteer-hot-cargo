@@ -45,8 +45,9 @@ public static class Autotest
     /// <summary>
     /// A condition that the script waits for. Then runs after the condition holds and may start the next wait.
     /// OnTimeout, when set, runs in place of the failure when the deadline passes (for example a second join try).
+    /// Context, when set, describes the state for the failure message, so a timeout shows why the condition did not hold.
     /// </summary>
-    sealed record WaitCondition(Func<bool> Done, Deadline Deadline, string What, Action? Then, Action? OnTimeout);
+    sealed record WaitCondition(Func<bool> Done, Deadline Deadline, string What, Action? Then, Action? OnTimeout, Func<string>? Context);
 
     /// <summary>
     /// The end of a wait. Game: the run's game seconds (NaN: real time only). Real: real seconds, used while the sim does not
@@ -168,7 +169,7 @@ public static class Autotest
                 {
                     if (!TimedOut(w.Deadline)) return;
                     if (w.OnTimeout is { } retry) { _waitFor = null; retry(); return; }
-                    throw new TimeoutException($"timed out waiting for {w.What}; states: {StateNames()}");
+                    throw new TimeoutException($"timed out waiting for {w.What}; states: {StateNames()}{ContextOf(w)}");
                 }
                 _waitFor = null;
                 Log.Info($"AUTOTEST waited for {w.What}");
@@ -271,12 +272,22 @@ public static class Autotest
     /// Pauses the script until the condition holds, then runs then. After timeout seconds of both game time (while a run is
     /// active and its sim ticks) and real time (TimedOut) it runs onTimeout, or fails the test when onTimeout is null.
     /// </summary>
-    public static void WaitFor(Func<bool> done, double timeoutSeconds, string what, Action? then = null, Action? onTimeout = null) =>
-        _waitFor = new(done, GameAfter(timeoutSeconds), what, then, onTimeout);
+    public static void WaitFor(Func<bool> done, double timeoutSeconds, string what, Action? then = null, Action? onTimeout = null,
+        Func<string>? context = null) =>
+        _waitFor = new(done, GameAfter(timeoutSeconds), what, then, onTimeout, context);
 
     /// <summary>Like WaitFor, with a timeout in real seconds: for files, the network or another process.</summary>
-    public static void WaitForReal(Func<bool> done, double timeoutSeconds, string what, Action? then = null, Action? onTimeout = null) =>
-        _waitFor = new(done, RealAfter(timeoutSeconds), what, then, onTimeout);
+    public static void WaitForReal(Func<bool> done, double timeoutSeconds, string what, Action? then = null, Action? onTimeout = null,
+        Func<string>? context = null) =>
+        _waitFor = new(done, RealAfter(timeoutSeconds), what, then, onTimeout, context);
+
+    /// <summary>The context for a timeout message. A context that throws gives its error, so the timeout still reports.</summary>
+    static string ContextOf(WaitCondition w)
+    {
+        if (w.Context is not { } context) return "";
+        try { return $"; context: {context()}"; }
+        catch (Exception ex) { return $"; context failed: {ex.Message}"; }
+    }
 
     static void WaitForField(string arg, bool real)
     {
@@ -287,7 +298,8 @@ public static class Autotest
         double timeout = parts.Length == 4 ? double.Parse(parts[3], CultureInfo.InvariantCulture) : 60;
         Func<bool> done = () => Compare(Field(parts[0]), parts[1], parts[2]);
         string what = $"{parts[0]} {parts[1]} {parts[2]}";
-        if (real) WaitForReal(done, timeout, what); else WaitFor(done, timeout, what);
+        var context = WaitContext.GetValueOrDefault(parts[0]);
+        if (real) WaitForReal(done, timeout, what, context: context); else WaitFor(done, timeout, what, context: context);
     }
 
     /// <summary>
@@ -564,6 +576,12 @@ public static class Autotest
             App.Director.Exit();
         };
     }
+
+    /// <summary>
+    /// Optional state descriptions by field name. When "waitfor" on that field times out, the failure message includes the
+    /// description, so a failed CI run shows why the value did not change.
+    /// </summary>
+    public static readonly Dictionary<string, Func<string>> WaitContext = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Numeric fields for "expect". Areas add fields here.</summary>
     public static readonly Dictionary<string, Func<double>> Fields = new(StringComparer.OrdinalIgnoreCase)
