@@ -1,0 +1,22 @@
+# Co-op shared ships (spec 1139): both humans share player index 0. The client talks to an event carrier; the host gets a join
+# button and opens the full page. Host in a windowed test slot (graphics), client in a headless test slot (scripts/screens-mp.sh).
+render on
+mphost {PORT}
+mpstart 2
+mp ev_set Enabled false
+mp ev_set StationEventChance 0
+mp pu_set Enabled false
+mp event broken_down
+waitfor ev_carrier == 1 60
+mp ev_carrier_goto
+closepanel
+select
+waitfor listen_joins == 1 60
+wait 1
+screenshot listen-join-button
+listen 1
+wait 2
+screenshot listen-join-window
+mp mpmark 1
+waitfor mpconnected == 0 120
+quit

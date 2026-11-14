@@ -1,0 +1,36 @@
+# Co-op session: shared ships. The client joins the host's team in the game setup, so both humans have player index 0 (spec 1139).
+# See coop-core.txt for "client:", "as 1", "on 1" and steps. "on shared" addresses the client that shares the host's index.
+# 2 players: every client runs "mpshare", so with 3 players both clients would share the host's ships.
+client: mpshare
+mphost {PORT}
+mpstart {PLAYERS}
+mp godmode on
+mp ev_set Enabled false
+mp ev_set StationEventChance 0
+mp pu_set Enabled false
+
+step sharedchoice.listen-shared
+# The host talks to a ship that carries an event page. The client gets a join button, not a listen button, opens the full page
+# and picks. The pick goes through the shared choice input (first pick mode), and both machines see the result.
+expect localplayer == 0
+on shared expect localplayer == 0
+mp event broken_down
+waitfor ev_carrier == 1 20
+mp ev_carrier_goto
+listen_target carrier
+waitfor listen_reach == 1 30
+ev_open carrier
+on shared waitfor listen_joins == 1 30
+on shared listen 1
+on shared expect listen_open == 0
+on shared waitfor listen_joins == 0 10
+ev_mark
+on shared ev_mark
+on shared comms_click Strip their cargo
+waitfor ev_pending == 0 30
+on shared waitfor ev_pending == 0 30
+expect ev_res_steel_gain == 30
+on shared expect ev_res_steel_gain == 30
+dip_close
+on shared dip_close
+end

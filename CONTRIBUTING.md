@@ -39,7 +39,7 @@ The mod checks at the first frame of a run that each trigger has a page and each
 
 ### Co-op (multiplayer) tests
 
-Co-op tests are sessions: `tests/autotest-mp/<session>.txt` (`coop-core`, `coop-economy`, `coop-combat`, and `coop-stress`, a cost measure for spec 42). Run one with `scripts/autotest-all.sh 400 mp:<session>` or `scripts/autotest-mp.sh tests/autotest-mp/<session>.txt [timeout]`. Run them all with `scripts/autotest-mp-all.sh`.
+Co-op tests are sessions: `tests/autotest-mp/<session>.txt` (`coop-core`, `coop-economy`, `coop-combat`, `coop-shared`, where both humans share one player index, and `coop-stress`, a cost measure for spec 42). Run one with `scripts/autotest-all.sh 400 mp:<session>` or `scripts/autotest-mp.sh tests/autotest-mp/<session>.txt [timeout]`. Run them all with `scripts/autotest-mp-all.sh`.
 
 - The script takes two test slots. One slot hosts a co-op career, and the other slot joins it over UDP on `127.0.0.1`. Both run headless with `--nosteam`, through the LAN lobby and game setup screens.
 - The session file is the host's script and holds all choreography. The client runs `tests/autotest-mp/client.txt`: it joins, then follows the host. A `client: <command>` line in the session file runs on the client before it joins (local settings).
@@ -57,7 +57,8 @@ Commands for co-op sessions (`src/HotCargo/Dev/MpAutotest.cs`):
 - `mpjoin <address:port>` (client): join like Direct Connect. `follow` (client): say ready in every game setup, run the commands that the host sends, quit when the host ends.
 - `mp <command>`: run a test command inside the sim on every machine, as the sender. Use it for every test command that changes the sim (`heat`, `stage`, `godmode`, `tostation`, `hc_generate`, `event` and so on). A test command that changes the sim without `mp` causes a desync.
 - `as <player> <command>`: like `mp`, as that player index (0 the host, 1 the client). An input that the command sends runs at once as that player, after the game's `AllowMPInput` check. Use it for choices that read only sim state: `choose`, `vote`, `dip`, `dip_pick`, `dip_punish`, `spawnstage`, `tostation`, `buyer goto`.
-- `on <player> <command>`: run a command on that player's own machine and wait until it reports back. A failure there fails the step. Use it for that machine's UI and view (`menu`, `hover`, `expectcomms`, `tactics_editor`, `expect` of local fields such as money gains) and for inputs that it sends over the network like a real click (`choose`, `tech sell`, `fa_buy`, `buyer sell`, `contract_accept`, `tactics`).
+- `mpshare` (client, as a `client:` line): the client joins the host's team in every game setup, so both humans share player index 0 and its ships.
+- `on <player> <command>`: run a command on that player's own machine and wait until it reports back. `on shared <command>` runs it on the clients that share the host's player index (`mpshare`). A failure there fails the step. Use it for that machine's UI and view (`menu`, `hover`, `expectcomms`, `tactics_editor`, `expect` of local fields such as money gains) and for inputs that it sends over the network like a real click (`choose`, `tech sell`, `fa_buy`, `buyer sell`, `contract_accept`, `tactics`).
 - Real player actions of the host run without `mp`: `choose`, `tech sell`, `vote`, `pause`.
 - `waitfor <field> <op> <value> [timeout]`: wait until a check holds.
 - `mplobby` (host): return all players to the game setup screen. `mpload <name>` (host): the next `mpstart` loads the save `HotCargoTest_<name>`. A loaded game starts paused: `pause off`. `mprestart` (host): a new run with the connection kept, for steps after a won or lost run.
