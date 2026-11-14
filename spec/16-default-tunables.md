@@ -39,7 +39,7 @@
 | `Events.ResearchRate`, `ResearchMinRate`, `ResearchMaxUnits`, `ResearchMaxTechs` | 1.5, 1.2, 2, 3 | 760 |
 | `Events.ResearchSalePremium`, `ResearchSaleCap`, `ResearchWeightScale` | 1.3, 1.5, 1 | 761, 762 |
 | `Events.AbandonedEventChance`, `AbandonedTriggerDistance` | 0.6, 800 | 764 |
-| `Events.RelicEnabled`, `RelicMinSector`, `RelicMessageDistance`, `RelicBoardDistance` | true, 2, 3000, 900 | 765 |
+| `Events.RelicEnabled`, `RelicMinSector`, `RelicMessageDistance`, `RelicBoardDistance` | true, 2, 2000, 900 | 765 |
 | `Events.CooldownSeconds`, `MaxEventsPerSystem` | 120 s, 2 | 70 |
 | `Events.MoneyScale`, `FameScale`, `HeatScale` | 1, 1, 1 | 73 |
 | `Contracts.TrailFreeContracts`, `TrailHeatPerContractMinute` | 3, 1 | 101 |

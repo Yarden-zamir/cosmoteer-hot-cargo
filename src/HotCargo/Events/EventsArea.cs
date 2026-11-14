@@ -572,10 +572,13 @@ public static class EventsArea
         };
         // ev_abandoned: spawns a vanilla abandoned ship (the sector generator's own spawner) 1,500 from the fleet; ev_abandoned_goto flies next to it.
         Autotest.Commands["ev_abandoned"] = _ => SpawnVanillaAbandoned();
+        // ev_abandoned_goto: moves the fleet next to the ship that ev_abandoned spawned, else the first live abandoned ship. Other
+        // abandoned ships of the system can leave stasis near the fleet, and each opens its own event.
         Autotest.Commands["ev_abandoned_goto"] = _ =>
         {
             var sim = RequireSim();
-            var wreck = sim.Ships.Where(s => s.HasLabel(Abandoned.Label) && !s.HasTag(Abandoned.RelicTag)).OrderBy(s => s.UniqueID).FirstOrDefault()
+            var wreck = (_spawnedAbandoned is { } id ? sim.Ships[id] : null)
+                ?? sim.Ships.Where(s => s.HasLabel(Abandoned.Label) && !s.HasTag(Abandoned.RelicTag)).OrderBy(s => s.UniqueID).FirstOrDefault()
                 ?? throw new InvalidOperationException("no live abandoned ship in this system");
             MoveNextTo(sim, wreck.WorldCenter, wreck.WorldBoundingRadius + 150f);
         };
@@ -670,6 +673,9 @@ public static class EventsArea
         Autotest.Wait(2);
     }
 
+    /// <summary>The ship that the last ev_abandoned spawned. Test only.</summary>
+    static Cosmoteer.Game.ObjectID? _spawnedAbandoned;
+
     static void SpawnVanillaAbandoned()
     {
         var sim = RequireSim();
@@ -677,6 +683,7 @@ public static class EventsArea
         var spawner = All(mode.SectorType.SystemGenerator.Spawners).OfType<ShipSpawner>().FirstOrDefault(s => s.Labels?.Contains(Abandoned.Label) == true)
             ?? throw new InvalidOperationException("no vanilla abandoned-ship spawner in the sector generator");
         var at = SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no player ships");
+        var before = sim.Ships.Where(s => s.HasLabel(Abandoned.Label)).Select(s => s.UniqueID).ToHashSet();
         // Test distance, restored after, like SpawnSignal.
         var saved = spawner.Distance;
         try
@@ -685,6 +692,8 @@ public static class EventsArea
             new SimulationGenerator { Spawners = [spawner] }.Generate(sim, new Halfling.Random.FastRand(99UL), loadInstantly: true, rootLoc: at);
         }
         finally { spawner.Distance = saved; }
+        _spawnedAbandoned = sim.Ships.Where(s => s.HasLabel(Abandoned.Label) && !before.Contains(s.UniqueID)).Select(s => (Cosmoteer.Game.ObjectID?)s.UniqueID).FirstOrDefault()
+            ?? throw new InvalidOperationException("the abandoned-ship spawner spawned no live ship");
         Log.Info($"AUTOTEST vanilla abandoned ship spawned; abandoned ships: {sim.Ships.Count(s => s.HasLabel(Abandoned.Label))}");
         Autotest.Wait(2);
     }

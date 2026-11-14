@@ -49,8 +49,11 @@ public sealed class EventsTunables
     [Serialize(Optional = true)] public bool RelicEnabled = true;
     /// <summary>The relic ship appears in a random sector from this one up to the sector before the Buyer.</summary>
     [Serialize(Optional = true)] public int RelicMinSector = 2;
-    /// <summary>Distance at which the vault senses the relic ship and the special message shows.</summary>
-    [Serialize(Optional = true)] public float RelicMessageDistance = 3000f;
+    /// <summary>
+    /// Distance at which the vault senses the relic ship and the special message shows. Below the relic spawn distance
+    /// (5000 x SystemScale, mod/events/spawns.rules), so the message never shows at the spawn.
+    /// </summary>
+    [Serialize(Optional = true)] public float RelicMessageDistance = 2000f;
     /// <summary>Distance at which the relic event opens.</summary>
     [Serialize(Optional = true)] public float RelicBoardDistance = 900f;
     /// <summary>Events of the Unavoidable category (every choice costs something) per run.</summary>

@@ -20,12 +20,15 @@ pause off
 wait 2
 expect ev_pending == 0
 # The relic: the vault senses it far away, the event opens close up, and it gives 1 tech unit.
+# Other abandoned ships near the relic must not open their own event.
+ev_set AbandonedEventChance 0
 tech remove 1
 ev_relic_spawn
 expect ev_relic_messaged == 0
-ev_relic_goto 2500
+# Inside RelicMessageDistance (2000).
+ev_relic_goto 1800
 pause off
-ev_relic_goto 2500
+ev_relic_goto 1800
 pause off
 wait 2
 expect ev_relic_dist >= 0
