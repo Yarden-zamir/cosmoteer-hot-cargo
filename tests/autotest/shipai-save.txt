@@ -22,7 +22,7 @@ tactics_log loaded
 # The ship design: rows and the Auto switch go into the design file and come back with it.
 savedesign shipai_sniper
 loaddesign shipai_sniper
-expect design_rows == 4
+expectdesign Sniper
 expect design_auto == 1
 # A game without the mod reads the same file: the ship loads with every part and no tactics.
 loaddesign shipai_sniper vanilla
