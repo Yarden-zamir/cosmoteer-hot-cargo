@@ -737,7 +737,7 @@ TowMission
 	]
 }
 
-// Spec 1361: the join request's ship, a small armed ship that answers comms and waits. It joins the chooser's fleet.
+// Spec 1361, 1362: a small armed ship that answers comms and waits: the join request's ship and the apprentice.
 Recruit
 {
 	Spawners
