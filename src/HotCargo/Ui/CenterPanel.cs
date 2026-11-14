@@ -83,7 +83,7 @@ static class CenterPanel
         row.NineSlice.Flags = NineSliceFlags.None;
         row.Children.LayoutAlgorithm = LayoutAlgorithms.CenterTop;
         row.Children.WidgetPadding = new Vector2(16f);
-        void Close() { game.Gui.RootWidget.Children.Remove(box); Open.Remove((game, box)); }
+        void Close() => Untrack(game, box);
         if (primary is { } p)
         {
             var main = new Button(WidgetRules.Instance.OkayButton) { Size = new Vector2(220f, 46f), Text = p.Text, Hotkey = Inputs.General.Confirm };
@@ -96,13 +96,27 @@ static class CenterPanel
         row.AddChild(close);
         box.AddChild(row);
 
-        game.Gui.RootWidget.Children.InsertBelow(game.Gui.FloatingWindows, box);
-        Open.Add((game, box));
-        box.Animator.TweenColorFrom(Color.TransparentWhite, 0.4f, Halfling.Mathx.EaseOut);
+        Track(game, box);
         return box;
     }
 
-    static Label Text(string xml, int size, bool center)
+    /// <summary>Adds a panel that another area built with NewBox to the HUD, and counts it as open (IsOpen, CloseAll).</summary>
+    public static void Track(GameRoot game, LayoutBox box)
+    {
+        game.Gui.RootWidget.Children.InsertBelow(game.Gui.FloatingWindows, box);
+        Open.Add((game, box));
+        box.Animator.TweenColorFrom(Color.TransparentWhite, 0.4f, Halfling.Mathx.EaseOut);
+    }
+
+    /// <summary>Removes a panel from the HUD.</summary>
+    public static void Untrack(GameRoot game, LayoutBox box)
+    {
+        game.Gui.RootWidget.Children.Remove(box);
+        Open.Remove((game, box));
+    }
+
+    /// <summary>A label in the panel style: the shadow font, XML, wrapped, with an automatic height.</summary>
+    internal static Label Text(string xml, int size, bool center)
     {
         var l = new Label { Text = xml };
         l.TextRenderer.Font = WidgetRules.Instance.ShadowFont;

@@ -29,12 +29,14 @@ wait 2
 pu_set BlockadeChance 1
 stage
 wait 2
-# The relay can be far: the fleet waits outside the chase range, so the parked ships stay live (out of stasis) and on camera.
-pu_relaynear 3400
+# The relay can be far. Ships in stasis are not drawn, so the fleet waits close to the relay, and a short chase range keeps the
+# ships parked for the shot.
+pu_set BlockadeAggroRange 400
+pu_relaynear 1600
 waitfor pu_parkdist >= 0 120
 waitfor pu_parkdist <= 1200 240
 expect pu_blockaders >= 1
-pu_focusblockade
+pu_camerarelay 3600
 wait 2
 screenshot pursuit-blockade
 vault focus wide
