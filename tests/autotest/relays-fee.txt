@@ -1,0 +1,18 @@
+# Relays: a relay toll (spec 956). The faction's station asks the toll in comms; paying opens the relays.
+newgame
+wait 8
+ev_set Enabled false
+godmode on
+rl_here fee
+wait 1
+expect rl_blocks == 1
+expect rl_fee > 0
+rl_tostation
+wait 3
+rl_page
+rl_mark_money
+rl_pay
+wait 3
+expect rl_blocks == 0
+expect rl_spent > 0
+quit

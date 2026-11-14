@@ -126,6 +126,17 @@ Modelled with the numbers of section 4 (8 units, multiplier 1.2: one typical mis
 - Run average: scouts (+3.75 per sector) and outages (−2 per sector) leave about +1.7 heat per sector. The Strike comes about 0.15 missions earlier than in the section 4 table: about 6.3 missions after a watched relay. A sector with an outage gives about 0.7 more, a sector with an escaped scout about 1.3 fewer. That is the spread that the Pursuit wants: the heat clock varies, the budget holds.
 - Limit: the escape share of scouts and the hacker buy rate are guesses. Check them against telemetry (`TELEMETRY.md`, heat events by source) when real runs exist.
 
+### 9. Relay lockdowns and the stash (spec 950 to 976)
+
+Units as above: one event money unit is about one standard mission's pay (requirement 73); a typical mission pays 3.6 std.
+
+- **Lockdowns are rare:** `ChancePerSystem` 0.15 per unvisited neighbour, at most 2 per run and 1,200 game seconds apart (the Pursuit pacer), from sector 2. With 2 to 3 unvisited neighbours per system, a mark comes about every 2 to 3 sectors, so a run of 8 sectors sees 1 or 2. The players see the mark and can route around it.
+- **Closed:** 7 minutes of waiting is about 8 heat (1.2 per minute × 1.2), or a blind jump (1.5 × fuel, the part damage risk). Both are small; the price is time.
+- **Toll:** 0.6 + 0.006 × heat units: 0.6 std at heat 0, 1.2 std at heat 100. Less than half a typical mission, cheaper than the blind fuel late in the run only when fuel is short. The toll rises with heat, so a hot fleet pays more.
+- **Pirates:** price 1.2 std (a third of a typical mission). A sure deal at the full price; half the price never works. Cargo counts at 0.8 × its buy price, so fuel bribes cost more than credits. The fight is 2 to 3 ships at the system tier (more in co-op), with salvage (about 1 std each, finding 7).
+- **Stash:** loot = 3 std money + a standard mission's fame, and with chance 0.5 one tech unit (1.1 to 2.2 typical missions, so about 4 to 8 std). Expected loot when not found first: about 3 + 0.5 × 6 = 6 std. Found first: 10 % at the offer, +4 % per minute, so the expected value is 5.4 std at once, 3.9 std (a typical mission) after 6 minutes and 0.6 std at the cap. Half of the found-first cases are an ambush of 2 hunters (tier + 1). The stash pays more than a mission only when the players go quickly, which is the decision we want.
+- Heat: the loot fame (1 std) adds about 2 heat (1.5 per std fame × 1.2). The contract adds flat heat 2. No retune of the heat budget.
+
 ## Changes
 
 | Tunable or rule | Before | After | Requirement |

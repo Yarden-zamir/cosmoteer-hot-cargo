@@ -1,0 +1,15 @@
+// Hot Cargo stash (spec 970 to 989): a rumoured stash, offered like a shady mission. C# spawns it after a system generates (StashArea.OfferPatch).
+{
+	Action = Overrides
+	OverrideIn = "<modes/career/mission_metatypes.rules>"
+	Overrides
+	{
+		// Sits with the vanilla bounties and the shady offers (spec 38).
+		HotCargoStash
+		{
+			NameKey = "HotCargoStash/Name"
+			DescriptionKey = "HotCargoStash/Desc"
+			CategoryID = bounties
+		}
+	}
+}

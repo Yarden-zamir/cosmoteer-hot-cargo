@@ -37,6 +37,9 @@ public static class Mod
             Factions.FactionsArea.Register();
             TunablesMenu.TunablesMenuArea.Register();
             MultiChoice.MultiChoiceArea.Register();
+            // Relays registers its comms provider before Diplomacy, so a relay page owns its shared choices (spec 958).
+            Relays.RelaysArea.Register();
+            Stash.StashArea.Register();
             Diplomacy.DiplomacyArea.Register();
             // After Hunters: its stage hooks read the ships that the Hunters area just spawned.
             Pursuit.PursuitArea.Register();

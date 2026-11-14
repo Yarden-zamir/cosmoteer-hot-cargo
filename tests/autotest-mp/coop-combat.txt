@@ -57,6 +57,26 @@ as 1 dip hire friend 0
 waitfor dip_friendhired == 1 30
 waitfor dip_hires >= 1 30
 
+step relays.bribe
+# Spec 958, 960: pirates hold the relays. The client selects credits on the bribe page from its own machine (its multiselect
+# input), and the host submits the offer through the shared choice input. Both machines see the relays open and the guards stand down.
+mp contract_money 100000
+mp rl_here pirates
+waitfor rl_guards >= 2 60
+# The guards spawn at the relay, often in stasis far from the fleet: bring them next to the client's ship.
+as 1 rl_guardsnear
+waitfor rl_live >= 1 15
+# Sight of a moved enemy ship comes a moment later: the page opens only when a human ship can call the guard.
+waitfor rl_callable == 1 30
+on 1 rl_pick money price
+waitfor rl_picks >= 1 30
+rl_bribe
+waitfor rl_blocks == 0 60
+expect rl_bribed == 1
+expect rl_guards == 0
+on 1 expect rl_blocks == 0
+on 1 expect rl_guards == 0
+
 step scaling.waves
 # A hunter wave and an event group get factor times the ships on both machines (2, or 3 with 3 players).
 # Two ships of the sector tier: the Warning response of the last sector (#19 removed the Patrol stage).
