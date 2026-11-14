@@ -30,9 +30,20 @@ static class ItemActionButtons
 /// <summary>One action of one item. It shows while a selected part holds a unit of the item, like the vanilla trigger buttons.</summary>
 sealed class ItemActionButton : ImageButton
 {
+    static IItemActionHandler Handlers(string name) => ItemActions.Handlers[name];
+
     readonly BaseCommandCard _card;
     readonly ResourceRules _item;
     readonly ItemActionRules _action;
+    readonly string _baseTip;
+    string _tip = "";
+
+    void SetTip(string tip)
+    {
+        if (tip == _tip) return;
+        _tip = tip;
+        ToolTips.TextProvider = new SimpleTextProvider(tip, null);
+    }
 
     public ItemActionButton(BaseCommandCard card, ResourceRules item, ItemActionRules action)
         : base(item.Icon, ShipGui.SHIP_COMMAND_BUTTON)
@@ -40,8 +51,8 @@ sealed class ItemActionButton : ImageButton
         _card = card;
         _item = item;
         _action = action;
-        string tip = action.ToolTipKey is { } t ? $"{action.NameKey.Text}\n{t.Text}" : action.NameKey.Text;
-        ToolTips.TextProvider = new SimpleTextProvider(tip, null);
+        _baseTip = action.ToolTipKey is { } t ? $"{action.NameKey.Text}\n{t.Text}" : action.NameKey.Text;
+        SetTip(_baseTip);
         SelfActive = false;
         Clicked += (_, _) => Errors.Guard("item action click", OnClick);
         card.BeforeInputWhileActive((_, _) => Errors.Guard("item action button", Refresh));
@@ -56,6 +67,8 @@ sealed class ItemActionButton : ImageButton
         var target = Target(_card.Game, _item);
         SelfActive = target is not null;
         SelfInputActive = target is not null;
+        if (target is not null && _action.Handler is { } h && Core.Run.Current is { } run)
+            SetTip(Handlers(h).ToolTip(run, target) is { } extra ? $"{_baseTip}\n{extra}" : _baseTip);
     }
 
     void OnClick()

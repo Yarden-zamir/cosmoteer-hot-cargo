@@ -40,6 +40,8 @@ internal sealed class TowObjective : Objective
         /// <summary>The destination is the nearest tagged station at least this far from the towed ship, so a tow is never trivial.</summary>
         [Serialize(Optional = true), PortableHash] public float MinStationDistance = 3000f;
         [Serialize(Optional = true), PortableHash] public float ArrivalRadius = 1200f;
+        /// <summary>Spec 1127: only stations whose owner is not hostile to the towed ship. None: the objective is invalid.</summary>
+        [Serialize(Optional = true), PortableHash] public bool FriendlyOnly;
 
         public override Objective? CreateObjectiveImpl(SimRoot sim, Mission mission, Rand rand, SpawnedObjectCollection objects, Vector2 loc, out bool invalid)
         {
@@ -48,16 +50,29 @@ internal sealed class TowObjective : Objective
             invalid = !found || stations is not { Count: > 0 };
             if (invalid) return null;
             ObjectID towedId = towed!.UniqueID ?? throw new InvalidOperationException($"towed tag {TowedTag} found an object without an ID");
+            if (FriendlyOnly)
+            {
+                var ship = sim.Ships[towedId] ?? throw new InvalidOperationException($"towed ship {towedId} is not live");
+                stations = stations!.Where(st => st.PlayerIndex is not { } owner || !ship.IsEnemiesWith(owner)).ToList();
+                invalid = stations.Count == 0;
+                if (invalid) return null;
+            }
             Vector2 from = towed.Location.Center;
             // Nearest station beyond MinStationDistance; when every station is closer, the farthest one.
             var byDistance = stations!.Select(st => st.Location.Center).OrderBy(c => c.DistanceTo(from)).ToList();
             Vector2 destination = byDistance.FirstOrDefault(c => c.DistanceTo(from) >= MinStationDistance, byDistance[^1]);
-            return new TowObjective(new ObjectiveTargetShip(sim.RequireGame(), sim.NodeId(), towedId), destination, ArrivalRadius)
+            return LastCreated = new TowObjective(new ObjectiveTargetShip(sim.RequireGame(), sim.NodeId(), towedId), destination, ArrivalRadius)
             {
                 Tier = Math.Max(1, ((Cosmoteer.Modes.Career.CareerSimModeManager)sim.Mode).TierFields.GetTier(destination)),
             };
         }
     }
+
+    /// <summary>
+    /// The objective that the spawner made last, in sim logic (spec 1127). The mission spawner adds the mission to the log a step
+    /// later (SimRoot.EnqueueDeterministic), so a caller of the spawn reads the result here, at once.
+    /// </summary>
+    internal static TowObjective? LastCreated;
 
     [Serialize] public ObjectiveTargetShip Towed { get; private set; }
     [Serialize] public Vector2 Destination { get; private set; }

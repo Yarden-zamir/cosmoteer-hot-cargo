@@ -29,6 +29,8 @@ public sealed class EventsState
     [Serialize(Optional = true)] public HashSet<ObjectID> CourierNodes = new();
     /// <summary>Game seconds of the next tracer beacon ping, or -1 while no beacon is aboard (spec 1116).</summary>
     [Serialize(Optional = true)] public double TracerPingSeconds = -1;
+    /// <summary>Running rescue tows (spec 1127), in start order.</summary>
+    [Serialize(Optional = true)] public List<RescueTowState> Rescues = [];
     /// <summary>Game seconds of the last triggered event, or -1.</summary>
     [Serialize(Optional = true)] public double LastEventSeconds = -1;
     /// <summary>Game seconds at which the Arrival roll runs, or -1 when none is due.</summary>

@@ -24,6 +24,8 @@ HotCargoEventMissions
 	Courier = "Courier Job"
 	CourierDesc = "Carry a sealed case to the contact across the system and hail it, within {time_limit_minutes} min.\nThe case needs a free storage slot."
 	SiegeDesc = "Drive the raiders off a pinned freighter before its shields fail."
+	RescueTow = "Rescue Tow"
+	RescueTowDesc = "A tug tows your ship to the nearest friendly station. Keep the tug alive."
 }
 
 HotCargoEvents
@@ -59,4 +61,16 @@ HotCargoItems
 	SpaceTracerTip = "Throw the tracer beacon out of the airlock. It stops calling home."
 	SpacedTracerFmt = "{0} spaced the tracer beacon."
 	TracerPingFmt = "The tracer beacon calls home: heat +{0}."
+	// Spec 1127. {0} = the ship.
+	RescueBeacon = "Rescue Beacon"
+	RescueBeaconPlural = "Rescue Beacons"
+	RescueBeaconDesc = "Fire it when your ship cannot fly on. A tug tows the ship to the nearest friendly station, for a fee. The whole sector hears the call."
+	FireRescue = "Fire the beacon"
+	FireRescueTip = "Call a tug. It tows this ship to the nearest friendly station."
+	RescueTipFmt = "Fee: {0} credits (or all you have). Heat +{1}."
+	RescueFiredFmt = "{0} fires its rescue beacon. A tug is on the way. The tug crew bills {1} credits; the call adds heat {2}."
+	RescueNoStationFmt = "{0} fires its rescue beacon, but no friendly station answers. The beacon is still in the hold."
+	RescueBusyFmt = "A tug already comes for {0}. The beacon is still in the hold."
+	RescueArrivedFmt = "The tug drops {0} at the station and leaves."
+	RescueTugLostFmt = "The tug is gone. Get {0} to the station on your own."
 }

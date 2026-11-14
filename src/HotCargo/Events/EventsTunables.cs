@@ -45,6 +45,16 @@ public sealed class EventsTunables
     /// <summary>Chance that coming near a vanilla abandoned ship opens an Abandoned event (once per ship).</summary>
     [Serialize(Optional = true)] public float AbandonedEventChance = 0.6f;
     [Serialize(Optional = true)] public float AbandonedTriggerDistance = 800f;
+    /// <summary>Rescue Beacon (spec 1127): the tug's fee in event money units (standard mission pay at the tier). Too little money: it takes what there is.</summary>
+    [Serialize(Optional = true)] public float RescueFee = 0.4f;
+    /// <summary>Rescue Beacon: heat that the broadcast adds.</summary>
+    [Serialize(Optional = true)] public float RescueHeat = 10f;
+    /// <summary>Rescue Beacon: hull-to-hull length of the tow line between the tug and the towed ship.</summary>
+    [Serialize(Optional = true)] public float RescueTowLength = 150f;
+    /// <summary>Rescue Beacon: how hard the tow line pulls the towed ship back to its length, per game second.</summary>
+    [Serialize(Optional = true)] public float RescueTowPull = 1f;
+    /// <summary>Rescue Beacon: game seconds that the tug flies off before it leaves the sim.</summary>
+    [Serialize(Optional = true)] public float RescueTugLeaveSeconds = 20f;
     /// <summary>One relic ship per run holds 1 tech unit. Off: new runs get none.</summary>
     [Serialize(Optional = true)] public bool RelicEnabled = true;
     /// <summary>The relic ship appears in a random sector from this one up to the sector before the Buyer.</summary>

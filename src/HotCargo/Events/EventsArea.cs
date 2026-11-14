@@ -44,6 +44,8 @@ public static class EventsArea
         Run.Hooks.Tick += EventRunner.OnTick;
         Run.Hooks.Tick += MissionCargo.OnTick;
         Run.Hooks.Tick += TracerBeacon.OnTick;
+        Run.Hooks.Tick += RescueBeacon.OnTick;
+        ItemActions.Handlers.Add("rescue", new RescueBeacon.Handler());
         Run.Hooks.NewRunStarted += Abandoned.OnNewRun;
         Ui.CommsHail.Providers.Add(new EventHailProvider());
         Run.Hooks.SystemEntered += Abandoned.OnSystemEntered;
@@ -195,7 +197,7 @@ public static class EventsArea
             Autotest.Wait(3);
         };
         // ev_tostation: moves the player ships next to the nearest ship tagged trade_station (not any ship that trades).
-        Autotest.Commands["ev_tostation"] = _ =>
+        Autotest.Commands["ev_tostation"] = arg =>
         {
             var sim = RequireSim();
             var ships = sim.Ships.HumanPlayerSignificantShips.ToList();
@@ -207,7 +209,9 @@ public static class EventsArea
                 [] => throw new InvalidOperationException("no trade station in this system"),
             };
             // A station in stasis has no known size; 1,200 clears a trade station and stays inside StationTriggerDistance.
-            float offset = station.Live is { } live ? live.WorldBoundingRadius + 300f : 1200f;
+            // ev_tostation <distance>: this far from the station's hull (from its center while it is in stasis).
+            float offset = arg.Trim().Length > 0 ? (station.Live?.WorldBoundingRadius ?? 0f) + float.Parse(arg, CultureInfo.InvariantCulture)
+                : station.Live is { } live ? live.WorldBoundingRadius + 300f : 1200f;
             foreach (var s in ships) { Autotest.Teleport(s, station.Location + new Halfling.Geometry.Vector2(offset + s.WorldBoundingRadius, 0)); offset += 2 * s.WorldBoundingRadius + 100f; }
             Log.Info($"AUTOTEST moved next to station {station.Id} (live: {station.Live is not null})");
             Autotest.Wait(2);
@@ -449,6 +453,39 @@ public static class EventsArea
         };
         Autotest.Fields["item_button"] = () =>
             _selectedItem is { } r && ItemActionButton.Target(RequireRun().Game, r.GetResourceRules()) is not null ? 1 : 0;
+        // Rescue Beacon (spec 1127). Test only.
+        // ev_money_zero: the acting player's money goes to 0. ev_rescue_tip: 1 when the fire action's tooltip lines show the fee.
+        Autotest.Commands["ev_money_zero"] = _ =>
+        {
+            var state = RequireRun().Game.GetPlayerState(ActingPlayer(), deterministic: true);
+            state.AddMoney(-state.Money);
+        };
+        Autotest.Fields["ev_rescue_tip"] = () =>
+        {
+            var run = RequireRun();
+            var part = ItemPart(RequireSim(), new ID<Cosmoteer.Resources.ResourceRules>("yarden_zamir.rescue_beacon")) ?? throw new InvalidOperationException("no rescue beacon aboard");
+            string tip = ItemActions.Handlers["rescue"].ToolTip(run, part) ?? "";
+            Log.Info($"AUTOTEST rescue tip: {tip}");
+            return tip.Contains(RescueBeacon.Fee(run).ToString("N0"), StringComparison.Ordinal) ? 1 : 0;
+        };
+        Autotest.Fields["ev_rescues"] = () => RequireRun().State.Events.Rescues.Count(r => r.LeaveAt < 0);
+        Autotest.Fields["ev_rescue_pulling"] = () => RequireRun().State.Events.Rescues.Any(r => r.Pulling && r.LeaveAt < 0) ? 1 : 0;
+        Autotest.Fields["ev_rescue_arrivals"] = () => RescueBeacon.Arrivals;
+        // The first running rescue: the towed ship's distance to its station, and the tug's speed.
+        Autotest.Fields["ev_rescue_dist"] = () => RequireRun().State.Events.Rescues.FirstOrDefault(x => x.LeaveAt < 0) is { } r && RequireSim().Ships[r.Towed] is { } t
+            ? t.DetWorldCenter.DistanceTo(r.Destination) : -1;
+        Autotest.Fields["ev_tug_dist"] = () => RequireRun().State.Events.Rescues.FirstOrDefault(x => x.LeaveAt < 0) is { } r && RequireSim().Ships[r.Tug] is { } tug
+            ? tug.DetWorldCenter.DistanceTo(r.Destination) : -1;
+        Autotest.Fields["ev_tug_speed"] = () => RequireRun().State.Events.Rescues.FirstOrDefault(x => x.LeaveAt < 0) is { } r && RequireSim().Ships[r.Tug] is { } tug
+            ? tug.Physics.Body.LinearVelocity.Length() : -1;
+        // ev_tug_kill: removes the tug of the first running rescue, as if it was destroyed.
+        Autotest.Commands["ev_tug_kill"] = _ =>
+        {
+            var sim = RequireSim();
+            var r = RequireRun().State.Events.Rescues.FirstOrDefault(x => x.LeaveAt < 0) ?? throw new InvalidOperationException("no running rescue");
+            sim.Ships.Remove(sim.Ships[r.Tug] ?? throw new InvalidOperationException("the tug is not live"), dispose: true, handleLostShip: false);
+            Autotest.Wait(1);
+        };
         // item_force <n>: the next item action picks content n (1-based). ev_force_outcome <n>: the next event roll picks outcome n.
         Autotest.Commands["item_force"] = arg => ItemActions.ForcedContent = int.Parse(arg.Trim()) - 1;
         Autotest.Commands["ev_force_outcome"] = arg => EventRunner.ForcedOutcome = int.Parse(arg.Trim()) - 1;
