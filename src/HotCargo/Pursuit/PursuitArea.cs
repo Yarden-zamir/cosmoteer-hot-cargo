@@ -80,13 +80,33 @@ public static class PursuitArea
             var dir = Halfling.Geometry.Vector2.FromAngle(s.RelayAt.DirectionTo(ship.DetWorldCenter));
             Autotest.Teleport(ship, s.RelayAt + dir * d);
         };
-        // pu_focusscout: centers the camera on the scout, zoomed out so its marker label shows (screenshots).
+        // pu_focusscout: moves the acting ship 1,200 from the scout and fits both on screen, so the scout's marker shows (screenshots).
+        // The camera follows the player's ship; centering it on an enemy ship does not hold.
         Autotest.Commands["pu_focusscout"] = _ =>
         {
             var s = R().State.Pursuit.Scouts.FirstOrDefault() ?? throw new InvalidOperationException("no scout");
             var ship = Sim().Ships[s.Ship] ?? throw new InvalidOperationException("scout is not live");
-            ship.FocusCamera(playSound: false);
-            Sim().Camera.ViewController.ZoomToFit(new Halfling.Geometry.Vector2(2500f));
+            var me = Me();
+            var dir = Halfling.Geometry.Vector2.FromAngle(ship.DetWorldCenter.DirectionTo(me.DetWorldCenter));
+            Autotest.Teleport(me, ship.DetWorldCenter + dir * 1200f);
+            me.FocusCamera(playSound: false);
+            Sim().Camera.ViewController.ZoomToFit(new Halfling.Geometry.Vector2(3200f));
+        };
+        // pu_relaynear <distance>: moves the acting ship this far from the blockade relay, on the line from the relay to the ship (screenshots).
+        Autotest.Commands["pu_relaynear"] = arg =>
+        {
+            var relay = Blockade.RelayAt(R(), Sim()) ?? throw new InvalidOperationException("no blockade relay");
+            var me = Me();
+            var dir = Halfling.Geometry.Vector2.FromAngle(relay.DirectionTo(me.DetWorldCenter));
+            Autotest.Teleport(me, relay + dir * float.Parse(arg, CultureInfo.InvariantCulture));
+        };
+        // pu_focusblockade: centers the camera on the acting ship and zooms out until the blockade relay fits (screenshots).
+        Autotest.Commands["pu_focusblockade"] = _ =>
+        {
+            var relay = Blockade.RelayAt(R(), Sim()) ?? throw new InvalidOperationException("no blockade relay");
+            var me = Me();
+            me.FocusCamera(playSound: false);
+            Sim().Camera.ViewController.ZoomToFit(new Halfling.Geometry.Vector2(2f * me.DetWorldCenter.DistanceTo(relay) + 1600f));
         };
         // pu_blockade: the live hunters park at the needed relay, through the pacer.
         Autotest.Commands["pu_blockade"] = _ =>
