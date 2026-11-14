@@ -2,6 +2,10 @@ HotCargoDebt
 {
 	// Loan offer at a trade station (spec 1402). {0} faction, {1} amount, {2} interest %, {3} minutes per interest step,
 	// {4} minutes between collectors, {5} firm ratio, {6} hostile ratio, {7} score factor.
+	// Spec 1416: the line on a station's normal page that opens the debt page, and the way back.
+	LoanLine = "Ask about a loan."
+	DebtLine = "Talk about your debt."
+	Back = "Back"
 	LoanOfferFmt = "<b>LOAN</b>\nThe {0} lend {1}, no questions asked.\nInterest: +{2}% every {3} min. A collector comes every {4} min. Pay at any {0} station.\nAt {5}× they lose patience. At {6}× they hunt you.\nDebt counts {7}× against your score."
 	TakeLoanFmt = "Take the loan (+{0})"
 

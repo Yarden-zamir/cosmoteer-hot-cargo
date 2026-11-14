@@ -9,6 +9,9 @@ debt_set LoanStationChance 1
 debt_goto loan
 wait 3
 pause on
+# Spec 1416: the loan shows on the station's debt page.
+debt_look loan
+debt_open_page
 debt_open loan
 wait 2
 screenshot debt-loan
