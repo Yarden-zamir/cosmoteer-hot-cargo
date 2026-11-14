@@ -1,0 +1,62 @@
+# Paid help (spec 1430 to 1436): help comes in a fight, real hits count for both sides, the hail after the fight, and each answer.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+dip_set DemandHailChance 0
+dip_set MercChance 0
+contract_money 500000
+debt_set HelpChance 1
+debt_set HelpCalmSeconds 5
+# Spec 1430 to 1432: a fight with two enemies brings two helpers; hits of both sides count.
+dip_spawn enemy 900
+dip_spawn enemy 900
+waitfor debt_help == 1 20
+expect debt_help_ships == 2
+waitfor debt_help_helper_dmg > 0 120
+waitfor debt_help_player_dmg > 0 120
+# Spec 1433 to 1435: the fight ends, a helper hails, and "Pay" sends them away.
+debt_kill_enemies
+debt_help_share 400 600
+waitfor debt_help_asking == 1 30
+waitfor debt_help_hailed == 1 30
+debt_page helper
+debt_help_answer pay
+wait 1
+expect debt_help == 0
+expect debt_count == 0
+# The claim works below 25 %: no pay and no reputation loss.
+debt_mark_rep
+debt_help_spawn
+debt_help_share 100 900
+waitfor debt_help_hailed == 1 30
+debt_help_answer claim
+wait 1
+expect debt_help == 0
+expect debt_rep_drop == 0
+# The claim fails at 40 %: the faction loses reputation.
+debt_help_spawn
+debt_help_share 400 600
+waitfor debt_help_hailed == 1 30
+debt_help_answer claim
+wait 1
+expect debt_rep_drop == 150
+expect debt_count == 0
+# "Put it on my tab" opens a debt with the faction.
+debt_help_spawn
+debt_help_share 500 500
+waitfor debt_help_hailed == 1 30
+debt_help_answer tab
+wait 1
+expect debt_help == 0
+expect debt_count == 1
+expect debt_ratio == 1
+# Spec 1436: no answer puts the price on the same tab.
+debt_set HelpWaitSeconds 3
+debt_help_spawn
+debt_help_share 500 500
+waitfor debt_help_asking == 1 30
+waitfor debt_help == 0 20
+expect debt_count == 1
+expect debt_ratio == 1
+quit

@@ -4,7 +4,7 @@ namespace HotCargo.Debt;
 public enum DebtStage { Calm = 0, Firm = 1, Hostile = 2 }
 
 /// <summary>The kinds of debt choices (spec 1413). The integer values travel in shared choice options.</summary>
-public enum DebtChoice { Loan = 1, Pay = 2, NotNow = 3, Refinance = 4 }
+public enum DebtChoice { Loan = 1, Pay = 2, NotNow = 3, Refinance = 4, HelpPay = 5, HelpTab = 6, HelpClaim = 7 }
 
 /// <summary>The pay slider of a page in hundreds of credits (spec 1405).</summary>
 public readonly record struct PayRange(int Min, int Max, int Step);
@@ -59,6 +59,19 @@ public static class DebtModel
     public static (long Off, long Money) PayoffSplit(long amount, long balance) =>
         amount >= 0 && balance >= 0 ? (Math.Min(amount, balance), amount - Math.Min(amount, balance))
             : throw new ArgumentOutOfRangeException(nameof(amount), (amount, balance), "a pay-off needs amounts of 0 or more");
+
+    /// <summary>Spec 1432: the helpers' share of the damage on the players' enemies. 0 when nobody hit anything.</summary>
+    public static float Share(long helperDamage, long playerDamage) =>
+        helperDamage < 0 || playerDamage < 0 ? throw new ArgumentOutOfRangeException(nameof(helperDamage), (helperDamage, playerDamage), "damage below 0")
+        : helperDamage + playerDamage == 0 ? 0f : (float)((double)helperDamage / (helperDamage + playerDamage));
+
+    /// <summary>Spec 1434: the price in event money units.</summary>
+    public static float HelpPriceUnits(float share, float pricePerShare) => share * pricePerShare;
+
+    /// <summary>Spec 1435: "we didn't ask for help" works when the helpers did less than this share.</summary>
+    public static bool ClaimWorks(float share, float claimMaxShare) => share < claimMaxShare;
+
+    public static int Percent(float share) => (int)MathF.Round(share * 100f);
 
     /// <summary>Spec 1402: the loan offer roll of a station, from a value in [0, 1).</summary>
     public static bool Offers(float roll, float chance) => roll < chance;

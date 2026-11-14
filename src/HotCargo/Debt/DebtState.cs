@@ -34,6 +34,22 @@ public sealed class Collector
     [Serialize] public double LeaveAt;
 }
 
+/// <summary>Spec 1430 to 1436: the ships that came to help in this system and the damage counts.</summary>
+[ReflectiveSerialization(Explicit = true)]
+public sealed class HelpGroup
+{
+    [Serialize] public string Faction = "";
+    [Serialize] public List<ObjectID> Ships = [];
+    [Serialize] public long HelperDamage;
+    [Serialize] public long PlayerDamage;
+    /// <summary>When the fight went quiet, or -1 while it goes on.</summary>
+    [Serialize] public double CalmSince = -1;
+    /// <summary>The helper that asks for pay, set when the fight ended with enough share.</summary>
+    [Serialize(Optional = true)] public ObjectID? Hailer;
+    [Serialize] public bool Hailed;
+    [Serialize] public double LeaveAt;
+}
+
 [ReflectiveSerialization(Explicit = true)]
 public sealed class DebtState
 {
@@ -42,6 +58,9 @@ public sealed class DebtState
     [Serialize] public List<Collector> Collectors = [];
     /// <summary>Spec 1422: the systems (map node IDs) that offered a Collect a Debt job.</summary>
     [Serialize(Optional = true)] public List<ObjectID> CollectSystems = [];
+    /// <summary>Spec 1430: the systems that rolled for help.</summary>
+    [Serialize(Optional = true)] public List<ObjectID> HelpSystems = [];
+    [Serialize(Optional = true)] public HelpGroup? Help;
 
     public Debt? Of(string faction) => Debts.FirstOrDefault(d => d.Faction == faction);
 

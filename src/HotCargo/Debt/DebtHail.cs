@@ -19,7 +19,8 @@ public sealed class DebtHailProvider : IHailProvider
         Run.Current is { } run && caller.Sim is { } sim && sim == run.Game.Sim && Offers(run, callee);
 
     internal static bool Offers(Run run, Ship callee) =>
-        Lenders.OffersLoan(run, callee) || Lenders.DebtAt(run, callee) is not null || Lenders.Refinances(run, callee).Count > 0;
+        Lenders.OffersLoan(run, callee) || Lenders.DebtAt(run, callee) is not null || Lenders.Refinances(run, callee).Count > 0
+        || DebtHelp.AskingAt(run, callee) is not null;
 
     public void Build(Ship caller, Ship callee, HailPage page)
     {
@@ -44,6 +45,21 @@ public sealed class DebtHailProvider : IHailProvider
                     Percent(t.InterestRate * t.RefinanceRateFactor), Minutes(t.InterestSeconds), t.RefinanceReputationLoss));
                 page.AddChoice(DebtArea.Format("RefinanceFmt", oldName), DebtModel.Option(DebtChoice.Refinance, run.State.Debt.Debts.IndexOf(old)));
             }
+        // Spec 1434 and 1435: the helper's page shows both shares, the price and three clear deals.
+        if (DebtHelp.AskingAt(run, callee) is { } help)
+        {
+            float share = DebtHelp.Share(help);
+            int price = DebtHelp.Price(run, help);
+            string helpers = Lenders.Name(help.Faction);
+            page.AddText(DebtArea.Format("HelpAskFmt", helpers, DebtModel.Percent(1f - share), DebtModel.Percent(share), Money(price)));
+            long cash = run.Game.GetPlayerState(run.Game.LocalPlayerIndex, deterministic: true).Money;
+            page.AddChoice(DebtArea.Format("HelpPayFmt", Money(price)), DebtModel.Option(DebtChoice.HelpPay, 0), active: cash >= price, close: true);
+            page.AddChoice(DebtArea.Format("HelpTabChoiceFmt", Money(price), helpers), DebtModel.Option(DebtChoice.HelpTab, 0), close: true);
+            bool works = DebtModel.ClaimWorks(share, t.ClaimMaxShare);
+            page.AddChoice(DebtArea.Format(works ? "ClaimChoiceWorksFmt" : "ClaimChoiceFailsFmt", DebtModel.Percent(t.ClaimMaxShare), DebtModel.Percent(share), t.ClaimReputationLoss),
+                DebtModel.Option(DebtChoice.HelpClaim, 0), close: true);
+            return;
+        }
         if (Lenders.DebtAt(run, callee) is not { } d) return;
         var collector = Lenders.CollectorOf(run, callee);
         string name = Lenders.Name(d.Faction);
@@ -122,6 +138,27 @@ static class DebtDeals
 {
     public static int LoanCredits(Run run) => Events.EventRunner.Credits(run, run.T.Debt.LoanUnits, 0f, run.CurrentTier, run.TechValue());
 
+    /// <summary>
+    /// Spec 1403 and 1435: the players owe a faction this much more. A debt that exists grows in principal and balance, so its ratio
+    /// stays; otherwise a new debt opens with its timers from now.
+    /// </summary>
+    public static void Owe(Run run, string faction, long credits)
+    {
+        if (credits <= 0) throw new ArgumentOutOfRangeException(nameof(credits), credits, "a debt grows by more than 0");
+        if (run.State.Debt.Of(faction) is { } d)
+        {
+            d.Principal += credits;
+            d.Balance += credits;
+            return;
+        }
+        double now = run.State.GameSeconds;
+        run.State.Debt.Debts.Add(new Debt
+        {
+            Faction = faction, Principal = credits, Balance = credits,
+            NextInterestAt = now + run.T.Debt.InterestSeconds, NextCollectorAt = now + run.T.Debt.CollectorSeconds,
+        });
+    }
+
     /// <summary>Takes credits off a debt. A debt at 0 closes with a run log line; its collectors leave in the next tick.</summary>
     public static void Reduce(Run run, Debt d, long credits)
     {
@@ -143,12 +180,7 @@ static class DebtDeals
             {
                 if (!Lenders.OffersLoan(run, callee) || Lenders.FactionOf(callee) is not { } f) return false;
                 int credits = LoanCredits(run);
-                double now = run.State.GameSeconds;
-                s.Debts.Add(new Debt
-                {
-                    Faction = f.ID.ToString(), Principal = credits, Balance = credits,
-                    NextInterestAt = now + run.T.Debt.InterestSeconds, NextCollectorAt = now + run.T.Debt.CollectorSeconds,
-                });
+                Owe(run, f.ID.ToString(), credits);
                 playerState.AddMoney(credits);
                 DebtArea.Chat(run, DebtArea.Format("LoanTakenFmt", f.NameKey.Text, Cosmoteer.Extensions.ToXmlCostString(credits)));
                 Onboarding.RunLog.Add(run, Onboarding.RunLogKind.Debt, DebtArea.Format("LogLoanFmt", f.NameKey.Text, credits.ToString("N0")));
@@ -186,6 +218,29 @@ static class DebtDeals
                 DebtArea.Chat(run, DebtArea.Format("RefinancedFmt", buyer.NameKey.Text, oldName, t.RefinanceReputationLoss));
                 Onboarding.RunLog.Add(run, Onboarding.RunLogKind.Debt, DebtArea.Format("LogRefinancedFmt", buyer.NameKey.Text, oldName));
                 Log.Info($"debt: {buyer.ID} bought the {old.Faction} debt of {old.Balance}");
+                return true;
+            }
+            case DebtChoice.HelpPay or DebtChoice.HelpTab or DebtChoice.HelpClaim:
+            {
+                if (DebtHelp.AskingAt(run, callee) is not { } g) return false;
+                int price = DebtHelp.Price(run, g);
+                string name = Lenders.Name(g.Faction);
+                if (kind == DebtChoice.HelpPay)
+                {
+                    if (playerState.Money < price) { Log.Info($"debt: player {player} cannot pay the help price {price}"); return false; }
+                    playerState.AddMoney(-price);
+                    DebtArea.Chat(run, DebtArea.Format("HelpPaidFmt", Cosmoteer.Extensions.ToXmlCostString(price), name));
+                }
+                else if (kind == DebtChoice.HelpTab) DebtHelp.Tab(run, g);
+                else if (DebtModel.ClaimWorks(DebtHelp.Share(g), run.T.Debt.ClaimMaxShare)) DebtArea.Chat(run, DebtArea.Format("ClaimWorksFmt", name));
+                else
+                {
+                    var id = new Cosmoteer.Data.ID<Cosmoteer.Factions.FactionRules>(g.Faction);
+                    run.Mode.SetFactionReputation(id, run.Mode.GetFactionReputation(id) - run.T.Debt.ClaimReputationLoss);
+                    DebtArea.Chat(run, DebtArea.Format("ClaimFailsFmt", name, run.T.Debt.ClaimReputationLoss));
+                }
+                Log.Info($"debt: help answer {kind} by player {player}, share {DebtHelp.Share(g):0.00}, price {price}");
+                DebtHelp.Leave(run, sim, g);
                 return true;
             }
             case DebtChoice.NotNow:

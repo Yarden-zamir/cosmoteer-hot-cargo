@@ -66,6 +66,7 @@ public static class DebtArea
         "loan" => Stations().FirstOrDefault(s => Lenders.OffersLoan(R(), s)) ?? throw new InvalidOperationException("no station offers a loan"),
         "lender" => Stations().FirstOrDefault(s => Lenders.DebtAt(R(), s) is not null) ?? throw new InvalidOperationException("no station of the lender"),
         "collector" => Ship((R().State.Debt.Collectors.FirstOrDefault() ?? throw new InvalidOperationException("no collector")).Ship),
+        "helper" => Ship(R().State.Debt.Help?.Hailer ?? throw new InvalidOperationException("no helper asks for pay")),
         _ => throw new ArgumentException($"debt target '{kind}': loan, lender or collector"),
     };
 
@@ -145,6 +146,47 @@ public static class DebtArea
         Autotest.Commands["debt_ratio"] = arg => First().Balance = (long)Math.Ceiling(First().Principal * double.Parse(arg, CultureInfo.InvariantCulture));
         // debt_unwant: the lender of the first debt stops wanting the players, as after a lost search.
         Autotest.Commands["debt_unwant"] = _ => ((Cosmoteer.Modes.Career.CareerSimModeManager)Sim().Mode).Wanted.RemoveFactionFromWanting(First().FactionId);
+        // Paid help (spec 1430 to 1436).
+        Autotest.Fields["debt_help"] = () => R().State.Debt.Help is null ? 0 : 1;
+        Autotest.Fields["debt_help_ships"] = () => R().State.Debt.Help?.Ships.Count ?? 0;
+        Autotest.Fields["debt_help_helper_dmg"] = () => R().State.Debt.Help?.HelperDamage ?? -1;
+        Autotest.Fields["debt_help_player_dmg"] = () => R().State.Debt.Help?.PlayerDamage ?? -1;
+        Autotest.Fields["debt_help_asking"] = () => R().State.Debt.Help?.Hailer is null ? 0 : 1;
+        Autotest.Fields["debt_help_hailed"] = () => R().State.Debt.Help?.Hailed == true ? 1 : 0;
+        // debt_help_spawn: the system's controlling faction sends its helpers now, without a fight (sim; in co-op run it through "mp").
+        Autotest.Commands["debt_help_spawn"] = _ =>
+        {
+            var id = Sim().MapNode?.ControllingFaction ?? throw new InvalidOperationException("this system has no controlling faction");
+            DebtHelp.Come(R(), Sim(), Cosmoteer.GameApp.Rules.GetFactionRules(id), SimQueries.FleetCenter(Sim()) ?? throw new InvalidOperationException("no human ships"));
+        };
+        // debt_help_share <helper damage> <player damage>: sets the damage counts (sim; in co-op run it through "mp").
+        Autotest.Commands["debt_help_share"] = arg =>
+        {
+            var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var g = R().State.Debt.Help ?? throw new InvalidOperationException("no helpers");
+            g.HelperDamage = long.Parse(p[0], CultureInfo.InvariantCulture);
+            g.PlayerDamage = long.Parse(p[1], CultureInfo.InvariantCulture);
+        };
+        // debt_help_answer pay|tab|claim: answers the helper's page as the acting player.
+        Autotest.Commands["debt_help_answer"] = arg => R().Game.NetManager.EnqueueInput(DebtChoiceDomain.Pick(Target("helper"), arg.Trim() switch
+        {
+            "pay" => DebtChoice.HelpPay,
+            "tab" => DebtChoice.HelpTab,
+            "claim" => DebtChoice.HelpClaim,
+            _ => throw new ArgumentException("debt_help_answer needs: pay | tab | claim"),
+        }, 0));
+        // debt_kill_enemies: removes every enemy ship of the players (single player), so the fight ends.
+        Autotest.Commands["debt_kill_enemies"] = _ =>
+        {
+            foreach (var ship in Sim().Ships.Where(sh => DebtHelp.IsEnemyOfPlayers(Sim(), sh)).ToList()) Sim().Ships.Remove(ship, dispose: true, handleLostShip: false);
+        };
+        // debt_mark_rep: notes the reputation of this system's controlling faction for debt_rep_drop.
+        Autotest.Commands["debt_mark_rep"] = _ =>
+        {
+            var id = Sim().MapNode?.ControllingFaction ?? throw new InvalidOperationException("this system has no controlling faction");
+            _oldFaction = id.ToString();
+            _oldRep = R().Mode.GetFactionReputation(id);
+        };
         // Debt missions (spec 1420 to 1422).
         Autotest.Fields["debt_collect_offers"] = () => CollectOffers().Count();
         Autotest.Fields["debt_collect_line"] = () => CollectMoney().GetRewardText(1f, R().Game)?.Contains(DebtArea.Text("PayoffLineTag"), StringComparison.Ordinal) == true ? 1 : 0;
