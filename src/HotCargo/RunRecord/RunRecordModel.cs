@@ -5,7 +5,7 @@ namespace HotCargo.RunRecord;
 /// <summary>Spec 1221: one past run. Id is the galaxy seed of the career. Score is 0 for a loss.</summary>
 public sealed record RunEntry(
     string Id, DateTimeOffset Ended, bool Won, long Score, int Delivered, double Seconds,
-    int Sector, int Sectors, float PeakHeat, int VaultsLost, string Job, string JobName, int Players);
+    int Sector, int Sectors, float PeakHeat, int VaultsLost, int Players);
 
 /// <summary>Spec 1220: the file content. Version changes when an entry field changes its meaning.</summary>
 public sealed record RunRecordFile(int Version, List<RunEntry> Runs)
@@ -52,7 +52,7 @@ public static class RunRecordModel
 }
 
 /// <summary>Spec 1229: the columns of the Past Runs table, in display order.</summary>
-public enum RunColumn { Date, Job, Result, Score, Delivered, Time, PeakHeat, VaultsLost, Players }
+public enum RunColumn { Date, Result, Score, Delivered, Time, PeakHeat, VaultsLost, Players }
 
 /// <summary>Spec 1229, 1230: the sort of the Past Runs table. Pure, no game types.</summary>
 public static class RunSort
@@ -60,12 +60,9 @@ public static class RunSort
     /// <summary>Spec 1230: the table opens sorted by score, highest first.</summary>
     public const RunColumn DefaultColumn = RunColumn.Score;
 
-    /// <summary>Spec 1230: a first click sorts a text column A to Z, any other column highest or newest first.</summary>
-    public static bool DefaultDescending(RunColumn column) => column != RunColumn.Job;
-
-    /// <summary>Spec 1230: a click on the sorted column turns the order around; a click on another column sorts by it in its default order.</summary>
+    /// <summary>Spec 1230: a click on the sorted column turns the order around; a click on another column sorts by it, highest or newest first.</summary>
     public static (RunColumn Column, bool Descending) Click(RunColumn sorted, bool descending, RunColumn clicked) =>
-        clicked == sorted ? (sorted, !descending) : (clicked, DefaultDescending(clicked));
+        clicked == sorted ? (sorted, !descending) : (clicked, true);
 
     /// <summary>The runs in the order of the column. Ties go to the newer run, so the order is stable.</summary>
     public static List<RunEntry> Sort(IEnumerable<RunEntry> runs, RunColumn column, bool descending)
@@ -73,7 +70,6 @@ public static class RunSort
         var ordered = column switch
         {
             RunColumn.Date => Order(runs, r => r.Ended, descending),
-            RunColumn.Job => Order(runs, r => r.JobName, descending, StringComparer.CurrentCultureIgnoreCase),
             RunColumn.Result => Order(runs, r => r.Won, descending),
             RunColumn.Score => Order(runs, r => r.Score, descending),
             RunColumn.Delivered => Order(runs, r => r.Delivered, descending),
@@ -86,6 +82,6 @@ public static class RunSort
         return [.. ordered.ThenByDescending(r => r.Ended).ThenBy(r => r.Id, StringComparer.Ordinal)];
     }
 
-    static IOrderedEnumerable<RunEntry> Order<T>(IEnumerable<RunEntry> runs, Func<RunEntry, T> key, bool descending, IComparer<T>? comparer = null) =>
-        descending ? runs.OrderByDescending(key, comparer) : runs.OrderBy(key, comparer);
+    static IOrderedEnumerable<RunEntry> Order<T>(IEnumerable<RunEntry> runs, Func<RunEntry, T> key, bool descending) =>
+        descending ? runs.OrderByDescending(key) : runs.OrderBy(key);
 }

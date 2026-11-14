@@ -1,6 +1,5 @@
 using Cosmoteer;
 using HotCargo.Core;
-using HotCargo.StartJobs;
 
 namespace HotCargo.RunRecord;
 
@@ -71,7 +70,6 @@ public static class Recorder
     internal static RunEntry Entry(Run run)
     {
         var s = run.State;
-        var job = StartJobs.StartJobs.Job(run);
         bool won = s.Result == RunResult.Won;
         return new RunEntry(
             Id: run.Mode.Init.RandSeed.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -81,11 +79,9 @@ public static class Recorder
             Delivered: s.DeliveredUnits,
             Seconds: Math.Round(s.GameSeconds),
             Sector: s.SectorIndex,
-            Sectors: run.SectorCount(),
+            Sectors: run.T.Journey.RunSectorCount,
             PeakHeat: MathF.Round(s.RunRecord.PeakHeat),
             VaultsLost: s.Log.Count(e => e.Kind == Onboarding.RunLogKind.Loss),
-            Job: job?.Id ?? "",
-            JobName: job is null ? "" : StartJobs.StartJobs.Name(job),
             Players: run.Game.HumanPlayerCount);
     }
 

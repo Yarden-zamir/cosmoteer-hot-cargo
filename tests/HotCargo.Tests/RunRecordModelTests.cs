@@ -8,7 +8,7 @@ public class RunRecordModelTests
     static readonly DateTimeOffset Day = new(2026, 11, 14, 12, 0, 0, TimeSpan.Zero);
 
     static RunEntry Entry(string id, int days = 0, bool won = true, long score = 1000) =>
-        new(id, Day.AddDays(days), won, score, 3, 3600, 8, 8, 90f, 1, "contract", "The Contract", 1);
+        new(id, Day.AddDays(days), won, score, 3, 3600, 8, 8, 90f, 1, 1);
 
     [Fact]
     public void A_new_run_comes_first_and_the_oldest_drop()
@@ -49,36 +49,41 @@ public class RunRecordModelTests
         Assert.Throws<InvalidDataException>(() => RunRecordModel.Read("""{"Version":2,"Runs":[]}"""));
         Assert.ThrowsAny<System.Text.Json.JsonException>(() => RunRecordModel.Read("not json"));
     }
+
+    [Fact]
+    public void A_file_with_the_removed_job_fields_still_reads()
+    {
+        const string old = """{"Version":1,"Runs":[{"Id":"7","Ended":"2026-11-14T12:00:00+00:00","Won":true,"Score":5,"Delivered":1,"Seconds":60,"Sector":8,"Sectors":8,"PeakHeat":50,"VaultsLost":0,"Job":"rush","JobName":"Rush Order","Players":1}]}""";
+        Assert.Equal("7", Assert.Single(RunRecordModel.Read(old)).Id);
+    }
 }
 
 public class RunSortTests
 {
     static readonly DateTimeOffset Day = new(2026, 11, 14, 12, 0, 0, TimeSpan.Zero);
 
-    static RunEntry Entry(string id, long score, int days = 0, string job = "The Contract", bool won = true) =>
-        new(id, Day.AddDays(days), won, score, 3, 3600, 8, 8, 90f, 1, "contract", job, 1);
+    static RunEntry Entry(string id, long score, int days = 0, bool won = true) =>
+        new(id, Day.AddDays(days), won, score, 3, 3600, 8, 8, 90f, 1, 1);
 
-    static readonly RunEntry[] Runs = [Entry("a", 100, 0, "Rush Order"), Entry("b", 300, 1, "Loud Exit"), Entry("c", 200, 2, "deep space")];
+    static readonly RunEntry[] Runs = [Entry("a", 100, 0), Entry("b", 300, 1), Entry("c", 200, 2)];
 
     [Fact]
     public void The_default_is_score_highest_first()
     {
         Assert.Equal(RunColumn.Score, RunSort.DefaultColumn);
-        Assert.Equal(["b", "c", "a"], RunSort.Sort(Runs, RunSort.DefaultColumn, RunSort.DefaultDescending(RunSort.DefaultColumn)).Select(r => r.Id));
+        Assert.Equal(["b", "c", "a"], RunSort.Sort(Runs, RunSort.DefaultColumn, true).Select(r => r.Id));
     }
 
     [Fact]
-    public void A_click_on_the_sorted_column_turns_it_around_and_another_column_takes_its_default()
+    public void A_click_on_the_sorted_column_turns_it_around_and_another_column_starts_highest_first()
     {
         Assert.Equal((RunColumn.Score, false), RunSort.Click(RunColumn.Score, true, RunColumn.Score));
-        Assert.Equal((RunColumn.Job, false), RunSort.Click(RunColumn.Score, true, RunColumn.Job));
-        Assert.Equal((RunColumn.Date, true), RunSort.Click(RunColumn.Job, false, RunColumn.Date));
+        Assert.Equal((RunColumn.Date, true), RunSort.Click(RunColumn.Score, false, RunColumn.Date));
     }
 
     [Fact]
-    public void Text_sorts_without_case_and_ties_go_to_the_newer_run()
+    public void Ties_go_to_the_newer_run()
     {
-        Assert.Equal(["c", "b", "a"], RunSort.Sort(Runs, RunColumn.Job, false).Select(r => r.Id));
         Assert.Equal(["y", "x"], RunSort.Sort([Entry("x", 5, 0), Entry("y", 5, 1)], RunColumn.Score, true).Select(r => r.Id));
     }
 

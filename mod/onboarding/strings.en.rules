@@ -126,14 +126,6 @@ HotCargoCodex
 		Save = "AI rows save with the ship design."
 	}
 
-	Jobs
-	{
-		Title = "Hot Cargo: Start Jobs"
-		Pick = "Each run starts with a choice of jobs. The job holds for the whole run."
-		Rules = "Each job lists all its rules. No job hides a roll."
-		Tip = "Hover the heat panel to see your job and its factors."
-	}
-
 	Coop
 	{
 		Title = "Hot Cargo: Co-op"

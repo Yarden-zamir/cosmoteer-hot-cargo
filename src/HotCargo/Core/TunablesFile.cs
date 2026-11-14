@@ -122,6 +122,5 @@ public static class TunablesFile
         t.Telemetry.Validate(Require);
         t.Pursuit.Validate(Require, stages);
         t.Debt.Validate(Require);
-        t.StartJobs.Validate(Require);
     }
 }

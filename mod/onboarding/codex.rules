@@ -169,17 +169,6 @@ CodexPages
 		]
 	}
 	{
-		ID = hc_jobs
-		TitleKey = "HotCargoCodex/Jobs/Title"
-		TabNameKey = "HotCargoCodex/Tab"
-		Entries
-		[
-			{ TextKey = "HotCargoCodex/Jobs/Pick" }
-			{ TextKey = "HotCargoCodex/Jobs/Rules" }
-			{ TextKey = "HotCargoCodex/Jobs/Tip" }
-		]
-	}
-	{
 		ID = hc_coop
 		TitleKey = "HotCargoCodex/Coop/Title"
 		TabNameKey = "HotCargoCodex/Tab"

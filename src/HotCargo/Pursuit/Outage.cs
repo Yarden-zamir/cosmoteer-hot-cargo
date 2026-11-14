@@ -1,7 +1,6 @@
 using Cosmoteer.Simulation;
 using Halfling.Random;
 using HotCargo.Core;
-using HotCargo.StartJobs;
 
 namespace HotCargo.Pursuit;
 
@@ -31,7 +30,7 @@ public static class Outage
         var s = run.State.Pursuit;
         var t = run.T.Pursuit;
         s.OutageDueAt = -1;
-        if (!firstVisit || !t.Enabled || !PursuitModel.OutageSector(run.State.SectorIndex, run.SectorCount(), t.OutageMinSector)) return;
+        if (!firstVisit || !t.Enabled || !PursuitModel.OutageSector(run.State.SectorIndex, run.T.Journey.RunSectorCount, t.OutageMinSector)) return;
         var rand = SectorRand(run, 0x4F55_5441_4745UL);
         if (rand.Single() >= t.OutageChance) return;
         s.OutageDueAt = run.State.GameSeconds + t.OutageDelayMin + rand.Single() * (t.OutageDelayMax - t.OutageDelayMin);

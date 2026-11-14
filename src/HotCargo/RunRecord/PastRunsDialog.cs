@@ -19,7 +19,7 @@ internal sealed class PastRunsDialog : DialogBase
     internal static PastRunsDialog? Open { get; private set; }
 
     /// <summary>Column widths in percent of the table, in RunColumn order. Layout only.</summary>
-    static readonly float[] Widths = [13f, 20f, 8f, 12f, 9f, 8f, 10f, 11f, 8f];
+    static readonly float[] Widths = [15f, 10f, 16f, 11f, 10f, 12f, 13f, 10f];
 
     readonly WindowBox _window;
     readonly Label _summary;
@@ -28,7 +28,7 @@ internal sealed class PastRunsDialog : DialogBase
     readonly List<RunEntry> _runs;
 
     internal RunColumn Column { get; private set; } = RunSort.DefaultColumn;
-    internal bool Descending { get; private set; } = RunSort.DefaultDescending(RunSort.DefaultColumn);
+    internal bool Descending { get; private set; } = true;
 
     /// <summary>The entries in the order that the table shows them. For the test commands.</summary>
     internal IReadOnlyList<RunEntry> Shown { get; private set; } = [];

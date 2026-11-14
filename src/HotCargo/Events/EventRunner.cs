@@ -13,7 +13,6 @@ using Halfling.Random;
 using HotCargo.Core;
 using HotCargo.Hunters;
 using HotCargo.Tech;
-using HotCargo.StartJobs;
 
 namespace HotCargo.Events;
 
@@ -410,7 +409,7 @@ public static class EventRunner
             Parts = ships.SelectMany(sh => sh.Parts).Select(pt => pt.Rules.ID.ToString()).ToHashSet(),
             Flags = State(run).Flags,
             FlagSectors = State(run).FlagSectors,
-            SectorsLeft = run.SectorCount() - run.State.SectorIndex,
+            SectorsLeft = run.T.Journey.RunSectorCount - run.State.SectorIndex,
             Wanted = ((Cosmoteer.Modes.Career.CareerSimModeManager)sim.Mode).Wanted.IsLocalPlayerWanted,
         };
     }

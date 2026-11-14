@@ -11,7 +11,6 @@ using Halfling.Serialization;
 using HotCargo.Core;
 using HotCargo.SharedChoice;
 using HotCargo.Ui;
-using HotCargo.StartJobs;
 
 namespace HotCargo.Pursuit;
 
@@ -48,7 +47,7 @@ public sealed class Hacker : IHailProvider, ISharedChoiceDomain
         var t = run.T.Pursuit;
         s.HackerDueAt = -1;
         s.Hacker = null;
-        if (!firstVisit || !t.Enabled || run.State.SectorIndex < t.HackerMinSector || run.State.SectorIndex >= run.SectorCount()) return;
+        if (!firstVisit || !t.Enabled || run.State.SectorIndex < t.HackerMinSector || run.State.SectorIndex >= run.T.Journey.RunSectorCount) return;
         if (!Pacer.MayStart(run, PacedKinds.Hacker)) return;
         var rand = Outage.SectorRand(run, 0x4841_434B_4552UL);
         if (rand.Single() >= t.HackerChance) return;

@@ -7,7 +7,6 @@ closepanel
 ev_set Enabled false
 rr_clear
 expect rr_entries == 0
-sj_pick contract
 wait 1
 # Spec 1223: the tick keeps the highest heat.
 heat 30
@@ -23,7 +22,6 @@ expect rr_score == 184500
 expect rr_peakheat >= 30
 expect rr_delivered == 4
 expect rr_sectors == 8
-expect rr_job_matches == 1
 # A delivery after the win sets the score again (spec 7), and the entry follows.
 buyer deliver 1
 wait 2
