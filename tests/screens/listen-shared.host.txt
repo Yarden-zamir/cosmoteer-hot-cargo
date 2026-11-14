@@ -12,6 +12,8 @@ mp ev_carrier_goto
 closepanel
 select
 waitfor listen_joins == 1 60
+# Empty space under the mouse, so no part tooltip covers the button.
+camera 30000 30000 3000
 wait 1
 screenshot listen-join-button
 listen 1
