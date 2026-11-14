@@ -13,6 +13,7 @@ using Halfling.Pooling;
 using HarmonyLib;
 using HotCargo.Core;
 using HotCargo.Ui;
+using HotCargo.StartJobs;
 
 namespace HotCargo.Ux;
 
@@ -79,7 +80,7 @@ static class CareerInfoPatches
                 {
                     // A first visit to any new system raises the sector index by one (Run.AfterSystemSwitch).
                     int sector = s.SectorIndex + 1;
-                    int last = run.T.Journey.RunSectorCount;
+                    int last = run.SectorCount();
                     sb.Append('\n').Append(sector == last
                         ? $"<good>{UxKit.Text("MapBuyerHere")}</good>"
                         : UxKit.Format("MapSectorFmt", sector, last));
