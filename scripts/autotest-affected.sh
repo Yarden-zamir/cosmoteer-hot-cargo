@@ -15,6 +15,8 @@
 # - An area runs the single-player tests named "<area>-*.txt" and every co-op session with a "step <area>.<name>" line.
 # - A changed test script runs itself. A changed generic co-op client (tests/autotest-mp/client.txt) runs every session.
 # - Docs (*.md, docs/), CI (.github/), scripts and unit tests (tests/HotCargo.Tests) add no autotest beyond core.
+# - A mod rules file that overrides the vanilla system generation (OverrideIn "<modes/career/sectors/...") or that rules of
+#   another area reference (for example contracts/system_scale.rules) changes every system, so it runs the full suite.
 # - Anything else (Core, shared UI, root files, a folder with no tests of its own) runs the full suite.
 #   Core is shared: every area builds on it, so its own "core" test alone is not enough.
 # The "core" smoke test always runs.
@@ -64,6 +66,15 @@ add_area() {
   return $found
 }
 
+# shared_rules <path>: true when a mod rules file changes every system (see the rule list at the top).
+shared_rules() {
+  local path="$1" rel area
+  [[ -f "$path" ]] || return 1
+  rel="${path#mod/}"; area="${rel%%/*}"
+  grep -q 'OverrideIn = "<modes/career/sectors/' "$path" && return 0
+  grep -rlF --include='*.rules' "$rel>" mod | grep -qv "^mod/$area/"
+}
+
 while IFS= read -r path; do
   [[ -z "$path" ]] && continue
   case "$path" in
@@ -74,6 +85,7 @@ while IFS= read -r path; do
     tests/autotest-mp/client.txt) for n in $(coop_sessions); do add "mp:$n"; done ;;
     tests/autotest-mp/*.txt) [[ -f "$path" ]] && add "mp:$(basename "$path" .txt)" ;;
     src/HotCargo/Core/*) FULL=yes ;;
+    mod/*/*.rules) shared_rules "$path" && FULL=yes ;&
     src/HotCargo/*/*|mod/*/*)
       rest="${path#src/HotCargo/}"; rest="${rest#mod/}"
       dirs="$(dirname "$rest")"
