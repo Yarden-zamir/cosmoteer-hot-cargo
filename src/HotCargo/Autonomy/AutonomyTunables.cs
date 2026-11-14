@@ -10,8 +10,10 @@ public sealed class AutonomyTunables
     [Serialize(Optional = true)] public float TickSeconds = 0.25f;
     /// <summary>A Funnel takes in loot up to this many tiles outside its own tiles.</summary>
     [Serialize(Optional = true)] public float FunnelReach = 1f;
-    /// <summary>Mine and salvage: the edge distance that the ship keeps from its target.</summary>
+    /// <summary>Mine and salvage: the gap that the mining laser (or, without one, the hull) keeps outside the target's bounding circle, beside the target part.</summary>
     [Serialize(Optional = true)] public float MineDistance = 80f;
+    /// <summary>Mine and salvage: the laser stands at most this share of its range from the target part.</summary>
+    [Serialize(Optional = true)] public float MineReach = 0.8f;
     /// <summary>Mine and salvage: at most this many open salvage orders on the target at a time.</summary>
     [Serialize(Optional = true)] public int SalvageJobs = 4;
     /// <summary>Buy never spends the owner's money below this amount.</summary>

@@ -1,0 +1,27 @@
+# Co-op session: friendly encounters (spec 1360 and later). See coop-core.txt for "client:", "as 1", "on 1" and steps.
+# Each encounter is a ship-carried event page; the choices go through the shared choice input, and the effects run in the sim.
+mphost {PORT}
+mpstart {PLAYERS}
+mp godmode on
+mp ev_set Enabled false
+closepanel
+on 1 closepanel
+
+step friendly.join
+# Spec 1361: the client takes the join request from its machine. The ship becomes the client's on both machines; the client pays.
+mp event join_request
+waitfor ev_pending == 1 20
+mp ev_carrier_goto
+wait 2
+ev_mark
+on 1 ev_mark
+on 1 ev_comms carrier Take them in
+waitfor ev_pending == 0 30
+on 1 waitfor ev_pending == 0 30
+on 1 expect fr_player_ships == 2
+on 1 expect fr_joined == 1
+on 1 expect ev_money_gain < 0
+expect fr_player_ships == 1
+expect ev_money_gain == 0
+
+end

@@ -737,7 +737,7 @@ TowMission
 	]
 }
 
-// Spec 1146: the rescue tow. The towed ship is the one that fired the beacon (C# tags it hc_rescue_towed for this spawn only).
+// Spec 1147: the rescue tow. The towed ship is the one that fired the beacon (C# tags it hc_rescue_towed for this spawn only).
 // The destination is the nearest trade station whose owner is not hostile to it. No such station: no mission, and the beacon stays.
 RescueMission
 {
@@ -767,7 +767,7 @@ RescueMission
 	]
 }
 
-// Spec 1146: the tug. A civilian hauler without AI: the Events area gives it its move orders and drags the towed ship.
+// Spec 1148: the tug. A civilian hauler without AI: the Events area gives it its move orders and drags the towed ship.
 RescueTug
 {
 	Spawners
@@ -785,6 +785,37 @@ RescueTug
 				UseTierField = true
 				AllowTierRangeExpansion = true
 				Tags = [trade]
+			}
+		}
+	]
+}
+
+// Spec 1361: the join request's ship, a small armed ship that answers comms and waits. It joins the chooser's fleet.
+Recruit
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_ev_carrier]
+			Distance = [700, 900]
+			Allegiance = FactionCivilian
+			SuppressLocationAssertions = true
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				Tier = -1
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 50
+				TargetAcquireRangeFromOrigin = 100
+				TargetUnacquireRangeFromOrigin = 100
 			}
 		}
 	]

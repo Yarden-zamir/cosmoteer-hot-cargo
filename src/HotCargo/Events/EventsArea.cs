@@ -517,7 +517,7 @@ public static class EventsArea
             var ship = CommsTarget("faction");
             MoveNextTo(RequireSim(), ship.WorldCenter, ship.WorldBoundingRadius + float.Parse(arg, CultureInfo.InvariantCulture));
         };
-        // Rescue Beacon (spec 1146). Test only.
+        // Rescue Beacon (spec 1147, 1148). Test only.
         // ev_money_zero: the acting player's money goes to 0. ev_rescue_tip: 1 when the fire action's tooltip lines show the fee.
         Autotest.Commands["ev_money_zero"] = _ =>
         {

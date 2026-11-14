@@ -37,7 +37,7 @@ public sealed class EventsState
     [Serialize(Optional = true)] public PatrolListenState? Listen;
     /// <summary>Faction ships that a patrol listen already finished on: once per ship (spec 1122).</summary>
     [Serialize(Optional = true)] public HashSet<ObjectID> Listened = new();
-    /// <summary>Running rescue tows (spec 1146), in start order.</summary>
+    /// <summary>Running rescue tows (spec 1148), in start order.</summary>
     [Serialize(Optional = true)] public List<RescueTowState> Rescues = [];
     /// <summary>Game seconds of the last triggered event, or -1.</summary>
     [Serialize(Optional = true)] public double LastEventSeconds = -1;

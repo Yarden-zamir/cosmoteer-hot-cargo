@@ -1,0 +1,22 @@
+# Miner aim (spec 1070): a miner whose mining laser faces -X (left) mines a large, turning rock. It holds beside the nearest ordered
+# ore part, on the part's side of the rock, with the laser's arc aimed at the part and within its reach. Before the fix, the ship
+# turned its +X axis to the rock center: the rock sat in the laser's blind wedge, and the laser never took a target.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+shipai Log on
+auto_build MinerL player yarden_zamir.computer@2,0,3 cosmoteer.mining_laser_small@-1,0,3 cosmoteer.storage_2x2@3,0 yarden_zamir.targeted_reactor@2,2 yarden_zamir.funnel@4,2 cosmoteer.thruster_small@2,4 cosmoteer.thruster_small@3,4 cosmoteer.thruster_small@0,-2,2 cosmoteer.thruster_small@3,-2,2 cosmoteer.thruster_small@0,2,1 cosmoteer.thruster_small@0,3,1 cosmoteer.thruster_small@5,0,3 cosmoteer.thruster_small@5,1,3
+wait 1
+auto_log built
+expect auto_manned == 1
+auto_rock cosmoteer.asteroid_iron_l 300 0.05
+tactics_ship MinerL
+tactics HC1:LootWithin=600>CollectLoot;AsteroidWithin=20000>Mine
+tacticsauto on
+# The spawned rock is the nearest one, so the miner works on it.
+expect auto_rock_nearest == 1
+waitfor auto_salvage_jobs >= 1 120
+waitfor auto_laser_targets >= 1 120
+waitfor auto_cargo >= 10 300
+quit

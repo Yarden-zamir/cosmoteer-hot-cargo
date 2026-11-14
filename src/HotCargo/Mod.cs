@@ -24,6 +24,7 @@ public static class Mod
             Missions.Mechanics.MechanicsArea.Register();
             Tactics.TacticsArea.Register();
             Events.EventsArea.Register();
+            Friendly.FriendlyArea.Register();
             Chains.ChainsArea.Register();
             SharedChoice.SharedChoiceArea.Register();
             Contracts.ContractsArea.Register();

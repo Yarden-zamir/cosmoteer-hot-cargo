@@ -326,6 +326,13 @@ Trade stations sell it in their comms: "Buy a rescue beacon." for 0.3 money unit
 
 All catalog items are implemented.
 
+### Friendly encounters (spec 1360 to 1399)
+
+Friendly ships carry their page in comms and ask for something. Every choice is a clear deal; the result shows on the ship and in a message.
+
+#### Join Request (Arrival; weight 5)
+A small armed crew asks to fly under your colors. Take them in for 1 money unit: the ship becomes yours (spec 1361). Or not now.
+
 ## 4. Content rules for authors
 
 - Do not write counts that live elsewhere (the starting tech, spawn counts in spawns.rules): they drift. Use `{crates}` for the live fleet tech count. Counts that the same choice's Cost sets are fine.

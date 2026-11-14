@@ -1,0 +1,6 @@
+// Friendly encounters (spec 1360 and later). {0} = a ship.
+HotCargoFriendly
+{
+	JoinedFmt = "{0} joins your fleet."
+	JoinGone = "The ship is gone before it can join you."
+}

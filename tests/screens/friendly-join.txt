@@ -1,0 +1,26 @@
+# Join request (spec 1361): the page in the ship's comms, then the ship in the player's colors with the message.
+# Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
+render on
+newgame run 0
+wait 10
+# Close the run intro.
+closepanel
+wait 1
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+event join_request
+ev_carrier_goto
+pause off
+wait 2
+ev_open carrier
+wait 2
+screenshot friendly-join-page
+ev_comms carrier Take them in
+wait 1
+closepanel
+wait 1
+pause on
+wait 1
+screenshot friendly-join-result
+quit

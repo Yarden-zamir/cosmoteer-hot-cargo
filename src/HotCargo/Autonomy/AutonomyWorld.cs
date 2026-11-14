@@ -6,6 +6,7 @@ using Cosmoteer.Resources;
 using Cosmoteer.Ships;
 using Cosmoteer.Ships.Parts;
 using Cosmoteer.Ships.Parts.Resources;
+using Cosmoteer.Ships.Parts.Weapons;
 using Cosmoteer.Ships.Resources;
 using Cosmoteer.Ships.Special;
 using Cosmoteer.Simulation;
@@ -309,6 +310,49 @@ internal static class AutonomyWorld
         }
         return best;
     }
+
+    /// <summary>Spec 1070: the part that the ship works on: the nearest part (to its center) that it salvages now, else the nearest part that the order would take.</summary>
+    internal static Part? WorkPart(Ship ship, Ship target, CargoSettings? mine)
+    {
+        var from = ship.DetWorldCenter;
+        Part? Nearest(Func<Part, bool> which) => target.Parts.Where(which)
+            .OrderBy(p => from.DistanceSquaredTo(p.DetWorldCenter)).ThenBy(p => p.Location.X).ThenBy(p => p.Location.Y).FirstOrDefault();
+        return Nearest(p => ship.Resources.IsSalvaging(p, MPValueType.Confirmed)) ?? Nearest(p => mine is null || MinesPart(p, mine));
+    }
+
+    /// <summary>
+    /// Spec 1070, 1072: where the ship holds to work on the target, and its world rotation. It stands beside the work part, on the part's
+    /// side of the target (the line from the target center out through the part), so the part stays in reach as the target turns. With a
+    /// mining laser, the laser with the longest range stands MineDistance outside the target's bounding circle, closer when its reach
+    /// (range × MineReach) needs it, and the ship turns so that the center of the laser's arc points at the part: the beam leaves the hull
+    /// forward, inside the arc and clear of the ship's own parts. Without a laser, the hull keeps MineDistance and the ship's +X axis
+    /// points at the part. Null when the target has no part to work on. Limit: it plans for one laser; other lasers fire when the part
+    /// happens to be in their reach.
+    /// </summary>
+    internal static (Vector2 Spot, Direction Rotation)? WorkSpot(Ship ship, Ship target, CargoSettings? mine, float gap, float reachShare)
+    {
+        if (WorkPart(ship, target, mine) is not { } part) return null;
+        var p = part.DetWorldCenter;
+        var c = target.DetWorldCenter;
+        float inside = c.DistanceTo(in p);
+        Vector2 n = inside > 1e-3f ? (p - c) / inside : Vector2.FromAngle(c.DirectionTo(ship.DetWorldCenter));
+        float depth = Math.Max(0f, target.WorldBoundingRadius - inside);
+        var laser = ship.Weapons.OfType<TurretWeapon>().Where(IsSalvageTurret)
+            .OrderByDescending(w => w.GetEffectiveRange(WeaponCoverageMode.Confirmed)).ThenBy(w => w.Part.Location.X).ThenBy(w => w.Part.Location.Y).FirstOrDefault();
+        if (laser is null)
+        {
+            var spot = p + n * (depth + ship.WorldBoundingRadius + gap);
+            return (spot, spot.DirectionTo(in p));
+        }
+        float standOff = AutonomyModel.LaserStandOff(depth, gap, laser.GetEffectiveRange(WeaponCoverageMode.Confirmed) * reachShare);
+        var off = ship.DetTransformPointToWorld(laser.ShipLocation) - ship.DetWorldCenter;
+        float arc = (float)ship.DetTransformRotationToWorld(laser.GetLocalArc(TurretWeapon.ArcType.Targeting, WeaponCoverageMode.Confirmed).Center);
+        var (x, y, turn) = AutonomyModel.LaserSpot(p.X, p.Y, n.X, n.Y, standOff, off.X, off.Y, arc);
+        return (new Vector2(x, y), ship.DetRotation + turn);
+    }
+
+    /// <summary>A turret that picks salvage jobs (a mining laser): one of its auto targets is salvage (TurretWeapon.TryAcquireSalvageTarget).</summary>
+    internal static bool IsSalvageTurret(TurretWeapon w) => w.Rules.AutoTargets.Any(a => a.TargetType == WeaponTargetType.Salvage);
 
     /// <summary>
     /// Spec 1070, 1072: the vanilla salvage order for the parts of the target nearest to the ship, so that salvage lasers pick them.
