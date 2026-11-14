@@ -59,7 +59,8 @@
 | `Hunters.MinFuel` | 60 | 192 |
 | `FleeHealthFraction`, `FleeChance` | 0.25, 0.5 | 193 |
 | `FleeDistance`, `FleeJumpSeconds`, `FleeRecoverFraction` | 1500, 25 s, 0.6 | 195 |
-| `CallSeconds`, `CallRange`, `CallCooldownSeconds` | 15 s, 6000, 60 s | 196, 197 |
+| `CallSeconds`, `CallRange`, `CallCooldownSeconds` | 22 s, 6000, 60 s | 196, 197, 1300 |
+| `CallInterceptSeconds`, `CallInterceptParts` | 30 s, `cosmoteer.sensor_array` | 1300 |
 | `CallAssistSeconds` | 60 s | 198 |
 | `CallBlockedInNebulas`, `CallStormStrength` | [ion_storm, electron], 0.5 | 199 |
 | `FocusWeakFactor` | 1.5 | 200 |
