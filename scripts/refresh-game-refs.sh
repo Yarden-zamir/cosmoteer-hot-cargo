@@ -5,8 +5,6 @@
 # Usage: refresh-game-refs.sh [--push]   Without --push it only shows what would change.
 # Layout, the same as ../.game: Bin/, Data/ and StandardMods/example_mod/, exactly the files that pull-game.sh copies (not
 # decompiled/). The repo's own clone lives in <container>/.game-refs.
-# Also Cosmoteer.dll and HalflingCore.dll in the repo root: the build job of branches from before the Bin/ layout reads
-# them there. Remove them when no open branch has the old .github/workflows/check.yml.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 GAME="$(cd .. && pwd)/.game"
@@ -23,9 +21,8 @@ mkdir -p "$CLONE/Bin" "$CLONE/Data" "$CLONE/StandardMods"
 rsync -a --delete "$GAME/Bin/" "$CLONE/Bin/"
 rsync -a --delete "$GAME/Data/" "$CLONE/Data/"
 rsync -a --delete "$GAME/StandardMods/example_mod/" "$CLONE/StandardMods/example_mod/"
-cp "$GAME/Bin/Cosmoteer.dll" "$GAME/Bin/HalflingCore.dll" "$CLONE/"
 # Only the game files: nothing else may enter this repo.
-git -C "$CLONE" add -A -- Bin Data StandardMods Cosmoteer.dll HalflingCore.dll
+git -C "$CLONE" add -A -- Bin Data StandardMods
 # Every game file must be in the index; a missing one means an ignore rule or a failed add.
 MISSING="$(comm -23 <(cd "$CLONE" && find Bin Data StandardMods -type f | sort) <(git -C "$CLONE" -c core.quotePath=false ls-files -- Bin Data StandardMods | sort))"
 [[ -z "$MISSING" ]] || { echo "refresh-game-refs: not tracked:"; echo "$MISSING" | head; exit 1; }
