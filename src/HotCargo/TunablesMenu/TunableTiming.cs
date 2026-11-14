@@ -32,6 +32,9 @@ public static class TunableTiming
     static readonly Dictionary<string, Applies> Exceptions = new()
     {
         ["TechTunables.StartingTechUnits"] = Applies.NewRun,
+        ["TacticsTunables.CallSeconds"] = Applies.NextUse,
+        ["TacticsTunables.CallInterceptSeconds"] = Applies.NextUse,
+        ["TacticsTunables.CallInterceptParts"] = Applies.NextUse,
         ["TechTunables.StartingResearch"] = Applies.NewRun,
         ["JourneyTunables.RunSectorCount"] = Applies.NextSystem,
         ["HunterTunables.Stages"] = Applies.NextSpawn,

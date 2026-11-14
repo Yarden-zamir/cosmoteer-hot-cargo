@@ -62,7 +62,8 @@
 | `Hunters.MinFuel` | 60 | 192 |
 | `FleeHealthFraction`, `FleeChance` | 0.25, 0.5 | 193 |
 | `FleeDistance`, `FleeJumpSeconds`, `FleeRecoverFraction` | 1500, 25 s, 0.6 | 195 |
-| `CallSeconds`, `CallRange`, `CallCooldownSeconds` | 15 s, 6000, 60 s | 196, 197 |
+| `CallSeconds`, `CallRange`, `CallCooldownSeconds` | 22 s, 6000, 60 s | 196, 197, 1300 |
+| `CallInterceptSeconds`, `CallInterceptParts` | 30 s, `cosmoteer.sensor_array` | 1300 |
 | `CallAssistSeconds` | 60 s | 198 |
 | `CallBlockedInNebulas`, `CallStormStrength` | [ion_storm, electron], 0.5 | 199 |
 | `FocusWeakFactor` | 1.5 | 200 |
@@ -80,7 +81,7 @@
 | `Mechanics.SurveyScanSeconds` | 15 s | 136 |
 | `Mechanics.ScanRange`, `IntensivePayBonus`, `MaxIntensivePerWave` | 3500, 0.25, 2 | 140 |
 | Archetype weights | rules values in `mod/worlds/archetypes.rules`, restart needed | 220 |
-| `Worlds.CurrentFlowSpeed`, `CurrentAccel`, `CurrentArrows` | 45, 9, on | 221 |
+| `Worlds.CurrentFlowSpeed`, `CurrentAccel`, `CurrentSideShare`, `CurrentArrows` | 45, 9, 0.25, on | 221 |
 | `Worlds.PassHoldSeconds`, `PassLostSeconds`, `PassWaveSeconds`, `PassWaveDistance` | 120 s, 15 s, 35 s, 2500 | 222 |
 | `Worlds.SundiveSalvageSeconds`, `HeatWarnDepth` | 5 s, 0.5 | 223 |
 | `Worlds.LairDiscoverDistance` | 2000 | 224 |

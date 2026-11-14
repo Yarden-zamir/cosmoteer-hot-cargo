@@ -120,7 +120,14 @@ public sealed class TacticsTunables
     /// A call for help takes this long before allies answer. One disruptor, EMP or ion beam hit stops it. Long enough that the
     /// players can jam the caller or kill it.
     /// </summary>
-    [Serialize(Optional = true)] public float CallSeconds = 15f;
+    [Serialize(Optional = true)] public float CallSeconds = 22f;
+    /// <summary>
+    /// A call takes this long instead of CallSeconds when, at its start, a human enemy ship has a CallInterceptParts part
+    /// whose radar range reaches the caller (spec 1300).
+    /// </summary>
+    [Serialize(Optional = true)] public float CallInterceptSeconds = 30f;
+    /// <summary>Part IDs that intercept a call early when their radar range reaches the caller: the call takes CallInterceptSeconds.</summary>
+    [Serialize(Optional = true)] public string[] CallInterceptParts = ["cosmoteer.sensor_array"];
     /// <summary>Allies within this distance of the caller hear the call.</summary>
     [Serialize(Optional = true)] public float CallRange = 6000f;
     /// <summary>A ship that called, was stopped or answered a call does not call again for this long.</summary>
@@ -158,7 +165,7 @@ public sealed class TacticsTunables
     {
         require(FleeHealthFraction is >= 0 and <= 1 && FleeRecoverFraction is >= 0 and <= 1, "Tactics.FleeHealthFraction and FleeRecoverFraction must be 0 to 1");
         require(FleeChance is >= 0 and <= 1, "Tactics.FleeChance must be 0 to 1");
-        require(CallSeconds > 0 && CallRange > 0, "Tactics.CallSeconds and CallRange must be above 0");
+        require(CallSeconds > 0 && CallInterceptSeconds > 0 && CallRange > 0, "Tactics.CallSeconds, CallInterceptSeconds and CallRange must be above 0");
         require(CallStormStrength is > 0 and <= 1, "Tactics.CallStormStrength must be above 0 and at most 1");
         require(RegroupMinGroup >= 1, "Tactics.RegroupMinGroup must be 1 or more");
         require(TeamRadius > 0 && CoverSearchRange > 0 && CoverPeekSeconds > 0 && CoverHideSeconds > 0,
