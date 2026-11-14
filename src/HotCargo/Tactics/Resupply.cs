@@ -164,6 +164,50 @@ internal static class Resupply
         return done;
     }
 
+    /// <summary>
+    /// The players' combat block rule (CareerSimModeManager.GetConstructionLegality, used there only for the instant build modes):
+    /// an enemy ship within EnemyCombatNoBuildRadius fired in the last EnemyCombatNoBuildDuration (combat difficulty rules).
+    /// Reads sim state only.
+    /// </summary>
+    public static bool InCombat(Ship ship)
+    {
+        var sim = HunterOrders.Sim(ship);
+        if (sim.Mode is not Cosmoteer.Modes.Career.CareerSimModeManager career) return false;
+        var rules = career.CombatDifficulty;
+        if (rules.EnemyCombatNoBuildRadius <= 0) return false;
+        var found = new List<Ship>();
+        sim.Ships.DetFindIntersectingWith(new Circle(ship.DetWorldCenter, rules.EnemyCombatNoBuildRadius), found, approximate: true, null,
+            s => s.IsEnemiesWith(ship) && s.Weapons.LastWeaponFireTime + rules.EnemyCombatNoBuildDuration >= sim.LogicalTime);
+        return found.Count > 0;
+    }
+
+    /// <summary>Tactics log event of repairs that a ship in combat cancels (autotest field tactic_repair_hold).</summary>
+    public const string RepairHoldEvent = "repair_hold";
+
+    /// <summary>
+    /// Spec 1317: an AI ship in combat (InCombat) does not repair, unless it repairs in cover behind its rock (spec 1306) or at its
+    /// station (spec 1308, 1315).
+    /// </summary>
+    public static bool RepairBlocked(Ship ship, TacticsTunables t) => t.RepairCombatHoldEnabled && !RepairsAnyway(ship) && InCombat(ship);
+
+    static bool RepairsAnyway(Ship ship) =>
+        ship.AI?.GetStrategyModule<FallBackStrategy>() is { } fallBack && (fallBack.InCover(ship) || fallBack.AtStation(ship))
+        || ship.AI?.GetStrategyModule<Ai.FleeStrategy>()?.AtStation(ship) == true;
+
+    /// <summary>Spec 1317: a ship in combat cancels its queued repairs (ConstructionManager.CancelAll), so its crew stop work and fight.</summary>
+    public static void HoldRepairsInCombat(Ship ship, TacticsTunables t)
+    {
+        if (ship.OptionalConstructionManager is not { HasAnyQueued: true } queue || !RepairBlocked(ship, t)) return;
+        int count = QueuedRepairs(ship);
+        queue.CancelAll();
+        TacticsLog.Event(ship, RepairHoldEvent, $"cancels {count} repairs in combat");
+    }
+
+    /// <summary>Queued repairs and rebuilds of the ship.</summary>
+    public static int QueuedRepairs(Ship ship) => ship.OptionalConstructionManager is { } cm
+        ? cm.QueuedPartRepairs.Count + cm.QueuedPartConstructions.Count(c => c.IsRepair) + cm.QueuedDoorConstructions.Count(c => c.IsRepair)
+        : 0;
+
     /// <summary>Tactics log event of a station supply (autotest field tactic_fallback_supply).</summary>
     public const string SupplyEvent = "fallback_supply";
 

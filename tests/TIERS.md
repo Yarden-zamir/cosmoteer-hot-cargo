@@ -31,6 +31,7 @@ Actions: **smoke** (in the smoke tier), keep (full tier only), done (changed in 
 | tactics-fallback-cover | 50 s | a damaged ship with resources hides behind a rock and repairs | AI movement, crew repair | RepairModel.PickPlan | keep |
 | tactics-fallback-donor | 60 s | a damaged cargo ship takes resources from an ally and repairs | resource transfer, crew repair | RepairModel.DonorGives | keep |
 | tactics-fallback-station | 50 s | a damaged faction ship gets crew and repairs at a station | stations, crew spawn, repair | RepairModel.PickPlan | keep |
+| tactics-combat-repair | 60 s | a ship back in combat cancels its queued repairs | crew repair jobs, weapon fire | none | keep |
 | ai-cover | 68 s | a ship hides behind a rock | AI movement, line of sight | PersonalityModel.CoverSpot, NextCoverPhase | keep |
 | ai-flee | 79 s | roll once, unarmed runs, flee jump | AI, damage, jumps | AiModel.NextFlee | keep |
 | ai-personality | 69 s | personalities by faction, heavy ships never kite | ship builds, spawns | PersonalityModel | **smoke** |

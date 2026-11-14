@@ -1,10 +1,13 @@
 using System.Globalization;
 using Cosmoteer;
 using Cosmoteer.Data;
+using Cosmoteer.Game.Multiplayer.MPInputs;
+using Cosmoteer.Ships.Parts.UI;
 using Cosmoteer.Resources;
 using Cosmoteer.Ships;
 using HotCargo.Ai;
 using HotCargo.Dev;
+using HotCargo.Core;
 using HotCargo.Hunters;
 
 namespace HotCargo.Tactics;
@@ -16,7 +19,7 @@ static class RepairAutotest
     {
         foreach (var plan in Enum.GetValues<RepairPlan>().Where(p => p != RepairPlan.None))
             Autotest.Fields[$"ai_fb_{plan.ToString().ToLowerInvariant()}"] = () => Modules().Count(m => m.Plan == plan);
-        foreach (string name in new[] { FallBackStrategy.TakeEvent, Resupply.SupplyEvent })
+        foreach (string name in new[] { FallBackStrategy.TakeEvent, Resupply.SupplyEvent, Resupply.RepairHoldEvent })
             Autotest.Fields[$"tactic_{name}"] = () => TacticsLog.Count(name);
         Autotest.Fields["ai_fb_active"] = () => Modules().Count(m => m.Plan != RepairPlan.None);
         Autotest.Fields["ai_fb_in_cover"] = () => Hostile().Count(s => s.AI?.GetStrategyModule<FallBackStrategy>()?.InCover(s) == true);
@@ -26,6 +29,11 @@ static class RepairAutotest
         // The lowest health fraction (spec 47) and the lowest crew count of the ships of the last aispawn.
         Autotest.Fields["ai_new_min_health"] = () => New().Select(s => (double)HunterOrders.HealthFraction(s)).DefaultIfEmpty(-1).Min();
         Autotest.Fields["ai_new_first_health"] = () => New().Select(s => (double)HunterOrders.HealthFraction(s)).DefaultIfEmpty(-1).First();
+        Autotest.Fields["ai_new_first_jobs"] = () => New().Select(s => (double)Resupply.QueuedRepairs(s)).DefaultIfEmpty(-1).First();
+        // aimark_jobs: remembers the queued repairs of the first aispawn ship; ai_new_first_jobs_done counts those done since.
+        Autotest.Commands["aimark_jobs"] = _ => _markedJobs = Resupply.QueuedRepairs(At("0"));
+        Autotest.Fields["ai_new_first_jobs_done"] = () => _markedJobs - Resupply.QueuedRepairs(At("0"));
+        Autotest.Fields["ai_new_first_in_combat"] = () => New().Select(s => Resupply.InCombat(s) ? 1.0 : 0.0).DefaultIfEmpty(-1).First();
         Autotest.Fields["ai_new_min_crew"] = () => New().Select(s => (double)s.Crew.Assigned.Count).DefaultIfEmpty(-1).Min();
 
         // aidamage <index>|new <fraction>: sets every part of ship <index> of the last aispawn to this fraction of its health.
@@ -81,6 +89,28 @@ static class RepairAutotest
             var at = At(parts[0]).WorldCenter;
             Autotest.Commands["camera"](string.Create(CultureInfo.InvariantCulture, $"{at.X} {at.Y} {parts[1]}"));
         };
+        // ainew_watch <i> <distance>: moves the player ship to this distance from ship <i> of the aispawn list, so the ship is in
+        // sight for screenshots. Test only.
+        Autotest.Commands["ainew_watch"] = arg =>
+        {
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length != 2) throw new InvalidOperationException("ainew_watch needs: i distance");
+            var ship = At(parts[0]);
+            var player = Tech.TechAutotest.PlayerShip();
+            float d = float.Parse(parts[1], CultureInfo.InvariantCulture);
+            Autotest.Teleport(player, Autotest.ClearSpotNear(ship.Sim!, ship.DetWorldCenter, ship.WorldBoundingRadius + player.WorldBoundingRadius + d, player.WorldBoundingRadius));
+        };
+        // playerweapons on|off: turns every weapon of the player ship on or off with its on/off part setting, like a click. For
+        // screenshots next to an enemy that must not be shot. Test only.
+        Autotest.Commands["playerweapons"] = arg =>
+        {
+            var player = Tech.TechAutotest.PlayerShip();
+            var toggles = player.Weapons.Select(w => w.Part).OfType<Cosmoteer.Ships.Parts.Part>().Distinct()
+                .SelectMany(part => part.Components.OfType<PartUIToggle>()).Where(t => t.Rules.ToggleID.ToString() == "on_off")
+                .ToDictionary(t => t, _ => arg.Trim() == "on" ? 1 : 0);
+            if (toggles.Count == 0) throw new InvalidOperationException("the player ship has no weapon with an on/off setting");
+            player.Sim!.RequireGame().NetManager.EnqueueInput(new MPSetUITogglesInput(toggles));
+        };
         // aiplan_near <distance>: moves each hostile ship that falls back to a station or donor, or flees to a station, to this distance from its target's hull.
         Autotest.Commands["aiplan_near"] = arg =>
         {
@@ -94,6 +124,8 @@ static class RepairAutotest
             }
         };
     }
+
+    static int _markedJobs;
 
     static List<Ship> Hostile() => PersonalityAutotest.Hostile().OrderBy(s => s.UniqueID).ToList();
 

@@ -68,6 +68,9 @@ internal sealed class FleeStrategy : AIStrategyModule
     public bool Fleeing => _fleeing;
     public bool Supplied => _supplied;
 
+    /// <summary>True when the fleeing ship is next to its station.</summary>
+    public bool AtStation(Ship ship) => _fleeing && _station != default && Resupply.Station(ship, _station) is { } s && Resupply.AtStation(ship, s);
+
     /// <summary>Place and hull radius of the station that the fleeing ship goes to, or null. For autotests.</summary>
     public (Vector2 Center, float Radius)? StationCenter(Ship ship) =>
         _fleeing && _station != default && Resupply.Station(ship, _station) is { } s ? (s.Center, s.Radius) : null;
@@ -155,7 +158,7 @@ internal sealed class FleeStrategy : AIStrategyModule
             Resupply.VisitStation(ship, station, ref _supplied, threat, t);
             return true;
         }
-        _repair.OnAITick(ship, ai);
+        if (!Resupply.RepairBlocked(ship, t)) _repair.OnAITick(ship, ai);
         return true;
     }
 
