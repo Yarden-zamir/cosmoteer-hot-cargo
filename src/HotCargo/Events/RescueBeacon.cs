@@ -14,7 +14,7 @@ using HotCargo.Core;
 
 namespace HotCargo.Events;
 
-/// <summary>A running rescue tow (spec 1146). Saved in EventsState.</summary>
+/// <summary>A running rescue tow (spec 1148). Saved in EventsState.</summary>
 [ReflectiveSerialization(Explicit = true)]
 public sealed class RescueTowState
 {
@@ -32,7 +32,7 @@ public sealed class RescueTowState
 }
 
 /// <summary>
-/// Spec 1146: the Rescue Beacon. Its item action (handler "rescue") starts a rescue tow mission (the tow objective of requirement 88,
+/// Spec 1147, 1148: the Rescue Beacon. Its item action (handler "rescue") starts a rescue tow mission (the tow objective of requirement 88,
 /// with the firing ship as the towed ship), takes the fee from the player who fired it, adds heat and spawns a tug. The sim tick
 /// flies the tug to the ship, then to the station, and drags the ship on a tow line. Everything runs in the sim, so co-op stays in step.
 /// </summary>
