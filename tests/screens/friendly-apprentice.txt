@@ -1,0 +1,41 @@
+# Apprentice (spec 1362, 1363): its page, its label with the fights it saw, and the join message.
+# Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
+render on
+newgame run 0
+wait 10
+# Close the run intro.
+closepanel
+wait 1
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+godmode on
+event apprentice
+ev_carrier_goto
+pause off
+wait 2
+ev_open carrier
+wait 2
+screenshot friendly-apprentice-page
+ev_comms carrier Let them follow
+wait 1
+closepanel
+fr_set ApprenticeJoinFights 2
+dip_spawn enemy 700
+wait 3
+fr_kill_enemy
+wait 3
+pause on
+wait 1
+screenshot friendly-apprentice-label
+pause off
+dip_spawn enemy 700
+wait 3
+fr_kill_enemy
+wait 2
+fr_apprentice_end
+wait 1
+pause on
+wait 1
+screenshot friendly-apprentice-joins
+quit

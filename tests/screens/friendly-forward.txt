@@ -1,0 +1,30 @@
+# Pay it forward (spec 1369 to 1371): the Wayfarers arrive in a fight (label WAYFARER), and their closing hail.
+# Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
+render on
+newgame run 0
+wait 10
+# Close the run intro.
+closepanel
+wait 1
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+godmode on
+fr_set PayForwardChance 1
+fr_set PayForwardOutclassRatio 0.01
+fr_kill_enemies all
+dip_spawn enemy 900
+fr_attack
+pause off
+waitfor fr_wayfarers >= 1 60
+wait 3
+pause on
+wait 1
+screenshot friendly-forward-arrive
+pause off
+fr_kill_enemies all
+waitfor ev_pending == 1 60
+ev_open carrier
+wait 2
+screenshot friendly-forward-hail
+quit
