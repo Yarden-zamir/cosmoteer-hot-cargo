@@ -11,7 +11,10 @@ using Cosmoteer.Ships.Parts;
 using Cosmoteer.Ships.Parts.Crew;
 using Cosmoteer.Ships.Parts.Resources;
 using Cosmoteer.Ships.Parts.UI;
+using Cosmoteer.Ships.Parts.Weapons;
 using Cosmoteer.Simulation;
+using Cosmoteer.Simulation.Doodads;
+using Cosmoteer.Simulation.Stasis;
 using Halfling.Geometry;
 using HotCargo.Core;
 using HotCargo.Dev;
@@ -37,6 +40,7 @@ internal static class AutonomyAutotest
     static Ship Home() => TechAutotest.PlayerShip();
 
     static int _moneyMark, _homeMark;
+    static ObjectID? _rock;
     /// <summary>The ship that auto_mark ran for, so a test can wait until a co-op mark reached the sim.</summary>
     static ObjectID? _marked;
 
@@ -256,6 +260,27 @@ internal static class AutonomyAutotest
             sim.Ships.Add(wreck);
             Log.Info($"AUTOTEST auto_wreck id={wreck.UniqueID} junk={wreck.IsJunk} parts={wreck.Parts.Count}");
         };
+        // auto_rock <doodad> <distance> [spin]: a live asteroid doodad (for example cosmoteer.asteroid_iron_l) at a clear spot at least this
+        // far from the test ship, turning at spin radians per second. Sim change: use "mp" in co-op.
+        Autotest.Commands["auto_rock"] = arg =>
+        {
+            var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (p.Length is < 2 or > 3) throw new InvalidOperationException("auto_rock needs: doodad distance [spin]");
+            var sim = Sim();
+            var at = Autotest.ClearSpotNear(sim, TestShip().DetWorldCenter, float.Parse(p[1], CultureInfo.InvariantCulture), 60f);
+            var spawner = new StasisDoodadSpawner(sim, new ID<DoodadRules>(p[0]), at, Direction.Zero, 77UL, null);
+            // Same reservation as SimStasisManager.AddStasisSpawner, so the asteroid gets a known, deterministic ID.
+            while (spawner.ReservedObjectID == default || !sim.IsObjectIDAvailable(spawner.ReservedObjectID)) spawner.ReservedObjectID = ObjectID.NewRandom(sim.Rand);
+            spawner.Spawn(sim);
+            var rock = sim.Ships[spawner.ReservedObjectID] ?? throw new InvalidOperationException($"{p[0]} did not spawn a live asteroid");
+            if (p.Length == 3 && rock.Physics.Body is { } body) body.AngularVelocity = float.Parse(p[2], CultureInfo.InvariantCulture);
+            _rock = rock.UniqueID;
+            Log.Info($"AUTOTEST auto_rock {p[0]} id={rock.UniqueID} parts={rock.Parts.Count} radius={rock.WorldBoundingRadius:0} edge={HunterOrders.EdgeDistance(TestShip(), rock):0}");
+        };
+        // 1 when the asteroid that auto_rock made last is the nearest one with ore for the test ship (the one that Mine picks).
+        Autotest.Fields["auto_rock_nearest"] = () => AutonomyWorld.NearestAsteroid(TestShip(), CargoSettings.Default)?.Id == _rock ? 1 : 0;
+        // Salvage turrets (mining lasers) of the test ship that have a target now.
+        Autotest.Fields["auto_laser_targets"] = () => TestShip().Weapons.Count(w => w is TurretWeapon { Target: not null } tw && AutonomyWorld.IsSalvageTurret(tw));
     }
 
     static string[] Args(string arg, int n)

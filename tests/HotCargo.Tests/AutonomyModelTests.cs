@@ -178,4 +178,31 @@ public class AutonomyModelTests
         Assert.Equal(full, AutonomyModel.CrewMet(crew, needed, AutonomyModel.ComputerCrew));
         Assert.Equal(Math.Max(0, needed - 1), AutonomyModel.CrewStillWanted(needed, AutonomyModel.ComputerCrew));
     }
+
+    [Theory]
+    [InlineData(0f, 80f, 120f, 80f)]    // a surface part: the laser keeps the gap outside the circle
+    [InlineData(50f, 80f, 120f, 120f)]  // a deep part: the laser comes closer, to its reach
+    [InlineData(150f, 80f, 120f, 150f)] // deeper than the reach: never inside the circle
+    public void Laser_stands_off_by_the_gap_but_within_its_reach(float depth, float gap, float reach, float expected) =>
+        Assert.Equal(expected, AutonomyModel.LaserStandOff(depth, gap, reach), 3);
+
+    [Fact]
+    public void Laser_spot_puts_the_laser_on_the_outward_line_with_its_arc_at_the_part()
+    {
+        // The part at the origin, outward line +x, the laser 10 to the right of the ship center with its arc facing +x now.
+        var (x, y, turn) = AutonomyModel.LaserSpot(0f, 0f, 1f, 0f, 50f, offX: 10f, offY: 0f, arcAngle: 0f);
+        // The ship turns half around: the laser ends at (50, 0), left of the ship center, facing -x at the part.
+        Assert.Equal(-1f, MathF.Cos(turn), 4);  // pi or -pi: the same half turn
+        Assert.Equal(60f, x, 3);
+        Assert.Equal(0f, y, 3);
+        // A laser on the left side (offset -10) facing -x already: no turn, the ship center 10 right of the laser spot.
+        var (x2, y2, turn2) = AutonomyModel.LaserSpot(0f, 0f, 1f, 0f, 50f, offX: -10f, offY: 0f, arcAngle: MathF.PI);
+        Assert.Equal(1f, MathF.Cos(turn2), 4);
+        Assert.Equal(60f, x2, 3);
+        Assert.Equal(0f, y2, 3);
+    }
+
+    [Fact]
+    public void A_negative_stand_off_input_is_a_bug() =>
+        Assert.Throws<ArgumentOutOfRangeException>(() => AutonomyModel.LaserStandOff(-1f, 80f, 120f));
 }
