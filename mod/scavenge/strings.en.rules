@@ -1,0 +1,6 @@
+HotCargoScavenge
+{
+	// Scavengers (spec 1341)
+	ProvokedFmt = "<bad>{0}: \"You shoot at us? Every scavenger here will remember that.\"</bad>"
+	Peace = "The scavengers stop holding a grudge."
+}

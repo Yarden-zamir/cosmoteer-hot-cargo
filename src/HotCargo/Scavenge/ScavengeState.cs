@@ -9,4 +9,6 @@ public sealed class ScavengeState
 {
     /// <summary>Spec 1332: run game seconds at which the age check first saw each live wreck and loose resource, by object ID.</summary>
     [Serialize(Optional = true)] public Dictionary<ObjectID, double> Seen = new();
+    /// <summary>Spec 1341: run game seconds until which the scavengers are hostile to the players. 0: never provoked.</summary>
+    [Serialize(Optional = true)] public double ProvokedUntil;
 }

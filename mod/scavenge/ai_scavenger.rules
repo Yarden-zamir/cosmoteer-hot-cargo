@@ -1,0 +1,48 @@
+// The scavenger AI (spec 1342 to 1345). The last strategy module runs first: flee from threats (HcShy), then scavenge (HcScavenge),
+// then the vanilla modules: exit, fight what is in sight (when clearly stronger), repair, and wander the system.
+UpdateInterval = [.25, .75] // A random range.
+
+StrategyModules
+[
+	{
+		Type = AreaPatrol
+		DefaultPatrolRadius = 30000
+		AvoidableDoodadTags = [sun, station]
+		AvoidableDoodadBuffer = 100
+	}
+	{
+		Type = SelfRepair
+		RepairChecksPerTick = 1
+		RepairDamaged = true
+		RebuildDestroyed = true
+		AllowPartialRepair = true
+		AllowPartialRebuild = false
+		AvoidableDoodadTags = [sun]
+		AvoidableDoodadBuffer = 100
+	}
+	{
+		Type = AggroEnemies
+		TargetSwitchThresholdFactor = 6
+		TargetDistanceFactorExponent = 1.5
+		AlreadyTargetedByAllyFactor = 0.7
+		TargetFirepowerCacheTime = 10
+		AcquireAggroWithinRadar = false
+		ReleaseAggroWithinRadar = true
+		AvoidableDoodadTags = [sun]
+	}
+	{
+		Type = ExitSector
+	}
+	{
+		Type = HcScavenge
+		Sells = true
+	}
+	{
+		Type = HcShy
+	}
+]
+
+TacticsModules = &<./Data/ai/ai_wanderer.rules>/TacticsModules
+TargetingModules = &<./Data/ai/ai_wanderer.rules>/TargetingModules
+StasisModules = &<./Data/ai/ai_wanderer.rules>/StasisModules
+CommsModules = &<./Data/ai/ai_common.rules>/CommsModulesDefault
