@@ -17,6 +17,8 @@ namespace HotCargo.TunablesMenu;
 /// <summary>
 /// The "Hot Cargo settings" window (spec 500). It builds one section for each field of Tunables and one row for each tunable,
 /// by reflection, so new tunables show without a change here. Each row edits through TunablesEditor.
+/// A section builds its rows when it opens (requirement 507): about 700 text fields take seconds to build, and a co-op machine
+/// that does not answer for about 10 seconds loses its connection.
 /// </summary>
 internal sealed class TunablesDialog : DialogBase
 {
@@ -41,7 +43,48 @@ internal sealed class TunablesDialog : DialogBase
     /// <summary>True while rows show new values, so that the change events of the controls do not send the same values back.</summary>
     bool _showing;
 
-    sealed record Section(string Name, Widget Outer, ToggleButton Toggle, List<Row> Rows);
+    /// <summary>One section. Keys holds the search text of every row, so a search works before the rows exist.</summary>
+    sealed class Section(FieldInfo info, Widget outer, ToggleButton toggle, LayoutBox box, IReadOnlyList<string> keys)
+    {
+        public FieldInfo Field => info;
+        public string Name => info.Name;
+        public Widget Outer => outer;
+        public ToggleButton Toggle => toggle;
+        public LayoutBox Box => box;
+        public IReadOnlyList<string> Keys => keys;
+        public List<Row> Rows { get; } = [];
+        public bool Built;
+    }
+
+    enum FieldKind { Row, List, Group }
+
+    /// <summary>A scalar or a list of scalars is one row; a list of objects is a list of groups; any other object is a group.</summary>
+    static FieldKind KindOf(FieldInfo f)
+    {
+        Type? element = TunablePath.ElementType(f.FieldType);
+        if (TunablePath.IsScalar(f.FieldType) || (element is not null && TunablePath.IsScalar(element))) return FieldKind.Row;
+        return element is not null ? FieldKind.List : FieldKind.Group;
+    }
+
+    static string SearchKey(FieldInfo f, string path) => $"{path} {TunableDocs.Label(f.Name)} {TunableDocs.Describe(f)}".ToLowerInvariant();
+
+    /// <summary>The search keys of the rows that AddFields builds for these values, in the same order.</summary>
+    static void Keys(Type type, string path, object values, List<string> keys)
+    {
+        foreach (var f in TunablePath.Fields(type))
+        {
+            string p = TunablePath.Child(path, f.Name);
+            switch (KindOf(f))
+            {
+                case FieldKind.Row: keys.Add(SearchKey(f, p)); break;
+                case FieldKind.List:
+                    var items = (IList)f.GetValue(values)!;
+                    for (int i = 0; i < items.Count; i++) Keys(TunablePath.ElementType(f.FieldType)!, TunablePath.Index(p, i), items[i]!, keys);
+                    break;
+                case FieldKind.Group: Keys(f.FieldType, p, f.GetValue(values)!, keys); break;
+            }
+        }
+    }
 
     /// <summary>One editable value. Enter sets the control from text and commits it, like a player edit.</summary>
     internal sealed class Row
@@ -151,7 +194,17 @@ internal sealed class TunablesDialog : DialogBase
         if (App.Director.States.Contains(this)) App.Director.PopState(this);
     }
 
-    internal IReadOnlyDictionary<string, Row> Rows => _rows;
+    /// <summary>All rows of the window, built or not.</summary>
+    internal int RowCount => _sections.Sum(s => s.Keys.Count);
+
+    /// <summary>The row of a path. Builds its section first, as opening the section does.</summary>
+    internal Row RowAt(string path)
+    {
+        string name = path.Split('.', '[')[0];
+        var section = _sections.FirstOrDefault(s => s.Name == name) ?? throw new InvalidOperationException($"the settings window has no section '{name}'");
+        BuildRows(section);
+        return _rows.TryGetValue(path, out var row) ? row : throw new InvalidOperationException($"the settings window has no row '{path}'");
+    }
 
     internal int SectionCount => _sections.Count;
 
@@ -181,7 +234,6 @@ internal sealed class TunablesDialog : DialogBase
         _sections.Clear();
         _rows.Clear();
         var values = TunablesEditor.Current(_run);
-        var defaults = new Tunables();
         // Areas declare their sections in their own files (partial Tunables), so declaration order follows file order. Sort by label instead.
         foreach (var field in TunablePath.Fields(typeof(Tunables)).OrderBy(f => TunableDocs.Label(f.Name), StringComparer.CurrentCulture))
         {
@@ -194,7 +246,10 @@ internal sealed class TunablesDialog : DialogBase
             outer.AddChild(SettingsTab.CreateToggledCategory(new LiveText(() => TunableDocs.Label(field.Name)), expanded.Contains(field.Name), out LayoutBox box, out ToggleButton toggle));
             foreach (var r in new[] { toggle.StateNormalTextRenderer, toggle.StateHighlightedTextRenderer, toggle.StatePressedTextRenderer, toggle.StateDisabledTextRenderer })
                 r.FontSize = 20;
-            var section = new Section(field.Name, outer, toggle, []);
+            var keys = new List<string>();
+            Keys(field.FieldType, field.Name, field.GetValue(values)!, keys);
+            var section = new Section(field, outer, toggle, box, keys);
+            toggle.SelectionChanged += (_, _) => { if (toggle.IsSelected) BuildRows(section); };
 
             var header = new SimpleBox { Height = 32f };
             header.NineSlice.Flags = NineSliceFlags.None;
@@ -204,13 +259,29 @@ internal sealed class TunablesDialog : DialogBase
             header.AddChild(reset);
             box.AddChild(header);
 
-            AddFields(section, box, field.FieldType, field.Name, field.GetValue(values)!, field.GetValue(defaults));
             _sections.Add(section);
             _page.AddChild(outer);
+            if (toggle.IsSelected) BuildRows(section);
         }
         _structure = Structure(values);
         Refresh();
         Filter();
+    }
+
+    /// <summary>Builds the rows of a section once, shows their values and applies the search to them.</summary>
+    void BuildRows(Section section)
+    {
+        if (section.Built) return;
+        section.Built = true;
+        var values = TunablesEditor.Current(_run);
+        AddFields(section, section.Box, section.Field.FieldType, section.Name, section.Field.GetValue(values)!, section.Field.GetValue(new Tunables()));
+        _showing = true;
+        try
+        {
+            foreach (var row in section.Rows) row.Show(TunablePath.Get(values, row.Path));
+        }
+        finally { _showing = false; }
+        FilterRows(section, Query());
     }
 
     void AddFields(Section section, LayoutBox parent, Type type, string path, object values, object? defaults)
@@ -220,13 +291,14 @@ internal sealed class TunablesDialog : DialogBase
             string p = TunablePath.Child(path, f.Name);
             object? v = f.GetValue(values);
             object? d = defaults is null ? null : f.GetValue(defaults);
-            Type? element = TunablePath.ElementType(f.FieldType);
-            if (TunablePath.IsScalar(f.FieldType) || (element is not null && TunablePath.IsScalar(element))) AddRow(section, parent, f, p, d);
-            else if (element is not null) AddList(section, parent, f, p, (IList)v!, d as IList);
-            else
+            switch (KindOf(f))
             {
-                var group = Group(parent, $"<b>{Xml(TunableDocs.Label(f.Name))}</b>  {Info(f, d)}");
-                AddFields(section, group, f.FieldType, p, v!, d);
+                case FieldKind.Row: AddRow(section, parent, f, p, d); break;
+                case FieldKind.List: AddList(section, parent, f, p, (IList)v!, d as IList); break;
+                case FieldKind.Group:
+                    var group = Group(parent, $"<b>{Xml(TunableDocs.Label(f.Name))}</b>  {Info(f, d)}");
+                    AddFields(section, group, f.FieldType, p, v!, d);
+                    break;
             }
         }
     }
@@ -300,7 +372,7 @@ internal sealed class TunablesDialog : DialogBase
         var row = new Row
         {
             Path = path, Field = f, Box = box, Name = name, Reset = reset, Enter = enter, Shown = shown,
-            Search = $"{path} {label} {TunableDocs.Describe(f)}".ToLowerInvariant(),
+            Search = SearchKey(f, path),
             // A value that differs from its default shows its name highlighted. A list item without a default counts as changed.
             Show = value =>
             {
@@ -421,21 +493,26 @@ internal sealed class TunablesDialog : DialogBase
         return string.Join("|", parts);
     }
 
+    string Query() => _search.Text.Trim().ToLowerInvariant();
+
+    /// <summary>Shows the sections with a match; a match opens its section, which builds its rows.</summary>
     void Filter()
     {
-        string q = _search.Text.Trim().ToLowerInvariant();
+        string q = Query();
         foreach (var section in _sections)
         {
             bool sectionMatch = q.Length > 0 && section.Name.ToLowerInvariant().Contains(q);
-            int shown = 0;
-            foreach (var row in section.Rows)
-            {
-                row.Box.SelfActive = q.Length == 0 || sectionMatch || row.Search.Contains(q);
-                if (row.Box.SelfActive) shown++;
-            }
+            int shown = sectionMatch ? section.Keys.Count : section.Keys.Count(k => q.Length == 0 || k.Contains(q));
             section.Outer.SelfActive = q.Length == 0 || shown > 0;
-            if (q.Length > 0 && shown > 0) section.Toggle.IsSelected = true;
+            if (q.Length > 0 && shown > 0) { BuildRows(section); section.Toggle.IsSelected = true; }
+            FilterRows(section, q);
         }
+    }
+
+    void FilterRows(Section section, string q)
+    {
+        bool sectionMatch = q.Length > 0 && section.Name.ToLowerInvariant().Contains(q);
+        foreach (var row in section.Rows) row.Box.SelfActive = q.Length == 0 || sectionMatch || row.Search.Contains(q);
     }
 
     // ---------------- status
