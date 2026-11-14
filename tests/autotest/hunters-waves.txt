@@ -2,7 +2,6 @@
 # hunterwaves counts spawned groups; it does not drop when the starter ship destroys a hunter.
 newgame run
 wait 8
-pu_set Enabled false
 ev_set Enabled false
 godmode on
 tacticlog on

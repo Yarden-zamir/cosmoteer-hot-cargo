@@ -2,6 +2,8 @@
 newgame run
 wait 8
 ev_set Enabled false
+# Autotests start with the Pursuit off (spec 943).
+pu_set Enabled true
 godmode on
 pu_set ScoutChance 0
 pu_set BlockadeChance 0

@@ -1,7 +1,6 @@
 # Escort (spec 36): accept, the freighter steers to the jump point when a player is near, and arrival completes the objective.
 newgame run
 wait 8
-pu_set Enabled false
 hc_generate escort
 hc_accept escort
 expect hc_active_escort == 1

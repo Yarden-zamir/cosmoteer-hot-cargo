@@ -96,10 +96,14 @@ internal sealed class EventDialog : WindowBox
         }
     }
 
+    /// <summary>Autotests: false (the default) keeps windowed test games unpaused too. A test sets it with the ev_pause command.</summary>
+    internal static bool PauseInAutotest;
+
     /// <summary>Single player only: pauses while the window is open. Headless test games have no viewer and stay unpaused.</summary>
     static void PauseIfWanted(Run run)
     {
         if (run.IsMultiplayer || GameApp.IsHeadlessMode || !run.T.Events.PauseOnEvent || run.Game.Sim.IsPaused.Displayed) return;
+        if (Dev.Autotest.IsActive && !PauseInAutotest) return;
         _pausedByUs = true;
         run.Game.NetManager.EnqueueInput(new MPSetPausedInput(paused: true));
     }

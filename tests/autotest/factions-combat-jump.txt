@@ -4,7 +4,6 @@
 # the jump; here it waits for the block and then starts.
 newgame
 wait 8
-pu_set Enabled false
 ev_set Enabled false
 godmode on
 pause off

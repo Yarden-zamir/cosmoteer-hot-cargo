@@ -2,7 +2,6 @@
 render on
 newgame run
 wait 10
-pu_set Enabled false
 pause off
 closepanel
 wait 1

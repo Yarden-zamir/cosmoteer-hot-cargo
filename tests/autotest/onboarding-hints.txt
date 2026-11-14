@@ -3,7 +3,6 @@ codex_reset
 tutorials on
 newgame run
 wait 8
-pu_set Enabled false
 closepanel
 # The run page shows after a few seconds of play. No event page opens at the start, so the events page waits.
 expect hint_hc_run == 1

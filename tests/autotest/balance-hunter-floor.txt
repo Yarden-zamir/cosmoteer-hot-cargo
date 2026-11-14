@@ -1,7 +1,6 @@
 # Balance (spec 305, BALANCE.md): hunters are never below the main route tier of the sector index, also in a low side system.
 newgame run
 wait 8
-pu_set Enabled false
 godmode on
 ev_set Enabled false
 # Sector index 4 in the tier-1 start system: the main route is tier 1 + 2 x 3 = 7, so the start system is a low side system.

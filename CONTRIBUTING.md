@@ -34,7 +34,7 @@ The mod checks at the first frame of a run that each trigger has a page and each
 4. Game test on the PC: `scripts/autotest.sh tests/autotest/<name>.txt`. It deploys, turns the mod on, runs the game headless in a test slot and prints the result and a `== timing` line (seconds per phase). Commands are in `src/HotCargo/Dev/Autotest.cs`.
 5. Other PC scripts: `deploy.sh`, `run.sh`, `stop.sh`, `logs.sh`, `mod-toggle.sh on|off`. `stage.sh <dir>` builds and stages the mod with a content hash. The PC keeps the 30 newest builds in `%USERPROFILE%\HotCargoSlots\_builds\<hash>`, so `deploy.sh` uploads a build only once. The PC side of a deploy is `scripts/slot-install.ps1`; it ships inside the build, because the T3 link allows only 8192 characters for a command.
 6. Suites: `scripts/autotest-all.sh [--detach] [timeout] [tests...]` and `scripts/autotest-affected.sh [--detach]`. A suite stages once, and all its tests run that build. `--detach` runs it safe from a killed shell; `scripts/suite-wait.sh <log>` waits for it. A `--detach` run loses PC access when the Bash call that started it ends, so run PC suites as a background Bash command instead (see the `hot-cargo-testing` skill).
-   - headless sim: `scripts/autotest-sim.sh [timeout] [tests...]` runs tests on this machine (macOS or Linux) in parallel, with no PC (`tools/headless-sim`, `docs/headless-sim.md`). CI runs it on Linux for every push and PR. Co-op sessions (`mp:<session>`) run as two sim processes on 127.0.0.1 with the real-time clock (`scripts/autotest-sim-mp.sh`). `autotest-affected.sh` runs tests there, co-op included. A test with the line `# runner: pc` stays on the PC; `LIST_ONLY=1 RUNNER=pc scripts/autotest-affected.sh` lists the affected ones.
+   - headless sim: `scripts/autotest-sim.sh [timeout] [tests...]` runs tests on this machine (macOS or Linux) in parallel, with no PC (`tools/headless-sim`, `docs/headless-sim.md`). CI runs it on Linux for every PR and every push to `main`. Co-op sessions (`mp:<session>`) run as two sim processes on 127.0.0.1 with the real-time clock (`scripts/autotest-sim-mp.sh`). `autotest-affected.sh` runs tests there, co-op included. A test with the line `# runner: pc` stays on the PC; `LIST_ONLY=1 RUNNER=pc scripts/autotest-affected.sh` lists the affected ones.
 7. Telemetry: every game writes a JSONL file per session (TELEMETRY.md). `scripts/pull-telemetry.sh` copies the files to `../.telemetry`, and `cd tools/telemetry && uv run hc-telemetry` writes a report. `scripts/autotest-all.sh --telemetry` does both after a test pass.
 
 ### Co-op (multiplayer) tests
@@ -74,7 +74,7 @@ The game runs on a Windows PC that a person also uses. `autotest.sh` runs headle
 - Use conventional commits (`feat:`, `fix:`, `docs:`, `chore:`).
 
 Parallel autotests work, also from one worktree: `deploy.sh` holds a build lock. `scripts/autotest-affected.sh` runs the smoke tests of the areas a change touches (`tests/TIERS.md`); name a test after its area folder (`tech-sell` for `src/HotCargo/Tech`).
-- Never commit personal machine data: user home paths, machine names, Steam IDs. `scripts/check-private.sh` checks this, and CI runs it on every push. Machine settings go in `scripts/pc.local.sh` (git ignores it).
+- Never commit personal machine data: user home paths, machine names, Steam IDs. `scripts/check-private.sh` checks this, and CI runs it on every PR and every push to `main`. Machine settings go in `scripts/pc.local.sh` (git ignores it).
 
 ## Releases
 

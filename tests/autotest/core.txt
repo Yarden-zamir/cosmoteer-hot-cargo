@@ -1,7 +1,6 @@
 # Core heat loop: new career, heat, stages, fame heat, time heat, save and load.
 newgame run
 wait 8
-pu_set Enabled false
 log start
 expect active == 1
 expect sector == 1
