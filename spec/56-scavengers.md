@@ -1,4 +1,4 @@
-## 53. Scavengers
+## 56. Scavengers
 
 Ships pick the system clean of old wrecks and loose resources, and sell what they find. The player always gets the first pick: a scavenger never takes anything fresh. Code: `src/HotCargo/Scavenge/`. Numbers: the `Scavenge` tunables section. Pure rules: `Scavenge/ScavengeModel.cs`. Requirements 1330 to 1359.
 
