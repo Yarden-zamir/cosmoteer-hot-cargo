@@ -111,6 +111,13 @@ public static class ShipAiArea
         return own[_shipIndex];
     }
 
+    /// <summary>The acting player's ships by ID (the order that tactics_ship uses).</summary>
+    static List<Ship> OwnShips()
+    {
+        int player = Autotest.ActingPlayerIndex;
+        return Sim().Ships.HumanPlayerShips.Where(s => s.Commands.IsCommandableBy(player)).OrderBy(s => s.UniqueID).ToList();
+    }
+
     static ShipTactics Tactics() => ShipTactics.Of(TestShip()) ?? throw new InvalidOperationException("the test ship has no tactics");
 
     static string DesignPath(string name)
@@ -245,6 +252,36 @@ public static class ShipAiArea
             Sim().RequireGame().NetManager.EnqueueInput(new MPEnqueueCommandsInput(move, append: false, playLocalSound: false));
         };
         // tactics_ally: a copy of the starting design as a second ship of the acting player, near the first one. Single player test only.
+        // Formations (spec 423 to 427). The acting player's ships, by ID: ship 0 leads.
+        Autotest.Fields["formation_followers"] = () => OwnShips().Count(s => s.Commands.CurConfirmedCommand is FollowCommand { FollowAngle: not null });
+        // The smallest edge distance between two of the acting player's ships.
+        Autotest.Fields["formation_min_gap"] = () =>
+        {
+            var own = OwnShips();
+            float min = float.PositiveInfinity;
+            for (int i = 0; i < own.Count; i++)
+                for (int j = i + 1; j < own.Count; j++) min = Math.Min(min, HunterOrders.EdgeDistance(own[i], own[j]));
+            return float.IsPositiveInfinity(min) ? -1 : min;
+        };
+        // formation_block <index>: puts own ship <index> on the line from ship 0 to the nearest enemy, halfway. Single player test only.
+        Autotest.Commands["formation_block"] = arg =>
+        {
+            if (Autotest.RequireRun().IsMultiplayer) throw new InvalidOperationException("formation_block is single player only");
+            var own = OwnShips();
+            var lead = own[0];
+            var enemy = Sim().Ships.AllShips.Where(e => lead.IsEnemiesWith(e) && !e.IsJunk).MinBy(e => HunterOrders.EdgeDistance(lead, e))
+                ?? throw new InvalidOperationException("no enemy to block");
+            Autotest.Teleport(own[int.Parse(arg, CultureInfo.InvariantCulture)], (lead.DetWorldCenter + enemy.DetWorldCenter) / 2f);
+        };
+        // formation_squeeze <a> <b>: puts own ship <b> right next to own ship <a> (a small gap). Single player test only.
+        Autotest.Commands["formation_squeeze"] = arg =>
+        {
+            if (Autotest.RequireRun().IsMultiplayer) throw new InvalidOperationException("formation_squeeze is single player only");
+            var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(x => int.Parse(x, CultureInfo.InvariantCulture)).ToArray();
+            var own = OwnShips();
+            var (a, b) = (own[p[0]], own[p[1]]);
+            Autotest.Teleport(b, a.DetWorldCenter + new Vector2(a.WorldBoundingRadius + b.WorldBoundingRadius + 10f, 0f));
+        };
         Autotest.Commands["tactics_ally"] = _ =>
         {
             var run = Autotest.RequireRun();
