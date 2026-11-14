@@ -43,6 +43,7 @@ public static class Mod
             Debris.DebrisArea.Register();
             Stash.StashArea.Register();
             Diplomacy.DiplomacyArea.Register();
+            Debt.DebtArea.Register();
             // After Hunters: its stage hooks read the ships that the Hunters area just spawned.
             Pursuit.PursuitArea.Register();
             Telemetry.TelemetryArea.Register();
