@@ -8,7 +8,7 @@ description: Take a Hot Cargo change from its branch to a merged PR and an insta
 The rules are in CLAUDE.md (Git, Spec, Agents) and CONTRIBUTING.md (Git). This skill gives the order.
 
 1. Branch from `origin/main` in your own worktree: `git --git-dir ../.bare worktree add ../<name> -b <type>/<name> origin/main`.
-2. In the same change, make the spec lines true that the change touches. For a visible change, take screenshots (`hot-cargo-screenshots`).
+2. In the same change, make the spec lines true that the change touches. For a visible change, take screenshots (`hot-cargo-screenshots`). Before you pick a new spec section or requirement number, check the open PRs (`gh pr diff <n>`) for numbers in use.
 3. Commit with conventional commits (`feat:`, `fix:`, `docs:`, `chore:`). Never credit an AI, a model or a tool.
 4. Before each push, run `scripts/check-private.sh`.
 5. Push and open the PR. Start the PR text with 🤖 and keep it short. Add images of visible changes (`gh-pr-images` skill).
