@@ -33,7 +33,7 @@ run_once() {
   # telename labels the telemetry of this test with the script name (TELEMETRY.md).
   # A failed deploy started no game, and the slot can still hold the log of an older run: never read it.
   out=""
-  if { echo "telename $NAME"; cat "$SCRIPT"; } | start_slot "$SLOT" > "$RUN_LOG.deploy" 2>&1; then
+  if { echo "telename $NAME"; speed_line "$SCRIPT"; cat "$SCRIPT"; } | start_slot "$SLOT" > "$RUN_LOG.deploy" 2>&1; then
     t2=$SECONDS; wait_slot_end "$SLOT" "$TIMEOUT"
     # A failed PC call leaves an empty log, which never passes.
     if out="$(slot_finish "$SLOT" 2>&1)"; then rm -rf "$(slot_lock "$SLOT")"; else out=""; release_slot "$SLOT"; fi
