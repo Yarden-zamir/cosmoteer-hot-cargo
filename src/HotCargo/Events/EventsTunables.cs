@@ -64,7 +64,7 @@ public sealed class EventsTunables
     [Serialize(Optional = true)] public float ListenCombatSeconds = 5f;
     /// <summary>A hulk whose tanks blow (spec 1126) damages player ships within this hull-to-hull distance.</summary>
     [Serialize(Optional = true)] public float HulkBlastRadius = 300f;
-    /// <summary>Rescue Beacon (spec 1127): the tug's fee in event money units (standard mission pay at the tier). Too little money: it takes what there is.</summary>
+    /// <summary>Rescue Beacon (spec 1146): the tug's fee in event money units (standard mission pay at the tier). Too little money: it takes what there is.</summary>
     [Serialize(Optional = true)] public float RescueFee = 0.4f;
     /// <summary>Rescue Beacon: heat that the broadcast adds.</summary>
     [Serialize(Optional = true)] public float RescueHeat = 10f;

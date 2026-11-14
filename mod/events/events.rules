@@ -801,7 +801,7 @@ Events
 		]
 	}
 
-	// Spec 1127: stations sell the Rescue Beacon, a clear deal. Limit: the price is paid even when the hold has no room (the result
+	// Spec 1146: stations sell the Rescue Beacon, a clear deal. Limit: the price is paid even when the hold has no room (the result
 	// line says so); revisit if players lose money this way.
 	{
 		ID = rescue_beacon_sale

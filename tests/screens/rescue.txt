@@ -1,4 +1,4 @@
-# Rescue Beacon (spec 1127): the fire button with its tooltip (fee and heat), and the tug towing the ship to the station.
+# Rescue Beacon (spec 1146): the fire button with its tooltip (fee and heat), and the tug towing the ship to the station.
 # Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
 render on
 newgame run 0

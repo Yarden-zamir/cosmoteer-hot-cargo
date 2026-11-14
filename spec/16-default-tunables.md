@@ -42,7 +42,7 @@
 | `Events.RelicEnabled`, `RelicMinSector`, `RelicMessageDistance`, `RelicBoardDistance` | true, 2, 3000, 900 | 765 |
 | `Events.ListenSeconds`, `ListenRange`, `ListenChanceAtNoHeat`, `ListenChanceAtMaxHeat` | 8 s, 1500, 1, 0.6 | 1122, 1123 |
 | `Events.ListenSuccessHeat`, `ListenFailHeat`, `ListenCombatRadius`, `ListenCombatSeconds` | -4, 5, 800, 5 s | 1123 |
-| `Events.RescueFee`, `RescueHeat`, `RescueTowLength`, `RescueTowPull`, `RescueSunMargin`, `RescueTugLeaveSeconds` | 0.4, 10, 150, 1, 300, 20 s | 1128, 1129 |
+| `Events.RescueFee`, `RescueHeat`, `RescueTowLength`, `RescueTowPull`, `RescueSunMargin`, `RescueTugLeaveSeconds` | 0.4, 10, 150, 1, 300, 20 s | 1147, 1148 |
 | `Events.CooldownSeconds`, `MaxEventsPerSystem` | 120 s, 2 | 70 |
 | `Events.MoneyScale`, `FameScale`, `HeatScale` | 1, 1, 1 | 73 |
 | `Contracts.TrailFreeContracts`, `TrailHeatPerContractMinute` | 3, 1 | 101 |

@@ -224,7 +224,7 @@ waitfor ev_hulk_stocked == 0 20
 on 1 waitfor ev_hulk_stocked == 0 30
 
 step events.rescue
-# Spec 1127: the client fires a rescue beacon from its machine (the item action MP input). The client pays the fee; the tug and
+# Spec 1146: the client fires a rescue beacon from its machine (the item action MP input). The client pays the fee; the tug and
 # the tow run in the sim on both machines. A lost tug ends the tow on both.
 ev_mark
 on 1 ev_mark

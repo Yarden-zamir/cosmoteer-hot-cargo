@@ -1,4 +1,4 @@
-# Rescue Beacon (spec 1127): a station sells it in its comms, the fire action shows the fee and heat, and a tug tows the ship to
+# Rescue Beacon (spec 1146): a station sells it in its comms, the fire action shows the fee and heat, and a tug tows the ship to
 # the nearest friendly station. Without money the tug comes anyway. A lost tug ends the tow with a message.
 newgame run
 wait 8

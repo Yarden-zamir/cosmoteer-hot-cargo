@@ -31,7 +31,7 @@
 	AddTo = "<resources/resources.rules>/Resources"
 	ToAdd = &<events/tracer_beacon.rules>
 }
-// Spec 1127: the Rescue Beacon.
+// Spec 1146: the Rescue Beacon.
 {
 	Action = Add
 	AddTo = "<resources/resources.rules>/Resources"

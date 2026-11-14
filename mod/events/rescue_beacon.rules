@@ -1,4 +1,4 @@
-// Rescue Beacon (spec 1127): fire it to call a tug that tows the ship to the nearest friendly station, for a fee and some heat.
+// Rescue Beacon (spec 1146): fire it to call a tug that tows the ship to the nearest friendly station, for a fee and some heat.
 // Trade stations sell it in their comms (events.rules, rescue_beacon_sale). Sprites are the vanilla processor sprites with a tint.
 ID = yarden_zamir.rescue_beacon
 NameKey = "HotCargoItems/RescueBeacon"
@@ -67,7 +67,7 @@ StackReceiveMediaEffects = &/COMMON_EFFECTS/ProcessorDeliver
 StackPickupMediaEffects = &/COMMON_EFFECTS/ProcessorPickup
 NuggetPickupMediaEffects = &/COMMON_EFFECTS/NuggetPickup
 
-// Spec 1127: the C# handler (Events/RescueBeacon.cs) runs the rescue; the button tooltip shows the fee and the heat.
+// Spec 1146: the C# handler (Events/RescueBeacon.cs) runs the rescue; the button tooltip shows the fee and the heat.
 HotCargoActions
 [
 	{

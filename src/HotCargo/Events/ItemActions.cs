@@ -47,14 +47,14 @@ public sealed class ItemActionRules
     [Serialize(Optional = true)] public ItemContentRules[] Contents = [];
     /// <summary>The message when there are no contents. {0} = the ship.</summary>
     [Serialize(Optional = true)] public KeyString? MessageKey;
-    /// <summary>Spec 1127: a C# handler (ItemActions.Handlers) that runs first. It gives the message and can refuse, so the unit stays.</summary>
+    /// <summary>Spec 1146: a C# handler (ItemActions.Handlers) that runs first. It gives the message and can refuse, so the unit stays.</summary>
     [Serialize(Optional = true)] public string? Handler;
 }
 
 /// <summary>The result of an item action handler: the message, and whether the action used the unit.</summary>
 public readonly record struct ItemActionResult(string Message, bool Used);
 
-/// <summary>Spec 1127: C# logic of an item action, named by its Handler in the rules.</summary>
+/// <summary>Spec 1146: C# logic of an item action, named by its Handler in the rules.</summary>
 public interface IItemActionHandler
 {
     /// <summary>Sim logic, from the MP input on every machine, before the unit is used.</summary>

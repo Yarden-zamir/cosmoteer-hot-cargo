@@ -263,4 +263,4 @@ The autotests `onboarding-hints` and `onboarding-log` cover each trigger, the or
 3. Hail a faction patrol ship at heat 10+. Does "Ask about hunters nearby" show?
 4. Shoot the freighter while its page is open. Does the page close with "The ship is gone"?
 5. Co-op: both players open the same ship's comms. One chooses. Does the other's window update, with no double effect?
-6. Rescue Beacon (spec 1127 to 1129): buy one at a station, fly off, lose your engines, and fire it. Is the fee in the tooltip clear? Does the tug reach you, tow you around stars, and drop you at the station? Does the tow feel like a recovery, not a punishment?
+6. Rescue Beacon (spec 1146 to 1148): buy one at a station, fly off, lose your engines, and fire it. Is the fee in the tooltip clear? Does the tug reach you, tow you around stars, and drop you at the station? Does the tow feel like a recovery, not a punishment?

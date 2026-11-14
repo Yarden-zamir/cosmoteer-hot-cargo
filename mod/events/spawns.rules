@@ -737,7 +737,7 @@ TowMission
 	]
 }
 
-// Spec 1127: the rescue tow. The towed ship is the one that fired the beacon (C# tags it hc_rescue_towed for this spawn only).
+// Spec 1146: the rescue tow. The towed ship is the one that fired the beacon (C# tags it hc_rescue_towed for this spawn only).
 // The destination is the nearest trade station whose owner is not hostile to it. No such station: no mission, and the beacon stays.
 RescueMission
 {
@@ -767,7 +767,7 @@ RescueMission
 	]
 }
 
-// Spec 1127: the tug. A civilian hauler without AI: the Events area gives it its move orders and drags the towed ship.
+// Spec 1146: the tug. A civilian hauler without AI: the Events area gives it its move orders and drags the towed ship.
 RescueTug
 {
 	Spawners

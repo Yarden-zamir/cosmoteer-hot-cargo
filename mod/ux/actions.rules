@@ -170,7 +170,7 @@
 		ProportionalSize = true
 	}
 }
-// Rescue tow (spec 1127).
+// Rescue tow (spec 1146).
 {
 	Action = Add
 	AddTo = "<gui/text_sprites.rules>"
