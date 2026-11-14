@@ -199,6 +199,19 @@ public static class Autotest
     public static void WaitFor(Func<bool> done, double timeoutSeconds, string what, Action? then = null, Action? onTimeout = null) =>
         _waitFor = new(done, App.Clock.Time.Seconds + timeoutSeconds, what, then, onTimeout);
 
+    /// <summary>
+    /// Test jumps: moves the human ships to <paramref name="next"/> without the FTL animation or fuel. Vanilla refuses a node switch
+    /// while background work blocks game saving (hit effects, construction), so the switch waits for that, as "save" does.
+    /// <paramref name="then"/> runs after the switch starts.
+    /// </summary>
+    public static void JumpWhenAllowed(Run run, Cosmoteer.GalaxyMap.MapNode next, string command, Action? then = null) =>
+        WaitFor(() => !run.Game.IsGameSavingBlocked, 30, "game saving to be allowed", () =>
+        {
+            run.Game.JumpToNode(next, doFtlAnimation: false, run.Game.Sim.Ships.HumanPlayerShips.ToList())
+                .ContinueWith(t => Log.Error($"AUTOTEST {command} failed", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+            then?.Invoke();
+        });
+
     /// <summary>The player index of the sender while an "mp" command runs inside the sim. Null outside of it.</summary>
     static int? _simPlayer;
 

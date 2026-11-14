@@ -16,6 +16,9 @@ static class TuneRequest
     static string RequestPath => Path.Combine(Mod.ModRoot, "tune.request");
     static string ResultPath => Path.Combine(Mod.ModRoot, "tune.result");
 
+    /// <summary>The next Poll reads the request at once. For autotests: the headless sim runs faster than the real-time poll.</summary>
+    internal static void PollNow() => _nextPoll = DateTime.MinValue;
+
     /// <summary>Frame hook: applies a waiting request. UI only; the change goes through the same path as a window edit.</summary>
     internal static void Poll(Run run)
     {

@@ -1,39 +1,41 @@
-# Cosmoteer sim on the Mac
+# Cosmoteer headless sim (macOS and Linux)
+
+The spike below ran on the Mac. The same host (tools/headless-sim) now also runs on Linux: CI runs every game test with it (`.github/workflows/check.yml`, `scripts/ci-sim-tests.sh`), with the game files from the private refs repo (`scripts/refresh-game-refs.sh`).
 
 Question: can a .NET 10 host on macOS (arm64) run the real game logic with Hot Cargo, so that game tests do not need the Windows PC?
 
 ## Verdict: GO, in use for single-player tests
 
-`tools/mac-sim/` boots the real `GameApp` without a window, loads the vanilla rules and the Hot Cargo mod, applies the Hot Cargo Harmony patches and runs the real game loop. Existing `tests/autotest/*.txt` scripts run unchanged. No game file and no Hot Cargo source changed.
+`tools/headless-sim/` boots the real `GameApp` without a window, loads the vanilla rules and the Hot Cargo mod, applies the Hot Cargo Harmony patches and runs the real game loop. Existing `tests/autotest/*.txt` scripts run unchanged. No game file and no Hot Cargo source changed.
 
 75 of the 79 single-player tests pass on the Mac. The other 4 and the 21 co-op tests stay on the PC (see "Test results"). All 79 run in about 8 minutes with 8 runs in parallel, and no PC slot.
 
 ## How to run
 
 1. Copy the game files once (again after a game update): `scripts/pull-game.sh`. It copies only files, so it is safe while the player plays.
-2. Run tests: `scripts/autotest-mac.sh [timeout] [test ...]`. No test names: every single-player test.
+2. Run tests: `scripts/autotest-sim.sh [timeout] [test ...]`. No test names: every single-player test.
 3. The tests that a change touches: `scripts/autotest-affected.sh`. It runs single-player tests on the Mac and the others on the PC, at the same time.
 
-`autotest-mac.sh`:
+`autotest-sim.sh`:
 
 - Same pass rule as `scripts/autotest.sh`: the log has `telename <name>`, `AUTOTEST DONE`, and no `AUTOTEST FAIL` or `ERROR` line.
-- Same log place: `../.state/logs/<worktree>/<name>.<time>.mac.log`, the summary in `run-mac-<time>/`.
+- Same log place: `../.state/logs/<worktree>/<name>.<time>.sim.log`, the summary in `run-sim-<time>/`.
 - It builds the host and stages the mod once (`scripts/stage.sh`). Each run copies the stage into a new temporary save folder.
-- Parallel runs: `HOT_CARGO_MAC_JOBS`, default `min(cores - 2, memory GB / 2)` (8 on this Mac). The limit is for the whole Mac: all worktrees share the locks `/tmp/hot_cargo_mac_slot_<n>.lock`.
+- Parallel runs: `HOT_CARGO_SIM_JOBS`, default `min(cores - 2, memory GB / 2)` (8 on this Mac). The limit is for the whole Mac: all worktrees share the locks `/tmp/hot_cargo_sim_slot_<n>.lock`.
 - A failed run gets one retry, like on the PC. A pass on the retry prints `FLAKY` and goes to `../.state/flaky.log`.
 
 Which runner a test uses:
 
 - A test with the line `# runner: pc` stays on the PC. The line before it says why.
-- Co-op sessions (`tests/autotest-mp/`) run on the Mac too, as two sim processes on 127.0.0.1 (`scripts/autotest-mac-mp.sh`). Both keep the real-time clock (`MAC_SIM_REALTIME=1`), because network requests and lockstep read the game clock. Encoding the co-op ship icon (`TextureData.SaveTo`, FreeImage) writes a blank PNG.
-- `integrate.sh` sets `AUTOTEST_MAC=0`: merges keep the PC suite as the gate.
+- Co-op sessions (`tests/autotest-mp/`) run on the Mac too, as two sim processes on 127.0.0.1 (`scripts/autotest-sim-mp.sh`). Both keep the real-time clock (`SIM_REALTIME=1`), because network requests and lockstep read the game clock. Encoding the co-op ship icon (`TextureData.SaveTo`, FreeImage) writes a blank PNG.
+- `integrate.sh` sets `AUTOTEST_SIM=0`: merges keep the PC suite as the gate.
 - Without the game files on the Mac, `autotest-affected.sh` runs every test on the PC.
 
-`tools/mac-sim/run.sh` runs the host once:
+`tools/headless-sim/run.sh` runs the host once:
 
 - `run.sh` with no arguments: boot and load the rules, then exit.
 - `run.sh autotest <script>`: run an autotest script. Exit code 0 only on a pass (same rule as above).
-- `MAC_SIM_SAVE=<folder>` keeps the save folder (logs, saves, `hot_cargo_log.txt`). `MAC_SIM_STAGE=<dir>` uses a stage from `scripts/stage.sh` and builds nothing.
+- `SIM_SAVE=<folder>` keeps the save folder (logs, saves, `hot_cargo_log.txt`). `SIM_STAGE=<dir>` uses a stage from `scripts/stage.sh` and builds nothing.
 
 The host passes `--headless --nosteam --cores 2 --rootsavepath <folder>`. `GameApp` and `Paths` read these from `Environment.GetCommandLineArgs`. `--cores 2` is the same as in a PC test slot.
 
@@ -68,7 +70,7 @@ Three full runs on this Mac (Apple Silicon, 10 cores, 64 GB, .NET 10.0.14), 8 ru
 
 Why the 4 single-player tests stay on the PC:
 
-- `telemetry-basic`, `telemetry-run`: real time. The `perf` event fires every few real seconds (`Telemetry/Perf.cs` uses `Stopwatch`), and `teleflush` waits 10 game seconds for the writer thread. The Mac sim runs faster than real time. Both pass in some runs and fail in others.
+- `telemetry-basic`, `telemetry-run`: real time. The `perf` event fires every few real seconds (`Telemetry/Perf.cs` uses `Stopwatch`), and `teleflush` waits 10 game seconds for the writer thread. The headless sim runs faster than real time. Both pass in some runs and fail in others.
 - `onboarding-hints`: failed in all 8 runs. `save onboarding` throws "Game saving is currently blocked". The test raises heat to 80, so 6 hunters arrive, and a delayed hit effect (`HitEffectRules`, `BlockGameSaving`) blocks the save 2 s later.
 - `diplomacy-surrender`: failed in 4 of 5 suites. The hail of the beaten hunter ends (`CareerSimModeManager.ValidateShipHailing`) before `expect dip_hailing >= 1`, 1.5 s later.
 
@@ -98,9 +100,9 @@ Assembly loading (`GameAssemblies.cs`):
 3. `Cosmoteer.Gui.ErrorBox` derives from `System.Windows.Forms.Form`. `Assembly.GetTypes()` on the game then throws, and `HotCargo.Telemetry.TelemetryPatches.ModuleMethods` calls it. The host loads the WinForms reference assemblies (NuGet `Microsoft.WindowsDesktop.App.Ref`) as stubs that throw.
 4. The other game dependencies (IronPython, NAudio, NVorbis, ImageSharp and others) come from NuGet at the exact versions in `Cosmoteer.deps.json`. `gen-deps.py` writes `GameDeps.props` from that file.
 
-Platform and game loop (`MacPlatform.cs`, `Boot.cs`, `Program.cs`):
+Platform and game loop (`HeadlessPlatform.cs`, `Boot.cs`, `Program.cs`):
 
-5. `Halfling.Platforms.Platform.Create` loads `HalflingPlatformWDX` (Direct3D 11, XAudio2, Win32). The host patches it to return `MacPlatform`. That class returns the game's own null devices (`NullWindow`, `NullGraphicsManager`, `NullAudioManager`, `NullInputManager`), the same ones `--headless` uses on the PC.
+5. `Halfling.Platforms.Platform.Create` loads `HalflingPlatformWDX` (Direct3D 11, XAudio2, Win32). The host patches it to return `HeadlessPlatform`. That class returns the game's own null devices (`NullWindow`, `NullGraphicsManager`, `NullAudioManager`, `NullInputManager`), the same ones `--headless` uses on the PC.
 6. `RealTimeClock.AdvanceRealTime` reads the real time. The host advances it by 1/60 s per frame. The game then runs faster than real time.
 7. `GameRoot.JumpToNode` loads the new system on a background thread (about 4 s). A test waits for it in game seconds, and the fast clock ends the wait first. While a jump runs, each frame takes at least 1/60 s of real time.
 8. `GameApp.Main` reads `--cores` and sets `FastParallel.ThreadCount`. The host skips `Main`, so `Program.cs` reads `--cores`. Without it, each run starts one spinning helper thread per core.
@@ -113,6 +115,8 @@ Native libraries and missing files (`NativeSeams.cs`):
 12. `GameApp.CreateGraphicsManager` sets `TextureCache.LoadTexture` as the texture loader. The host replaces it: a missing PNG becomes a blank placeholder that is big enough for the requested mip levels.
 13. `SoundStream.FromFile` opens `*.wav`, `*.ogg` and `*.music` files, which exist only on the PC. A missing file becomes a short silent stereo stream.
 14. `ShipRoofRules.LoadRoofTextures` and `BuildRoofDecalsAtlas` list PNG folders. The host adds one placeholder for the default roof texture and skips the decal atlas. `DecalsManager.LoadSaveData` (ship paint) is skipped.
+15. `TextureData.SaveTo` encodes images with FreeImage. Co-op setup sends the ship icon as PNG bytes; the host writes a blank PNG with ImageSharp.
+16. Linux file names keep letter case; Windows and macOS ignore it, and the vanilla rules rely on that (`<tractor_Beam.rules>` for `tractor_beam.rules`, `Ghost hardware.ship.png`). CI puts the game files on an ext4 folder with case folding (`mkfs.ext4 -O casefold`, `chattr +F`), so every file access ignores case as on Windows.
 
 The spike also had fallbacks for missing ship designs and name generator files. `scripts/pull-game.sh` now copies the real files, so the fallbacks are gone. A missing file now fails the run. Limit: `tar.exe` skips one design-contest ship whose name is outside the Windows ANSI code page. No test needs it.
 
@@ -120,7 +124,7 @@ Not a blocker: `FreezeDetector` tries to start `Cosmoteer.exe` for a freeze log 
 
 ## Startup time
 
-The JIT compiles all game code, because the ReadyToRun code is gone (seam 1). `MacSim.csproj` turns tiered compilation off: the JIT optimizes each method once, with no tier-0 code and no background re-JIT.
+The JIT compiles all game code, because the ReadyToRun code is gone (seam 1). `HeadlessSim.csproj` turns tiered compilation off: the JIT optimizes each method once, with no tier-0 code and no background re-JIT.
 
 | Setting | One run of `core.txt` | 8 tests in parallel |
 |---|---|---|
@@ -133,7 +137,7 @@ Not tried: crossgen of the IL-only copies for osx-arm64, a warm pool of booted h
 ## Open items
 
 - CI: the private game-refs repository holds only the DLLs. CI would also need `Data/` and the ship files there.
-- The Mac sim does not prove that the Windows build works. The release gate stays a full PC pass (`scripts/release.sh`).
+- The headless sim does not prove that the Windows build works. The release gate stays a full PC pass (`scripts/release.sh`).
 
 Risks:
 

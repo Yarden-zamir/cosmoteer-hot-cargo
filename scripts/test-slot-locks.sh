@@ -37,7 +37,7 @@ monitor() {
     (( n > max )) && max=$n
     pair="$dir/hot_cargo_slot_pair.lock"
     now=$EPOCHREALTIME
-    if key="$(cat "$pair/pid" 2>/dev/null)-$(stat -f %m "$pair" 2>/dev/null)" && [[ -d "$pair" && "$key" != -* ]]; then
+    if key="$(cat "$pair/pid" 2>/dev/null)-$(mtime "$pair")" && [[ -d "$pair" && "$key" != -* ]]; then
       if [[ "$key" != "$last" ]]; then last=$key; first=$now; fi
       longest=$(awk -v a="$longest" -v b="$now" -v c="$first" 'BEGIN { d = b - c; print (d > a ? d : a) }')
     else
