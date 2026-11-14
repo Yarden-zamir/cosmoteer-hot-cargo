@@ -12,13 +12,14 @@ Procedures are skills in `.claude/skills/`:
 
 ## Git
 
-- Feature work goes through a draft pull request: push the feature branch and open a draft PR with a short summary and screenshots of visible changes (`gh-pr-images` skill). CI checks it (build, unit tests, private data). Start PR descriptions and comments with 🤖; keep them short. Small fixes go through a short PR too. Conventional commits.
+- Feature work goes through a pull request: push the feature branch and open a PR with a short summary and screenshots of visible changes (`gh-pr-images` skill). CI checks it (build, unit tests, private data, game tests). Start PR descriptions and comments with 🤖; keep them short. Small fixes go through a short PR too. Conventional commits.
 - Feature work happens in a worktree of the bare repo (`../.bare`), one branch for each feature, and reaches `main` only through its pull request.
-- Owner-merged PRs: the agent that owns a PR merges it. GitHub serializes merges: `main` needs the checks `build` and `private-data` and an up-to-date branch. Game tests do not run on GitHub; `scripts/game-check.sh` runs them and posts the commit status `game-tests` on the PR head. The flow:
-  1. Push the branch, then run `scripts/game-check.sh` (it tests the PR head with current `origin/main` merged in; PC calls need an active turn: background Bash + `t3_background_wait`).
-  2. When it passes: `gh pr merge --auto --merge`. Watch the PR instead of polling it.
-  3. When `main` moves, GitHub marks the PR out of date. Merge `origin/main` into the branch, read what the new commits and PRs intend (`git log`, `gh pr view`), adapt the change to them, push, and run `scripts/game-check.sh` again on the new head. Auto-merge does the rest.
-- Tests a PR needs: the affected tests (`game-check.sh` runs them) plus anything the change calls for (a new test, a co-op session for sim changes, screenshots for visible changes).
+- Owner-merged PRs: the agent that owns a PR merges it. CI runs the checks `build`, `private-data` and `game-tests` (every game test in the headless sim on Linux, except tests with the line `# runner: pc`). `main` requires them and an up-to-date branch, so GitHub orders the merges. The flow:
+  1. Push the branch and open the PR. CI runs the game tests.
+  2. Tests outside CI: `LIST_ONLY=1 RUNNER=pc scripts/autotest-affected.sh` lists the affected tests that CI does not run (the `game-tests` job summary lists them too). Run only those the merge depends on, on the PC (`scripts/autotest-all.sh 400 <names>`), and tick the box of the PR template. Lean toward the minimum.
+  3. `gh pr merge --auto --merge`. Watch the PR instead of polling it.
+  4. When `main` moves, GitHub marks the PR out of date. Merge `origin/main` into the branch, read what the new commits and PRs intend (`git log`, `gh pr view`), adapt the change to them, and push. CI runs again; auto-merge does the rest.
+- Tests a PR needs: what CI runs, the affected tests outside CI that the merge depends on, plus anything the change calls for (a new test, a co-op step for sim changes, screenshots for visible changes).
 - Unrelated failures: a flaky or infrastructure failure in a test that the PR does not touch counts as passing; say so in the PR. A failure in a touched test, or one that also fails on `main`, blocks the merge.
 - Never push to `main` directly; `scripts/integrate.sh` stays for the release and maintenance runs that the coordinator starts.
 - Never credit an AI, model or tool in commits or files.
@@ -65,8 +66,8 @@ Procedures are skills in `.claude/skills/`:
 ## Agents
 - Never start, stop or restart the game in slot main (the player's game): no `vault-saved-ships.sh`, `run.sh`, `stop.sh` or deploy with `SLOT=main`. While `.state/player-hold` exists, the scripts refuse it (exit 3). They also refuse a windowed test slot (`screens.sh`, `screens-mp.sh`) while that file exists: a window could take focus from the player. Headless test slots stay allowed. Do not remove that file and do not work around it. Ask the coordinator for main-slot work; the coordinator runs it when the player says the PC is free.
 
-- An agent works only in its own worktree and branch. At the end it pushes its branch, opens a PR, runs `scripts/game-check.sh` and merges its own PR with auto-merge (Git section). It never pushes to `main` directly.
-- Tests: run `scripts/autotest-affected.sh` (the smoke tests of your areas, their co-op tests, `core`, and any test you changed) and the unit tests. Put logic in a `*Model.cs` file with unit tests (`tests/TIERS.md`). `scripts/game-check.sh` runs every test of the touched areas before a merge.
+- An agent works only in its own worktree and branch. At the end it pushes its branch, opens a PR and merges its own PR with auto-merge after CI passes (Git section). It never pushes to `main` directly.
+- Tests: run `scripts/autotest-affected.sh` (the smoke tests of your areas, their co-op tests, `core`, and any test you changed) and the unit tests. Put logic in a `*Model.cs` file with unit tests (`tests/TIERS.md`). CI runs every game test in the headless sim before a merge.
 - Save progress so a crash or restart loses nothing:
   - In the first minutes, commit a short `PLAN.md` (design decisions, steps) to your branch, push it, and open the draft PR with a checklist of the steps. Delete `PLAN.md` before the final commit.
   - Commit and push after each step that builds. Tick the step in the PR checklist.

@@ -1,5 +1,8 @@
-# Checks every pushed branch and pull request: private data, build against the game references, unit tests.
-# Game tests need the Windows PC, so scripts/integrate.sh runs them before a merge into main.
+# Checks every pushed branch and pull request: private data, build against the game references, unit tests, and the game
+# tests in the headless sim (tools/headless-sim) on Linux. Tests with the line "# runner: pc" need the Windows PC: the PR
+# owner runs the affected ones (LIST_ONLY=1 RUNNER=pc scripts/autotest-affected.sh) and ticks the PR template's box.
+# Game files: the private repo Yarden-zamir/cosmoteer-hot-cargo-game-refs (read-only deploy key). Only pushes and pull
+# requests from this repo get the key; never pull_request_target. Game files never go into a cache or an artifact.
 name: check
 on:
   push:
@@ -26,5 +29,80 @@ jobs:
           global-json-file: global.json
       - run: dotnet build src/HotCargo/HotCargo.csproj -c Release -nologo -v quiet
         env:
-          CosmoteerBin: ${{ github.workspace }}/.game-refs
+          CosmoteerBin: ${{ github.workspace }}/.game-refs/Bin
       - run: dotnet run --project tests/HotCargo.Tests
+  # The game tests, split over parallel shards so that the whole set takes under 10 minutes (scripts/ci-sim-tests.sh).
+  game-tests-shard:
+    runs-on: ubuntu-latest
+    # Once per change: pushes to main (release.sh reads their checks) and pull requests from this repo. A push to a branch
+    # with a PR also starts a pull_request run, so a branch push alone runs no game tests.
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    steps:
+      # The repo in repo/ and the game files in .game/, so that the scripts find ../.game as on a developer machine.
+      - uses: actions/checkout@v7.0.1
+        with:
+          path: repo
+      - uses: actions/checkout@v7.0.1
+        with:
+          repository: Yarden-zamir/cosmoteer-hot-cargo-game-refs
+          ssh-key: ${{ secrets.GAME_REFS_DEPLOY_KEY }}
+          path: .game
+      # Windows and macOS ignore letter case in file names, and the vanilla rules rely on that (for example
+      # <tractor_Beam.rules> for tractor_beam.rules). So the game files go on an ext4 folder with case folding.
+      - name: Game files on a case-insensitive folder
+        run: |
+          truncate -s 2G "$RUNNER_TEMP/game.img"
+          mkfs.ext4 -q -O casefold "$RUNNER_TEMP/game.img"
+          sudo mkdir /mnt/game
+          sudo mount -o loop "$RUNNER_TEMP/game.img" /mnt/game
+          sudo chown "$(id -u):$(id -g)" /mnt/game
+          mkdir /mnt/game/files
+          chattr +F /mnt/game/files
+          cp -a .game/Bin .game/Data .game/StandardMods /mnt/game/files/
+          rm -rf .game
+          ln -s /mnt/game/files .game
+      - uses: actions/setup-dotnet@v6.1.0
+        with:
+          global-json-file: repo/global.json
+      - name: Game tests, shard ${{ matrix.shard }} of 16
+        working-directory: repo
+        env:
+          HOT_CARGO_SIM_JOBS: "3"
+        run: scripts/ci-sim-tests.sh ${{ matrix.shard }} 16
+      # Only text logs, checked for game data (scripts/ci-check-logs.sh); never the game files or the staged mod.
+      - name: Collect logs
+        if: always()
+        working-directory: repo
+        run: scripts/ci-check-logs.sh "${{ github.workspace }}/.state/logs" "${{ runner.temp }}/logs"
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: game-test-logs-${{ matrix.shard }}
+          path: ${{ runner.temp }}/logs
+          retention-days: 7
+          if-no-files-found: ignore
+  # One stable check name for branch protection: passes only when every shard passed.
+  game-tests:
+    runs-on: ubuntu-latest
+    needs: game-tests-shard
+    if: always() && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Tests outside CI that this pull request touches
+        if: github.event_name == 'pull_request'
+        run: |
+          list="$(LIST_ONLY=1 RUNNER=pc COMMITTED_ONLY=1 scripts/autotest-affected.sh "origin/${{ github.base_ref }}" | tail -1)"
+          { echo "### Tests outside CI"; echo; echo "${list#== affected (runner pc): }"; echo
+            echo 'Run them on the PC when the merge depends on them: `scripts/autotest-all.sh 400 <names>`.'; } >> "$GITHUB_STEP_SUMMARY"
+          echo "$list"
+      - name: Result of the shards
+        run: |
+          echo "shards: ${{ needs.game-tests-shard.result }}"
+          [[ "${{ needs.game-tests-shard.result }}" == success ]]

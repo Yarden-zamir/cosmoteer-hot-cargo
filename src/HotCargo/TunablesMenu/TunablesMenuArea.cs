@@ -33,7 +33,12 @@ public static class TunablesMenuArea
         };
         Autotest.Fields["tunables_error"] = () => TunablesFile.LastError is null ? 0 : 1;
         // tunerequest LINE | LINE: writes tune.request like scripts/tune.sh. tuneresult has|lacks TEXT: checks tune.result.
-        Autotest.Commands["tunerequest"] = arg => File.WriteAllText(Path.Combine(Mod.ModRoot, "tune.request"), string.Join("\n", arg.Split('|', StringSplitOptions.TrimEntries)));
+        Autotest.Commands["tunerequest"] = arg =>
+        {
+            File.WriteAllText(Path.Combine(Mod.ModRoot, "tune.request"), string.Join("\n", arg.Split('|', StringSplitOptions.TrimEntries)));
+            // The next frame reads it: the mod polls every 0.5 real seconds, and the sim's game clock can run faster.
+            TuneRequest.PollNow();
+        };
         Autotest.Commands["tuneresult"] = arg =>
         {
             var parts = arg.Split(' ', 2);
