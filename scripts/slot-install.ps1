@@ -66,7 +66,10 @@ if (-not (Test-Path $loaderDll) -or $oldVer -ne $newVer) {
 }
 Write-SharedText (Join-Path $loaderDir "hot_cargo_default.txt") (Join-Path $mainMods "hot_cargo\csharp\HotCargo.dll")
 $rc = Join-Path $game "Bin\Cosmoteer.runtimeconfig.json"; $orig = "$rc.hot_cargo_orig"
-if (-not (Test-Path $orig)) { Copy-Item $rc $orig }
+# A game update replaces the runtimeconfig, and the new file has no hook. Then the new file is the original, so the hook
+# never brings back the settings of an older game version.
+$liveHook = (Get-Content $rc -Raw | ConvertFrom-Json).runtimeOptions.configProperties.STARTUP_HOOKS
+if (-not (Test-Path $orig) -or -not $liveHook) { Copy-Item $rc $orig -Force }
 $json = Get-Content $orig -Raw | ConvertFrom-Json
 $json.runtimeOptions.configProperties | Add-Member -NotePropertyName STARTUP_HOOKS -NotePropertyValue $loaderDll -Force
 $jsonText = $json | ConvertTo-Json -Depth 10

@@ -45,6 +45,48 @@ internal static class AutonomyAutotest
     static int OwnerHomeSteel() => (Autonomous.FirstCrewed(TestShip()) ?? throw new InvalidOperationException("the test ship's owner has no crewed ship"))
         .Resources.GetResourceTotal(new ID<ResourceRules>("steel"));
 
+    /// <summary>The test ship's mining state in one line, for the failure message of a timed-out wait.</summary>
+    static string MiningContext()
+    {
+        var ship = TestShip();
+        var sim = Sim();
+        var cargo = ShipAi.ShipTactics.Of(ship)?.Cargo ?? CargoSettings.Default;
+        var at = ship.DetWorldCenter;
+        string cmd = ship.Commands.CurConfirmedCommand switch
+        {
+            MoveCommand { Location: { } to } m => $"{m.GetType().Name} to {to} ({to.DistanceTo(at):0} away)",
+            { } c => c.GetType().Name,
+            null => "none",
+        };
+        string rock = AutonomyWorld.NearestAsteroid(ship, cargo) is { } a
+            ? $"{a.Id} live={a.Live is not null} edge={Math.Max(0f, AutonomyWorld.EdgeDistance(ship, a.Center) - a.Radius):0}" +
+              (a.Live is { } live ? $" parts={live.Parts.Count} salvaging={live.Parts.Count(p => ship.Resources.IsSalvaging(p, MPValueType.Confirmed))}" : "")
+            : "none";
+        string weapons = string.Join("; ", ship.Weapons.Select(w =>
+        {
+            string target = w is Cosmoteer.Ships.Parts.Weapons.TurretWeapon { Target: { } t } ? $"{t.Ship?.UniqueID} asteroid={t.Ship?.Rules.IsAsteroid}" : "none";
+            string explicitTarget = w.ExplicitTargets.CurConfirmedTarget?.Target is Part p ? $"{p.Rules.ID}@{p.Ship.UniqueID}" : "none";
+            return $"{w.Part.Rules.ID} manned={(w.Part is Part own && Autonomous.IsManned(own))} fire={w.HasPermissionToFire()} " +
+                   $"range={w.GetEffectiveRange(Cosmoteer.Ships.Parts.Weapons.WeaponCoverageMode.Confirmed):0} target={target} explicit={explicitTarget}";
+        }));
+        var funnels = ship.Parts.Where(p => p.Rules.ID == Autonomous.FunnelId).Select(f => Funnel.ChoiceOf(f).ToString());
+        // Loose resources within 1000 of the ship, by type, and whether the ship's Funnels take that type.
+        var loose = new SortedDictionary<string, int>(StringComparer.Ordinal);
+        for (int i = 0; i < sim.Nuggets.Count; i++)
+        {
+            var n = sim.Nuggets[i];
+            if (n.DetWorldLocation.DistanceTo(at) > 1000f) continue;
+            string type = n.ResourceType.ToString();
+            loose[type] = loose.GetValueOrDefault(type) + n.Quantity;
+        }
+        string Accepted(string type) => ship.Parts.Where(p => p.Rules.ID == Autonomous.FunnelId)
+            .Any(f => AutonomyModel.FunnelAccepts(Funnel.ChoiceOf(f), cargo, type, Funnel.UnitValue(sim, new ID<ResourceRules>(type)))) ? "taken" : "refused";
+        return $"ship {ship.UniqueID} at {at} cmd={cmd} cargo={string.Join(",", AutonomyWorld.CargoByType(ship).Select(kv => $"{kv.Key}:{kv.Value}"))} " +
+               $"fill={AutonomyWorld.CargoFill(ship):0.00} rock={rock} salvage_jobs={ship.Resources.GetSalvageJobs(MPValueType.Confirmed).Count()} " +
+               $"weapons=[{weapons}] funnels=[{string.Join(",", funnels)}] funnel_taken={Funnel.Taken} " +
+               $"loose_near=[{string.Join(", ", loose.Select(kv => $"{kv.Key}:{kv.Value} {Accepted(kv.Key)}"))}]";
+    }
+
     internal static void Register()
     {
         // auto_build <name> <where> <part>@<x>,<y>[,<rot>] ...: builds a ship of the acting player from vanilla and mod parts, complete,
@@ -62,6 +104,35 @@ internal static class AutonomyAutotest
             ship.FocusCamera(playSound: false);
             float size = float.Parse(arg, CultureInfo.InvariantCulture);
             ship.Sim.Camera.ViewController.ZoomToFit(new Vector2(size));
+        };
+        // auto_buildmode on|off: selects the test ship and opens or closes build mode, like the build button (screenshots, UI only).
+        Autotest.Commands["auto_buildmode"] = arg =>
+        {
+            var ship = TestShip();
+            ship.Sim.PlayerInput.SelectSingleShip(ship);
+            Autotest.RequireRun().Game.Gui.ShipGui.BuildButton.IsSelected = arg switch
+            {
+                "on" => true,
+                "off" => false,
+                _ => throw new InvalidOperationException($"auto_buildmode needs on or off, not '{arg}'"),
+            };
+        };
+        // auto_buildpart <part id>: picks a part in the build toolbox, like a click in the part list (screenshots, UI only).
+        Autotest.Commands["auto_buildpart"] = arg =>
+        {
+            var rules = TestShip().Rules.PartsByID[new ID<PartRules>(arg)];
+            if (!Autotest.RequireRun().Game.Gui.ShipGui.BuildToolbox.SelectPartType(rules)) throw new InvalidOperationException($"the build toolbox did not take {arg}");
+        };
+        // auto_damage <part id> <fraction>: sets every such part of the test ship to this fraction of its health (screenshots of the
+        // damage levels). Single player only; turn godmode off first.
+        Autotest.Commands["auto_damage"] = arg =>
+        {
+            if (Autotest.RequireRun().IsMultiplayer) throw new InvalidOperationException("auto_damage is single player only");
+            var p = Args(arg, 2);
+            float f = float.Parse(p[1], CultureInfo.InvariantCulture);
+            var parts = TestShip().Parts.Where(part => part.Rules.ID.ToString() == p[0]).ToList();
+            if (parts.Count == 0) throw new InvalidOperationException($"no {p[0]} on {_shipName}");
+            foreach (var part in parts) part.Health = Math.Max(1, (int)(part.Rules.MaxHealth * f));
         };
         // auto_log <label>: logs the test ship's state, so a failed wait shows what the ship did.
         Autotest.Commands["auto_log"] = arg =>
@@ -85,6 +156,9 @@ internal static class AutonomyAutotest
         Autotest.Fields["auto_power"] = () => TestShip().Parts.Where(p => p.Rules.ID != Autonomous.TargetedReactorId)
             .SelectMany(p => p.Components.OfType<ResourceStorage>()).Where(rs => rs.ResourceType.ToString() == "battery").Sum(rs => rs.Resources);
         Autotest.Fields["auto_cargo"] = () => AutonomyWorld.CargoByType(TestShip()).Values.Sum();
+        // A timed-out wait for mining shows where the ore stops: the move, the rock, the salvage orders, the lasers, the loose ore.
+        Autotest.WaitContext["auto_cargo"] = MiningContext;
+        Autotest.WaitContext["auto_salvage_jobs"] = MiningContext;
         Autotest.Fields["auto_cargo_pct"] = () => (int)MathF.Round((AutonomyWorld.CargoFill(TestShip()) ?? 0f) * 100f);
         Autotest.Fields["auto_money"] = () => Sim().RequireGame().GetPlayerState(Autotest.ActingPlayerIndex, deterministic: true).Money;
         Autotest.Fields["auto_funnel_taken"] = () => Funnel.Taken;

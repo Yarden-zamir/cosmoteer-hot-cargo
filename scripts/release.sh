@@ -3,8 +3,8 @@
 # Usage: release.sh <version> [--commit <sha>]
 # A release is a full release and becomes the latest one. Only the dev builds (dev-release.yml) are prereleases.
 # Releases a tested commit, not whatever main is now, so releases need no merge freeze: by default the newest commit on
-# origin/main whose required checks (branch protection of main, for example build, private-data and game-tests) all
-# passed in CI. --commit picks one; it must be on origin/main and green. The zip is built in a scratch worktree there.
+# origin/main whose required checks (branch protection of main, for example build, private-data and game-tests) and the
+# full-suite check (every game test) all passed in CI. --commit picks one; it must be on origin/main and green. The zip is built in a scratch worktree there.
 # Set FORCE=1 to skip the check (not for normal use).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -23,6 +23,9 @@ git fetch -q origin main
 REPO="$(gh repo view --json nameWithOwner -q .nameWithOwner)"
 mapfile -t REQUIRED < <(gh api "repos/$REPO/branches/main/protection/required_status_checks" -q '.contexts[]')
 [[ ${#REQUIRED[@]} -gt 0 ]] || { echo "release: main has no required checks to go by"; exit 1; }
+# A release also needs every game test: the merge queue runs only the tests of its pull requests, so the commit must have
+# a green full-suite check (a manual run, gh workflow run check.yml --ref main, or the scheduled run of check.yml).
+REQUIRED+=("full-suite")
 tested() {
   local passed c
   passed="$(gh api "repos/$REPO/commits/$1/check-runs?per_page=100" -q '.check_runs[] | select(.conclusion == "success") | .name')"
@@ -35,7 +38,8 @@ if [[ -n "$WANT" ]]; then
 else
   SHA=""
   for c in $(git rev-list --first-parent -50 origin/main); do if tested "$c"; then SHA="$c"; break; fi; done
-  [[ -n "$SHA" ]] || { echo "release: no commit among the last 50 on origin/main passes every required check (${REQUIRED[*]})"; exit 1; }
+  [[ -n "$SHA" ]] || { echo "release: no commit among the last 50 on origin/main passes every required check (${REQUIRED[*]})."
+    echo "release: for a full suite on the newest main commit, run: gh workflow run check.yml --ref main"; exit 1; }
 fi
 echo "release: $TAG from ${SHA:0:9} ($(git log -1 --format=%s "$SHA"))"
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && { echo "release: tag $TAG exists"; exit 1; }
@@ -51,8 +55,9 @@ ZIP="$(cd "$WT" && scripts/package.sh "$VERSION" "$STAGE")"
 # Dev prereleases (CI, one for each push) are not part of the changelog of a tested release.
 PREV="$(git describe --tags --abbrev=0 --exclude '*-dev.*' "$SHA" 2>/dev/null || true)"
 NOTES="$STAGE/notes.md"
+GAME_VERSION="$(scripts/game-version.sh "$WT")"
 {
-  echo "🤖 Hot Cargo $VERSION for Cosmoteer 0.30.5a (Windows)."
+  echo "🤖 Hot Cargo $VERSION for Cosmoteer $GAME_VERSION (Windows)."
   echo
   echo "Install: download the zip, unzip it, double-click \`install.bat\`, then turn on Hot Cargo in the game's Mods menu. Details are in INSTALL.md inside the zip."
   echo
