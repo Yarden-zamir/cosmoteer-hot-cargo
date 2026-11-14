@@ -6,7 +6,7 @@ ev_set Enabled false
 chain_force black_box
 expect chain_held >= 1
 # Next to the guard before the accept: it is no enemy and gives no attack order.
-ev_goto hc_ch_enemy
+chain_guard_goto
 wait 10
 expect chain_guard_hostile == 0
 expect chain_guard_attacks == 0
@@ -16,7 +16,7 @@ chain_accept
 expect chain_accepted == 1
 wait 2
 expect chain_held == 0
-ev_goto hc_ch_enemy
+chain_guard_goto
 wait 10
 expect chain_guard_hostile >= 1
 expect chain_guard_attacks >= 1
