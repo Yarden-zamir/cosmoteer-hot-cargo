@@ -5,6 +5,8 @@ HotCargoFriendly
 	JoinGone = "The ship is gone before it can join you."
 	FollowerGone = "The ship is gone before it can follow you."
 	LeavesFmt = "{0} spins up its drive and leaves the system."
+	// Riddle ship (spec 1366). {0} = heat before, {1} = heat after.
+	HeatHalvedFmt = "Their contacts lose your trail. Heat {0} -> {1}."
 	// Apprentice (spec 1362, 1363). {1} = fights it saw, {2} = fights it wants to see.
 	ApprenticeFollowsFmt = "{0} follows you for {1} minutes to learn. It wants to see {2} fights."
 	ApprenticeJoinsFmt = "{0} saw {1} fights with you. \"We fly with you now.\" It joins your fleet."
