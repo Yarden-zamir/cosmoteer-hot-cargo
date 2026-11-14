@@ -127,6 +127,8 @@ public static class TunableTiming
         ["DebtTunables.CollectorDistance"] = Applies.NextSpawn,
         ["DebtTunables.CollectorWaitSeconds"] = Applies.NextSpawn,
         ["DebtTunables.CollectRewardFactor"] = Applies.NextOffer,
+        ["DebtTunables.HelpShips"] = Applies.NextSpawn,
+        ["DebtTunables.HelpDistance"] = Applies.NextSpawn,
         ["RelaysTunables.MinSector"] = Applies.NextSystem,
         ["RelaysTunables.ClosedWeight"] = Applies.NextSystem,
         ["RelaysTunables.FeeWeight"] = Applies.NextSystem,
