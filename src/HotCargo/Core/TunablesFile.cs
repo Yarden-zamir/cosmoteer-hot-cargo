@@ -84,6 +84,7 @@ public static class TunablesFile
         for (int i = 1; i < t.Heat.Stages.Length; i++)
             Require(t.Heat.Stages[i].Heat >= t.Heat.Stages[i - 1].Heat, "Heat.Stages must be ordered by Heat");
         Require(t.Heat.HeatCarryOverFraction is >= 0 and <= 1, "Heat.HeatCarryOverFraction must be 0 to 1");
+        Require(t.Ux.CommsMaxScreenShare is >= 0.2f and <= 1, "Ux.CommsMaxScreenShare must be 0.2 to 1");
         foreach (string name in stages)
             Require(t.Hunters.Stages.Any(r => r.Name == name), $"Hunters.Stages has no response for heat stage '{name}'");
         foreach (var r in t.Hunters.Stages)

@@ -112,6 +112,14 @@ public static class UxArea
         Autotest.Commands["closepanel"] = _ => CenterPanel.CloseAll();
         // comms open|contract|chain|close: opens a comms window from the first own ship to the nearest trading station
         // (contract: the station of the offer that contract_pick chose; chain: the test chain's station), or closes it.
+        // comms_fit: 1 when at least one Hot Cargo comms page is open and every one is on the screen and shows its whole page or its scroll bar (spec 816).
+        Autotest.Fields["comms_fit"] = () => CommsHail.PageFit() is var (open, fit) && open > 0 && fit == open ? 1 : 0;
+        // comms_scroll <amount>: scrolls every open Hot Cargo comms page (spec 816), like the mouse wheel. Down is positive.
+        Autotest.Commands["comms_scroll"] = arg =>
+        {
+            if (CommsHail.ScrollOpenPages(float.Parse(arg, System.Globalization.CultureInfo.InvariantCulture)) == 0)
+                throw new InvalidOperationException("no open comms window with a Hot Cargo page");
+        };
         Autotest.Commands["comms"] = arg =>
         {
             var game = Autotest.RequireRun().Game;

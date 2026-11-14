@@ -1,0 +1,21 @@
+# Long comms pages (spec 816): the window grows with the page up to Ux.CommsMaxScreenShare of the screen height, and a longer page
+# scrolls. Dead in Space has two option rows and six choices: taller than the cap at 1440 px, so the page scrolls.
+render on
+newgame run
+wait 8
+closepanel
+pu_set Enabled false
+ev_set Enabled false
+ev_set StationEventChance 0
+event broken_down
+waitfor ev_carrier == 1 30
+ev_carrier_goto
+listen_target carrier
+waitfor listen_reach == 1 30
+ev_open carrier
+wait 2
+screenshot comms-long
+comms_scroll 2000
+wait 1
+screenshot comms-scrolled
+quit
