@@ -44,6 +44,18 @@ public static class ScalingModel
     }
 
     /// <summary>
+    /// Spec 332: a scaled group places factor × ships in the same area, so its spacing from its own tag shrinks by √factor.
+    /// Without this, the game stops a group at the first ship that finds no place (SimObjectSpawner.DoSpawn), and a full
+    /// system caps the count.
+    /// </summary>
+    public static float Spacing(float distance, double factor)
+    {
+        if (!(distance >= 0)) throw new ArgumentOutOfRangeException(nameof(distance), distance, "spacing must be 0 or more");
+        if (!(factor >= 1)) throw new ArgumentOutOfRangeException(nameof(factor), factor, "enemy factor must be at least 1");
+        return (float)(distance / Math.Sqrt(factor));
+    }
+
+    /// <summary>
     /// Spec 335: a cap that the game checks again every tick (police) rounds half up, without a roll, so it stays the same between ticks.
     /// </summary>
     public static int Cap(int count, double factor)

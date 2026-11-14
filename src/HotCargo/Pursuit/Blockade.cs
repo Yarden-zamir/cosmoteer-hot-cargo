@@ -73,15 +73,19 @@ public static class Blockade
         var s = run.State.Pursuit;
         if (!s.Blockaders.Contains(ship.UniqueID) || ship.Sim is not { } sim) return false;
         float range = run.T.Pursuit.BlockadeAggroRange;
-        bool close = sim.Ships.HumanPlayerSignificantShips.Any(h => HunterOrders.EdgeDistance(ship, h) <= range);
+        var spot = ParkSpot(run, sim, ship.UniqueID);
+        // Spec 917: the range counts for a ship at the relay (its spot lies on a circle of BlockadeParkRadius, so within twice that).
+        // Hunters spawn near the players (spec 32), so on the way a ship passes them; damage still draws it out at any time.
+        bool parked = RelayAt(run, sim) is { } relay && ship.DetWorldCenter.DistanceTo(relay) <= 2f * run.T.Pursuit.BlockadeParkRadius;
+        bool close = parked && sim.Ships.HumanPlayerSignificantShips.Any(h => HunterOrders.EdgeDistance(ship, h) <= range);
         if (close || HunterOrders.HealthFraction(ship) < 0.98f)
         {
             s.Blockaders.Remove(ship.UniqueID);
             Log.Info($"pursuit: blockade ship {ship.Metadata.PlainShipName} chases (close={close})");
             return false;
         }
-        if (ParkSpot(run, sim, ship.UniqueID) is not { } spot) return false;
-        HunterOrders.MoveTo(ship, spot, 150f);
+        if (spot is not { } goal) return false;
+        HunterOrders.MoveTo(ship, goal, 150f);
         return true;
     }
 

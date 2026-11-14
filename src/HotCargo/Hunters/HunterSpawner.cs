@@ -286,17 +286,23 @@ public static class HunterSpawner
             $"no built-in ship matches hunter factions [{string.Join(", ", t.ShipFactions)}] and tags [{string.Join(", ", t.ShipTags)}] at tier {tier} or below");
     }
 
+    static readonly ID<SimObjectSpawner> StationTag = new("station");
+
     static Vector2 SpawnLocation(SimRoot sim, Vector2 center, float waveDirection, float halfArc, HunterTunables t)
     {
         var wanted = GameApp.Rules.CareerMode.Wanted;
         var distance = new Range<float>(t.SpawnDistanceMin, Math.Max(t.SpawnDistanceMin, t.SpawnDistanceMax));
+        // Every station keeps at least SpawnDistanceMin, as the fleet's own station does, so a hunter never arrives in a station's guns
+        // (stations sit closer together in the smaller systems, spec 105). Stations in stasis count too: they wake up and fire.
+        var stations = SimQueries.TaggedShips(sim, StationTag).Select(s => s.Location).ToList();
         Vector2 loc = center;
         // Same retry rule as police spawns (WantedManager.GetPoliceSpawnLoc): avoid suns, give up after 100 tries.
         for (int tries = 0; tries < 100; tries++)
         {
             float angle = waveDirection + sim.Rand.Single(new Range<float>(-halfArc, halfArc));
             loc = center + Vector2.FromAngle(angle) * sim.Rand.Single(distance);
-            if (!sim.ShouldAIAvoidLocation(loc, wanted.PoliceSpawnAvoidableDoodadTags, wanted.PoliceSpawnAvoidableDoodadBuffer)) break;
+            if (!sim.ShouldAIAvoidLocation(loc, wanted.PoliceSpawnAvoidableDoodadTags, wanted.PoliceSpawnAvoidableDoodadBuffer)
+                && stations.All(s => s.DistanceTo(loc) >= t.SpawnDistanceMin)) break;
         }
         return loc;
     }
