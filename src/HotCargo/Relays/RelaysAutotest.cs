@@ -132,6 +132,10 @@ static class RelaysAutotest
         Autotest.Fields["rl_guards"] = () => RelaysArea.ActiveHere(R()) is { } a ? a.Guards.Count(id => RelaysArea.Holds(R().Game.Sim, a, id)) : 0;
         Autotest.Fields["rl_live"] = () => RelaysArea.ActiveHere(R())?.Guards.Count(id => RelaysArea.Guard(R().Game.Sim, id) is not null) ?? 0;
         Autotest.Fields["rl_bribefailed"] = () => RelaysArea.ActiveHere(R())?.BribeFailed == true ? 1 : 0;
+        // The first live guard's page is open for the players: some human ship can call it (comms range and sight).
+        Autotest.Fields["rl_callable"] = () => RelaysArea.ActiveHere(R())?.Guards.Select(id => RelaysArea.Guard(R().Game.Sim, id)).FirstOrDefault(g => g is not null) is { } g
+            && RelayChoiceDomain.Instance.OptionCount(R(), RelayChoiceDomain.Serial(g)) > 0 ? 1 : 0;
+        Autotest.Fields["rl_bribed"] = () => RelaysArea.ActiveHere(R())?.Bribed == true ? 1 : 0;
         Autotest.Fields["rl_picks"] = () => R().State.MultiChoice.Drafts.Where(d => d.Domain == RelayMultiDomain.Name).Sum(d => d.Picks.Count);
         Autotest.Fields["rl_ready"] = () => R().Game.PlayersReadyToJump.Count;
         Autotest.Fields["rl_spent"] = () => _markMoney - R().Game.LocalPlayerState.Money;

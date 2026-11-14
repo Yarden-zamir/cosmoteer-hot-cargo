@@ -93,9 +93,12 @@ internal sealed class RelayChoiceDomain : ISharedChoiceDomain
     /// <summary>Open while the callee still gets a relay page from some human ship in comms range.</summary>
     public int OptionCount(Run run, int serial)
     {
-        if (run.Game.Sim is not { } sim || Callee(sim, serial) is not { } callee) return 0;
+        if (run.Game.Sim is not { } sim || Callee(sim, serial) is not { } callee) { Log.Info($"relays: page {serial} has no callee"); return 0; }
         var career = (CareerSimModeManager)sim.Mode;
-        return sim.Ships.HumanPlayerShips.Any(h => career.CanShipCallShip(h, callee) && RelayHail.Instance.Answers(h, callee)) ? 4 : 0;
+        if (sim.Ships.HumanPlayerShips.Any(h => career.CanShipCallShip(h, callee) && RelayHail.Instance.Answers(h, callee))) return 4;
+        Log.Info($"relays: page {serial} closed: " + string.Join("; ", sim.Ships.HumanPlayerShips.Select(h =>
+            $"{h.Metadata.PlainShipName} d={h.DetWorldCenter.DistanceTo(callee.DetWorldCenter):0} call={career.CanShipCallShip(h, callee)} answers={RelayHail.Instance.Answers(h, callee)}")));
+        return 0;
     }
 
     public bool Apply(Run run, SimRoot sim, int playerIndex, int serial, int option)
