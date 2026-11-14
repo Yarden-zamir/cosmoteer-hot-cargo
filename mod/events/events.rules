@@ -718,58 +718,7 @@ Events
 		]
 	}
 
-	// ---- Abandoned ships (spec 764): vanilla abandoned ships roll these once each when a player ship comes near.
-
-	{
-		ID = abandoned_ship
-		Trigger = Abandoned
-		MaxPerRun = 0
-		Title = "Abandoned Ship"
-		Text = "A ship drifts with its lights out and its hatches open. No life signs. Whatever happened here, it happened fast."
-		Choices
-		[
-			{
-				Text = "Board it."
-				Need { Crew = 2 }
-				Outcomes
-				[
-					{ Weight = 40; Text = "The hold is still full."; Resources = [{ ID = steel; Amount = 30; PerTier = 6 }, { ID = processor; Amount = 5; PerTier = 1 }] }
-					{ Weight = 30; Text = "The fuel tanks are still full."; Resources = [{ ID = hyperium; Amount = 25; PerTier = 5 }] }
-					{ Weight = 15; Text = "Someone got here first. Nothing left but scratches on the deck." }
-					{ Weight = 15; WeightPerHeat = 0.25; Text = "Corporate beacons light up across the hull. It was bait."; Heat = 10; Spawn = CorporatePatrol }
-				]
-			}
-			{
-				Text = "Leave it."
-				Outcomes [ { Text = "You leave it to drift. The hull is still there to salvage." } ]
-			}
-		]
-	}
-
-	{
-		ID = abandoned_tanks
-		Trigger = Abandoned
-		MaxPerRun = 2
-		Weight = 5
-		Title = "Cold Hulk"
-		Text = "An abandoned hauler, its fuel tanks still pressurized. Draining them is slow work next to a reactor that is not quite dead."
-		Choices
-		[
-			{
-				Text = "Drain the tanks."
-				Need { Crew = 1 }
-				Outcomes
-				[
-					{ Weight = 70; Text = "The fuel transfers without a hitch."; Resources = [{ ID = hyperium; Amount = 40; PerTier = 8 }] }
-					{ Weight = 30; Text = "The reactor coughs while you work. You get some fuel, and some damage."; Resources = [{ ID = hyperium; Amount = 15; PerTier = 3 }]; HullDamage = 0.2 }
-				]
-			}
-			{
-				Text = "Leave it."
-				Outcomes [ { Text = "Not worth the risk." } ]
-			}
-		]
-	}
+	// Abandoned ships (spec 764) carry real loot now (mod/events/hulks.rules, spec 1124). No dialog.
 
 	// The run's one relic ship (spec 765). It opens when a ship comes close, and again on each return until the crate is taken.
 	{

@@ -17,8 +17,12 @@ public sealed class EventsState
     [Serialize(Optional = true)] public bool WantedWarned;
     /// <summary>Hail lines already used, as "eventId@shipId": each ship offers each line once per run (spec 769).</summary>
     [Serialize(Optional = true)] public HashSet<string> HailUsed = new();
-    /// <summary>Vanilla abandoned ships that already rolled an Abandoned event (spec 764).</summary>
+    /// <summary>Vanilla abandoned ships that already had their loot roll (spec 1124), stocked or not.</summary>
     [Serialize(Optional = true)] public HashSet<ObjectID> AbandonedSeen = new();
+    /// <summary>Stocked hulks whose hold has not broken open yet (spec 1124, 1125).</summary>
+    [Serialize(Optional = true)] public Dictionary<ObjectID, HulkState> Hulks = new();
+    /// <summary>Stocked hulks per kind in this run, for MaxPerRun.</summary>
+    [Serialize(Optional = true)] public Dictionary<string, int> HulkKinds = new();
     /// <summary>The sector of the run's relic ship (spec 765), or -1 when the run has none.</summary>
     [Serialize(Optional = true)] public int RelicSector = -1;
     [Serialize(Optional = true)] public bool RelicSpawned;

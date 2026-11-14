@@ -28,6 +28,8 @@ HotCargoEventMissions
 
 HotCargoEvents
 {
+	// Spec 1125: the name in a hulk's outcome message when the hulk is no longer in the sim.
+	HulkGone = "The hulk"
 	WantedWarning = "Wanted and hunted"
 	WantedHintFmt = "Wanted by {0}, and the corporation hunts you. Ways out: pay the bounty (hail their police), leave the system, outlast the search, or find a smuggler who fixes records."
 	WantedCleared = "Wanted cleared"

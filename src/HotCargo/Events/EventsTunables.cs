@@ -42,9 +42,12 @@ public sealed class EventsTunables
     [Serialize(Optional = true)] public float ResearchSaleCap = 1.5f;
     /// <summary>Multiplies the trigger weight of research events: 0 turns them off, 2 doubles them.</summary>
     [Serialize(Optional = true)] public float ResearchWeightScale = 1f;
-    /// <summary>Chance that coming near a vanilla abandoned ship opens an Abandoned event (once per ship).</summary>
-    [Serialize(Optional = true)] public float AbandonedEventChance = 0.6f;
+    /// <summary>Chance that a vanilla abandoned ship holds Hot Cargo loot (spec 1124). Else it keeps its vanilla cargo and gives no message.</summary>
+    [Serialize(Optional = true)] public float HulkLootChance = 0.6f;
+    /// <summary>Distance at which a hulk with loot shows its message (once per hulk).</summary>
     [Serialize(Optional = true)] public float AbandonedTriggerDistance = 800f;
+    /// <summary>A hulk whose tanks blow (spec 1126) damages player ships within this hull-to-hull distance.</summary>
+    [Serialize(Optional = true)] public float HulkBlastRadius = 300f;
     /// <summary>One relic ship per run holds 1 tech unit. Off: new runs get none.</summary>
     [Serialize(Optional = true)] public bool RelicEnabled = true;
     /// <summary>The relic ship appears in a random sector from this one up to the sector before the Buyer.</summary>

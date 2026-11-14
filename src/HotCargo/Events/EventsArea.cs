@@ -570,15 +570,39 @@ public static class EventsArea
             if (found.Count == 0) throw new InvalidOperationException("no relic ship in this system");
             MoveNextTo(sim, found[0].Location, found[0].Radius + float.Parse(arg, CultureInfo.InvariantCulture));
         };
-        // ev_abandoned: spawns a vanilla abandoned ship (the sector generator's own spawner) 1,500 from the fleet; ev_abandoned_goto flies next to it.
+        // ev_abandoned: spawns a vanilla abandoned ship (the sector generator's own spawner) 1,500 from the fleet and marks it as the
+        // test hulk. ev_abandoned_goto [distance]: puts the player ships this far from its hull (default 150).
         Autotest.Commands["ev_abandoned"] = _ => SpawnVanillaAbandoned();
-        Autotest.Commands["ev_abandoned_goto"] = _ =>
+        Autotest.Commands["ev_abandoned_goto"] = arg =>
         {
-            var sim = RequireSim();
-            var wreck = sim.Ships.Where(s => s.HasLabel(Abandoned.Label) && !s.HasTag(Abandoned.RelicTag)).OrderBy(s => s.UniqueID).FirstOrDefault()
-                ?? throw new InvalidOperationException("no live abandoned ship in this system");
-            MoveNextTo(sim, wreck.WorldCenter, wreck.WorldBoundingRadius + 150f);
+            var wreck = TestHulk();
+            MoveNextTo(RequireSim(), wreck.WorldCenter, wreck.WorldBoundingRadius + (arg.Trim().Length > 0 ? float.Parse(arg, CultureInfo.InvariantCulture) : 150f));
         };
+        // Hulk loot (spec 1124 to 1126). ev_hulk_force <kind> <loot number>: the next hulk gets this loot (all machines in co-op: mp).
+        Autotest.Commands["ev_hulk_force"] = arg =>
+        {
+            var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (p.Length != 2) throw new InvalidOperationException("usage: ev_hulk_force <kind> <loot number>");
+            Hulks.Forced = (Hulks.Kind(p[0]).ID, Int(p[1]) - 1);
+        };
+        // ev_hulk_wreck shoot|salvage: destroys the hold of the test hulk (the parts with its loot), by weapons (vanilla destroyed drop rates) or by
+        // salvage (salvage drop rates: a Tracer Beacon drops only then).
+        Autotest.Commands["ev_hulk_wreck"] = arg =>
+        {
+            bool salvage = arg.Trim() switch { "shoot" => false, "salvage" => true, _ => throw new InvalidOperationException("ev_hulk_wreck needs: shoot|salvage") };
+            var hulk = TestHulk();
+            // Vanilla hits (Part.OnHit), like a weapon or a salvage beam, until the part is gone. Resistances can shrink a hit, so it repeats.
+            var hold = RequireRun().State.Events.Hulks.TryGetValue(hulk.UniqueID, out var h) ? h.Hold : throw new InvalidOperationException("the test hulk has no loot");
+            foreach (var part in hold.Select(x => hulk.Parts[x.Cell]).OfType<Cosmoteer.Ships.Parts.Part>().ToList())
+                for (int i = 0; i < 20 && !part.IsDestroyed; i++)
+                    part.OnHit(part.Rules.MaxHealth, salvage ? Cosmoteer.DamageType.Salvage : null);
+            Log.Info($"AUTOTEST hulk wreck {arg.Trim()}: hold {string.Join(", ", hold.Select(c => hulk.Parts[c.Cell] is { } x ? $"{x.Rules.ID}@{x.Location} health {x.Health}" : $"{c.Cell} gone"))}");
+            Autotest.Wait(1);
+        };
+        // ev_hulk_stocked: 1 while the test hulk has loot whose hold did not break open. ev_hulk_messaged: 1 once its approach message showed.
+        Autotest.Fields["ev_hulk_stocked"] = () => _hulk is { } id && RequireRun().State.Events.Hulks.ContainsKey(id) ? 1 : 0;
+        Autotest.Fields["ev_hulk_messaged"] = () => _hulk is { } id && RequireRun().State.Events.Hulks.TryGetValue(id, out var h) && h.Messaged ? 1 : 0;
+        // ev_hulk_<resource>: units of it in the test hulk's storage and tanks. SpawnVanillaAbandoned adds these fields, because rules load after Register.
         // Comms (spec 767-771). ev_comms <target> <button text>: clicks the comms button whose plain text contains the text.
         Autotest.Commands["ev_comms"] = arg =>
         {
@@ -670,6 +694,13 @@ public static class EventsArea
         Autotest.Wait(2);
     }
 
+    /// <summary>The abandoned ship that ev_abandoned spawned last.</summary>
+    static Cosmoteer.Game.ObjectID? _hulk;
+    static int _hulkSpawns;
+
+    static Ship TestHulk() =>
+        (_hulk is { } id ? RequireSim().Ships[id] : null) ?? throw new InvalidOperationException("no live test hulk (ev_abandoned first)");
+
     static void SpawnVanillaAbandoned()
     {
         var sim = RequireSim();
@@ -677,15 +708,23 @@ public static class EventsArea
         var spawner = All(mode.SectorType.SystemGenerator.Spawners).OfType<ShipSpawner>().FirstOrDefault(s => s.Labels?.Contains(Abandoned.Label) == true)
             ?? throw new InvalidOperationException("no vanilla abandoned-ship spawner in the sector generator");
         var at = SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no player ships");
+        var old = sim.Ships.Where(s => s.HasLabel(Abandoned.Label)).Select(s => s.UniqueID).ToHashSet();
         // Test distance, restored after, like SpawnSignal.
         var saved = spawner.Distance;
         try
         {
             spawner.Distance = new Halfling.Range<float>(1500f, 1500f);
-            new SimulationGenerator { Spawners = [spawner] }.Generate(sim, new Halfling.Random.FastRand(99UL), loadInstantly: true, rootLoc: at);
+            new SimulationGenerator { Spawners = [spawner] }.Generate(sim, new Halfling.Random.FastRand(99UL + (ulong)++_hulkSpawns), loadInstantly: true, rootLoc: at);
         }
         finally { spawner.Distance = saved; }
-        Log.Info($"AUTOTEST vanilla abandoned ship spawned; abandoned ships: {sim.Ships.Count(s => s.HasLabel(Abandoned.Label))}");
+        _hulk = sim.Ships.Where(s => s.HasLabel(Abandoned.Label) && !s.HasTag(Abandoned.RelicTag) && !old.Contains(s.UniqueID)).MaxBy(s => s.UniqueID)?.UniqueID
+            ?? throw new InvalidOperationException($"the abandoned-ship spawner made no live ship (in stasis: {sim.Stasis.Count(st => !old.Contains(st.ReservedObjectID))})");
+        foreach (var res in GameApp.Rules.Resources)
+        {
+            var rid = res.ID;
+            Autotest.Fields[$"ev_hulk_{rid}"] = () => TestHulk().Resources.GetResourceTotal(rid, includeStored: true, includeCarried: false);
+        }
+        Log.Info($"AUTOTEST vanilla abandoned ship {_hulk} spawned; abandoned ships: {sim.Ships.Count(s => s.HasLabel(Abandoned.Label))}");
         Autotest.Wait(2);
     }
 
@@ -796,6 +835,8 @@ public static class EventsArea
         yield return ("tech", () => Vaults.All(RequireSim()).Sum(g => g.Resources));
         yield return ("fame", () => RequireRun().Mode.PlayerFame);
         yield return ("crew", () => { var r = RequireRun(); return r.Game.HumanPlayersIndexes.Sum(RequireSim().Crew.CountCrewForPlayer); });
+        // Missing health over all parts of the human ships.
+        yield return ("damage", () => Vaults.HumanShips(RequireSim()).SelectMany(sh => sh.Parts).Sum(x => x.Rules.MaxHealth - x.Health));
         foreach (var res in GameApp.Rules.Resources)
         {
             var id = res.ID;
