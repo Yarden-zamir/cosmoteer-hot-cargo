@@ -1,0 +1,30 @@
+# Scavenging screenshots (spec 1339): an NPC scavenger salvages an old wreck and its crew carry the parts home.
+# Windowed test slot (needs graphics): scripts/screens.sh tests/screens/scavenge.txt <out-dir>
+render on
+newgame run
+wait 10
+ev_set Enabled false
+closepanel
+wait 1
+pause off
+godmode on
+scav_set CooldownSeconds 60
+# Only the staged wreck and steel count: older loot of the start area would draw the scavenger out of the player's sight.
+scav_set SearchRange 600
+# Next to the player's ship, inside its sight: a ship outside sight shows only as a radar blip.
+scav_spawn Scav player
+waitfor scav_live == 1 10
+auto_ship Scav
+auto_wreck 0,500
+auto_loot steel 5 3 200
+wait 2
+auto_focus 160
+wait 3
+screenshot scavenge-fresh
+waitfor scav_step == 1 90
+waitfor scav_cargo > 0 60
+wait 6
+auto_focus 120
+wait 3
+screenshot scavenge-salvage
+quit

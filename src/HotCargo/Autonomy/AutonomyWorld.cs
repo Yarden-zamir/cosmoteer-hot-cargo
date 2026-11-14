@@ -87,7 +87,7 @@ internal static class AutonomyWorld
         return amount - left;
     }
 
-    static int CargoRoom(Ship ship, ID<ResourceRules> type) =>
+    internal static int CargoRoom(Ship ship, ID<ResourceRules> type) =>
         CargoTiles(ship).Sum(t => Math.Max(0, ((IResourceSink)t).GetRemainingCapacity(type, allowPreferredTypeMismatch: false)));
 
     // ---- Loot
@@ -194,7 +194,7 @@ internal static class AutonomyWorld
 
     static PlayerState Owner(Ship ship) => HunterOrders.Sim(ship).RequireGame().GetPlayerState(ship.Metadata.PlayerIndex, deterministic: true);
 
-    /// <summary>Sells all cargo of the sell list to the station. Returns the units sold.</summary>
+    /// <summary>Sells all cargo of the sell list to the station. Returns the units sold. Only a human owner gets money.</summary>
     internal static int Sell(Ship ship, Ship station, CargoSettings c)
     {
         var sim = HunterOrders.Sim(ship);
@@ -208,9 +208,10 @@ internal static class AutonomyWorld
             if (taken <= 0) continue;
             int removed = TakeCargo(ship, type, taken);
             if (removed != taken) throw new InvalidOperationException($"sell {id}: the station took {taken}, the bays gave {removed}");
-            Owner(ship).AddMoney(price * taken);
+            // Spec 1336: an NPC ship (a scavenger) gets no money; its cargo only goes into the station stock.
+            if (ship.IsHumanPlayerShip) Owner(ship).AddMoney(price * taken);
             sold += taken;
-            Log.Info($"autonomy: {ship.Metadata.PlainShipName} sold {taken} {id} for {price * taken} to {station.Metadata.PlainShipName}");
+            Log.Info($"autonomy: {ship.Metadata.PlainShipName} sold {taken} {id} for {(ship.IsHumanPlayerShip ? price * taken : 0)} to {station.Metadata.PlainShipName}");
         }
         return sold;
     }

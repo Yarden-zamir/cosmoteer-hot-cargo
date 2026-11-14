@@ -33,6 +33,7 @@ public static class Mod
             Balance.BalanceArea.Register();
             ShipAi.ShipAiArea.Register();
             Autonomy.AutonomyArea.Register();
+            Scavenge.ScavengeArea.Register();
             Scaling.ScalingArea.Register();
             RunModes.RunModesArea.Register();
             Factions.FactionsArea.Register();

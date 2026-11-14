@@ -1,0 +1,29 @@
+# Scavenging (spec 1330 to 1339): a crewed NPC ship with the HcScavenge module leaves a fresh wreck and fresh loose steel alone for
+# the cooldown, then salvages the wreck and fetches the steel, and sells the cargo at the nearest station.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+scav_set CooldownSeconds 60
+scav_spawn Scav station
+waitfor scav_live == 1 10
+auto_ship Scav
+auto_wreck 0,500
+auto_loot steel 5 3 200
+wait 3
+# The age check saw the wreck pieces and the steel; all of it is still fresh.
+expect scav_seen >= 4
+expect scav_target == 0
+expect scav_step == 0
+wait 40
+expect scav_target == 0
+expect scav_step == 0
+waitfor scav_target > 0 40
+waitfor scav_step == 1 10
+waitfor scav_cargo > 0 120
+expect scav_wreck_parts > 0
+# Sell: with a low full mark the scavenger flies to the station and sells everything.
+scav_set FullFraction 0.01
+waitfor scav_sold > 0 120
+waitfor scav_cargo == 0 30
+quit

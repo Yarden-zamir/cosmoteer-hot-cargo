@@ -101,13 +101,14 @@ internal static class AutonomyAutotest
         // Live ships with the auto_ship name. Unlike the other fields it does not throw with none, so a test can wait for a build
         // that runs in the sim later ("mp auto_build" in co-op).
         Autotest.Fields["auto_ship_live"] = () => Sim().Ships.AllShips.Count(s => s.Metadata.PlainShipName == _shipName && !s.IsJunk);
-        // auto_focus <size>: centers the camera on the test ship and fits a square of this world size (screenshots, UI only).
+        // auto_focus <size>: centers the camera on the test ship's position and fits a square of this world size (screenshots, UI only).
         Autotest.Commands["auto_focus"] = arg =>
         {
-            var ship = TestShip();
-            ship.FocusCamera(playSound: false);
-            float size = float.Parse(arg, CultureInfo.InvariantCulture);
-            ship.Sim.Camera.ViewController.ZoomToFit(new Vector2(size));
+            // The camera goes to the ship's position: FocusCamera does not follow a ship that the local player does not own.
+            var view = Sim().Camera.ViewController;
+            view.ClearFocus(clearFramesOfReferenceAndRotation: true);
+            view.FRLocation = TestShip().DetWorldCenter;
+            Autotest.FitCamera(Sim(), float.Parse(arg, CultureInfo.InvariantCulture));
         };
         // auto_buildmode on|off: selects the test ship and opens or closes build mode, like the build button (screenshots, UI only).
         Autotest.Commands["auto_buildmode"] = arg =>
