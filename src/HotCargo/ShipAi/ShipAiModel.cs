@@ -10,6 +10,8 @@ public enum Cond
     AmmoBelow, BatteryBelow, EnemyClassNear, EnemiesAtLeast, CarryingTech, VaultDamaged,
     // Hot Cargo (spec 413)
     HeatStageAtLeast, HuntersInSystem, StrikeWithin, LossTimerRunning, CratesWithin, EnemyHoldsTech, EnemyCalling,
+    // Autonomous ships (spec 1066)
+    CargoAbove, CargoToSell, LootWithin, StationInRange, AsteroidWithin, WreckWithin, FleetBeyond,
 }
 
 /// <summary>Spec 402, 414. A tactic action. ShipAiModel.KindOf gives its kind from its place in this list.</summary>
@@ -19,16 +21,19 @@ public enum Act
     TargetNearest, TargetWeakest, TargetStrongest, TargetAllyAttacker, TargetVaultAttacker, TargetTechHolder, TargetCaller,
     // Move
     Kite, CloseIn, HoldPosition, RetreatToAlly, RetreatRepair, FleeJump, FollowLeader, Guard, CollectTech,
+    CollectLoot, GoToStation, Mine, Salvage, ReturnToFleet,
     // Weapons (the parameter is the weapon group: 0 = all weapons, 1 to 10 = part control group)
     FireAtWill, FocusTarget, TargetWeapons, TargetEngines, PointDefenseOnly, HoldFire, FireDisruptors,
     // Facing (the parameter is the side that faces the target)
     Face,
+    // Trade (spec 1067, 1073, 1074)
+    Sell, Buy, Unload,
 }
 
-public enum ActKind { Target, Move, Weapons, Facing }
+public enum ActKind { Target, Move, Weapons, Facing, Trade }
 
 /// <summary>What the parameter of a condition or an action means.</summary>
-public enum ParamKind { None, Percent, Distance, Count, PartKind, ShipClass, Group, GuardWho, Stage, Seconds, Side }
+public enum ParamKind { None, Percent, Distance, Count, PartKind, ShipClass, Group, GuardWho, Stage, Seconds, Side, Station }
 
 public enum PartKind { Weapon, Thruster, Shield, Vault }
 
@@ -40,7 +45,10 @@ public enum GuardWho { Flagship, VaultShip, WeakestAlly }
 /// <summary>Spec 415. The side of the ship that faces the target.</summary>
 public enum Side { Nose, BroadsideLeft, BroadsideRight, Stern }
 
-public enum Preset { Aggressive, Defensive, Sniper, Escort, VaultGuard }
+/// <summary>Spec 1069. Which trading station "go to station" picks.</summary>
+public enum StationPick { Nearest, BestPrice, Cheapest }
+
+public enum Preset { Aggressive, Defensive, Sniper, Escort, VaultGuard, Looter, Miner, SupplyRunner, Salvager, EscortDrone }
 
 /// <summary>
 /// One condition term of a row (spec 416). Not inverts it. Or joins it to the previous term with OR, else with AND.
@@ -63,7 +71,8 @@ public sealed record TacticRow(Term[] Terms, Act Act, int ActParam)
 /// The facts that conditions read, gathered from the sim each AI tick.
 /// Fractions are 0 to 1; null means the ship has none of that thing (no shields, no battery storage).
 /// NearestEnemy and NearestCrate are edge distances, or +infinity with none. StrikeIn is the game seconds to the next Strike wave,
-/// or null outside the Strike stage.
+/// or null outside the Strike stage. Spec 1066: Cargo is null without storage bays; NearestLoot, NearestAsteroid, NearestWreck and
+/// NearestFleet are edge distances, or +infinity with none.
 /// </summary>
 public sealed record ShipFacts(
     float Health,
@@ -84,7 +93,14 @@ public sealed record ShipFacts(
     bool LossTimerRunning = false,
     float NearestCrate = float.PositiveInfinity,
     bool EnemyHoldsTech = false,
-    bool EnemyCalling = false);
+    bool EnemyCalling = false,
+    float? Cargo = null,
+    bool CargoToSell = false,
+    float NearestLoot = float.PositiveInfinity,
+    bool StationInRange = false,
+    float NearestAsteroid = float.PositiveInfinity,
+    float NearestWreck = float.PositiveInfinity,
+    float NearestFleet = float.PositiveInfinity);
 
 /// <summary>The last value of one term and the game second it took that value (spec 418). Rows keep one per term, in term order.</summary>
 public readonly record struct TermMemory(bool On, double Since);
@@ -100,11 +116,11 @@ public readonly record struct Hysteresis(float Margin, double MinHoldSeconds)
 }
 
 /// <summary>
-/// Result of one evaluation (spec 403). TargetRow, MoveRow and FacingRow are row indexes or -1.
+/// Result of one evaluation (spec 403, 1067). TargetRow, MoveRow, FacingRow and TradeRow are row indexes or -1.
 /// Matched holds, for each row, whether its conditions held and its action could run. Weapon rows resolve per weapon (WeaponAct).
 /// Memory is the new term memory of all rows, in term order.
 /// </summary>
-public sealed record Decision(int TargetRow, int MoveRow, int FacingRow, bool[] Matched, TermMemory[] Memory)
+public sealed record Decision(int TargetRow, int MoveRow, int FacingRow, bool[] Matched, TermMemory[] Memory, int TradeRow = -1)
 {
     public static readonly Decision None = new(-1, -1, -1, [], []);
 }
@@ -128,15 +144,17 @@ public static class ShipAiModel
     public static ActKind KindOf(Act act) => act switch
     {
         <= Act.TargetCaller => ActKind.Target,
-        <= Act.CollectTech => ActKind.Move,
+        <= Act.ReturnToFleet => ActKind.Move,
         <= Act.FireDisruptors => ActKind.Weapons,
-        _ => ActKind.Facing,
+        Act.Face => ActKind.Facing,
+        _ => ActKind.Trade,
     };
 
     public static ParamKind ParamOf(Cond cond) => cond switch
     {
-        Cond.HealthBelow or Cond.ShieldsBelow or Cond.AmmoBelow or Cond.BatteryBelow => ParamKind.Percent,
-        Cond.EnemyWithin or Cond.EnemyBeyond or Cond.CratesWithin => ParamKind.Distance,
+        Cond.HealthBelow or Cond.ShieldsBelow or Cond.AmmoBelow or Cond.BatteryBelow or Cond.CargoAbove => ParamKind.Percent,
+        Cond.EnemyWithin or Cond.EnemyBeyond or Cond.CratesWithin or Cond.LootWithin or Cond.AsteroidWithin or Cond.WreckWithin
+            or Cond.FleetBeyond => ParamKind.Distance,
         Cond.EnemiesAtLeast => ParamKind.Count,
         Cond.PartLost => ParamKind.PartKind,
         Cond.EnemyClassNear => ParamKind.ShipClass,
@@ -149,6 +167,7 @@ public static class ShipAiModel
     {
         Act.Guard => ParamKind.GuardWho,
         Act.Face => ParamKind.Side,
+        Act.GoToStation => ParamKind.Station,
         _ when KindOf(act) == ActKind.Weapons => ParamKind.Group,
         _ => ParamKind.None,
     };
@@ -170,6 +189,7 @@ public static class ShipAiModel
         ParamKind.Stage => (1, MaxStage),
         ParamKind.Seconds => (0, 3600),
         ParamKind.Side => (0, Enum.GetValues<Side>().Length - 1),
+        ParamKind.Station => (0, Enum.GetValues<StationPick>().Length - 1),
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
     };
 
@@ -179,8 +199,8 @@ public static class ShipAiModel
     /// </summary>
     public static int[] ChoicesOf(ParamKind kind, int stages) => kind switch
     {
-        ParamKind.Percent => [10, 20, 25, 30, 40, 50, 60, 75, 90],
-        ParamKind.Distance => [300, 500, 800, 1000, 1500, 2000, 3000, 5000],
+        ParamKind.Percent => [5, 10, 20, 25, 30, 40, 50, 60, 75, 90, 95],
+        ParamKind.Distance => [300, 500, 800, 1000, 1500, 2000, 3000, 5000, 10000, 20000],
         ParamKind.Count => [1, 2, 3, 4, 5, 6, 8],
         ParamKind.Stage => Enumerable.Range(1, Math.Clamp(stages, 1, MaxStage)).ToArray(),
         ParamKind.Seconds => [10, 20, 30, 60, 90, 120],
@@ -217,6 +237,7 @@ public static class ShipAiModel
         float m = wasOn ? margin : 0f;
         float p = term.Param;
         bool Below(float? fraction) => fraction is { } v && v * 100f < p + m * 100f;
+        bool Above(float? fraction) => fraction is { } v && v * 100f > p - m * 100f;
         return term.Cond switch
         {
             Cond.Always => true,
@@ -240,6 +261,13 @@ public static class ShipAiModel
             Cond.CratesWithin => f.NearestCrate <= p * (1f + m),
             Cond.EnemyHoldsTech => f.EnemyHoldsTech,
             Cond.EnemyCalling => f.EnemyCalling,
+            Cond.CargoAbove => Above(f.Cargo),
+            Cond.CargoToSell => f.CargoToSell,
+            Cond.LootWithin => f.NearestLoot <= p * (1f + m),
+            Cond.StationInRange => f.StationInRange,
+            Cond.AsteroidWithin => f.NearestAsteroid <= p * (1f + m),
+            Cond.WreckWithin => f.NearestWreck <= p * (1f + m),
+            Cond.FleetBeyond => f.NearestFleet > p * (1f - m),
             _ => throw new ArgumentOutOfRangeException(nameof(term), term.Cond, null),
         };
     }
@@ -292,7 +320,7 @@ public static class ShipAiModel
         if (memory is not null && memory.Count != termCount) memory = null;
         var output = new TermMemory[termCount];
         var matched = new bool[rows.Count];
-        int target = -1, move = -1, facing = -1, start = 0;
+        int target = -1, move = -1, facing = -1, trade = -1, start = 0;
         for (int i = 0; i < rows.Count; i++)
         {
             var row = rows[i];
@@ -304,9 +332,10 @@ public static class ShipAiModel
                 case ActKind.Target when target < 0: target = i; break;
                 case ActKind.Move when move < 0: move = i; break;
                 case ActKind.Facing when facing < 0: facing = i; break;
+                case ActKind.Trade when trade < 0: trade = i; break;
             }
         }
-        return new Decision(target, move, facing, matched, output);
+        return new Decision(target, move, facing, matched, output, trade);
     }
 
     /// <summary>
@@ -448,6 +477,45 @@ public static class ShipAiModel
             new(Cond.Always, 0, Act.TargetVaultAttacker, 0),
             new(Cond.EnemyWithin, 1200, Act.TargetNearest, 0),
             new(Cond.Always, 0, Act.Guard, (int)GuardWho.VaultShip),
+        ],
+        // Spec 1076 to 1080: autonomous ship scenarios.
+        Preset.Looter =>
+        [
+            new(Cond.CargoAbove, 95, Act.GoToStation, (int)StationPick.Nearest),
+            new([new Term(Cond.StationInRange, 0), new Term(Cond.CargoToSell, 0)], Act.Sell, 0),
+            new(Cond.LootWithin, 3000, Act.CollectLoot, 0),
+            new(Cond.Always, 0, Act.ReturnToFleet, 0),
+        ],
+        Preset.Miner =>
+        [
+            new(Cond.CargoAbove, 95, Act.GoToStation, (int)StationPick.Nearest),
+            new([new Term(Cond.StationInRange, 0), new Term(Cond.CargoToSell, 0)], Act.Sell, 0),
+            new(Cond.LootWithin, 600, Act.CollectLoot, 0),
+            new(Cond.AsteroidWithin, 20000, Act.Mine, 0),
+            new(Cond.Always, 0, Act.ReturnToFleet, 0),
+        ],
+        // Buys the buy list where it is cheapest, then unloads all cargo into the owner's first crewed ship.
+        Preset.SupplyRunner =>
+        [
+            new(Cond.CargoAbove, 90, Act.ReturnToFleet, 0),
+            new(Cond.Always, 0, Act.GoToStation, (int)StationPick.Cheapest),
+            new([new Term(Cond.FleetBeyond, 300, Not: true)], Act.Unload, 0),
+            new(Cond.StationInRange, 0, Act.Buy, 0),
+        ],
+        Preset.Salvager =>
+        [
+            new(Cond.CargoAbove, 95, Act.GoToStation, (int)StationPick.Nearest),
+            new([new Term(Cond.StationInRange, 0), new Term(Cond.CargoToSell, 0)], Act.Sell, 0),
+            new(Cond.LootWithin, 3000, Act.CollectLoot, 0),
+            new(Cond.WreckWithin, 3000, Act.Salvage, 0),
+            new(Cond.Always, 0, Act.ReturnToFleet, 0),
+        ],
+        Preset.EscortDrone =>
+        [
+            new(Cond.HealthBelow, 40, Act.ReturnToFleet, 0),
+            new(Cond.AllyUnderAttack, 0, Act.TargetAllyAttacker, 0),
+            new(Cond.EnemyWithin, 1500, Act.TargetNearest, 0),
+            new(Cond.Always, 0, Act.Guard, (int)GuardWho.Flagship),
         ],
         _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, null),
     };

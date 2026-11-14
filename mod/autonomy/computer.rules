@@ -1,0 +1,249 @@
+// Computer (spec 1050, 1051). 2x1: command points and sensors without crew, like control_room_small. It needs power.
+// It mans the one crewed part in front of its arrow (C#, AutonomyPatches). Art: vanilla 1x2 sprites turned a quarter
+// (UVRotation = 1) to fit 2x1: the rocket battery grille floor, the chaingun magazine walls and roof, the processor chip.
+// The chip sits at the front (top at rotation 0), the batteries at the back.
+Part : <./Data/ships/terran/base_part_terran.rules>/Part
+{
+	NameKey = "HotCargoAutonomy/Computer"
+	IconNameKey = "HotCargoAutonomy/ComputerIcon"
+	ID = yarden_zamir.computer
+	EditorGroup = "Control"
+	DescriptionKey = "HotCargoAutonomy/ComputerDesc"
+	SelectionTypeID = "yarden_zamir.computer"
+	Resources
+	[
+		[steel, 16]
+		[coil, 40]
+		[processor, 4]
+	]
+	AIValueFactor = 5
+	Size = [2, 1]
+	IsRotateable = true
+	MaxHealth = 2000
+	ContiguityOriginPriority = 1
+	SignificanceToggle = ScorchedToggle
+	TypeCategories = [command, uses_power]
+	ReceivableBuffs : ^/0/ReceivableBuffs []
+	// A machine: crew do not walk through it.
+	CrewSpeedFactor = 0
+	AllowedDoorLocations = []
+	GeneratorRequiresDoor = false
+	TINT = [170, 210, 255]
+	EditorIcon
+	{
+		Texture
+		{
+			File = "./Data/ships/terran/factory_processor/processor3.png"
+			SampleMode = Linear
+		}
+		Size = [48, 48]
+	}
+	Components : ^/0/Components
+	{
+		IsOperational
+		{
+			Type = MultiToggle
+			Toggles = [PowerToggle, BatteryStorage, ScorchedToggle]
+			Mode = All
+		}
+		PowerToggle
+		{
+			Type = UIToggle
+			ToggleID = "on_off"
+			Default = 1
+			RequiresCommand = false
+		}
+		ConsumptionToggle
+		{
+			Type = MultiToggle
+			Toggles = [PowerToggle, ScorchedToggle]
+			Mode = All
+		}
+		ScorchedToggle
+		{
+			Type = StatusToggle
+			StatusType = cosmoteer.scorched
+			MinStatusValue = 1
+			Invert = true
+		}
+
+		// Filled by a targeted reactor next to it, or by crew of a crewed ship.
+		BatteryStorage
+		{
+			Type = ResourceStorage
+			ResourceType = battery
+			MaxResources = 2000
+			ReceiveResourceMediaEffects = &/COMMON_EFFECTS/PowerDeliver
+		}
+		BatteryConsumer
+		{
+			Type = ResourceConsumer
+			ResourceType = battery
+			Storage = BatteryStorage
+			DefaultPriority = &/PRIORITIES/ControlRoom_Supply
+			ResupplyThreshold = 500
+			OperationalToggle = ConsumptionToggle
+			AllowNonContiguousCrewSearch = true
+		}
+		PowerDrain
+		{
+			Type = ResourceConverter
+			OperationalToggle = IsOperational
+			FromStorage = BatteryStorage
+			FromQuantity = 1000
+			MinFromQuantityForConversion = 1
+			Interval = 60
+		}
+
+		CommandProvider
+		{
+			Type = CommandProvider
+			OperationalToggle = IsOperational
+			CommandPoints = 50
+		}
+		Sensor
+		{
+			Type = Sensor
+			OperationalToggle = IsOperational
+			SightRadius = 400
+			RadarRadius = 1800
+		}
+
+		Graphics
+		{
+			Type = Graphics
+			Location = [1, 0.5]
+			OperationalToggle = IsOperational
+			Floor
+			{
+				Layer = "floors"
+				DamageLevels
+				[
+					{ File = "./Data/ships/terran/thruster_rocket_battery/floor.png"; Size = [2, 1]; UVRotation = 1; VertexColor = &~/Part/TINT }
+					{ File = "./Data/ships/terran/thruster_rocket_battery/floor_33.png"; Size = [2, 1]; UVRotation = 1; VertexColor = &~/Part/TINT }
+					{ File = "./Data/ships/terran/thruster_rocket_battery/floor_66.png"; Size = [2, 1]; UVRotation = 1; VertexColor = &~/Part/TINT }
+				]
+			}
+			OperationalDoodad
+			{
+				Layer = "doodads_low"
+				DamageLevels
+				[
+					{ File = "./Data/ships/terran/factory_processor/processor3.png"; Offset = [0, -0.12]; Size = [0.9, 0.9] }
+				]
+			}
+			NonOperationalDoodad
+			{
+				Layer = "doodads_low"
+				DamageLevels
+				[
+					{ File = "./Data/ships/terran/factory_processor/processor3.png"; Offset = [0, -0.12]; Size = [0.9, 0.9]; VertexColor = [110, 110, 110] }
+				]
+			}
+			OperationalLighting
+			{
+				Layer = "lights_add"
+				DamageLevels
+				[
+					{ File = "./Data/ships/terran/chaingun_magazine/lights.png"; Size = [2, 1]; UVRotation = 1; VertexColor = [60, 140, 255] }
+				]
+			}
+			Walls
+			{
+				Layer = "walls"
+				DamageLevels
+				[
+					{ File = "./Data/ships/terran/chaingun_magazine/walls.png"; Size = [2, 1]; UVRotation = 1 }
+					{ File = "./Data/ships/terran/chaingun_magazine/walls_33.png"; Size = [2, 1]; UVRotation = 1 }
+					{ File = "./Data/ships/terran/chaingun_magazine/walls_66.png"; Size = [2, 1]; UVRotation = 1 }
+				]
+			}
+			Roof
+			{
+				Layer = "roofs"
+				DamageLevels
+				[
+					{ File = "./Data/ships/terran/chaingun_magazine/roof.png"; NormalsFile = "./Data/ships/terran/chaingun_magazine/roof_normals.png"; Size = [2, 1]; UVRotation = 1 }
+					{ File = "./Data/ships/terran/chaingun_magazine/roof_33.png"; NormalsFile = "./Data/ships/terran/chaingun_magazine/roof_normals_33.png"; Size = [2, 1]; UVRotation = 1 }
+					{ File = "./Data/ships/terran/chaingun_magazine/roof_66.png"; NormalsFile = "./Data/ships/terran/chaingun_magazine/roof_normals_66.png"; Size = [2, 1]; UVRotation = 1 }
+				]
+			}
+			OperationalRoofDoodad
+			{
+				Layer = "roof_doodads"
+				DamageLevels
+				[
+					{ File = "./Data/ships/terran/chaingun_magazine/roof_glows.png"; Size = [2, 1]; UVRotation = 1; VertexColor = [80, 160, 255] }
+				]
+			}
+		}
+
+		BatterySprites
+		{
+			Type = ResourceSprites
+			Location = [1, 0.5]
+			ResourceStorage = BatteryStorage
+			Layer = "doodads_high"
+			ResourceLevels
+			[
+				{ File = "./Data/ships/terran/control_room_small/batteries1.png"; Offset = [-0.25, 0.28]; Size = [0.5, 0.5] }
+				{ File = "./Data/ships/terran/control_room_small/batteries2.png"; Offset = [0, 0.28]; Size = [1, 0.5] }
+			]
+		}
+
+		OperationEffects
+		{
+			Type = ToggleEffects
+			Location = [1, 0.5]
+			Toggle = IsOperational
+			ToggledOnMediaEffects = &/COMMON_EFFECTS/PowerOn
+			ToggledOffMediaEffects = &/COMMON_EFFECTS/PowerOff
+		}
+
+		DestroyedEffects
+		{
+			Type = DeathEffects
+			MediaEffects = &/COMMON_EFFECTS/MedPartDestroyed
+			Location = [1, 0.5]
+		}
+
+		Indicators
+		{
+			Type = IndicatorSprites
+			Location = [1, 0.5]
+			Indicators
+			[
+				{
+					Toggle = ScorchedToggle
+					AtlasSprite = &/INDICATORS/Scorched
+					HidesIndicators = [1, 2]
+				}
+				{
+					Toggle = PowerToggle
+					AtlasSprite { File = &/INDICATORS/PowerOff; Size = [1, 1] }
+					HidesIndicators = [2]
+				}
+				{
+					Toggle = BatteryStorage
+					AtlasSprite { File = &/INDICATORS/NoPower; Size = [1, 1] }
+				}
+			]
+		}
+
+		Blueprints
+		{
+			Type = BlueprintSprite
+			File = "./Data/ships/terran/thruster_rocket_battery/blueprints.png"
+			Size = [2, 1]
+			UVRotation = 1
+		}
+	}
+
+	Stats
+	{
+		PowerUsageContinuousMinutes = (&~/Part/Components/PowerDrain/FromQuantity) / (&~/Part/Components/PowerDrain/Interval) / 1000 * 60
+		PowerCapacity = (&~/Part/Components/BatteryStorage/MaxResources) / 1000
+		SightRange = &~/Part/Components/Sensor/SightRadius
+		RadarRange = &~/Part/Components/Sensor/RadarRadius
+	}
+}

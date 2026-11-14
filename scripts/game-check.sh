@@ -41,7 +41,8 @@ if ! git merge -q --no-edit origin/main > /dev/null 2>&1; then
   exit 1
 fi
 echo "== game-check PR $PR at ${SHA:0:9} with origin/main $(git rev-parse --short origin/main); log $LOG"
-AUTOTEST_TIER=full COMMITTED_ONLY=1 scripts/autotest-affected.sh origin/main > "$LOG" 2>&1
+# LIST_ONLY from the caller would only list the tests and exit 0, which would post a false success.
+env -u LIST_ONLY AUTOTEST_TIER=full COMMITTED_ONLY=1 scripts/autotest-affected.sh origin/main > "$LOG" 2>&1
 RC=$?
 SECS=$((SECONDS - T0))
 tail -15 "$LOG"

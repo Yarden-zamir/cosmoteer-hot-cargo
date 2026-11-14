@@ -1,0 +1,24 @@
+# Escort drone scenario (spec 1080, 1081): the Computer mans a laser; the drone guards the crewed ship, targets enemies near it,
+# and returns to the crewed ship when damaged.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+shipai Log on
+aiset FleeEnabled false
+aiset CallEnabled false
+auto_build Escort player yarden_zamir.computer@-1,1,1 cosmoteer.laser_blaster_small@0,0 yarden_zamir.targeted_reactor@-1,3 cosmoteer.thruster_small@-1,5 cosmoteer.thruster_small@0,5 cosmoteer.thruster_small@0,-2,2 cosmoteer.thruster_small@-3,1,1 cosmoteer.thruster_small@-3,3,1 cosmoteer.thruster_small@1,0,3 cosmoteer.thruster_small@1,3,3
+wait 1
+waitfor auto_manned == 1 10
+tactics_ship Escort
+tactics EscortDrone
+tacticsauto on
+waitfor tactics_move_row == 3 20
+heat 55
+waitfor hunters >= 1 30
+waitfor tactics_target_row >= 1 120
+godmode off
+tactics_damage 0.3
+waitfor tactics_move_row == 0 20
+waitfor auto_home_dist <= 600 120
+quit
