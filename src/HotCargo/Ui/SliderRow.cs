@@ -48,7 +48,8 @@ public sealed class SliderRow
         _label.TextRenderer.XmlFormatting = true;
         _label.TextRenderer.FontSize = 20;
         Row.AddChild(_label);
-        float valuePercent = labelPercent > 0 ? 20f : 30f;
+        // Without a label (an option row, where the slider is a narrow part of the row) the value gets half, so "40 Hyperium" fits on one line.
+        float valuePercent = labelPercent > 0 ? 20f : 50f;
         _slider = new ScrollBar(WidgetRules.Instance.HorizontalSlider) { PercentileWidth = 100f - labelPercent - valuePercent };
         Row.AddChild(_slider);
         _value = new Label { PercentileWidth = valuePercent };

@@ -31,7 +31,7 @@ static class Debtor
         double until = run.State.GameSeconds + run.T.Friendly.DebtorMinutes * 60.0;
         ship.Tags?.Remove(EventHail.CarrierTag);
         // A mercenary hire runs at a lower health than a plain hire (spec 582), so it stays in the fight longer.
-        run.State.Diplomacy.Hires.Add(new Hire { Ship = id, Player = player, Until = until, Merc = true });
+        run.State.Diplomacy.Hires.Add(new Hire { Ship = id, Player = player, Until = until, Merc = true, HideLabel = true });
         S(run).Debtors.Add(new DebtorState { Ship = id, Player = player, Credits = credits, Until = until, Node = sim.NodeId(), Name = ship.Metadata.XmlShipName });
         string line = FriendlyArea.Text("DebtorFollowsFmt", ship.Metadata.XmlShipName, run.T.Friendly.DebtorMinutes.ToString("0"), credits.ToString("N0"));
         lines.Add(line);

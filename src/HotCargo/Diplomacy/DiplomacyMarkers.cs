@@ -38,7 +38,7 @@ static class DiplomacyMarkers
         int held = 0;
         foreach (var h in s.Held) if (h.Ship == id) held += h.Units;
         Hire? hire = null;
-        foreach (var h in s.Hires) if (h.Ship == id) { hire = h; break; }
+        foreach (var h in s.Hires) if (h.Ship == id && !h.HideLabel) { hire = h; break; }
         if (held == 0 && hire is null && !s.Mercs.Contains(id)) return null;
         var parts = new List<string>();
         if (held > 0) parts.Add(DipText.Format("LabelHoldsFmt", held));

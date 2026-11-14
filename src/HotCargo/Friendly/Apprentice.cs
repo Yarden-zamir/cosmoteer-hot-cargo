@@ -31,7 +31,7 @@ static class Apprentice
         double until = run.State.GameSeconds + t.ApprenticeMinutes * 60.0;
         ship.Tags?.Remove(EventHail.CarrierTag);
         // The hire ends at the same time; this area's tick decides first (it runs before the diplomacy tick).
-        run.State.Diplomacy.Hires.Add(new Hire { Ship = id, Player = player, Until = until });
+        run.State.Diplomacy.Hires.Add(new Hire { Ship = id, Player = player, Until = until, HideLabel = true });
         S(run).Apprentices.Add(new ApprenticeState { Ship = id, Player = player, Until = until });
         string line = FriendlyArea.Text("ApprenticeFollowsFmt", ship.Metadata.XmlShipName, t.ApprenticeMinutes.ToString("0"), t.ApprenticeJoinFights);
         lines.Add(line);

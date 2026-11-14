@@ -80,6 +80,8 @@ public sealed class Hire
     [Serialize] public bool Merc;
     /// <summary>The ship ran from damage. It runs until clear, then the contract ends.</summary>
     [Serialize] public bool Fleeing;
+    /// <summary>The area that made the hire shows its own ship label (Friendly: apprentice, debtor, Wayfarers), so the hired label stays off.</summary>
+    [Serialize(Optional = true)] public bool HideLabel;
 }
 
 [ReflectiveSerialization(Explicit = true)]
