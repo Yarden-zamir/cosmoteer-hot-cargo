@@ -3,6 +3,8 @@
 newgame run
 wait 8
 ev_set Enabled false
+# The guard's personality rolls with the start world; a cover or bait personality would hide instead of attacking.
+aiset PersonalitiesEnabled false
 chain_force black_box
 expect chain_held >= 1
 # Next to the guard before the accept: it is no enemy and gives no attack order.

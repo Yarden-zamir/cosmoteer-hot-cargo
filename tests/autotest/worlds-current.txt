@@ -19,7 +19,8 @@ expect worlds_flow_speed > -1
 worlds goto current
 expect worlds_in_current > 0.5
 expect worlds_ship_in_current > 0.5
-# A tech crate dropped near the band center floats with the current.
+# A tech crate dropped at the band center floats with the current.
+worlds goto current center
 tech drop 1
 wait 1
 expect worlds_items_in_current >= 1
@@ -29,6 +30,7 @@ expect worlds_sim_seconds > 0
 wait 4
 expect worlds_item_flow_speed > 5
 # An idle ship brakes against the drift, but it keeps drifting downstream.
+worlds goto current
 wait 5
 expect worlds_flow_speed > 2
 # The crate leaves the band. With the side share 0.25, drift from near the axis leaves near the far end (half length 3000),

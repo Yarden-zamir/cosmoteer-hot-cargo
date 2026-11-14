@@ -11,6 +11,10 @@ ev_sensor_build
 pause off
 expect ev_sensor_works == 1
 heat 50
+# Its own faction ship in open space: the start world's patrols fly off and break a listen.
+openspace 6000 3000
+dip_spawn friend 300
+wait 2
 # A short range, so only the faction ship next to the fleet counts.
 ev_set ListenRange 500
 ev_faction_goto 2500

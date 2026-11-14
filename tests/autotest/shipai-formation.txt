@@ -30,12 +30,19 @@ expect formation_min_gap < 50
 waitfor formation_min_gap > 100 40
 # Line of fire: the leader targets the nearest enemy and holds fire while ship 1 sits on the line.
 # Pirates spawn near the player, inside radar range, so the target does not depend on how far away hunters spawn.
-aispawn pirates 1
+# Away from stations and other ships, so nothing else shoots the test's pirate or draws the leader's aim. The pirate is tier 6,
+# so the three ships do not kill it before the leader takes aim.
+openspace 6000 3000
+# The move drops the leader's manual order; give it one again, as above.
+tactics_ship 0
+tactics_manual
+wait 2
 tactics_ship 1
 tacticsauto off
 tactics_ship 0
 tactics HC1:AllyInLineOfFire>HoldFire=0;Always>TargetNearest
 tacticsauto on
+aispawn pirates 1 6
 waitfor tactics_target_row == 1 60
 expect tactics_weapons > 0
 expect tactics_held == 0

@@ -5,8 +5,11 @@ wait 8
 ev_set Enabled false
 godmode on
 shipai Log on
+# Away from stations, with rocks of its own: the nearest rock and station do not depend on the start world.
+openspace 3000
 auto_build Miner player yarden_zamir.computer@2,0,1 cosmoteer.mining_laser_small@3,0,1 yarden_zamir.targeted_reactor@2,2 cosmoteer.storage_2x2@0,0 yarden_zamir.funnel@0,2 cosmoteer.thruster_small@0,4 cosmoteer.thruster_small@3,4 cosmoteer.thruster_small@0,-2,2 cosmoteer.thruster_small@3,-2,2 cosmoteer.thruster_small@-2,0,1 cosmoteer.thruster_small@-2,2,1 cosmoteer.thruster_small@4,2,3
 wait 1
+airocks 3 700
 tactics_ship Miner
 tactics HC1:CargoAbove=25>GoToStation=0;StationInRange&CargoToSell>Sell;LootWithin=600>CollectLoot;AsteroidWithin=20000>Mine;Always>ReturnToFleet
 tacticsauto on

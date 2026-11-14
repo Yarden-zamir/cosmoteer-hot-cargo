@@ -225,13 +225,14 @@ static class WorldsAutotest
                 _keptGain = Heat(Ship()) - _markedHeat;
                 Log.Info($"AUTOTEST kept heat gain {_keptGain:0}");
                 break;
-            // goto current: the middle triangle of the current, at rest.
-            case ["goto", "current"]:
+            // goto current: the middle triangle of the current, at rest. goto current center: the band center itself; a triangle center
+            // next to it can lie up to a triangle off the axis, so a crate dropped there could start near a side of the band.
+            case ["goto", "current"] or ["goto", "current", "center"]:
             {
                 var centers = Current.TriangleCenters(Sim(), Current.NebulaId);
                 if (centers.Count == 0) throw new InvalidOperationException("no current in this system");
                 Vector2 mean = centers.Aggregate(Vector2.Zero, (a, c) => a + c) / centers.Count;
-                Teleport(centers.MinBy(c => c.DistanceTo(mean)));
+                Teleport(parts.Length == 3 ? mean : centers.MinBy(c => c.DistanceTo(mean)));
                 break;
             }
             // goto nocurrent: open space beside the current, at rest (a control for the drift test).
