@@ -241,6 +241,13 @@ public static class ShipAiArea
             string want = RowsText(arg), have = ShipTactics.Of(TestShip())?.Text ?? "";
             Autotest.Check(want == have, $"tactics are '{want}' (have '{have}')");
         };
+        // expectdesign <preset name|clear|HC1:...>: the rows of the design that loaddesign read last.
+        Autotest.Commands["expectdesign"] = arg =>
+        {
+            var design = _loadedDesign ?? throw new InvalidOperationException("no loaddesign yet");
+            string want = RowsText(arg), have = ShipTactics.Of(design)?.Text ?? "";
+            Autotest.Check(want == have, $"design tactics are '{want}' (have '{have}')");
+        };
         // shipai <ShipAiTunables field> <value>: sets one tunable for this run. Test only.
         Autotest.Commands["shipai"] = arg => Autotest.SetField(Autotest.RequireRun().T.ShipAi, arg);
         // tactics_manual: a player move order 400 ahead of the test ship, sent like a right click. Real player action.
