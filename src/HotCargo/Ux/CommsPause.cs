@@ -26,7 +26,8 @@ static class CommsPause
         static void Postfix(CommWindow __instance) => UxKit.Guard("comms pause", () =>
         {
             var game = __instance.Game;
-            if (!Enabled(game) || game.Sim.IsPaused.Displayed) return;
+            // A listen window never pauses (spec 1138).
+            if (!Enabled(game) || game.Sim.IsPaused.Displayed || SharedChoice.ListenIn.SpeakerOf(__instance) is not null) return;
             game.NetManager.EnqueueInput(new MPSetPausedInput(paused: true));
             _pausedGame = game;
             Log.Info("ux: comms window paused the game");
@@ -40,7 +41,7 @@ static class CommsPause
         static void Postfix(CommWindow __instance) => UxKit.Guard("comms pause", () =>
         {
             var game = __instance.Game;
-            if (_pausedGame != game || CommWindow.IsCommWindowOpen(game)) return;
+            if (_pausedGame != game || CommWindow.IsCommWindowOpen(game) || SharedChoice.ListenIn.SpeakerOf(__instance) is not null) return;
             _pausedGame = null;
             if (!game.Sim.IsPaused.Displayed) return;
             game.NetManager.EnqueueInput(new MPSetPausedInput(paused: false));

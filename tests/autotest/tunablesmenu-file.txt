@@ -1,10 +1,13 @@
 # A change of tunables.rules while the settings window is open (spec 52, 53, 851, 852): the window shows the new values,
 # a bad file keeps the values in effect, and a new fuel floor tops up the live stations at once.
+# The file and request watchers poll in real time, and Mac sim waits run faster than real time.
+# runner: pc
 newgame run
 wait 8
 menu open
 tunablesfile Heat { HeatPerGameMinute = 7 }; Balance { StationFuelMinimum = 30 }
-wait 3
+# The file poll runs once per real second.
+waitfor heatperminute == 7 120
 menu value Heat.HeatPerGameMinute == 7
 menu shows Heat.HeatPerGameMinute 7
 expect tunables_error == 0
@@ -12,7 +15,7 @@ expect balance_station_fuel_floor == 30
 expect balance_station_fuel_gap >= 0
 # A bad value: rejected, the error shows, and the old values stay.
 tunablesfile Heat { HeatPerGameMinute = 9; HeatCarryOverFraction = 2 }
-wait 3
+waitfor tunables_error == 1 120
 expect tunables_error == 1
 menu value Heat.HeatPerGameMinute == 7
 menu shows Heat.HeatPerGameMinute 7
@@ -47,7 +50,8 @@ menu file lacks ShipCount
 menu file lacks HeatPerGameMinute
 # Waiting hunter groups follow new stage values (spec 854): 3 groups of stage 0, one now and two waiting; Waves 2 leaves one waiting.
 godmode on
-tunerequest set Events.Enabled false | set Hunters.Stages[0].ShipCount 3 | set Hunters.Stages[0].EarlyScale 1 | set Hunters.Stages[0].Waves 3 | set Hunters.Stages[0].WaveGapSeconds 60
+# The Pursuit stays off, so the ship count stays exact (spec 943). The request rewrites the tunables, so pu_set would not hold.
+tunerequest set Events.Enabled false | set Pursuit.Enabled false | set Hunters.Stages[0].ShipCount 3 | set Hunters.Stages[0].EarlyScale 1 | set Hunters.Stages[0].Waves 3 | set Hunters.Stages[0].WaveGapSeconds 60
 wait 2
 tuneresult has ok
 spawnstageindex 0

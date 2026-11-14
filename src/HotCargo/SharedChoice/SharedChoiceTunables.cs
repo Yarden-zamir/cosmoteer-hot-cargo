@@ -12,4 +12,6 @@ public sealed class SharedChoiceTunables
     [Serialize(Optional = true)] public float PresenceSendSeconds = 0.15f;
     /// <summary>Real seconds without an update from a player before that player's hover marker goes away.</summary>
     [Serialize(Optional = true)] public float PresenceExpirySeconds = 3f;
+    /// <summary>Real seconds that a listen window stays open after the speaker closed the channel, so the listener sees the result.</summary>
+    [Serialize(Optional = true)] public float ListenLingerSeconds = 4f;
 }

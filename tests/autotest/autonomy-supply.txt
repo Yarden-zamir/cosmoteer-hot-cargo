@@ -1,0 +1,20 @@
+# Supply runner scenario (spec 1078): buys steel at the cheapest station and unloads it into the crewed ship.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+shipai Log on
+auto_build Runner away yarden_zamir.computer@2,0 yarden_zamir.targeted_reactor@2,1 cosmoteer.storage_2x2@0,0 yarden_zamir.funnel@0,2 cosmoteer.thruster_small@0,4 cosmoteer.thruster_small@3,3 cosmoteer.thruster_small@0,-2,2 cosmoteer.thruster_small@3,-2,2 cosmoteer.thruster_small@-2,0,1 cosmoteer.thruster_small@-2,2,1 cosmoteer.thruster_small@4,0,3 cosmoteer.thruster_small@4,1,3
+wait 1
+tactics_ship Runner
+tactics SupplyRunner
+tactics_editor open
+tactics_editor buy steel
+tactics_editor close
+tacticsauto on
+waitfor auto_station_dist > 600 10
+auto_mark
+waitfor auto_station_dist <= 400 300
+waitfor auto_money_gain < 0 30
+waitfor auto_home_gain > 0 300
+quit

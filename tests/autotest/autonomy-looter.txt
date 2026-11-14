@@ -1,0 +1,26 @@
+# Looter scenario (spec 1076): collects loot with its Funnel, flies to the nearest station when the bay is full, sells all, returns.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+shipai Log on
+auto_build Looter away yarden_zamir.computer@2,0 yarden_zamir.targeted_reactor@2,1 cosmoteer.storage_2x2@0,0 yarden_zamir.funnel@0,2 cosmoteer.thruster_small@0,4 cosmoteer.thruster_small@3,3 cosmoteer.thruster_small@0,-2,2 cosmoteer.thruster_small@3,-2,2 cosmoteer.thruster_small@-2,0,1 cosmoteer.thruster_small@-2,2,1 cosmoteer.thruster_small@4,0,3 cosmoteer.thruster_small@4,1,3
+wait 1
+tactics_ship Looter
+tactics Looter
+tacticsauto on
+waitfor auto_station_dist > 600 10
+auto_mark
+auto_loot gold 1 24 120
+waitfor tactics_move_row == 2 20
+waitfor auto_funnel_taken >= 1 60
+waitfor auto_cargo_pct >= 95 240
+waitfor tactics_move_row == 0 20
+waitfor auto_station_dist <= 400 300
+waitfor tactics_trade_row == 1 30
+waitfor auto_money_gain > 0 30
+waitfor auto_cargo == 0 30
+# After the sale it leaves the station: back to the rest of the loot (row 2) when its team still sees it, else to the crewed
+# ship (row 3). Loot is only seen at short range, so which one depends on the map.
+waitfor tactics_move_row >= 2 30
+quit

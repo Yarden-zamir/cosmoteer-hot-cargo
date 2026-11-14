@@ -1,0 +1,58 @@
+HotCargoAutonomy
+{
+	Computer = "Computer"
+	ComputerIcon = "Computer"
+	ComputerDesc = "Flies a ship with no crew. A ship with a Computer and no control room runs only on its AI rows (Ctrl+K): you cannot give it orders. "\
+	               "It also operates the one crewed part in front of its arrow, as if that part had its full crew. Needs power."
+	TargetedReactor = "Targeted Reactor"
+	TargetedReactorIcon = "Targeted Reactor"
+	TargetedReactorDesc = "Makes half the power of a Small Reactor and sends it straight into the parts that touch its sides. "\
+	                      "No crew needed, and crew cannot carry its power away. Crew cannot walk through it."
+	Funnel = "Funnel"
+	FunnelIcon = "Funnel"
+	FunnelDesc = "Takes in loot that the ship flies over and puts it into storage bays and other parts that touch it. "\
+	             "No crew and no power needed. Pick what it takes in its settings."
+
+	FunnelShipTip = "<b>Funnel: ship loot filter</b>\n\nTakes the loot that the ship's loot filter takes (AI window, Ctrl+K)."
+	FunnelAllTip = "<b>Funnel: all loot</b>"
+	Funnel50Tip = "<b>Funnel: value 50 or more</b>\n\nOnly loot that sells for at least 50 credits per unit."
+	Funnel200Tip = "<b>Funnel: value 200 or more</b>\n\nOnly loot that sells for at least 200 credits per unit."
+	Funnel1000Tip = "<b>Funnel: value 1,000 or more</b>\n\nOnly loot that sells for at least 1,000 credits per unit."
+	FunnelOffTip = "<b>Funnel: off</b>"
+
+	NoOrders = "Autonomous ship: it follows its AI rows only (Ctrl+K)."
+
+	// Editor cargo block (spec 1062)
+	Cargo = "Cargo"
+	CargoTip = "What this ship collects, sells, mines and buys. The cargo rows of the AI use these lists."
+	LootAll = "Loot: all"
+	LootValueFmt = "Loot: value {0}+"
+	LootTypes = "Loot: these types"
+	LootTip = "The loot that \"collect loot\" and \"loot within\" look for, and that Funnels set to the ship filter take."
+	SellFmt = "Sell: {0}"
+	MineFmt = "Mine: {0}"
+	BuyFmt = "Buy: {0}"
+	LootTypesFmt = "Types: {0}"
+	ListAll = "all"
+	ListAny = "any ore"
+	ListNone = "nothing"
+	ListCountFmt = "{0} types"
+	PickTitleFmt = "{0}: pick resources"
+	PickDone = "Done"
+	ReturnOn = "<good>Return to me: on</good>"
+	ReturnOff = "<gray>Return to me: off</gray>"
+	ReturnTip = "On: the ship flies back to your crewed ship and ignores its move rows. The only way to recall an autonomous ship."
+}
+
+Inputs
+{
+	PartToggles
+	{
+		hc_funnel_ship = "Funnel: ship loot filter"
+		hc_funnel_all = "Funnel: all loot"
+		hc_funnel_50 = "Funnel: value 50+"
+		hc_funnel_200 = "Funnel: value 200+"
+		hc_funnel_1000 = "Funnel: value 1000+"
+		hc_funnel_off = "Funnel: off"
+	}
+}

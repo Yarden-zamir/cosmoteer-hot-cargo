@@ -1,0 +1,25 @@
+# Co-op listen-in screenshots (spec 1131 to 1137). The client talks to an event carrier; the host listens and votes.
+# Host in the main slot (graphics), client in a headless test slot. scripts/screens-mp.sh runs both. {PORT} is the host port.
+render on
+mphost {PORT}
+mpstart 2
+mp ev_set Enabled false
+mp ev_set StationEventChance 0
+mp event broken_down
+waitfor ev_carrier == 1 60
+mp ev_carrier_goto
+wait 3
+closepanel
+select
+waitfor listen_hails == 1 60
+wait 1
+screenshot listen-button
+listen 1
+wait 1
+listen_click Strip their cargo
+waitfor sc_votes >= 1 30
+wait 1
+screenshot listen-window
+mp mpmark 1
+waitfor mpconnected == 0 120
+quit
