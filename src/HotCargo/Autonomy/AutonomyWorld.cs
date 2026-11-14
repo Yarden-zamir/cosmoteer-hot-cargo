@@ -194,14 +194,18 @@ internal static class AutonomyWorld
 
     static PlayerState Owner(Ship ship) => HunterOrders.Sim(ship).RequireGame().GetPlayerState(ship.Metadata.PlayerIndex, deterministic: true);
 
-    /// <summary>Sells all cargo of the sell list to the station. Returns the units sold. Only a human owner gets money.</summary>
-    internal static int Sell(Ship ship, Ship station, CargoSettings c)
+    /// <summary>
+    /// Sells all cargo of the sell list to the station, but keeps keep(type) units of each type (spec 1350: a faction ship keeps the cargo
+    /// it had before it scavenged). Returns the units sold. Only a human owner gets money.
+    /// </summary>
+    internal static int Sell(Ship ship, Ship station, CargoSettings c, Func<string, int>? keep = null)
     {
         var sim = HunterOrders.Sim(ship);
         int sold = 0;
-        foreach (var (id, have) in CargoByType(ship))
+        foreach (var (id, all) in CargoByType(ship))
         {
-            if (!c.Sells(id)) continue;
+            int have = all - Math.Max(0, keep?.Invoke(id) ?? 0);
+            if (!c.Sells(id) || have <= 0) continue;
             var type = new ID<ResourceRules>(id);
             int price = sim.Mode.GetResourceSellRefund(type, station.Metadata.PlayerIndex);
             int taken = station.Resources.AddResources(type, have);

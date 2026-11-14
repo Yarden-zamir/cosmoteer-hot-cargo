@@ -21,6 +21,10 @@ public sealed class ScavengeTunables
     /// <summary>Spec 1336: a scavenger with this storage bay fill or more stops collecting and goes to sell.</summary>
     [Serialize(Optional = true)] public float FullFraction = 0.9f;
 
+    /// <summary>Spec 1350: ships of the vanilla factions scavenge when idle, and sell what they collected.</summary>
+    [Serialize(Optional = true)] public bool FactionsScavenge = true;
+    /// <summary>Spec 1351: pirates (every side that is not a faction or the scavengers) scavenge when idle, while they have room. They keep the loot.</summary>
+    [Serialize(Optional = true)] public bool PiratesScavenge = true;
     /// <summary>Spec 1343: scavenger ships arrive in systems. Off: no new scavenger arrives; the ones in the system stay.</summary>
     [Serialize(Optional = true)] public bool FactionEnabled = true;
     /// <summary>Spec 1343: at most this many live scavengers in a system.</summary>
