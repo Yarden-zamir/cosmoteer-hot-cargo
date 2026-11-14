@@ -1,0 +1,30 @@
+# Fall back to a station (spec 1305, 1308, 1309): a damaged faction ship without resources and crew flies to a friendly
+# station, gets free resources and crew, repairs and returns.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+tacticlog on
+aiset FleeOnVanilla false
+aiset RegroupOnVanilla false
+aiset CallOnVanilla false
+aiset CoverEnabled false
+aiset BaitEnabled false
+aiset TeamEnabled false
+aijitter 0
+aitrait Monolith Phalanx FallBack 1
+aitrait Monolith Lancers FallBack 1
+aispawn monolith 1
+wait 3
+aistrip new resources
+aistrip new crew 2
+aidamage new 0.3
+expect ai_new_min_health < 0.35
+waitfor ai_fb_station >= 1 30
+# The station can be far away in the system. The test moves the ship near it: the flight itself is vanilla movement.
+aiplan_near 1500
+waitfor ai_fb_supplied >= 1 60
+expect ai_new_min_crew > 2
+waitfor ai_fb_active == 0 200
+expect ai_new_min_health >= 0.6
+quit

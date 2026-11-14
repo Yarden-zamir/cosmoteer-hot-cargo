@@ -11,6 +11,7 @@ public static class TacticsArea
             Autotest.Fields[$"tactic_{name}"] = () => TacticsLog.Count(name);
         // tacticlog on|off: turns Debug.TacticsLog on for this run, without a tunables file change. Test only.
         Autotest.Commands["tacticlog"] = arg => Autotest.RequireRun().T.Debug.TacticsLog = arg != "off";
+        RepairAutotest.Register();
         Ai.AiArea.Register();
     }
 }

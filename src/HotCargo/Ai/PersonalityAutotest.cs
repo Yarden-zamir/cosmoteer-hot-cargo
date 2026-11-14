@@ -20,7 +20,7 @@ using HotCargo.Tactics;
 namespace HotCargo.Ai;
 
 /// <summary>Autotest commands and fields for personalities, cover and teams (spec 360-369). Test only, single player.</summary>
-static class PersonalityAutotest
+internal static class PersonalityAutotest
 {
     static readonly ID<BuiltinShipTag> Combat = new("combat");
 
@@ -199,7 +199,10 @@ static class PersonalityAutotest
         && PersonalityStrategy.Profile(s, T()).Sides.Weak != 0);
 
     /// <summary>Hostile AI ships with the personality module, in sim order.</summary>
-    static List<Ship> Hostile() =>
+    /// <summary>The ships of the last aispawn, in spawn order.</summary>
+    internal static readonly List<Cosmoteer.Game.ObjectID> LastSpawned = [];
+
+    internal static List<Ship> Hostile() =>
         Sim().Ships.Where(s => !s.IsJunk && s.AI?.GetStrategyModule<PersonalityStrategy>() is not null && AiGate.HostileToPlayers(s)).ToList();
 
     static void Spawn(Run run, string group, int count, int tier)
@@ -211,6 +214,7 @@ static class PersonalityAutotest
             : GameApp.Rules.Factions.FirstOrDefault(f => f.ID.ToString() == group) ?? throw new InvalidOperationException($"no faction '{group}'");
         int allegiance = faction?.MilitaryPlayerIndex ?? career.AllocUniquePlayerIndex();
         float direction = sim.Rand.Direction();
+        LastSpawned.Clear();
         for (int i = 0; i < count; i++)
         {
             BuiltinShipRules? pick = null;
@@ -228,6 +232,7 @@ static class PersonalityAutotest
             spawner.Spawn(sim);
             var ship = sim.Ships[spawner.ReservedObjectID] ?? throw new InvalidOperationException($"{pick.ID} did not spawn");
             Log.Info($"AUTOTEST spawned {group} {ship.Metadata.PlainShipName} id={ship.UniqueID} tier {pick.Tier} player {allegiance}");
+            LastSpawned.Add(ship.UniqueID);
             if (faction is not null) career.Wanted.WarTriggeredByPlayer(ship);
         }
         if (faction is null) return;

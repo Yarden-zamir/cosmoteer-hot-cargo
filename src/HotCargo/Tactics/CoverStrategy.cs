@@ -108,14 +108,14 @@ internal sealed class CoverStrategy(CoverStrategyRules rules) : AIStrategyModule
     /// <summary>A rock blocks weapon fire: a junk ship whose rules block line of sight (asteroids and megaroids).</summary>
     public static bool IsRock(Ship ship) => ship.IsJunk && ship.Rules.JunkBlocksWeaponLOS;
 
-    static Vector2 Spot(Ship ship, Ship target, Ship rock, TacticsTunables t)
+    internal static Vector2 Spot(Ship ship, Ship target, Ship rock, TacticsTunables t)
     {
         var spot = CoverSpot(N(target.DetWorldCenter), N(rock.DetWorldCenter), rock.WorldBoundingRadius, ship.WorldBoundingRadius, t.CoverGap);
         return new Vector2(spot.X, spot.Y);
     }
 
     /// <summary>The rock is big enough and not next to the target, where hiding behind it would mean sitting on the target.</summary>
-    static bool Usable(Ship ship, Ship target, Ship rock, TacticsTunables t) =>
+    internal static bool Usable(Ship ship, Ship target, Ship rock, TacticsTunables t) =>
         rock.WorldBoundingRadius >= ship.WorldBoundingRadius * t.CoverMinRockFactor
         && rock.DetWorldCenter.DistanceTo(target.DetWorldCenter) > rock.WorldBoundingRadius + target.WorldBoundingRadius + ship.WorldBoundingRadius
         && rock.DetWorldCenter.DistanceTo(ship.DetWorldCenter) <= t.CoverSearchRange;
@@ -124,7 +124,7 @@ internal sealed class CoverStrategy(CoverStrategyRules rules) : AIStrategyModule
     /// The usable rock with the nearest hiding spot. The tree query order is not part of the contract, so the candidates are
     /// sorted by ID first and ties go to the lowest ID.
     /// </summary>
-    static Ship? FindRock(Ship ship, Ship target, TacticsTunables t)
+    internal static Ship? FindRock(Ship ship, Ship target, TacticsTunables t)
     {
         var found = new List<Ship>();
         HunterOrders.Sim(ship).Ships.DetFindIntersectingWith(new Circle(ship.DetWorldCenter, t.CoverSearchRange), found, approximate: true, junk: true,
