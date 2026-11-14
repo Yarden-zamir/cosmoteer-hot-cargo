@@ -63,7 +63,7 @@ HotCargoItems
 	SpaceTracerTip = "Throw the tracer beacon out of the airlock. It stops calling home."
 	SpacedTracerFmt = "{0} spaced the tracer beacon."
 	TracerPingFmt = "The tracer beacon calls home: heat +{0}."
-	// Spec 1146. {0} = the ship.
+	// Spec 1147, 1148. {0} = the ship.
 	RescueBeacon = "Rescue Beacon"
 	RescueBeaconPlural = "Rescue Beacons"
 	RescueBeaconDesc = "Fire it when your ship cannot fly on. A tug tows the ship to the nearest friendly station, for a fee. The whole sector hears the call."
