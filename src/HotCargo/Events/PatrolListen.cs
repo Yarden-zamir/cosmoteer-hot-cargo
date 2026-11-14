@@ -119,7 +119,12 @@ public static class PatrolListen
         if (Distance(ship, target) > t.ListenRange) return Text("BrokeRangeFmt", target.Metadata.XmlShipName);
         double now = sim.LogicalTime;
         bool Fired(Ship x) => PatrolListenModel.FiredRecently(now, x.Weapons.LastWeaponFireTime, t.ListenCombatSeconds);
-        if (Fired(ship) || sim.Ships.Any(x => x.IsEnemiesWith(ship) && Fired(x) && Distance(ship, x) <= t.ListenCombatRadius)) return Text("BrokeCombat");
+        var shooter = Fired(ship) ? ship : sim.Ships.Where(x => x.IsEnemiesWith(ship) && Fired(x) && Distance(ship, x) <= t.ListenCombatRadius).MinBy(x => x.UniqueID);
+        if (shooter is not null)
+        {
+            Log.Info($"patrol listen: {shooter.Metadata.PlainShipName} fired {now - shooter.Weapons.LastWeaponFireTime:0.0} s ago");
+            return Text("BrokeCombat");
+        }
         return null;
     }
 
