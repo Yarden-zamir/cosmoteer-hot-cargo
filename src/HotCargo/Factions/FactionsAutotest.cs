@@ -164,6 +164,16 @@ static class FactionsAutotest
         // fa_chain_shelter: test only. The chain-shelter path (spec 665) for the nearest station's faction, as if a chain there ended well.
         Autotest.Commands["fa_chain_shelter"] = _ =>
             FactionsArea.ShelterAfterChain(R(), TechAutotest.NearestStation().Metadata.PlayerIndex, "a test chain");
+        // fa_mapfocus_shelter: test only. Centers the galaxy map on the nearest system in the shelter zone (screenshots).
+        Autotest.Commands["fa_mapfocus_shelter"] = _ =>
+        {
+            var run = R();
+            var here = run.Game.CurrentMapNode.Location;
+            var node = run.Game.Map.Nodes.Where(n => FactionsArea.ZoneOf(run, n) == Zone.Shelter).MinBy(n => n.Location.DistanceSquaredTo(here))
+                ?? throw new InvalidOperationException("no system in the shelter zone");
+            node.FocusCamera(playSound: false);
+            Autotest.Wait(3);
+        };
         // fa_jump_watched: jumps to an unvisited neighbor in the corporate watch zone (not ally space), like "worlds jumpto" (no FTL animation, no fuel).
         Autotest.Commands["fa_jump_watched"] = _ =>
         {

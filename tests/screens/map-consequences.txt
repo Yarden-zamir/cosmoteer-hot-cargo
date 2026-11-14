@@ -10,8 +10,7 @@ ev_set Enabled false
 godmode on
 # The ally is another faction, so the nearest station's faction can shelter.
 fa_roles other -
-map on
-wait 3
+mapfocus
 screenshot consequences-01-before
 map off
 wait 1
@@ -22,7 +21,8 @@ stage
 wait 2
 fa_chain_shelter
 wait 1
-map on
-wait 3
+mapfocus
 screenshot consequences-02-after
+fa_mapfocus_shelter
+screenshot consequences-03-shelter
 quit
