@@ -1,4 +1,6 @@
 using Cosmoteer;
+using Cosmoteer.Data;
+using Cosmoteer.Resources;
 using Cosmoteer.GalaxyMap;
 using Cosmoteer.Game;
 using Cosmoteer.Game.Multiplayer;
@@ -24,12 +26,13 @@ namespace HotCargo.Worlds;
 /// <summary>
 /// Rules type "HotCargoSundive" (spec 223): a wreck site deep in a sun's heat zone.
 /// Dive: a human ship within Radius of the site salvages; salvage time adds up over visits. At Worlds.SundiveSalvageSeconds
-/// the ship that finished holds the recorder. Escape: the objective completes when that ship is out of every heat zone,
-/// and fails when that ship is destroyed.
+/// the ship that finished gets one Recorder item in its storage (spec 1144); with no free storage the salvage waits.
+/// Escape: the objective completes when a human ship that holds the recorder is out of every heat zone. It fails when no recorder is
+/// left in the players' ships or loose in the system. When the mission leaves the log, the client takes the recorder (IMissionCargo).
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
 [SerialDerivedType(TypeName = "HotCargoSundive")]
-internal sealed class SundiveObjective : Objective, IMissionMarkers
+internal sealed class SundiveObjective : Objective, IMissionMarkers, Events.IMissionCargo
 {
     [ReflectiveSerialization(Explicit = true)]
     [SerialDerivedType(TypeName = "HotCargoSundive")]
@@ -39,6 +42,8 @@ internal sealed class SundiveObjective : Objective, IMissionMarkers
     {
         [Serialize, PortableHash] public SpawnedObjectSearch SiteTag = null!;
         [Serialize, PortableHash] public float Radius;
+        /// <summary>The item that the salvage gives (yarden_zamir.flight_recorder).</summary>
+        [Serialize, PortableHash] public ID<ResourceRules> Recorder;
 
         public override Objective? CreateObjectiveImpl(SimRoot sim, Mission mission, Rand rand, SpawnedObjectCollection objects, Vector2 loc, out bool invalid)
         {
@@ -47,6 +52,7 @@ internal sealed class SundiveObjective : Objective, IMissionMarkers
             Vector2 center = site!.Location.Center;
             return new SundiveObjective(sim.NodeId(), center, Radius)
             {
+                Recorder = Recorder,
                 SitePoiID = site.UniqueID,
                 Tier = Math.Max(1, ((CareerSimModeManager)sim.Mode).TierFields.GetTier(center)),
             };
@@ -61,10 +67,15 @@ internal sealed class SundiveObjective : Objective, IMissionMarkers
     IEnumerable<ObjectID> IMissionMarkers.MarkerIds => SitePoiID is { } id ? [id] : [];
     [Serialize(Optional = true)] public int Tier { get; private set; }
     [Serialize(Optional = true)] public float SalvageSeconds { get; private set; }
-    /// <summary>The ship that holds the recorder. Null while the dive goes on.</summary>
-    [Serialize(Optional = true)] public ObjectiveTargetShip? Carrier { get; private set; }
+    [Serialize] public ID<ResourceRules> Recorder { get; private set; }
+    /// <summary>True once a player ship got the recorder. The escape follows the item from then on.</summary>
+    [Serialize(Optional = true)] public bool Held { get; private set; }
 
     int _shownSecond = -1;
+    /// <summary>The salvage is done, but the salvaging ship has no free storage. Display only.</summary>
+    bool _noRoom;
+
+    public IReadOnlyList<ID<ResourceRules>> CargoToTakeBack => Held ? [Recorder] : [];
 
     public override string ScriptTypeName => "HotCargoSundive";
 
@@ -85,7 +96,7 @@ internal sealed class SundiveObjective : Objective, IMissionMarkers
     {
         base.GetIntegrityHash(iHash);
         SalvageSeconds.GetIntegrityHash(iHash);
-        (Carrier is not null).GetIntegrityHash(iHash);
+        Held.GetIntegrityHash(iHash);
     }
 
     public override Range<int>? GetTierRange(SimRoot curSim) => Tier;
@@ -93,46 +104,36 @@ internal sealed class SundiveObjective : Objective, IMissionMarkers
     public override MapNode? GetFirstMapNode(GameRoot game) => game.Map.Nodes[NodeID];
 
     public override Circle? GetAreaLocation(GameRoot game) =>
-        Completion == CompletionState.InProgress && Carrier is null && game.Sim?.MapNode?.UniqueID == NodeID ? new Circle(Site, Radius) : null;
+        Completion == CompletionState.InProgress && !Held && game.Sim?.MapNode?.UniqueID == NodeID ? new Circle(Site, Radius) : null;
 
     public override bool IsPOIAssociated(POIDoodad poi) => Completion == CompletionState.InProgress && poi.UniqueID == SitePoiID;
-
-    public override bool IsShipAssociated(MetaShip ship) => Completion == CompletionState.InProgress && Carrier?.TargetMetaShip == ship;
 
     public override bool CheckExpired(GameRoot game) => Completion == CompletionState.Failed;
 
     public override void GetDisplayLinesImpl(List<DisplayLine> lines, GameRoot game, CompletionState parentState)
     {
-        if (Carrier is { } carrier)
+        string item = Recorder.GetResourceRules().NameKey.Text;
+        if (Held)
         {
-            lines.Add(new DisplayLine { Text = Strings.KeyStringFmt("HotCargoWorlds/SundiveEscapeFmt", carrier.GetXmlTargetName(game.Sim)), State = Completion });
+            lines.Add(new DisplayLine { Text = Strings.KeyStringFmt("HotCargoWorlds/SundiveEscapeFmt", item), State = Completion });
             return;
         }
         float depth = game.Sim?.MapNode?.UniqueID == NodeID ? HeatZone.Depth(game.Sim, Site) * 100f : 0f;
         lines.Add(new DisplayLine { Text = Strings.KeyStringFmt("HotCargoWorlds/SundiveDiveFmt", depth), State = Completion });
         if (SalvageSeconds > 0f)
             lines.Add(new DisplayLine { Text = Strings.KeyStringFmt("HotCargoWorlds/SundiveSalvageFmt", SalvageSeconds, NeededSeconds(game.Sim)), State = CompletionState.InProgress });
+        if (_noRoom) lines.Add(new DisplayLine { Text = Strings.KeyStringFmt("HotCargoWorlds/SundiveNoRoomFmt", item), State = CompletionState.InProgress });
     }
 
     public override void RegisterEvents(GameRoot game, bool isLoading)
     {
         if (SitePoiID is { } poiId && game.Sim?.Doodads[poiId] is POIDoodad poi) poi.IsUndiscovered = false;
-        if (Carrier is not null) Carrier.Killed += OnCarrierKilled;
         game.EventHub.Tick += OnTick;
     }
 
     public override void UnregisterEvents(GameRoot game)
     {
-        if (Carrier is not null) Carrier.Killed -= OnCarrierKilled;
         game.EventHub.Tick -= OnTick;
-    }
-
-    void OnCarrierKilled(object? sender, EventArgs e)
-    {
-        if (Completion != CompletionState.InProgress) return;
-        Log.Info("sundive carrier destroyed");
-        if (Mission?.Game is { } game) Ux.UxKit.CenterText(game, Strings.GetText("HotCargoWorlds/SundiveLost"));
-        Fail();
     }
 
     void OnTick(object? sender, SimRoot sim) => Errors.Guard("sundive tick", () => Tick(sim));
@@ -141,11 +142,23 @@ internal sealed class SundiveObjective : Objective, IMissionMarkers
     {
         if (Mission is null || Completion != CompletionState.InProgress || sim != Mission.Game.Sim) return;
         if (sim.MapNode?.UniqueID != NodeID) return;
-        if (Carrier is { } carrier)
+        if (Held)
         {
-            if (carrier.TargetShip is { } ship && HeatZone.Depth(sim, ship.DetWorldCenter) <= 0f)
+            // During a jump no human ship is in any system, so the count reads 0 without a loss.
+            if (Events.HandOverObjective.FleetHere(sim) && Events.HandOverObjective.UnitsLeft(sim, Recorder) == 0)
             {
-                Log.Info($"sundive: {ship.Name} left the heat with the recorder");
+                Log.Info("sundive: no recorder left in the fleet or the system; the job fails");
+                var game = Mission.Game;
+                Fail();
+                // UI only: tell the players why.
+                Ux.UxKit.CenterText(game, Strings.GetText("HotCargoWorlds/SundiveLost"));
+                return;
+            }
+            var clear = sim.Ships.HumanPlayerShips.OrderBy(s => s.UniqueID).FirstOrDefault(s =>
+                s.Resources.GetResourceTotal(Recorder, includeStored: true, includeCarried: true) > 0 && HeatZone.Depth(sim, s.DetWorldCenter) <= 0f);
+            if (clear is not null)
+            {
+                Log.Info($"sundive: {clear.Name} left the heat with the recorder");
                 Complete();
             }
             return;
@@ -154,11 +167,13 @@ internal sealed class SundiveObjective : Objective, IMissionMarkers
             .Where(s => s.DetWorldCenter.DistanceTo(Site) <= Radius)
             .OrderBy(s => s.UniqueID).FirstOrDefault();
         if (salvager is null) return;
-        SalvageSeconds += (float)sim.FixedUpdater.Interval.Seconds;
+        SalvageSeconds = Math.Min(NeededSeconds(sim), SalvageSeconds + (float)sim.FixedUpdater.Interval.Seconds);
         if (SalvageSeconds >= NeededSeconds(sim))
         {
-            Carrier = new ObjectiveTargetShip(sim.RequireGame(), salvager);
-            Carrier.Killed += OnCarrierKilled;
+            bool room = salvager.Resources.AddResources(Recorder, 1, excludeConstructionSinks: true) == 1;
+            if (room != !_noRoom) { _noRoom = !room; OnDisplayLinesChanged(); }
+            if (!room) return;
+            Held = true;
             Log.Info($"sundive: {salvager.Name} has the recorder after {SalvageSeconds:0.0} s");
             OnDisplayLinesChanged();
             return;

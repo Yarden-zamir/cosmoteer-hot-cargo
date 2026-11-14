@@ -157,6 +157,11 @@ public sealed class OutcomeRules
     /// <summary>Crew that leave the ship alive (a passenger handed on, spec 1109): removed without the death path.</summary>
     [Serialize(Optional = true)] public int CrewLeaves;
     [Serialize(Optional = true)] public ResourceAmount[] Resources = [];
+    /// <summary>
+    /// A ship tag (spec 1141). The Tech and resource gains drift loose as crates beside the ship with this tag that is nearest to the
+    /// fleet (live, wreck or in stasis), not into the hold. Empty: gains go into the hold.
+    /// </summary>
+    [Serialize(Optional = true)] public string DropNear = "";
     /// <summary>Fraction of max health taken from a few random parts of the biggest player ship. Parts keep 1 health. Vaults are skipped.</summary>
     [Serialize(Optional = true)] public float HullDamage;
     /// <summary>A generator name in mod/events/spawns.rules. It spawns around the player fleet.</summary>
