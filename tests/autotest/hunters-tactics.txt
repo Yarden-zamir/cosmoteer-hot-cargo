@@ -1,7 +1,6 @@
 # Hunter AI tactics: modules load, act, and log. Strike stage turns on every tactic (Disable at Hunt, Bait at Strike).
 newgame run
 wait 8
-pu_set Enabled false
 # No random events during the hunter checks.
 ev_set Enabled false
 # Nine strike-stage hunters destroy a sector-1 starter ship before the tactics can be observed, even with godmode

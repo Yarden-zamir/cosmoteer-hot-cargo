@@ -6,8 +6,12 @@ namespace HotCargo.Pursuit;
 [ReflectiveSerialization(Explicit = true)]
 public sealed class PursuitTunables
 {
-    /// <summary>Off: no ramp, no fleet factor, no scout reports, blockades, outages or hacker. Other areas may still ask the pacer.</summary>
-    [Serialize(Optional = true)] public bool Enabled = true;
+    /// <summary>
+    /// Off: no ramp, no fleet factor, no scout reports, blockades, outages or hacker. Other areas may still ask the pacer.
+    /// The default is off in autotest games (spec 943), so each parse of a tunables file (new run, file change, settings
+    /// request, co-op host values) keeps it off unless the file sets it. A test turns it on with pu_set Enabled true.
+    /// </summary>
+    [Serialize(Optional = true)] public bool Enabled = !Dev.Autotest.IsActive;
 
     // ---- Director (spec 900 to 904)
 

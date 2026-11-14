@@ -109,16 +109,18 @@ public static class AiArea
             float d = float.Parse(parts[1], CultureInfo.InvariantCulture);
             Autotest.Teleport(ship, Autotest.ClearSpotNear(Sim(), player.WorldCenter, d, ship.WorldBoundingRadius));
         };
-        // storm <index>: puts an ion storm around hunter <index>. Test only.
+        // storm <index>|all: puts an ion storm around hunter <index>, or around every hunter. Test only.
         Autotest.Commands["storm"] = arg =>
         {
-            var ship = HunterAt(arg);
             var sim = Sim();
             var storm = new ID<NebulaTypeRules>("ion_storm");
-            for (float x = -1500f; x <= 1500f; x += 250f)
-                for (float y = -1500f; y <= 1500f; y += 250f)
-                    sim.Nebulas[sim.Nebulas.GetCoordUnderWorldPoint(ship.DetWorldCenter + new Vector2(x, y))] = storm;
-            Log.Info($"AUTOTEST storm around {ship.Metadata.PlainShipName}: in storm={AiGate.InStorm(ship, Autotest.RequireRun().T.Tactics)}");
+            foreach (var ship in arg.Trim() == "all" ? HunterSpawner.Hunters(sim).ToList() : [HunterAt(arg)])
+            {
+                for (float x = -1500f; x <= 1500f; x += 250f)
+                    for (float y = -1500f; y <= 1500f; y += 250f)
+                        sim.Nebulas[sim.Nebulas.GetCoordUnderWorldPoint(ship.DetWorldCenter + new Vector2(x, y))] = storm;
+                Log.Info($"AUTOTEST storm around {ship.Metadata.PlainShipName}: in storm={AiGate.InStorm(ship, Autotest.RequireRun().T.Tactics)}");
+            }
         };
     }
 

@@ -1,7 +1,6 @@
 # Run log (spec 730 to 734): Hot Cargo events in the career log window, saved with the run.
 newgame run
 wait 8
-pu_set Enabled false
 closepanel
 expect runlog_sector == 1
 # An event choice.

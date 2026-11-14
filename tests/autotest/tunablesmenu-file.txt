@@ -47,8 +47,7 @@ menu file lacks ShipCount
 menu file lacks HeatPerGameMinute
 # Waiting hunter groups follow new stage values (spec 854): 3 groups of stage 0, one now and two waiting; Waves 2 leaves one waiting.
 godmode on
-# The Pursuit stays off, so the ship count stays exact (spec 943). The request rewrites the tunables, so pu_set would not hold.
-tunerequest set Events.Enabled false | set Pursuit.Enabled false | set Hunters.Stages[0].ShipCount 3 | set Hunters.Stages[0].EarlyScale 1 | set Hunters.Stages[0].Waves 3 | set Hunters.Stages[0].WaveGapSeconds 60
+tunerequest set Events.Enabled false | set Hunters.Stages[0].ShipCount 3 | set Hunters.Stages[0].EarlyScale 1 | set Hunters.Stages[0].Waves 3 | set Hunters.Stages[0].WaveGapSeconds 60
 wait 2
 tuneresult has ok
 spawnstageindex 0

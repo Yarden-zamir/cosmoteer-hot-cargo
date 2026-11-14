@@ -1,7 +1,6 @@
 # Factions: station prices by heat (spec 655, 656), refusals and the refusal message (spec 657, 658).
 newgame
 wait 8
-pu_set Enabled false
 ev_set Enabled false
 godmode on
 pause off

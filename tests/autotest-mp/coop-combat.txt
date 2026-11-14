@@ -8,8 +8,6 @@ mphost {PORT}
 mpstart {PLAYERS}
 mp godmode on
 mp ev_set Enabled false
-# The Pursuit stays off, so the hunter counts stay exact (spec 943). The step pursuit.coop turns it on in its own run.
-mp pu_set Enabled false
 
 step scaling.generation
 # Spec 330 to 336: the host's value reaches the client. Both machines generate the first system with factor 2:
@@ -172,7 +170,6 @@ step worlds.current
 mprestart
 mp godmode on
 mp ev_set Enabled false
-mp pu_set Enabled false
 mp worlds paint
 mp worlds goto current
 wait 3
@@ -193,6 +190,8 @@ step pursuit.coop
 # Then the client pays the hacker through the shared choice input: only the client pays, and both machines start the same
 # outage. The paid outage is not a natural one in the pacer.
 mprestart
+# Autotests start with the Pursuit off (spec 943); this new run turns it on.
+mp pu_set Enabled true
 mp ev_set Enabled false
 mp aiset FleeEnabled false
 mp aiset CallEnabled false
@@ -226,7 +225,6 @@ step tech.coop-count
 # Spec 65, 442, 449, in a new run: each player holds a different amount, a vault is destroyed, the client's ship becomes a
 # derelict. Both machines show the same total, equal to the units in the vault storage. "mytech" is the local player's tech.
 mprestart
-mp pu_set Enabled false
 mp godmode off
 mp ev_set Enabled false
 mp tech_set LossGraceSeconds 600
@@ -283,7 +281,6 @@ on 1 expect losstimer == 0
 step tech.loss-timer
 # Spec 443, in a new run (8 tech): tech at 0 starts the timer on both machines, tech back stops it, and the timer ends the run.
 mprestart
-mp pu_set Enabled false
 # The loss must happen: godmode blocks it, and its switch stays on across a restart.
 mp godmode off
 mp ev_set Enabled false
@@ -305,7 +302,6 @@ on 1 waitfor lost == 1 30
 step journey.buyer-win
 # A new run: the Buyer appears, the client flies to it and sells tech from its own machine, and the run is won on both.
 mprestart
-mp pu_set Enabled false
 # The loss steps before turned godmode off. Without it, ships near the Buyer can destroy the client's vaults before the sale.
 mp godmode on
 mp ev_set Enabled false
