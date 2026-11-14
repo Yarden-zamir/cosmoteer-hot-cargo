@@ -187,7 +187,8 @@ public static class DebtArea
             var me = Autotest.ActingShip(Sim()) ?? throw new InvalidOperationException("no acting ship");
             var window = new Cosmoteer.Modes.Career.Comms.CommWindow(R().Game, me, Target(arg.Trim()));
             R().Game.Gui.FloatingWindows.AddChild(window);
-            window._tabs.TabsListBox.SelectedWidget = window._dialogueTab ?? throw new InvalidOperationException("the ship has no dialogue tab");
+            // The window builds its tabs once it is in the GUI, so the dialogue tab exists from the next frame.
+            Run.OnNextFrame(() => window._tabs.TabsListBox.SelectedWidget = window._dialogueTab ?? throw new InvalidOperationException("the ship has no dialogue tab"));
         };
         Autotest.Commands["debt_close"] = _ =>
         {
