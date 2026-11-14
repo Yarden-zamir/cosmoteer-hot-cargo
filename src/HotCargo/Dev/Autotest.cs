@@ -397,6 +397,19 @@ public static class Autotest
     const float StasisShipRadius = 800f;
 
     /// <summary>
+    /// Screenshots: fits a square of this world size around the camera center, also in a minimized test slot (UI only).
+    /// </summary>
+    public static void FitCamera(Cosmoteer.Simulation.SimRoot sim, float size)
+    {
+        var view = sim.Camera.ViewController;
+        // A minimized test slot window has no viewport size, so ZoomToFit zooms out all the way. Then the zoom fits the screenshot
+        // height (1440 pixels in the test slots). Revisit if screens.sh uses another resolution.
+        if (view._scene.Viewport.GetViewportRect().Size.Y > 1) view.ZoomToFit(new Halfling.Geometry.Vector2(size));
+        else view.FRTargetZoomScale = view.FRZoomScale = Math.Clamp(view.TransformWorldScaleToFrame(size * view.Node.WorldUniformScale / 1440f),
+            view.FRMinZoomScale, view.FRMaxZoomScale);
+    }
+
+    /// <summary>
     /// Test only. A point at least <paramref name="minDistance"/> from <paramref name="target"/> where a ship of radius
     /// <paramref name="shipRadius"/> overlaps no solid object: live AI ships and asteroids, and ships, asteroids and gates in stasis.
     /// A teleport into an unloaded area must not land on objects that load out of stasis around the ship, or they crush it.

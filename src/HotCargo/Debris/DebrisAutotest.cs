@@ -59,13 +59,7 @@ static class DebrisAutotest
                 .Select(s => s.DetWorldCenter.DistanceTo(home.DetWorldCenter)).Order().Take(3).ToList();
             if (near.Count == 0) throw new InvalidOperationException("no tracked junk piece");
             home.FocusCamera(playSound: false);
-            var view = sim.Camera.ViewController;
-            float size = (near.Max() + 120f) * 2f;
-            // A minimized test slot window has no viewport size, so ZoomToFit zooms out all the way. Then the zoom fits the
-            // screenshot height (1440 pixels in the test slots). Revisit if screens.sh uses another resolution.
-            if (view._scene.Viewport.GetViewportRect().Size.Y > 1) view.ZoomToFit(new Vector2(size));
-            else view.FRTargetZoomScale = view.FRZoomScale = Math.Clamp(view.TransformWorldScaleToFrame(size * view.Node.WorldUniformScale / 1440f),
-                view.FRMinZoomScale, view.FRMaxZoomScale);
+            Autotest.FitCamera(sim, (near.Max() + 120f) * 2f);
         };
         Autotest.Fields["junk"] = () => R().Game.Sim.Ships.Count(s => s.IsJunk && !s.Rules.IsAsteroid);
         Autotest.Fields["debris_tracked"] = () => R().State.Debris.Since.Count;
