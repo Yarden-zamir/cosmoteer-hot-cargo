@@ -97,6 +97,13 @@ public static class DebtArea
         Autotest.Fields["debt_stage"] = () => (int)Lenders.StageOf(R(), First());
         Autotest.Fields["debt_wanted"] = () => Lenders.Wants(Sim(), First().Faction) ? 1 : 0;
         Autotest.Fields["debt_collectors"] = () => R().State.Debt.Collectors.Count;
+        // Spec 1407: 1 when the first collector's comms page is the debt page alone (no other area claims its choices).
+        Autotest.Fields["debt_collector_page"] = () =>
+        {
+            var me = Autotest.ActingShip(Sim()) ?? throw new InvalidOperationException("no acting ship");
+            var page = CommsHail.Page(me, Target("collector"), null);
+            return page?.Shared?.Domain == DebtChoiceDomain.Name && page.Rows.All(r => r.Key == "debtpay") ? 1 : 0;
+        };
         Autotest.Fields["debt_hailed"] = () => R().State.Debt.Collectors.Count(c => c.Hailed);
         Autotest.Fields["debt_loan_stations"] = () => Stations().Count(s => Lenders.OffersLoan(R(), s));
         Autotest.Fields["debt_loan_credits"] = () => DebtDeals.LoanCredits(R());
