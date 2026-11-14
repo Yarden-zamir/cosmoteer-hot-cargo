@@ -744,6 +744,27 @@ Events
 		]
 	}
 
+	// Spec 1362: a young crew asks to follow the players and learn. Free; what it sees decides how it ends (spec 1363).
+	{
+		ID = apprentice
+		Trigger = Arrival
+		Weight = 5
+		Carrier = Recruit
+		Title = "Apprentice"
+		Text = "A young crew hails you, eager. \"Everyone talks about you. Let us fly with you for a while and learn how it's done. We'll fight at your side.\""
+		Choices
+		[
+			{
+				Text = "Let them follow."
+				Outcomes [ { Text = "They fall in behind you."; Effect = apprentice } ]
+			}
+			{
+				Text = "Not now."
+				Outcomes [ { Text = "\"Maybe next time.\"" } ]
+			}
+		]
+	}
+
 	// The run's one relic ship (spec 765). It opens when a ship comes close, and again on each return until the crate is taken.
 	{
 		ID = relic_ship

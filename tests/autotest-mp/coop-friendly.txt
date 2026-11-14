@@ -24,4 +24,20 @@ on 1 expect ev_money_gain < 0
 expect fr_player_ships == 1
 expect ev_money_gain == 0
 
+step friendly.apprentice
+# Spec 1362, 1363: the client lets an apprentice follow. Its hire and count run in the sim on both machines; at its time,
+# with no fights seen, it leaves on both.
+mp event apprentice
+waitfor ev_pending == 1 20
+mp ev_carrier_goto
+wait 2
+on 1 ev_comms carrier Let them follow
+waitfor fr_apprentices == 1 30
+on 1 waitfor fr_apprentices == 1 30
+expect fr_apprentice_hired == 1
+on 1 expect fr_apprentice_hired == 1
+mp fr_apprentice_end
+waitfor fr_apprentices == 0 20
+on 1 waitfor fr_apprentices == 0 30
+
 end

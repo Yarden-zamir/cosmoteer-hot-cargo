@@ -333,6 +333,9 @@ Friendly ships carry their page in comms and ask for something. Every choice is 
 #### Join Request (Arrival; weight 5)
 A small armed crew asks to fly under your colors. Take them in for 1 money unit: the ship becomes yours (spec 1361). Or not now.
 
+#### Apprentice (Arrival; weight 5)
+A young crew asks to follow you and learn. Let them follow (free): for 6 minutes it fights at your side. Its label counts the enemy ships that die near it. With 3 or more it joins your fleet; with fewer it thanks you and leaves; hurt badly, it leaves early (spec 1362, 1363).
+
 ## 4. Content rules for authors
 
 - Do not write counts that live elsewhere (the starting tech, spawn counts in spawns.rules): they drift. Use `{crates}` for the live fleet tech count. Counts that the same choice's Cost sets are fine.

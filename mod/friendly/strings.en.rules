@@ -3,4 +3,12 @@ HotCargoFriendly
 {
 	JoinedFmt = "{0} joins your fleet."
 	JoinGone = "The ship is gone before it can join you."
+	FollowerGone = "The ship is gone before it can follow you."
+	// Apprentice (spec 1362, 1363). {1} = fights it saw, {2} = fights it wants to see.
+	ApprenticeFollowsFmt = "{0} follows you for {1} minutes to learn. It wants to see {2} fights."
+	ApprenticeJoinsFmt = "{0} saw {1} fights with you. \"We fly with you now.\" It joins your fleet."
+	ApprenticeLeavesFmt = "{0} saw {1} of {2} fights. \"Thanks for the lesson.\" It leaves."
+	ApprenticeRanFmt = "{0} took too much damage. \"That was enough of a lesson.\" It leaves."
+	ApprenticeBehind = "Your apprentice cannot jump with you. It stays behind."
+	LabelApprenticeFmt = "APPRENTICE {0}/{1} FIGHTS"
 }

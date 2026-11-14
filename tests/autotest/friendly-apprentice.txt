@@ -1,0 +1,57 @@
+# Apprentice (spec 1362, 1363): it follows and fights like a hired ship, counts the enemy ships that die near it, then joins the
+# fleet (enough fights) or thanks the players and leaves.
+newgame run
+wait 8
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+ev_set CooldownSeconds 0
+godmode on
+event apprentice
+ev_carrier_goto
+pause off
+wait 2
+expectcomms carrier Let them follow 1
+ev_comms carrier Let them follow
+expect ev_pending == 0
+expect fr_apprentices == 1
+expect fr_apprentice_hired == 1
+expect fr_apprentice_fights == 0
+# Two enemies die near it, one short of the goal: at its time it thanks the players and leaves.
+fr_set ApprenticeJoinFights 3
+dip_spawn enemy 600
+wait 2
+fr_kill_enemy
+wait 2
+dip_spawn enemy 600
+wait 2
+fr_kill_enemy
+wait 2
+expect fr_apprentice_fights == 2
+expect fr_player_ships == 1
+fr_apprentice_end
+wait 2
+expect fr_apprentices == 0
+expect fr_player_ships == 1
+# A second apprentice sees three fights and joins the fleet.
+event apprentice
+ev_carrier_goto
+wait 2
+ev_comms carrier Let them follow
+expect fr_apprentices == 1
+dip_spawn enemy 600
+wait 2
+fr_kill_enemy
+dip_spawn enemy 600
+wait 2
+fr_kill_enemy
+dip_spawn enemy 600
+wait 2
+fr_kill_enemy
+wait 2
+expect fr_apprentice_fights == 3
+fr_apprentice_end
+wait 2
+expect fr_apprentices == 0
+expect fr_player_ships == 2
+quit
