@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The game tests that the merge queue runs for pull requests (.github/workflows/check.yml, job build).
 # Usage: ci-test-set.sh <pr number> ...             the union of the sets of these pull requests
-#        ci-test-set.sh --group <base sha> <head sha> the pull requests of a merge queue group ("Merge pull request #N")
+#        ci-test-set.sh --group <base sha> <head sha> the pull requests of a merge queue group (squash commits "<title> (#N)")
 #        ci-test-set.sh --all                       every CI game test (manual and scheduled full runs)
 # Needs gh with a token (GH_TOKEN) and GITHUB_REPOSITORY. Prints the reasons, then two lines for the workflow:
 #   TESTS <names>   the test names for scripts/ci-sim-tests.sh ("mp:<session>" for co-op), empty for none
@@ -93,9 +93,10 @@ case "${1:-}" in
   --all) for t in "${ALL_TESTS[@]}"; do SET[$t]=1; done; echo "== every CI game test" ;;
   --group)
     base="${2:?--group needs a base and a head sha}" head="${3:?--group needs a base and a head sha}"
-    mapfile -t PRS < <(gh api "repos/$REPO/compare/$base...$head" --jq '.commits[].commit.message' \
-      | sed -n 's/^Merge pull request #\([0-9]*\) .*/\1/p' | sort -un)
-    (( ${#PRS[@]} > 0 )) || fail "no 'Merge pull request #N' commit between $base and $head"
+    # One commit per PR: a squash commit "<title> (#N)", or a merge commit "Merge pull request #N ..." (older groups).
+    mapfile -t PRS < <(gh api "repos/$REPO/compare/$base...$head" --jq '.commits[].commit.message | split("\n")[0]' \
+      | sed -n -e 's/^Merge pull request #\([0-9]*\) .*/\1/p' -e 's/.* (#\([0-9]*\))$/\1/p' | sort -un)
+    (( ${#PRS[@]} > 0 )) || fail "no '<title> (#N)' or 'Merge pull request #N' commit between $base and $head"
     echo "== merge queue group: PR ${PRS[*]}" ;;
   "") fail "usage: ci-test-set.sh <pr number> ... | --group <base> <head> | --all" ;;
   *) PRS=("$@") ;;
