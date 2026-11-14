@@ -1,4 +1,5 @@
-# Pursuit screenshots (spec 911, 923, 933): the reporting scout marker, the blue heat panel of an outage, the hacker page.
+# Pursuit screenshots (spec 911, 916, 923, 933): the reporting scout marker, a relay blockade, the blue heat panel of an outage,
+# the hacker page.
 # Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
 render on
 newgame run
@@ -6,8 +7,6 @@ wait 10
 ev_set Enabled false
 # Autotests start with the Pursuit off (spec 943).
 pu_set Enabled true
-choose 3
-wait 2
 closepanel
 godmode on
 aiset FleeEnabled false
@@ -16,7 +15,8 @@ aiset RegroupEnabled false
 dip_set DemandHailChance 0
 pu_set ScoutChance 1
 pu_set BlockadeChance 0
-heat 25
+# Warning starts the scout.
+stage
 wait 3
 pu_scoutnear 1800
 wait 2
@@ -25,7 +25,19 @@ wait 2
 screenshot pursuit-scout
 pu_killscout
 wait 2
-tech focus
+# Hunt: its ships park at the relay that the players need.
+pu_set BlockadeChance 1
+stage
+wait 2
+# The relay can be far: the fleet waits outside the chase range, so the parked ships stay live (out of stasis) and on camera.
+pu_relaynear 3400
+waitfor pu_parkdist >= 0 120
+waitfor pu_parkdist <= 1200 240
+expect pu_blockaders >= 1
+pu_focusblockade
+wait 2
+screenshot pursuit-blockade
+vault focus wide
 pu_outage 222
 wait 1
 pu_gain 10
