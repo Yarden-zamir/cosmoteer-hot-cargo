@@ -3,7 +3,6 @@
 # Checks a vanilla fleet bounty (and its mission targets), a single bounty (stays one ship), a hunter wave and an event group.
 newgame run
 wait 8
-pu_set Enabled false
 ev_set Enabled false
 godmode on
 expect enemysetting == 1.5

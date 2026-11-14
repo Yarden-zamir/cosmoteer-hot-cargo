@@ -1,8 +1,9 @@
 # Wanted and hunted (spec 470-472): the warning, the Wanted trigger and the events that clear vanilla wanted.
 newgame run
 wait 8
-pu_set Enabled false
 ev_set WantedEventChance 1
+# Fight in open space: a station's faction can take a side (the start station's owner changes with the system layout).
+openspace 5000
 # Wanted alone stays vanilla: no warning, no event. ("wanted" is the UX test command: the nearest station's faction wants you.)
 wanted
 wait 2

@@ -4,7 +4,6 @@
 # (shieldplayers) and damagehostiles stands in for won fights.
 newgame run
 wait 8
-pu_set Enabled false
 shieldplayers on
 # System 1: an event, a contract, a sale, an escort, mission fame and heat up to Warning.
 event the_fence
@@ -91,5 +90,5 @@ telestats
 expect tele_dropped == 0
 expect tele_overhead_pct < 1
 quit
-# Real time: the perf event and the telemetry writer thread run on real time, the Mac sim runs faster (docs/mac-sim-spike.md).
+# Real time: the perf event and the telemetry writer thread run on real time, the headless sim runs faster (docs/headless-sim.md).
 # runner: pc

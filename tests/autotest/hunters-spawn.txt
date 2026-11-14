@@ -1,7 +1,6 @@
 # Hunter waves: stage spawns, distance, tier, hostility, approach, strike waves, save and load.
 newgame run
 wait 8
-pu_set Enabled false
 # No random events during the hunter checks.
 ev_set Enabled false
 log start

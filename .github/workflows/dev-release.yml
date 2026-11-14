@@ -1,5 +1,5 @@
 # Each push to main publishes an untested "dev" prerelease: build, unit tests, private-data check, package.
-# Game tests need the Windows PC, so they are not run here. Tested releases still go through scripts/release.sh.
+# Game tests run in .github/workflows/check.yml, not here. Tested releases go through scripts/release.sh.
 name: dev release
 on:
   push:
@@ -30,7 +30,7 @@ jobs:
       - run: dotnet run --project tests/HotCargo.Tests
       - name: Package and publish
         env:
-          CosmoteerBin: ${{ github.workspace }}/.game-refs
+          CosmoteerBin: ${{ github.workspace }}/.game-refs/Bin
           GH_TOKEN: ${{ github.token }}
         run: |
           base="$(git describe --tags --abbrev=0 --exclude '*-dev.*')"

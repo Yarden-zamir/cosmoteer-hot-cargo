@@ -5,7 +5,6 @@ codex_reset
 tutorials on
 newgame run
 wait 10
-pu_set Enabled false
 closepanel
 ev_set Enabled false
 pause off

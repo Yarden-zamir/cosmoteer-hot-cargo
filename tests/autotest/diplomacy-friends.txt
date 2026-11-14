@@ -2,7 +2,6 @@
 # hired help that joins and runs, the wanted rule, mercenaries that hail and take pay by the minute.
 newgame run
 wait 8
-pu_set Enabled false
 ev_set Enabled false
 aiset FleeEnabled false
 aiset CallEnabled false

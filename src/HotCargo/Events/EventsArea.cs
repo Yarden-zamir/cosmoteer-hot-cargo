@@ -169,6 +169,11 @@ public static class EventsArea
             foreach (var (name, f) in Gauges()) Marks[name] = f();
             foreach (var (name, f) in Gauges()) Autotest.Fields[$"ev_{name}_gain"] = () => f() - Marks[name];
         };
+        // ev_pause on|off: autotests do not pause on an event window (PauseOnEvent), so a windowed test runs on. "on" asks for the pause.
+        Autotest.Commands["ev_pause"] = arg => EventDialog.PauseInAutotest = arg.Trim() switch
+        {
+            "on" => true, "off" => false, _ => throw new InvalidOperationException("ev_pause needs: on|off"),
+        };
         // ev_set <EventsTunables field> <value>: changes a live tunable for this run. Test only.
         Autotest.Commands["ev_set"] = arg =>
         {

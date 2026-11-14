@@ -2,7 +2,6 @@
 # Any "ux: ... failed" line is an ERROR line, so a broken UI patch fails this test.
 newgame run
 wait 8
-pu_set Enabled false
 # A short loss timer (spec 443), so the loss at the end comes soon after the ship is gone.
 tech_set LossGraceSeconds 3
 expect active == 1

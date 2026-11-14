@@ -2,7 +2,6 @@
 # bluff success and failure; more hunters make a pay-off harder; the demand hail.
 newgame run
 wait 8
-pu_set Enabled false
 ev_set Enabled false
 godmode on
 aiset FleeEnabled false
@@ -11,6 +10,8 @@ aiset RegroupEnabled false
 dip_set DemandHailChance 0
 dip_set HunterYieldChance 0
 dip_set HunterLeaveSeconds 2
+# Fight in open space: a station's faction can take a side (the start station's owner changes with the system layout).
+openspace 5000
 expect dip_vaulttech == 8
 # The page: pay-off rows with their own sliders (tech, money, crew if any can go), then pay off, bluff, demand surrender and fight.
 spawnstage Warning

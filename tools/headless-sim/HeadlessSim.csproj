@@ -12,8 +12,11 @@
     <WindowsDesktopRefVersion>10.0.15</WindowsDesktopRefVersion>
     <NoWarn>$(NoWarn);CS0436</NoWarn>
     <!-- The game DLLs lose their ReadyToRun code (GameAssemblies), so the JIT compiles everything. Full optimization at once,
-         with no tier-0 code and no background re-JIT: 8 parallel runs 26 % faster, one run 27 s to 21 s (docs/mac-sim-spike.md). -->
+         with no tier-0 code and no background re-JIT: 8 parallel runs 26 % faster, one run 27 s to 21 s (docs/headless-sim.md). -->
     <TieredCompilation>false</TieredCompilation>
+    <!-- The stand-in of the build machine's OS: macOS (local) or Linux (CI). -->
+    <SteamworksRid Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx-x64</SteamworksRid>
+    <SteamworksRid Condition="'$(SteamworksRid)' == ''">linux-x64</SteamworksRid>
   </PropertyGroup>
   <ItemGroup>
     <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute"><_Parameter1>CosmoteerBin</_Parameter1><_Parameter2>$([System.IO.Path]::GetFullPath($(CosmoteerBin)))</_Parameter2></AssemblyAttribute>
@@ -36,6 +39,6 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Kept out of the app folder: the runtime refuses a lower version from there. GameAssemblies loads it from standins/. -->
-    <None Include="$(PkgSteamworks_NET)/runtimes/osx-x64/lib/netstandard2.1/Steamworks.NET.dll" Link="standins/Steamworks.NET.dll" CopyToOutputDirectory="Always" />
+    <None Include="$(PkgSteamworks_NET)/runtimes/$(SteamworksRid)/lib/netstandard2.1/Steamworks.NET.dll" Link="standins/Steamworks.NET.dll" CopyToOutputDirectory="Always" />
   </ItemGroup>
 </Project>

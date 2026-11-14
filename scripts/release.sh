@@ -2,12 +2,11 @@
 # Build a player release zip and publish it as a GitHub release.
 # Usage: release.sh <version> [--prerelease] [--commit <sha>]
 # Releases a tested commit, not whatever main is now, so releases need no merge freeze: by default the newest commit on
-# origin/main with a pass marker (the full PC suite passed on it; a commit with only docs changes since such a marker counts
-# too). --commit picks one; it must be on origin/main and tested. The zip is built in a scratch worktree at that commit.
-# Set FORCE=1 to skip the test marker check (not for normal use).
+# origin/main whose required checks (branch protection of main, for example build, private-data and game-tests) all
+# passed in CI. --commit picks one; it must be on origin/main and green. The zip is built in a scratch worktree there.
+# Set FORCE=1 to skip the check (not for normal use).
 set -euo pipefail
 cd "$(dirname "$0")/.."
-STATE_DIR="${HOT_CARGO_STATE:-$(cd "$(dirname "$0")/../.." && pwd)/.state}"; mkdir -p "$STATE_DIR"
 VERSION="${1:?usage: release.sh <version> [--prerelease] [--commit <sha>]}"; shift
 PRE="" WANT=""
 while [[ $# -gt 0 ]]; do
@@ -20,25 +19,23 @@ while [[ $# -gt 0 ]]; do
 done
 TAG="v$VERSION"
 git fetch -q origin main
-# True when the commit has a pass marker, or an ancestor with one and only docs (*.md, docs/) changed since.
+# True when every required check of main has a successful check run on the commit.
+REPO="$(gh repo view --json nameWithOwner -q .nameWithOwner)"
+mapfile -t REQUIRED < <(gh api "repos/$REPO/branches/main/protection/required_status_checks" -q '.contexts[]')
+[[ ${#REQUIRED[@]} -gt 0 ]] || { echo "release: main has no required checks to go by"; exit 1; }
 tested() {
-  local marker sha
-  for marker in "$STATE_DIR"/autotest_pass_*; do
-    [[ -f "$marker" ]] || continue
-    sha="${marker##*_}"
-    git merge-base --is-ancestor "$sha" "$1" 2>/dev/null || continue
-    if [[ -z "$(git diff --name-only "$sha" "$1" | grep -v -E '\.md$|^docs/' || true)" ]]; then return 0; fi
-  done
-  return 1
+  local passed c
+  passed="$(gh api "repos/$REPO/commits/$1/check-runs?per_page=100" -q '.check_runs[] | select(.conclusion == "success") | .name')"
+  for c in "${REQUIRED[@]}"; do grep -qx "$c" <<<"$passed" || return 1; done
 }
 if [[ -n "$WANT" ]]; then
   SHA="$(git rev-parse "$WANT^{commit}")"
   git merge-base --is-ancestor "$SHA" origin/main || { echo "release: $WANT is not on origin/main"; exit 1; }
-  tested "$SHA" || [[ "${FORCE:-}" == 1 ]] || { echo "release: $WANT has no full PC suite pass (scripts/full-suite.sh)"; exit 1; }
+  tested "$SHA" || [[ "${FORCE:-}" == 1 ]] || { echo "release: $WANT does not pass every required check (${REQUIRED[*]})"; exit 1; }
 else
   SHA=""
-  for c in $(git rev-list --first-parent -200 origin/main); do if tested "$c"; then SHA="$c"; break; fi; done
-  [[ -n "$SHA" ]] || { echo "release: no tested commit among the last 200 on origin/main; run the full PC suite first"; exit 1; }
+  for c in $(git rev-list --first-parent -50 origin/main); do if tested "$c"; then SHA="$c"; break; fi; done
+  [[ -n "$SHA" ]] || { echo "release: no commit among the last 50 on origin/main passes every required check (${REQUIRED[*]})"; exit 1; }
 fi
 echo "release: $TAG from ${SHA:0:9} ($(git log -1 --format=%s "$SHA"))"
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && { echo "release: tag $TAG exists"; exit 1; }

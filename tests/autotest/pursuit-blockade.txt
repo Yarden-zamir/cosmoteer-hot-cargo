@@ -2,6 +2,8 @@
 newgame run
 wait 8
 ev_set Enabled false
+# Autotests start with the Pursuit off (spec 943).
+pu_set Enabled true
 godmode on
 aiset FleeEnabled false
 aiset CallEnabled false
@@ -15,9 +17,9 @@ expect pu_blockade == 1
 expect pu_blockaders >= 1
 expect pu_count_blockade == 1
 # They fly to the relay and do not chase while the players stay away.
-wait 30
+# Parked: every ship is at the relay, within 2 x BlockadeParkRadius (600).
+waitfor pu_parkdist <= 1200 240
 expect pu_blockaders >= 1
-expect pu_parkdist >= 0
 log parked
 # A player ship that comes close draws them out.
 pu_blockadenear 1200

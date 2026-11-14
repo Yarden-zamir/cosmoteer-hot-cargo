@@ -63,8 +63,7 @@ static class FactionsAutotest
                 "relay" => Jumps.HuntersNearRelay(run, run.Game.Sim, next) > 0 ? JumpKind.RelayWatched : JumpKind.RelayClear,
                 _ => Enum.Parse<JumpKind>(arg, ignoreCase: true),
             };
-            run.Game.JumpToNode(next, doFtlAnimation: false, run.Game.Sim.Ships.HumanPlayerShips.ToList())
-                .ContinueWith(t => Log.Error("AUTOTEST fa_jump failed", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+            Autotest.JumpWhenAllowed(run, next, "fa_jump");
         };
         // fa_torelay: single player. Moves the player ship next to the relay toward the first unvisited neighbor.
         Autotest.Commands["fa_torelay"] = _ =>
