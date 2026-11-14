@@ -25,9 +25,6 @@ on 1 expect enemysetting == 2
 counttag pirate
 @2p expect tagcount == 8
 @3p expect tagcount == 12
-# The counted wanderers leave. With 3 players they join the AI fight of ai.personalities and can destroy the host's ship
-# (godmode does not save parts that one hit destroys). Later steps spawn the enemies they need.
-mp chain_kill pirate
 
 step diplomacy.payoff
 # Spec 587 (#25): the client ticks tech on the hunter page, and the draft is shared, so the host adds money to it. The client
@@ -169,7 +166,12 @@ on 1 expect ai_personality > 0
 
 step worlds.current
 # Spec 221, 227: a current painted on both machines pushes the host's ship the same way on both. Co-op tests cannot jump,
-# so "worlds paint" makes the current in the starting system.
+# so "worlds paint" makes the current in the starting system. A new run: with 3 players, the ai.personalities fight can
+# destroy the host's ship (godmode does not save parts that one hit destroys), and this step needs it.
+mprestart
+mp godmode on
+mp ev_set Enabled false
+mp pu_set Enabled false
 mp worlds paint
 mp worlds goto current
 wait 3
