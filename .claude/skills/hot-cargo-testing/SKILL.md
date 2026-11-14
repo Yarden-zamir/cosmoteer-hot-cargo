@@ -1,6 +1,6 @@
 ---
 name: hot-cargo-testing
-description: Build Hot Cargo, run unit tests, headless game tests and co-op tests on the Windows PC, and tell infrastructure failures from game failures. Use before every commit that changes code or rules, and when a test fails.
+description: Build Hot Cargo, run unit tests, game tests and co-op tests (in the headless sim on this Mac, in CI, and on the Windows PC), and tell infrastructure failures from game failures. Use before every commit that changes code or rules, and when a test fails.
 ---
 
 # Testing Hot Cargo
@@ -10,7 +10,8 @@ description: Build Hot Cargo, run unit tests, headless game tests and co-op test
 2. Unit tests (pure math only, no game types): `cd tests/HotCargo.Tests && dotnet run`. Pure math goes in a file named `*Model.cs` with no game types; the test project picks up every such file.
 
 ## Headless game tests
-- One test: `scripts/autotest.sh tests/autotest/<name>.txt [timeoutSeconds]`. It takes a free headless slot on the PC (t1..t6, own save, settings and cache folders, no window), deploys your worktree's build and runs the script. Exit 0 means pass.
+- Where tests run: CI runs every game test in the headless sim before a merge (see "Before a merge"). On this Mac, run them in the headless sim (`scripts/autotest-sim.sh`, `tools/headless-sim`, `docs/headless-sim.md`). The PC runs the tests with `# runner: pc`, screenshots, and checks against the real game. Manual PC work: `hot-cargo-pc`.
+- One test on the PC: `scripts/autotest.sh tests/autotest/<name>.txt [timeoutSeconds]`. It takes a free headless slot on the PC (t1..t6, own save, settings and cache folders, no window), deploys your worktree's build and runs the script. Exit 0 means pass.
   - The PC caches each build by a hash of its content. A build that the PC already has is not uploaded again.
   - It prints a `== timing` line: seconds for wait (slot), deploy, start (to the first script line), script and teardown.
   - Exit code 3 ("AUTOTEST LINK REFUSED"): the PC refused the calls, because your turn was not active. Rerun it with the turn open.
@@ -40,7 +41,8 @@ description: Build Hot Cargo, run unit tests, headless game tests and co-op test
 - A release tags a tested commit: `scripts/release.sh <version>` takes the newest commit on `origin/main` whose required checks and `full-suite` check all passed (`--commit <sha>` picks one), and builds the zip at that commit. No merge freeze is needed.
 
 ## Co-op tests
-- Co-op tests are 4 sessions (`tests/autotest-mp/<session>.txt`). In the headless sim: `scripts/autotest-sim.sh 400 mp:coop-core` (one session: `scripts/autotest-sim-mp.sh tests/autotest-mp/coop-core.txt`). On the PC: `scripts/autotest-all.sh 400 mp:coop-core`. Two headless instances play host and client over UDP on 127.0.0.1. The session file holds all choreography; the client follows (`client.txt`).
+- Co-op tests are sessions in `tests/autotest-mp/<session>.txt`. In the headless sim: `scripts/autotest-sim.sh 400 mp:coop-core` (one session: `scripts/autotest-sim-mp.sh tests/autotest-mp/coop-core.txt`). On the PC: `scripts/autotest-all.sh 400 mp:coop-core`, or every session with `scripts/autotest-mp-all.sh [timeout]`. Two headless instances play host and client over UDP on 127.0.0.1. The session file holds all choreography; the client follows (`client.txt`).
+- The verdict comes from the two logs only: `scripts/coop-report.sh <host log> <client log>` (no PC calls, so it works for logs of every runner).
 - Each `step <area>.<name>` reports on its own. The summary gives one reason: join failed, steps failed, desync, state differs, PC link. A state difference names the step and the `RunState` members that differ.
 - `as 1 <command>` runs a command in the sim as the client player. `on 1 <command>` runs it on the client's machine (its UI, its real inputs). Details: CONTRIBUTING.md, Co-op tests.
 - On the Mac both processes keep the real-time clock (`SIM_REALTIME=1`): network requests and lockstep read the game clock. The headless sim can run slower than real time when the Mac is busy, so give waits that depend on crew or flight time some margin.
