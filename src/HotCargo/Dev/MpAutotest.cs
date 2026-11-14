@@ -60,6 +60,10 @@ public static class MpAutotest
     static bool _ended;
     /// <summary>"on" commands: the last number sent (host) and the last number acknowledged (sim, every machine), with the failed ones.</summary>
     static int _onSent, _acked;
+    /// <summary>Client: joins the host's team (shares its ships and player index) in the game setup. Set by "mpshare" before the join.</summary>
+    static bool _share;
+    /// <summary>The "on" target "shared": every client that shares the host's player index (0).</summary>
+    const int SharedClients = -1;
     static readonly HashSet<int> _failedAcks = [];
 
     const double OnTimeoutSeconds = 120;
@@ -74,6 +78,9 @@ public static class MpAutotest
         Autotest.Commands["mphost"] = arg => Host(int.Parse(arg, CultureInfo.InvariantCulture));
         Autotest.Commands["mpjoin"] = Join;
         Autotest.Commands["mpready"] = Ready;
+        // mpshare (client, a "client:" line before the join): the client joins the host's team in every game setup, so both humans
+        // share one player index and its ships. Address it with "on shared".
+        Autotest.Commands["mpshare"] = _ => _share = true;
         Autotest.Commands["mpstart"] = arg => Start(_players = arg.Length > 0 ? int.Parse(arg, CultureInfo.InvariantCulture) : 2);
         Autotest.Commands["mp"] = arg => RequireMpGame().NetManager.EnqueueInput(new AutotestInput(arg));
         // mplobby (host): ends the game for all players and returns everyone to the game setup screen, with the connections kept.
@@ -137,6 +144,7 @@ public static class MpAutotest
         };
         // on <player> <command>: runs the command on that player's own machine and waits until it reports back. For what must
         // happen there: its UI, its view, and inputs that it sends over the network like a real click. A failure there fails the step.
+        // "on shared <command>": the clients that share the host's player index (mpshare).
         Autotest.Commands["on"] = arg =>
         {
             var (player, line) = PlayerAndLine(arg, "on");
@@ -152,7 +160,9 @@ public static class MpAutotest
         {
             var parts = arg.Split(' ', 3, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length != 3) throw new InvalidOperationException("mpon needs: player number command");
-            if (RequireMpGame().LocalPlayerIndex != int.Parse(parts[0], CultureInfo.InvariantCulture)) return;
+            var game = RequireMpGame();
+            int target = int.Parse(parts[0], CultureInfo.InvariantCulture);
+            if (target == SharedClients ? game.NetManager.IsHost || game.LocalPlayerIndex != 0 : game.LocalPlayerIndex != target) return;
             _inbox.Enqueue(parts[2]);
             _inbox.Enqueue($"mpack {parts[1]}");
         };
@@ -297,6 +307,11 @@ public static class MpAutotest
     static (int Player, string Line) PlayerAndLine(string arg, string command)
     {
         var parts = arg.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        if (command == "on" && parts is ["shared", var sharedLine])
+        {
+            if (RequireMpGame().HumanPlayersByID.Values.Count(i => i == 0) < 2) throw new InvalidOperationException("no client shares the host's player index (mpshare)");
+            return (SharedClients, sharedLine);
+        }
         if (parts.Length != 2 || !int.TryParse(parts[0], CultureInfo.InvariantCulture, out int player))
             throw new InvalidOperationException($"{command} needs: <player index> <command>");
         if (!RequireMpGame().HumanPlayersByID.Values.Contains(player)) throw new InvalidOperationException($"no human player {player}");
@@ -335,7 +350,8 @@ public static class MpAutotest
                 if (now >= nextClick && gss._playersByID.TryGetValue(GameApp.Messenger.UniqueID, out var me))
                 {
                     nextClick = now + 3;
-                    if (NeedsShip(gss, me)) AddStarterShip(gss, me);
+                    if (_share && me.Team != 0) gss._requestJoinTeamRpc(0, RpcReceivers.Server);
+                    else if (NeedsShip(gss, me)) AddStarterShip(gss, me);
                     else if (!me.IsReady) gss.OnReadyClicked(null, EventArgs.Empty);
                 }
                 return false;

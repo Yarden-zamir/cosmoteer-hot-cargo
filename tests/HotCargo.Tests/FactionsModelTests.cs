@@ -6,6 +6,15 @@ namespace HotCargo.Tests;
 public class FactionsModelTests
 {
     [Fact]
+    public void Zone_order_is_ally_then_watch_then_shelter()
+    {
+        Assert.Equal(Zone.Ally, FactionsModel.ZoneOf(ally: true, watched: true, shelters: true));
+        Assert.Equal(Zone.Watch, FactionsModel.ZoneOf(ally: false, watched: true, shelters: true));
+        Assert.Equal(Zone.Shelter, FactionsModel.ZoneOf(ally: false, watched: false, shelters: true));
+        Assert.Equal(Zone.Neutral, FactionsModel.ZoneOf(ally: false, watched: false, shelters: false));
+    }
+
+    [Fact]
     public void Markup_starts_above_the_start_heat_and_reaches_the_max_at_100_in_steps()
     {
         Assert.Equal(1f, FactionsModel.MarkupFactor(0f, 75f, 2f, 5f));
@@ -51,9 +60,10 @@ public class FactionsModelTests
     [Fact]
     public void Zone_factor_and_refusal()
     {
-        Assert.Equal(1.5f, FactionsModel.TimeHeatFactor(Zone.Ally, 1.5f, 0.6f));
-        Assert.Equal(0.6f, FactionsModel.TimeHeatFactor(Zone.Shelter, 1.5f, 0.6f));
-        Assert.Equal(1f, FactionsModel.TimeHeatFactor(Zone.Neutral, 1.5f, 0.6f));
+        Assert.Equal(1.5f, FactionsModel.TimeHeatFactor(Zone.Ally, 1.5f, 0.6f, 1.4f));
+        Assert.Equal(0.6f, FactionsModel.TimeHeatFactor(Zone.Shelter, 1.5f, 0.6f, 1.4f));
+        Assert.Equal(1.4f, FactionsModel.TimeHeatFactor(Zone.Watch, 1.5f, 0.6f, 1.4f));
+        Assert.Equal(1f, FactionsModel.TimeHeatFactor(Zone.Neutral, 1.5f, 0.6f, 1.4f));
         Assert.Equal(1.5f, FactionsModel.NotorietyFactor(Zone.Ally, 1.5f));
         Assert.Equal(1f, FactionsModel.NotorietyFactor(Zone.Shelter, 1.5f));
         Assert.Equal(1f, FactionsModel.NotorietyFactor(Zone.Neutral, 1.5f));

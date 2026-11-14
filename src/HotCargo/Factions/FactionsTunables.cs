@@ -58,13 +58,16 @@ public sealed class FactionsTunables
     /// <summary>Spec 657: chance that a station refuses, rolled once for each station and sector.</summary>
     [Serialize(Optional = true)] public float RefuseChance = 0.5f;
 
+    /// <summary>Spec 664: time heat in a system under corporate watch (a neighbor of a system where the Strike stage started).</summary>
+    [Serialize(Optional = true)] public float WatchHeatFactor = 1.1f;
+
     /// <summary>Spec 660: the galaxy map marks the targets of events and contracts.</summary>
     [Serialize(Optional = true)] public bool MapMarkers = true;
 
     public void Validate(Action<bool, string> require)
     {
-        require(AllyHeatFactor > 0 && AllyMoneyFactor > 0 && AllyNotorietyFactor > 0 && ShelterHeatFactor > 0 && RivalFencePremium > 0,
-            "Factions heat, money, notoriety and fence factors must be above 0");
+        require(AllyHeatFactor > 0 && AllyMoneyFactor > 0 && AllyNotorietyFactor > 0 && ShelterHeatFactor > 0 && RivalFencePremium > 0
+            && WatchHeatFactor > 0, "Factions heat, money, notoriety and fence factors must be above 0");
         require(RelayWatchedHeatCut is >= 0 and <= 1 && RelayClearHeatCut is >= 0 and <= 1 && BlindHeatCut is >= 0 and <= 1, "Factions jump heat cuts must be 0 to 1");
         require(RelayWatchRadius >= 0 && BlindFuelFactor > 0 && BlindSpinUpFactor >= 1, "Factions.RelayWatchRadius must not be negative, BlindFuelFactor above 0, BlindSpinUpFactor 1 or more");
         require(BlindDamageChance is >= 0 and <= 1 && BlindDamageParts >= 0 && BlindDamageFraction is >= 0 and <= 1, "Factions blind damage: chance and fraction 0 to 1, parts 0 or more");
