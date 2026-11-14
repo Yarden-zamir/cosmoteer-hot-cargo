@@ -1,0 +1,6 @@
+	{
+		Action = Add
+		AddTo = "<ai/ai.rules>"
+		Name = HotCargoScavenger
+		ToAdd = &<scavenge/ai_scavenger.rules>
+	}

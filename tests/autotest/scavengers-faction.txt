@@ -1,0 +1,47 @@
+# Scavengers faction (spec 1340 to 1346): scavengers arrive up to the cap, are friendly to players and factions, salvage an old wreck
+# with their mining lasers, turn hostile when a player shoots one and forgive later, are enemies of pirates and flee from them.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+# Spec 1343: arrivals up to MaxPerSystem.
+scav_set SpawnCheckSeconds 3
+scav_set SpawnChance 1
+scav_set MaxPerSystem 1
+waitfor scav_count == 1 30
+wait 10
+expect scav_count == 1
+scav_set FactionEnabled false
+# Spec 1342: the ship: two mining lasers, crew, empty storage bays. It arrives next to the player for the rest of the test.
+scav_new player
+expect scav_count == 2
+expect scav_lasers == 2
+expect scav_crew > 0
+expect scav_cargo == 0
+# Spec 1340: friendly to the players and the vanilla factions.
+expect scav_enemy_player == 0
+expect scav_enemy_faction == 0
+# Spec 1342: it scavenges with its mining lasers and crew (through its airlock): the old wreck.
+# The wreck is made old at once (scav_age): an idle scavenger wanders off while it waits, and scavenge-basic covers the cooldown.
+auto_ship Scavenger 2
+auto_wreck 0,300
+waitfor scav_wreck_seen == 1 20
+scav_age 120
+waitfor scav_target > 0 90
+expect scav_fleeing == 0
+expect scav_idle == 1
+waitfor scav_step == 1 20
+waitfor scav_cargo > 0 200
+# Spec 1341: a player's shots provoke the scavengers; without more hits the grudge ends after ProvokedSeconds.
+scav_set ProvokedSeconds 20
+scav_attack
+waitfor scav_provoked == 1 60
+expect scav_enemy_player == 1
+scav_ceasefire
+waitfor scav_provoked == 0 90
+expect scav_enemy_player == 0
+# Spec 1340, 1344: pirates are enemies; a pirate that comes its way makes the weak scavenger flee.
+aispawn pirates 1
+waitfor scav_enemy_pirate == 1 30
+waitfor scav_fleeing == 1 120
+quit

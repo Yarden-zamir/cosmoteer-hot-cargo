@@ -3,6 +3,7 @@ using Cosmoteer.Data;
 using Cosmoteer.Generators.Simulation;
 using Cosmoteer.Ships;
 using Cosmoteer.Ships.AI;
+using Cosmoteer.Ships.Commands;
 using Cosmoteer.Simulation;
 using Cosmoteer.Simulation.Stasis;
 using Halfling;
@@ -30,6 +31,7 @@ internal static class ScavengeAutotest
 
     internal static void Register()
     {
+        RegisterFaction();
         // scav_set <Field> <value>: sets a Scavenge tunable for this run (setup only; no validation).
         Autotest.Commands["scav_set"] = arg => Autotest.SetField(Autotest.RequireRun().T.Scavenge, arg);
         // scav_spawn <name> <where> [keep]: a tier 1 to 3 faction trade ship (crew, empty storage bays) with the StationGuard AI (patrols 500 around its spawn point) and the
@@ -72,6 +74,66 @@ internal static class ScavengeAutotest
         Autotest.Fields["scav_sold"] = () => Scavenger.SoldUnits;
         // Parts left on the junk pieces named "Test wreck" (auto_wreck).
         Autotest.Fields["scav_wreck_parts"] = () => Sim().Ships.AllShips.Where(s => s.IsJunk && s.Metadata.PlainShipName == "Test wreck").Sum(s => s.Parts.Count);
+    }
+
+    static Ship Me() => Autotest.ActingShip(Sim()) ?? throw new InvalidOperationException("no player ship");
+
+    static int Enemies(int a, int b) => Sim().Mode.AreEnemies(a, b) ? 1 : 0;
+
+    static void RegisterFaction()
+    {
+        // scav_new <where>: a real scavenger (spec 1342) next to the player's first ship (player) or the nearest live trading station
+        // (station). The scav_ fields then read it.
+        Autotest.Commands["scav_new"] = arg =>
+        {
+            var sim = Sim();
+            var me = Me();
+            var near = arg.Trim() switch
+            {
+                "player" => me.DetWorldCenter,
+                "station" => AutonomyWorld.Stations(me).FirstOrDefault(s => s.Live is not null).Live?.DetWorldCenter ?? throw new InvalidOperationException("no live trading station"),
+                var w => throw new InvalidOperationException($"scav_new: unknown place '{w}'"),
+            };
+            var at = Autotest.ClearSpotNear(sim, near, 400f, 60f);
+            _name = ScavengerShip.Spawn(sim, at, at.DirectionTo(near)).Metadata.PlainShipName;
+        };
+        // scav_age <seconds>: makes every wreck and loose resource that the age check saw so far this much older (setup only), so a test
+        // need not wait out the cooldown. Pieces that come later keep their real age.
+        Autotest.Commands["scav_age"] = arg =>
+        {
+            var seen = Autotest.RequireRun().State.Scavenge.Seen;
+            double by = double.Parse(arg, System.Globalization.CultureInfo.InvariantCulture);
+            foreach (var id in seen.Keys.ToList()) seen[id] -= by;
+        };
+        // 1 when the age check saw every junk piece named "Test wreck" (auto_wreck).
+        Autotest.Fields["scav_wreck_seen"] = () =>
+        {
+            var wrecks = Sim().Ships.AllShips.Where(s => s.IsJunk && s.Metadata.PlainShipName == "Test wreck").ToList();
+            return wrecks.Count > 0 && wrecks.All(w => Autotest.RequireRun().State.Scavenge.Seen.ContainsKey(w.UniqueID)) ? 1 : 0;
+        };
+        Autotest.Fields["scav_count"] = () => Scavengers.InSystem(Sim());
+        Autotest.Fields["scav_lasers"] = () => TestShip().Weapons.OfType<Cosmoteer.Ships.Parts.Weapons.TurretWeapon>().Count(AutonomyWorld.IsSalvageTurret);
+        Autotest.Fields["scav_crew"] = () => TestShip().Crew.Assigned.Count;
+        Autotest.Fields["scav_enemy_player"] = () => Enemies(Scavengers.PlayerIndex, Me().Metadata.PlayerIndex);
+        Autotest.Fields["scav_enemy_faction"] = () => Enemies(Scavengers.PlayerIndex, GameApp.Rules.Factions.First().MilitaryPlayerIndex);
+        // The scavengers and the nearest pirate (an allocated side: index 100,000 or more); -1 with no pirate in the system.
+        Autotest.Fields["scav_enemy_pirate"] = () => Sim().Ships.AllShips.Where(s => !s.IsJunk && s.Metadata.PlayerIndex >= 100000).MinBy(s => s.UniqueID) is { } pirate
+            ? Enemies(Scavengers.PlayerIndex, pirate.Metadata.PlayerIndex) : -1;
+        Autotest.Fields["scav_provoked"] = () => Autotest.RequireRun().State.Scavenge.ProvokedUntil > Autotest.RequireRun().State.GameSeconds ? 1 : 0;
+        Autotest.Fields["scav_fleeing"] = () => TestShip().AI?.GetStrategyModule<ShyStrategy>() is { Fleeing: true } ? 1 : 0;
+        // scav_attack: the player's first ship attacks the test scavenger (a real attack order, so its shots provoke them). scav_ceasefire stops it.
+        Autotest.Commands["scav_attack"] = _ =>
+        {
+            var me = Me();
+            me.Commands.EnqueueCommand(new AttackCommand(me, me.Commands.AllocGlobalCommandID(), TestShip(), CollisionAvoidanceFlags.All, isTentative: false, isConfirmed: true),
+                append: false, confirmed: true);
+        };
+        Autotest.Commands["scav_ceasefire"] = _ =>
+        {
+            var me = Me();
+            me.Commands.RemoveAll(c => c is IAttackCommand { Target: { } t } && Scavengers.IsScavenger(t));
+            me.Weapons.ClearAllWeaponTargetsAtPlayerIndex(Scavengers.PlayerIndex);
+        };
     }
 
     static void Spawn(string name, string where, bool sells)
