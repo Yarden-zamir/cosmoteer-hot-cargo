@@ -50,7 +50,8 @@ run_test() {
   if [[ "$t" == mp:* || "$t" == mp3:* ]]; then
     local n="${t#*:}" players=2
     [[ "$t" == mp3:* ]] && players=3
-    PLAYERS=$players scripts/autotest-mp.sh "tests/autotest-mp/$n.txt" "$((TIMEOUT + 200))" > "$out" 2>&1
+    # Twice the test timeout: session waits count game seconds (requirement 1007), and a loaded PC runs the sim slower.
+    PLAYERS=$players scripts/autotest-mp.sh "tests/autotest-mp/$n.txt" "$((TIMEOUT * 2 + 200))" > "$out" 2>&1
   else
     scripts/autotest.sh "tests/autotest/$t.txt" "$TIMEOUT" > "$out" 2>&1
   fi
