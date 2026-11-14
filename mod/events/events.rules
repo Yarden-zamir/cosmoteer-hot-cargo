@@ -964,6 +964,21 @@ Events
 		]
 	}
 
+	// Spec 1371: the Wayfarers' closing hail after a fight they joined. No trigger: the Friendly area opens it on their leader.
+	{
+		ID = pay_it_forward
+		MaxPerRun = 0
+		Title = "The Wayfarers"
+		Text = "The Wayfarer captain hails you, grinning. \"Someone pulled us out of a fight like that once. No charge. Pay it forward to the next one in need.\""
+		Choices
+		[
+			{
+				Text = "We will."
+				Outcomes [ { Text = "They patch their hulls and spin up their drives."; Effect = wayfarers_leave } ]
+			}
+		]
+	}
+
 	// The run's one relic ship (spec 765). It opens when a ship comes close, and again on each return until the crate is taken.
 	{
 		ID = relic_ship

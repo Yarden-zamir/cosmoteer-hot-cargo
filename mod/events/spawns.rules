@@ -883,3 +883,33 @@ RiddleShip
 		}
 	]
 }
+
+// Spec 1369, 1370: the Wayfarers, a friendly fleet that helps outclassed players. C# gives them their own allegiance and a hire.
+Wayfarers
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_wayfarer]
+			Count = 2
+			Distance = [1200, 1600]
+			Allegiance = FactionCivilian
+			SuppressLocationAssertions = true
+			NameGenerator = { Type = NameList; Names = ["Wayfarer Kindness", "Wayfarer Second Chance", "Wayfarer Open Hand", "Wayfarer Lantern"]; }
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+			}
+		}
+	]
+}
+

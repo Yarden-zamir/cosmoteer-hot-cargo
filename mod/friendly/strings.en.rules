@@ -12,6 +12,12 @@ HotCargoFriendly
 	DebtorDiedFmt = "{0} is destroyed. Its debt of {1} credits dies with it."
 	DebtorBehind = "Your debtor cannot jump with you. It stays behind and pays when its time is up."
 	LabelDebtorFmt = "DEBTOR OWES {0}  {1}"
+	// Pay it forward (spec 1369 to 1371). {0} = ships.
+	WayfarersArriveFmt = "{0} Wayfarer ships drop out of FTL beside you. \"Hold on, we've got you!\""
+	WayfarersWords = "The Wayfarers hail you: \"No charge. Pay it forward to the next one in need.\""
+	WayfarersRepair = "The Wayfarers patch their hulls."
+	WayfarersLeave = "The Wayfarers spin up their drives and leave."
+	LabelWayfarer = "WAYFARER"
 	HeatHalvedFmt = "Their contacts lose your trail. Heat {0} -> {1}."
 	// Apprentice (spec 1362, 1363). {1} = fights it saw, {2} = fights it wants to see.
 	ApprenticeFollowsFmt = "{0} follows you for {1} minutes to learn. It wants to see {2} fights."
