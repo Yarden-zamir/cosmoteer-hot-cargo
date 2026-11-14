@@ -1,0 +1,30 @@
+# Scavenging screenshots (spec 1339): an NPC scavenger salvages an old wreck and its crew carry the parts home.
+# Windowed test slot (needs graphics): scripts/screens.sh tests/screens/scavenge.txt <out-dir>
+render on
+newgame run
+wait 10
+ev_set Enabled false
+closepanel
+# The start event pauses the game: answer it and close its result page.
+choose last
+uxpick 1
+wait 1
+pause off
+godmode on
+scav_set CooldownSeconds 60
+scav_spawn Scav station
+waitfor scav_live == 1 10
+auto_ship Scav
+auto_wreck 0,500
+auto_loot steel 5 3 200
+wait 2
+auto_focus 700
+wait 1
+screenshot scavenge-fresh
+waitfor scav_step == 1 90
+waitfor scav_cargo > 0 60
+wait 4
+auto_focus 90
+wait 1
+screenshot scavenge-salvage
+quit

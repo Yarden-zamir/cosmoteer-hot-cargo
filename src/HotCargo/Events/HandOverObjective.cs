@@ -434,6 +434,14 @@ public static class MissionCargo
 
     public static bool HasItems(Mission m) => Items(m).Any();
 
+    /// <summary>The items of every hand-over of the mission, given on accept or not. Scavengers leave them alone (spec 1330).</summary>
+    public static IEnumerable<ID<ResourceRules>> ItemTypes(Mission m)
+    {
+        var found = new List<HandOverObjective>();
+        m.GetObjectives(found);
+        return found.Where(o => o.ResourceType is not null).Select(o => o.ResourceType!.Value);
+    }
+
     /// <summary>The first ship of this player, by ID, that can take one unit. Deterministic order.</summary>
     static Ship? ShipWithRoom(SimRoot sim, int playerIndex, ID<ResourceRules> resource) =>
         Tech.Vaults.HumanShips(sim).Where(s => s.Metadata.PlayerIndex == playerIndex)

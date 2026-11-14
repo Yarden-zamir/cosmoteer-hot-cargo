@@ -1,4 +1,4 @@
-# Co-op session: autonomous ships (spec 1075, 1082). A looter and a miner of the host run on both machines: Funnel pickups,
+# Co-op session: autonomous ships (spec 1075, 1082) and scavengers (spec 1338). A looter and a miner of the host run on both machines: Funnel pickups,
 # Computer manning, mining, the instant sale and the money must match (the state hash compares them). Its own run: the steps
 # need the quiet start system with its station and asteroids. See coop-core.txt for "client:", "as 1", "on 1" and steps.
 mphost {PORT}
@@ -51,5 +51,28 @@ waitfor auto_cargo >= 1 300
 on 1 auto_ship Miner
 on 1 expect auto_manned == 1
 on 1 waitfor auto_cargo >= 1 60
+
+step scavenge.collect
+# Spec 1338: an NPC scavenger waits out the cooldown, salvages a wreck, fetches loose steel and sells at the station. The ages are run
+# state and the module runs on both machines; the state hash compares them, so a divergence fails the step.
+mp scav_set CooldownSeconds 60
+mp scav_spawn Scav station
+scav_ship Scav
+waitfor scav_live == 1 60
+on 1 scav_ship Scav
+on 1 waitfor scav_live == 1 60
+auto_ship Scav
+on 1 auto_ship Scav
+mp auto_wreck 0,500
+mp auto_loot steel 5 3 200
+# The wreck reaches the sim some ticks after the line. Earlier steps leave junk, so the age count alone does not show it.
+waitfor scav_wreck_parts > 0 60
+waitfor scav_target > 0 300
+expect scav_idle == 1
+waitfor scav_cargo > 0 400
+on 1 waitfor scav_cargo > 0 60
+mp scav_set FullFraction 0.01
+waitfor scav_sold > 0 300
+on 1 waitfor scav_sold > 0 60
 
 end
