@@ -103,7 +103,7 @@ static class UxAutotest
         // logselect [text]: selects the mission in the open mission log whose name contains text, else the first.
         Autotest.Commands["logselect"] = arg =>
             SelectMission(Autotest.RequireRun().Mode._missionLog ?? throw new InvalidOperationException("no mission log; run missionlog open first"), arg, null);
-        // tipshow map|mapcur|station|fame|text <xml>: shows that tooltip at a fixed spot, for screenshots. The capture hides hover
+        // tipshow map|mapcur|station|fame|item|text <xml>: shows that tooltip (item: the shown item action button, spec 1111) at a fixed spot, for screenshots. The capture hides hover
         // tooltips, because the real cursor rests somewhere over the hidden window. tipclear removes it.
         Autotest.Commands["tipshow"] = arg =>
         {
@@ -115,8 +115,10 @@ static class UxAutotest
                 "mapcur" => run.Mode.GetMapNodeToolTip(run.Game.CurrentMapNode) ?? "",
                 "station" => run.Game.Sim.Mode.GetShipMouseOverText(TechAutotest.NearestStation()),
                 "fame" => Walk(run.Game.Gui.RootWidget).OfType<Cosmoteer.Game.Gui.PlayerFameLabel>().First().ToolTips.TextProvider?.Text ?? "",
+                "item" => Walk(run.Game.Gui.RootWidget).OfType<Events.ItemActionButton>().FirstOrDefault(b => b.SelfActive)?.ToolTips.TextProvider?.Text
+                    ?? throw new InvalidOperationException("no item action button shows"),
                 "text" when parts.Length == 2 => parts[1],
-                _ => throw new InvalidOperationException("tipshow needs: map | mapcur | station | fame | text <xml>"),
+                _ => throw new InvalidOperationException("tipshow needs: map | mapcur | station | fame | item | text <xml>"),
             };
             TipClear(run.Game.Gui);
             var screen = run.Game.Gui.RootWidget.ScreenRect;

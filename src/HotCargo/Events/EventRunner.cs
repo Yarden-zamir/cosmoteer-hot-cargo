@@ -47,6 +47,9 @@ public static class EventRunner
         if (sim != run.Game.Sim) return;
         CheckWanted(run, sim);
         CheckCarrier(run, sim);
+        double at = run.State.GameSeconds;
+        // Hulk loot is world content, not an event page: it runs while events are off or a page waits.
+        if (Math.Floor(at / ProximityCheckSeconds) != Math.Floor((at - dt) / ProximityCheckSeconds)) Errors.Guard("hulk loot", () => Hulks.Check(run, sim));
         if (!t.Enabled || EventLibrary.LoadError is not null || s.Pending is not null) return;
         double now = run.State.GameSeconds;
         if (s.ArrivalDueSeconds >= 0 && now >= s.ArrivalDueSeconds)
@@ -191,7 +194,7 @@ public static class EventRunner
         Open(run, sim, candidates[pick], lead: "", carrier, carrierHails: carrier is not null);
     }
 
-    /// <summary>A trigger without the cooldown and the per-system cap: Abandoned and Relic (the player chose to fly there).</summary>
+    /// <summary>A trigger without the cooldown and the per-system cap: Relic (the player chose to fly there).</summary>
     internal static void TriggerUnlimited(Run run, SimRoot sim, EventTrigger trigger, float chance) =>
         TryTrigger(run, sim, trigger, chance, limited: false);
 
