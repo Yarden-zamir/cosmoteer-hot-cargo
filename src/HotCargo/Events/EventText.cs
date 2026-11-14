@@ -69,6 +69,14 @@ public static class EventText
 
     public static string NoBunk(int crew) => $"<gray>No free bunk for {crew} more crew.</gray>";
 
+    /// <summary>A gain that drifts loose in space (spec 1122): the crew must fly over and pick it up.</summary>
+    public static string Loose(ID<ResourceRules> id, int amount)
+    {
+        var r = GameApp.Rules.GetResourceRules(id);
+        string name = (amount == 1 ? r.NameKey : r.GetPluralNameKey()).Text;
+        return W.GoodTextColor.FormatWithXml($"{r.TextIconXml} {amount} {name} {(amount == 1 ? "drifts" : "drift")} loose. Fly over and pick {(amount == 1 ? "it" : "them")} up.");
+    }
+
     public static string NoStorage(ID<ResourceRules> id, int amount) =>
         $"<gray>No storage for {amount} {GameApp.Rules.GetResourceRules(id).GetPluralNameKey().Text}.</gray>";
 

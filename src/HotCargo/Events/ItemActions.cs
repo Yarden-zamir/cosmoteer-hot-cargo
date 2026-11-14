@@ -133,9 +133,7 @@ public static class ItemActions
             return;
         }
         var ship = part.Ship!;
-        float radius = ship.WorldBoundingRadius + 30f;
-        var rect = new RotRect(ship.DetWorldCenter + new Vector2(radius, 0f), new Vector2(40f, 40f), Direction.Zero);
-        sim.Nuggets.DropNuggets(r, 1, rect, Vector2.Zero, randomVelocity: true);
+        SimQueries.DropLoose(sim, ship.DetWorldCenter, ship.WorldBoundingRadius, r, 1);
         Log.Info($"item action: no room in {ship.Metadata.PlainShipName} for {r}; it drifts loose");
     }
 

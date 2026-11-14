@@ -152,6 +152,15 @@ public static class ChainsArea
             c.PendingResult = arg;
             Autotest.Wait(2);
         };
+        // chain_jump <stage>: moves the test chain to a stage, as a result row with that Next does. chain_due then starts a later stage.
+        Autotest.Commands["chain_jump"] = arg =>
+        {
+            var c = Test();
+            var chain = ChainLibrary.Get(c.ChainId);
+            if (chain.Stages.All(s => s.ID != arg.Trim())) throw new InvalidOperationException($"chain {chain.ID} has no stage '{arg.Trim()}'");
+            ChainRunner.Advance(RequireRun(), chain, c, arg.Trim());
+            Autotest.Wait(1);
+        };
         // chain_due: starts a waiting Return or Arrival stage now (headless games cannot finish a jump).
         Autotest.Commands["chain_due"] = _ =>
         {

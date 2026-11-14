@@ -22,6 +22,16 @@ using HotCargo.Core;
 namespace HotCargo.Events;
 
 /// <summary>
+/// An objective whose item leaves the players' ships with the mission (spec 1101, 1125). When the mission leaves the log,
+/// <see cref="MissionCargo"/> takes one unit back: the first of these forms that a player ship holds.
+/// </summary>
+internal interface IMissionCargo
+{
+    /// <summary>The forms of the unit to take back, or empty when none is due.</summary>
+    IReadOnlyList<ID<ResourceRules>> CargoToTakeBack { get; }
+}
+
+/// <summary>
 /// Rules type "HotCargoHandOver" (spec 1100 to 1103, 1107): an exchange with the Contact ship in its comms. Page is the Hail event
 /// (HailTarget = Contact) that the contact shows while this objective is active; its outcome with HandOver = true calls <see cref="Deliver"/>.
 /// With a ResourceType, the players carry one unit and hand it over. GiveOnAccept: the accepting player's ship gets it on accept
@@ -29,11 +39,12 @@ namespace HotCargo.Events;
 /// Once held, the objective fails when no unit is left in the players' ships or loose in the system. Without a ResourceType, LineKey names the exchange.
 /// Fails when the contact dies.
 /// Limit: the lost check counts units of the resource, not units of this mission. Two open jobs with the same item fail only when every
-/// unit is gone. Revisit when a second mission gives out the same item.
+/// unit is gone. Sundive also gives a Flight Recorder (spec 1125), so a Black Box hand-over can take a Sundive recorder while both
+/// run. Revisit if players report it.
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]
 [SerialDerivedType(TypeName = "HotCargoHandOver")]
-internal sealed class HandOverObjective : Objective, Missions.IMissionMarkers
+internal sealed class HandOverObjective : Objective, Missions.IMissionMarkers, IMissionCargo
 {
     [ReflectiveSerialization(Explicit = true)]
     [SerialDerivedType(TypeName = "HotCargoHandOver")]
@@ -263,6 +274,10 @@ internal sealed class HandOverObjective : Objective, Missions.IMissionMarkers
 
     internal void MarkHeld() => Held = true;
 
+    /// <summary>A job that leaves the log without its hand-over takes its held unit back.</summary>
+    public IReadOnlyList<ID<ResourceRules>> CargoToTakeBack =>
+        Completion != CompletionState.Completed && Held && ResourceType is { } item ? Forms(item) : [];
+
     /// <summary>The contact took the item and still ended the deal (spec 1118). The players hold nothing for this job any more.</summary>
     internal void FailAfterHandOver()
     {
@@ -467,14 +482,13 @@ public static class MissionCargo
     static void OnMissionRemoved(object? sender, Mission m) => Errors.Guard("mission cargo", () =>
     {
         if (Run.Current is not { } run || !ReferenceEquals(sender, run.Mode.Missions) || run.Game.Sim is not { } sim) return;
-        var open = new List<HandOverObjective>();
-        m.GetObjectives(open);
-        foreach (var o in open.Where(o => o.Completion != CompletionState.Completed))
+        var found = new List<Objective>();
+        m.GetObjectives(found, o => o is IMissionCargo);
+        foreach (var forms in found.Cast<IMissionCargo>().Select(o => o.CargoToTakeBack).Where(f => f.Count > 0))
         {
-            if (o.ResourceType is not { } item || !o.Held) continue;
-            // The unit as it is now: sealed, or opened (spec 1117).
-            int removed = HandOverObjective.Forms(item).SelectMany(f => Tech.Vaults.HumanShips(sim).OrderBy(s => s.UniqueID).Select(s => s.Resources.RemoveResources(f, 1))).FirstOrDefault(n => n > 0);
-            Log.Info($"mission cargo: {m.MetatypeID} {m.MissionID} left the log without the hand-over; removed {removed} {item}");
+            // The first form that a ship holds: sealed, or opened (spec 1117).
+            int removed = forms.SelectMany(f => Tech.Vaults.HumanShips(sim).OrderBy(s => s.UniqueID).Select(s => s.Resources.RemoveResources(f, 1))).FirstOrDefault(n => n > 0);
+            Log.Info($"mission cargo: {m.MetatypeID} {m.MissionID} left the log; took back {removed} {forms[0]}");
         }
     });
 }

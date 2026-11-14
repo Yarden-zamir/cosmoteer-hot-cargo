@@ -63,17 +63,17 @@ Checked and true to the text: Convoy Duty, Joint Strike, Drone Siege, Sunside Or
 - Text fix: "hold the pass for N minutes". A real convoy is a bigger change; it only makes sense if the escort AI from Convoy Duty can drive it.
 
 ### 7. Courier Run (P2)
-- The courier carries 1 tech in a vault. Disabled or surrendered: crew carry the tech over (vanilla resource transfer, spec 16). Destroyed: the vault drops its crate (spec 65), with a chance to burn. No straight +1 tech.
+- When the escorts are dead, the courier's crew pushes the tech crate out of the airlock. It drifts loose beside the courier, and the crew picks it up (spec 1123). No straight +1 tech.
 
 ### 8-9. Depot and Take It Back (P3)
-- Put the tech or processors into a ship of the enemy group, so the wrecks drop them. Remove the straight gains from the result rows.
+- The tech and the processors drift out of the nearest enemy wreck as crates (spec 1122, 1123). The result rows no longer put them into the hold. Seeding the cargo into the enemy ships was dropped: the depot guards are defense platforms, which can have no storage.
 
 ### 10. Boarding choices (P3)
 - Keep the abstraction. The triggers already need a ship close by, and the loot is real. Revisit when crew boarding gets a sim action.
 
 ### 11-13 (P3)
-- Sundive: the recorder becomes the item from #3.
-- Discreet Bounty: drop "come alone" from the text, or count the players' ships at the trap.
+- Sundive: the recorder becomes the item from #3 (spec 1125).
+- Discreet Bounty: PR #18 dropped "come alone" from the text.
 - Event resource gains: test with full storage; drop the surplus as loose cargo if the game does not.
 
 ## Status
@@ -85,5 +85,11 @@ Checked and true to the text: Convoy Duty, Joint Strike, Drone Siege, Sunside Or
 | 3 | Fixed: `chains-blackbox` |
 | 4 | Fixed: `mechanics-prototype` |
 | 5 | Fixed: `mechanics-salvage` |
-| 6-12 | Open |
+| 6 | Fixed: the text names no convoy (spec 1124) |
+| 7 | Fixed: the crate drifts loose beside the courier (spec 1123), `chains-later` |
+| 8 | Fixed: the crate drifts out of the depot wreck (spec 1123), `chains-cargo` |
+| 9 | Fixed: the processors drift out of Rook's wreck (spec 1123), `chains-cargo` |
+| 10 | Kept: crew count as a need; the loot is real |
+| 11 | Fixed: the recorder is a real item (spec 1125), `worlds-sundive`, `worlds-solar` |
+| 12 | Fixed by PR #18 (mission text): the text no longer says "come alone"; the trap it names is real (spec 39, 40) |
 | 13 | Checked, no change |

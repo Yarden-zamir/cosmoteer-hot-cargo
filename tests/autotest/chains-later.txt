@@ -48,6 +48,8 @@ chain_goto
 chain_kill
 wait 3
 expectstage end
-expect ev_tech_gain == 1
+# Spec 1122: the courier's crew pushes the crate out; it does not go straight into the vault.
+expect ev_tech_gain == 0
+expect ev_loose_yarden_zamir.stolen_tech_gain == 1
 expect chain_story >= 3
 quit

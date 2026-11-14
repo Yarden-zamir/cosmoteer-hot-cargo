@@ -289,6 +289,8 @@ SolarZone
 									Type = HotCargoSundive
 									SiteTag = { Mode=Latest; Tag=hc_sundive_site; }
 									Radius = &~/SundiveRadius
+									// Spec 1125: the salvage gives a real recorder; it needs a free storage slot.
+									Recorder = yarden_zamir.flight_recorder
 								}
 								{
 									Type = ReceiveRewards

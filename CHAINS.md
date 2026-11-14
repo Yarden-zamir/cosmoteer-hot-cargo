@@ -100,7 +100,7 @@ graph LR
   debrief -->|sold: crew -1, 1.5 money, heat -20| vengeance["later, Arrival +2: Okafor's Friends"]
   insider -->|raid| depot["Arrival +0: Okafor's Depot"]
   insider -->|slip: heat -25| END5[END]
-  depot -->|success: +1 tech| END6[END]
+  depot -->|success: a tech crate drifts loose| END6[END]
   depot -->|fail| END7[END]
   vengeance -->|success: fame| END8[END]
   vengeance -->|fail: heat +10| END9[END]
@@ -122,7 +122,7 @@ graph LR
   gloat -->|fight| ambush["Arrival +0: Take It Back"]
   favor -->|even: heat -15| END3[END]
   favor -->|partners: 0.3 money, heat -30| END4[END]
-  ambush -->|success: 3 processors, fame| END5[END]
+  ambush -->|success: 3 processors drift loose, fame| END5[END]
   ambush -->|fail| END6[END]
 ```
 
@@ -181,7 +181,7 @@ graph LR
   playback -->|trap, 60% + heat| sting["later, Arrival +1: The Sting"]
   routes -->|hit| courier["Arrival +0: Courier Run, careful targeting"]
   routes -->|slip: heat -15| END4[END]
-  courier -->|success: +1 tech| END5[END]
+  courier -->|success: a tech crate drifts loose| END5[END]
   courier -->|lost: heat +5| END6[END]
   courier -->|fail| END7[END]
   sting -->|success: fame| END8[END]

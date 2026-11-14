@@ -58,7 +58,7 @@ With the defaults, about 3 of 4 systems are archetypes. The start system stays b
 | Mission | Steps | Fails when | Pay | Contract terms |
 |---|---|---|---|---|
 | Hold the Pass | Defeat the campers in a pass. Hold the pass ring for `PassHoldSeconds` (120 s); a wave comes every `PassWaveSeconds` (35 s) of holding. | The ring stays empty for `PassLostSeconds` (15 s) after the first entry | 2 × money, 2 × fame | free, heat 6, trail 1, informant 10 % |
-| Sundive | Fly to the wreck at depth 0.15 to 0.25. Stay `SundiveSalvageSeconds` (5 s). Leave the heat with the same ship. | The carrier is destroyed | 3 × money, 1.5 × fame | fee 0.3, heat 2, trail 0.5, informant 5 % |
+| Sundive | Fly to the wreck at depth 0.15 to 0.25. Stay `SundiveSalvageSeconds` (5 s): the Flight Recorder goes into the hold (it needs a free storage slot). Leave the heat with it. | The recorder is lost | 3 × money, 1.5 × fame | fee 0.3, heat 2, trail 0.5, informant 5 % |
 | Raid the Lair | Find the lair in a search circle of radius 4,500 (come within `LairDiscoverDistance`, 2,000). Destroy it. | (vanilla) | 2.5 × money, 2 × fame | free, heat 4, trail 1, informant 20 % |
 
 Pay is in standard mission units at the system tier, before `RewardScale`. Every mission ends with the vanilla "receive rewards" step at the station.
