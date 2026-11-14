@@ -51,6 +51,68 @@ public static class SharedChoiceArea
         Autotest.Fields["sc_hover_choice"] = () => Presence.Others(RequireRun(), EventsChoiceDomain.Name, EventSerial()).FirstOrDefault()?.Option + 1 ?? 0;
         // The last vote decision on this machine: choice number, and reason (1 unanimous, 2 majority, 3 timeout, 4 forced). 0 = none.
         Autotest.Fields["sc_decided_choice"] = () => SharedChoices.LastDecision?.Option + 1 ?? 0;
+        AddListenAutotest();
         Autotest.Fields["sc_decided_reason"] = () => SharedChoices.LastDecision is { } d ? (int)d.Reason + 1 : 0;
+    }
+
+    /// <summary>Comms tabs of open windows: listen windows (true) or the player's own (false). Runs one frame of each first.</summary>
+    static List<Cosmoteer.Modes.Career.Comms.CommDialogueTab> Tabs(bool listening)
+    {
+        ListenIn.Frame();
+        var tabs = Ui.CommsHail.OpenTabs().Where(t => (ListenIn.SpeakerOf(t._window) is not null) == listening).ToList();
+        if (!listening) foreach (var t in tabs) t.OnUpdatingUIState(null, EventArgs.Empty);
+        return tabs;
+    }
+
+    static void Click(bool listening, string text)
+    {
+        string where = listening ? "listen window" : "own comms window";
+        var tab = Tabs(listening).FirstOrDefault() ?? throw new InvalidOperationException($"no open {where}");
+        var buttons = tab._currentDialogue?.Buttons ?? throw new InvalidOperationException($"the {where} shows no page");
+        int index = buttons.FindIndex(b => EventView.Plain(b.Text).Contains(text, StringComparison.Ordinal));
+        if (index < 0) throw new InvalidOperationException($"no button with '{text}' in the {where}; buttons: {string.Join(" | ", buttons.Select(b => EventView.Plain(b.Text)))}");
+        if (!tab._dialogueButtonsBox.Children[index].SelfInputActive) throw new InvalidOperationException($"button '{text}' is disabled in the {where}");
+        tab.ButtonPressed(index);
+        Autotest.Wait(1);
+    }
+
+    static void AddListenAutotest()
+    {
+        // Listen-in (spec 1131 to 1138). listen <n>: clicks the n-th listen button. listen_click <text>: clicks the button of the
+        // listen window whose plain text contains the text, like a player (a vote).
+        Autotest.Commands["listen"] = arg => { ListenIn.Toggle(RequireRun(), int.Parse(arg, CultureInfo.InvariantCulture) - 1); ListenIn.Frame(); };
+        // comms_click <text>: the same in the player's own comms window.
+        Autotest.Commands["listen_click"] = text => Click(listening: true, text);
+        Autotest.Commands["comms_click"] = text => Click(listening: false, text);
+        // Listen buttons that show on this machine, open listen windows (after one frame of each), and option buttons with votes
+        // shown in listen windows and in the player's own comms windows.
+        Autotest.Fields["listen_hails"] = () => ListenIn.ShownCount;
+        // Open comms channels of all players in the sim (the vanilla set that the listen list reads).
+        Autotest.Fields["listen_channels"] = () => RequireRun().Game.Sim.Mode is Cosmoteer.Modes.Career.CareerSimModeManager m ? m.OpenComms.Values.Sum(c => c.Count) : 0;
+        Autotest.Fields["listen_open"] = () => { ListenIn.Frame(); return ListenIn.OpenWindows().Count(); };
+        Autotest.Fields["listen_vote_marks"] = () => Tabs(listening: true).Sum(t => SharedChoicePanel.VoteMarks(t._dialogueButtonsBox.Children));
+        Autotest.Fields["comms_vote_marks"] = () => Tabs(listening: false).Sum(t => SharedChoicePanel.VoteMarks(t._dialogueButtonsBox.Children));
+        // listen_speak: opens the real comms window from this machine's own ship to the ship that carries the pending event page.
+        Autotest.Commands["listen_speak"] = _ =>
+        {
+            var run = RequireRun();
+            var sim = run.Game.Sim;
+            var carrier = run.State.Events.Pending?.Carrier is { } id ? sim.Ships[id] : null;
+            var own = Autotest.ActingShip(sim) ?? throw new InvalidOperationException("no own ship");
+            run.Game.Gui.FloatingWindows.AddChild(new Cosmoteer.Modes.Career.Comms.CommWindow(run.Game, own, carrier ?? throw new InvalidOperationException("no live event carrier")));
+            Autotest.Wait(1);
+        };
+        // listen_log: logs the open comms channels in the sim and this machine's comms windows with the vanilla call checks.
+        Autotest.Commands["listen_log"] = _ =>
+        {
+            var run = RequireRun();
+            var mode = (Cosmoteer.Modes.Career.CareerSimModeManager)run.Game.Sim.Mode;
+            Log.Info($"AUTOTEST LISTEN player {run.Game.LocalPlayerIndex}: channels [{string.Join(", ", mode.OpenComms.SelectMany(kv => kv.Value.Select(c => $"{c.Metadata.PlainShipName} (player {c.Metadata.PlayerIndex}) to {kv.Key.Metadata.PlainShipName}")))}]; " +
+                     $"hails {ListenIn.Hails(run).Count}, shown {ListenIn.ShownCount}; windows [" +
+                     string.Join(", ", run.Game.Gui.FloatingWindows.Children.OfType<Cosmoteer.Modes.Career.Comms.CommWindow>().Select(w =>
+                         $"{w.Caller.Metadata.PlainShipName} to {w.Callee.Metadata.PlainShipName}: call {mode.CanShipCallShip(w.Caller, w.Callee)} answer {mode.WillShipAnswerCall(w.Caller, w.Callee)} dialogue {w.Callee.AI?.WillProvideDialogue(w.Caller)} listen {ListenIn.SpeakerOf(w) is not null}")) + "]");
+        };
+        // Disabled buttons in listen windows: a listener only votes.
+        Autotest.Fields["listen_buttons_off"] = () => Tabs(listening: true).Sum(t => t._dialogueButtonsBox.Children.Count(b => !b.SelfInputActive));
     }
 }

@@ -10,6 +10,13 @@ HotCargoSharedChoice
 	VotesFmt = "<gray>{0} vote(s):</gray> {1}"
 	SomePlayer = "A player"
 
+	// Listen-in (spec 1131 and later)
+	StatusListenFirstPick = "<gray>Listening. Your click is a vote; {0} picks.</gray>"
+	ListenInFmt = "Listen in: {0} talks to {1}"
+	ListenStopFmt = "Stop listening: {0} talks to {1}"
+	ListenTitleFmt = "Listening: {0}"
+	ListenClosedFmt = "{0} closed the channel."
+
 	// Chat lines
 	VoteOnFmt = "{0} turned on voting for shared choices."
 	VoteOffFmt = "{0} turned off voting. The first pick decides."

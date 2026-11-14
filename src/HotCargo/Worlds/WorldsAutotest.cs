@@ -142,9 +142,7 @@ static class WorldsAutotest
                 var next = run.Game.CurrentMapNode.Connections.FirstOrDefault(n => !run.State.VisitedNodes.Contains(n.UniqueID))
                     ?? throw new InvalidOperationException("no unvisited neighbor system");
                 run.Mode.GetMapNodeData(next).SectorTypeID = id;
-                run.Game.JumpToNode(next, doFtlAnimation: false, run.Game.Sim.Ships.HumanPlayerShips.ToList())
-                    .ContinueWith(t => Log.Error("AUTOTEST jumpto failed", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
-                Autotest.Wait(8);
+                Autotest.JumpWhenAllowed(run, next, "jumpto", () => Autotest.Wait(8));
                 break;
             }
             // paint: paints the trade hub current (the HotCargoCurrent spawner of the hc_trade_hub rules) centered on the first

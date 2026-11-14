@@ -38,6 +38,9 @@ internal sealed class TacticsEditor : WindowBox
     readonly LayoutBox _list;
     readonly Button _add;
     readonly List<Label> _markers = [];
+    /// <summary>The condition and action lists and the parameter lists of the shown rules, for the fit check.</summary>
+    readonly List<DropList> _choiceLists = [];
+    readonly List<DropList> _paramLists = [];
     readonly SimpleBox _cargoBar;
     CargoPicker? _picker;
 
@@ -158,6 +161,9 @@ internal sealed class TacticsEditor : WindowBox
                 e.DeletePreset();
                 break;
             case "toselected": e.ApplyToSelected(); break;
+            // Spec 419: the smallest window, then (after a frame) every condition and action name in its list without wrap or clip.
+            case "minsize": e.Size = e.ResizeController.MinSize; break;
+            case "fit": e.CheckFit(); break;
             case "loot":
                 e.EditCargo(a[1].StartsWith('v')
                     ? e._cargo with { LootMinValue = int.Parse(a[1][1..], CultureInfo.InvariantCulture), LootTypes = [] }
@@ -169,6 +175,58 @@ internal sealed class TacticsEditor : WindowBox
             case "recall": e._recall = a[1] == "on"; e.Send(); break;
             default: throw new InvalidOperationException($"unknown tactics_editor verb '{a[0]}'");
         }
+    }
+
+    /// <summary>
+    /// Spec 419: every condition and action name fits the text area of a shown condition list on one line, and every value of every
+    /// parameter kind fits the text area of a shown parameter list, in the lists' own font. Throws with the texts that do not fit.
+    /// Limit: a headless game loads no glyph metrics (every character is as wide as the font size), so there it only logs that it
+    /// cannot measure. Revisit when test slots draw.
+    /// </summary>
+    void CheckFit()
+    {
+        var choice = _choiceLists.FirstOrDefault() ?? throw new InvalidOperationException("the editor shows no rule");
+        var param = _paramLists.FirstOrDefault() ?? throw new InvalidOperationException("the editor shows no rule with a parameter");
+        if (NaturalWidth(choice.StateNormalTextRenderer, "iiii") >= NaturalWidth(choice.StateNormalTextRenderer, "WWWW"))
+        {
+            Log.Info("AUTOTEST tactics editor fit: no glyph metrics in this game (headless); the fit is not measured");
+            return;
+        }
+        int stages = _run.T.Heat.Stages.Length;
+        var names = Enum.GetValues<Cond>().Select(c => Text("Cond_" + c)).Concat(Enum.GetValues<Act>().Select(a => Text("Act_" + a)));
+        var values = Enum.GetValues<ParamKind>().Where(k => k != ParamKind.None)
+            .SelectMany(k => ShipAiModel.ChoicesOf(k, stages).Select(v => ParamName(k, v)));
+        var bad = new List<string>();
+        float Check(DropList drop, IEnumerable<string> texts)
+        {
+            var text = drop.StateNormalTextRenderer;
+            float area = text.RectProvider.ScreenRect.Width, widest = 0f;
+            if (area <= 0f) throw new InvalidOperationException("a list has no text area");
+            foreach (string t in texts.Distinct())
+            {
+                float w = NaturalWidth(text, t);
+                if (w <= 0f) throw new InvalidOperationException($"no width measured for '{t}'");
+                widest = Math.Max(widest, w);
+                if (w > area) bad.Add($"'{t}' (needs {w:0}, has {area:0})");
+            }
+            return widest;
+        }
+        float widestName = Check(choice, names), widestValue = Check(param, values);
+        Log.Info($"AUTOTEST tactics editor fit at window {Size.X:0}x{Size.Y:0}: widest name {widestName:0} in " +
+                 $"{choice.StateNormalTextRenderer.RectProvider.ScreenRect.Width:0}, widest value {widestValue:0} in " +
+                 $"{param.StateNormalTextRenderer.RectProvider.ScreenRect.Width:0}, {bad.Count} do not fit");
+        if (bad.Count > 0) throw new InvalidOperationException("texts do not fit: " + string.Join(", ", bad));
+    }
+
+    /// <summary>The width of a text on one line, in the font and size of a widget text.</summary>
+    static float NaturalWidth(Halfling.Gui.Components.Graphics.WidgetTextRenderer like, string text)
+    {
+        var tr = new Halfling.Graphics.Text.TextRenderer(text, new IntRect(0, 0, 100000, 1000), Halfling.Graphics.PerformanceMode.Dynamic)
+        {
+            Font = like.Font,
+            FontSize = like.FontSize,
+        };
+        return tr.BoundingRect.Width;
     }
 
     static string[] List(string arg) => arg == "none" ? [] : arg.Split(',');
@@ -240,7 +298,8 @@ internal sealed class TacticsEditor : WindowBox
         _list.PercentileWidth = 100f;
         _list.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
         _list.Children.LayoutAlgorithm = LayoutAlgorithms.StretchTopToBottom;
-        _list.Children.WidgetPadding = new Vector2(4f);
+        // Spec 419: a small gap between the framed rules.
+        _list.Children.WidgetPadding = new Vector2(8f);
         page.Children.Add(_list);
 
         _add = NewButton("AddRow", AddRow);
@@ -343,6 +402,8 @@ internal sealed class TacticsEditor : WindowBox
         {
             _list.Children.Clear();
             _markers.Clear();
+            _choiceLists.Clear();
+            _paramLists.Clear();
             for (int i = 0; i < _rows.Count; i++) _list.Children.Add(BuildRow(i));
             if (_rows.Count == 0)
             {
@@ -413,25 +474,35 @@ internal sealed class TacticsEditor : WindowBox
         Send();
     }
 
-    /// <summary>One block per row: a line per condition term; the first line also holds the action and the row buttons.</summary>
+    /// <summary>
+    /// Spec 419. One framed block per rule (the vanilla box style): a line per condition term (the IF part), then the THEN line
+    /// with the action, its parameter and the rule buttons, indented under the conditions.
+    /// </summary>
     LayoutBox BuildRow(int i)
     {
         var row = _rows[i];
         var block = new LayoutBox();
-        block.NineSlice.Flags = NineSliceFlags.None;
         block.PercentileWidth = 100f;
         block.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
         block.Children.LayoutAlgorithm = LayoutAlgorithms.StretchTopToBottom;
+        block.Children.BorderPadding = new Borders(6f);
         block.Children.WidgetPadding = new Vector2(2f);
         for (int j = 0; j < row.Terms.Length; j++)
         {
             var line = Strip(34f);
             BuildTerm(line, i, j);
-            if (j == 0) BuildAction(line, i);
             block.Children.Add(line);
         }
+        var then = Strip(34f);
+        BuildAction(then, i);
+        block.Children.Add(then);
         return block;
     }
+
+    // Spec 419: column starts and widths in percent of the rule line. The condition and action lists share one column. In the game
+    // font (18 px) the widest name is 272 px and the widest parameter value 130 px; a list adds about 73 px (arrow, padding). At the
+    // smallest window (1100) the lists then keep about a third of spare room. "tactics_editor fit" checks it in a game with graphics.
+    const float ColMarker = 0f, ColJoin = 3f, ColNot = 9f, ColChoice = 15f, ChoiceWidth = 40f, ColParam = 55f, ParamWidth = 22f, ColEnd = 77f;
 
     void BuildTerm(SimpleBox line, int i, int j)
     {
@@ -444,35 +515,48 @@ internal sealed class TacticsEditor : WindowBox
             marker.TextRenderer.FontSize = 18;
             marker.TextRenderer.HAlignment = HAlignment.Center;
             _markers.Add(marker);
-            Place(line, marker, 0f, 4f);
+            Place(line, marker, ColMarker, ColJoin - ColMarker);
             var when = new Label { Text = Text("If") };
             when.TextRenderer.HAlignment = HAlignment.Center;
-            Place(line, when, 4f, 5f);
+            Place(line, when, ColJoin, ColNot - ColJoin);
         }
-        else Place(line, XmlButton(Text(term.Or ? "Or" : "And"), Text("ConnectorTip"), () => EditTerm(i, j, t => t with { Or = !t.Or })), 4f, 5f);
-        Place(line, XmlButton(Text(term.Not ? "NotOn" : "NotOff"), Text("NotTip"), () => EditTerm(i, j, t => t with { Not = !t.Not })), 9f, 5f);
-        Place(line, Choices(Enum.GetValues<Cond>().Select(c => (int)c), (int)term.Cond, v => Text("Cond_" + (Cond)v),
-            v => EditTerm(i, j, t => ShipAiModel.WithCond(t, (Cond)v))), 14f, 18f);
+        else Place(line, XmlButton(Text(term.Or ? "Or" : "And"), Text("ConnectorTip"), () => EditTerm(i, j, t => t with { Or = !t.Or })), ColJoin, ColNot - ColJoin);
+        Place(line, XmlButton(Text(term.Not ? "NotOn" : "NotOff"), Text("NotTip"), () => EditTerm(i, j, t => t with { Not = !t.Not })), ColNot, ColChoice - ColNot);
+        var cond = Choices(Enum.GetValues<Cond>().Select(c => (int)c), (int)term.Cond, v => Text("Cond_" + (Cond)v),
+            v => EditTerm(i, j, t => ShipAiModel.WithCond(t, (Cond)v)));
+        _choiceLists.Add(cond);
+        Place(line, cond, ColChoice, ChoiceWidth);
         var kind = ShipAiModel.ParamOf(term.Cond);
         if (kind != ParamKind.None)
-            Place(line, Choices(ShipAiModel.ChoicesOf(kind, _run.T.Heat.Stages.Length), term.Param, v => ParamName(kind, v), v => EditTerm(i, j, t => t with { Param = v })), 32f, 9f);
-        if (row.Terms.Length > 1) Place(line, NewButton("RemoveTerm", () => Edit(i, ShipAiModel.RemoveTerm(_rows[i], j))), 41f, 3f);
+        {
+            var param = Choices(ShipAiModel.ChoicesOf(kind, _run.T.Heat.Stages.Length), term.Param, v => ParamName(kind, v), v => EditTerm(i, j, t => t with { Param = v }));
+            _paramLists.Add(param);
+            Place(line, param, ColParam, ParamWidth);
+        }
+        if (row.Terms.Length > 1) Place(line, NewButton("RemoveTerm", () => Edit(i, ShipAiModel.RemoveTerm(_rows[i], j))), ColEnd, 4f);
     }
 
     void BuildAction(SimpleBox line, int i)
     {
         var row = _rows[i];
-        var arrow = new Label { Text = "->" };
-        arrow.TextRenderer.HAlignment = HAlignment.Center;
-        Place(line, arrow, 44f, 2f);
-        Place(line, Choices(Enum.GetValues<Act>().Select(a => (int)a), (int)row.Act, v => Text("Act_" + (Act)v),
-            v => Edit(i, ShipAiModel.WithAct(_rows[i], (Act)v))), 46f, 20f);
+        // Indented under the conditions: THEN sits in the NOT column, the action in the condition column.
+        var then = new Label { Text = Text("Then") };
+        then.TextRenderer.HAlignment = HAlignment.Center;
+        Place(line, then, ColNot, ColChoice - ColNot);
+        var act = Choices(Enum.GetValues<Act>().Select(a => (int)a), (int)row.Act, v => Text("Act_" + (Act)v),
+            v => Edit(i, ShipAiModel.WithAct(_rows[i], (Act)v)));
+        _choiceLists.Add(act);
+        Place(line, act, ColChoice, ChoiceWidth);
         var actKind = ShipAiModel.ParamOf(row.Act);
         if (actKind != ParamKind.None)
-            Place(line, Choices(ShipAiModel.ChoicesOf(actKind, _run.T.Heat.Stages.Length), row.ActParam, v => ParamName(actKind, v), v => Edit(i, _rows[i] with { ActParam = v })), 66f, 10f);
+        {
+            var param = Choices(ShipAiModel.ChoicesOf(actKind, _run.T.Heat.Stages.Length), row.ActParam, v => ParamName(actKind, v), v => Edit(i, _rows[i] with { ActParam = v }));
+            _paramLists.Add(param);
+            Place(line, param, ColParam, ParamWidth);
+        }
         var addTerm = NewButton("AddTerm", () => Edit(i, ShipAiModel.AddTerm(_rows[i])));
         addTerm.SelfInputActive = row.Terms.Length < ShipAiModel.MaxTerms;
-        Place(line, addTerm, 76f, 9f);
+        Place(line, addTerm, ColEnd, 8f);
         var up = NewButton("Up", () => Swap(i, i - 1));
         up.SelfInputActive = i > 0;
         Place(line, up, 85f, 5f);

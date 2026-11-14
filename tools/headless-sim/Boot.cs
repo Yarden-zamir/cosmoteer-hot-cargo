@@ -7,13 +7,13 @@ using Halfling.Serialization;
 using HarmonyLib;
 
 /// <summary>
-/// Boots the real GameApp without a window: Platform.Create returns MacPlatform, then the asset loader runs on this thread.
+/// Boots the real GameApp without a window: Platform.Create returns HeadlessPlatform, then the asset loader runs on this thread.
 /// The process must run with the game folder as working directory and with --headless --rootsavepath on its command line,
 /// because GameApp and Paths read those from Environment.GetCommandLineArgs.
 /// </summary>
 static class Boot
 {
-    public static Harmony Harmony { get; } = new("mac-sim.host");
+    public static Harmony Harmony { get; } = new("headless-sim.host");
 
     /// <summary>Does what HotCargo.Loader does in the game: runs the mod's startup hook from the staged mod folder, before GameApp exists.</summary>
     public static bool HotCargo()
@@ -73,7 +73,7 @@ static class Boot
 
     static bool CreatePlatformPrefix(ref Platform __result)
     {
-        __result = new MacPlatform();
+        __result = new HeadlessPlatform();
         return false;
     }
 
