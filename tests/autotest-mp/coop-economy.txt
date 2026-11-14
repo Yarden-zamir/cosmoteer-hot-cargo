@@ -330,7 +330,7 @@ step debt.loan
 # Spec 1401, 1403, 1405, 1413: the client takes a loan from its machine; the host pays part of it. One shared balance, no desync.
 mp debt_set LoanStationChance 1
 as 1 debt_goto loan
-debt_goto loan
+mp debt_goto loan
 wait 3
 hc_mark
 on 1 debt_loan
