@@ -9,6 +9,8 @@ save offbooks
 ev_open station
 ev_click station Sell a crate off the books
 expectevent off_books
+# Spec 816: the window is on the screen and shows the whole page or its scroll bar.
+expect comms_fit == 1
 ev_mark
 pick 1
 expectoption 1 selected

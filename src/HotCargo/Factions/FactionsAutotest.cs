@@ -23,6 +23,21 @@ static class FactionsAutotest
 {
     static Run R() => Autotest.RequireRun();
 
+    /// <summary>Galaxy map nodes whose map text contains the tag string (CareerGameModeManager.GetMapNodeText, as the map draws it).</summary>
+    static int NodesWithTag(string key)
+    {
+        string tag = FactionsArea.Text(key);
+        var sb = new System.Text.StringBuilder();
+        int n = 0;
+        foreach (var node in R().Game.Map.Nodes)
+        {
+            sb.Clear();
+            R().Mode.GetMapNodeText(node, sb);
+            if (sb.ToString().Contains(tag, StringComparison.Ordinal)) n++;
+        }
+        return n;
+    }
+
     /// <summary>Values that fa_base records, so fields can report a price as a ratio to it.</summary>
     static double _baseBuy = double.NaN, _baseCrew = double.NaN, _baseFuel = double.NaN, _baseOffers = double.NaN;
     static double _markHeat, _markSeconds, _markNotoriety;
@@ -141,6 +156,32 @@ static class FactionsAutotest
             Log.Info($"AUTOTEST factions blind button: {Jumps.ButtonText(run)}");
         };
 
+        // Spec 664, 665: the saved marks, and the galaxy map nodes whose map text (what the game draws under the name) shows a tag.
+        Autotest.Fields["fa_watched"] = () => R().State.Factions.WatchedNodes.Count;
+        Autotest.Fields["fa_chain_shelters"] = () => R().State.Factions.ChainShelters.Count;
+        Autotest.Fields["fa_tag_watch"] = () => NodesWithTag("TagWatch");
+        Autotest.Fields["fa_tag_shelter"] = () => NodesWithTag("TagShelter");
+        // fa_chain_shelter: test only. The chain-shelter path (spec 665) for the nearest station's faction, as if a chain there ended well.
+        Autotest.Commands["fa_chain_shelter"] = _ =>
+            FactionsArea.ShelterAfterChain(R(), TechAutotest.NearestStation().Metadata.PlayerIndex, "a test chain");
+        // fa_mapfocus_shelter: test only. Centers the galaxy map on the nearest system in the shelter zone (screenshots).
+        Autotest.Commands["fa_mapfocus_shelter"] = _ =>
+        {
+            var run = R();
+            var here = run.Game.CurrentMapNode.Location;
+            var node = run.Game.Map.Nodes.Where(n => FactionsArea.ZoneOf(run, n) == Zone.Shelter).MinBy(n => n.Location.DistanceSquaredTo(here))
+                ?? throw new InvalidOperationException("no system in the shelter zone");
+            node.FocusCamera(playSound: false);
+            Autotest.Wait(3);
+        };
+        // fa_jump_watched: jumps to an unvisited neighbor in the corporate watch zone (not ally space), like "worlds jumpto" (no FTL animation, no fuel).
+        Autotest.Commands["fa_jump_watched"] = _ =>
+        {
+            var run = R();
+            var next = run.Game.CurrentMapNode.Connections.FirstOrDefault(n => FactionsArea.ZoneOf(run, n) == Zone.Watch && !run.State.VisitedNodes.Contains(n.UniqueID))
+                ?? throw new InvalidOperationException("no unvisited neighbor under corporate watch");
+            Autotest.JumpWhenAllowed(run, next, "fa_jump_watched", () => Autotest.Wait(8));
+        };
         Autotest.Fields["fa_zone"] = () => (int)FactionsArea.ZoneOf(R(), R().Game.CurrentMapNode);
         Autotest.Fields["fa_timefactor"] = () => Run.Hooks.TimeHeatFactor(R());
         Autotest.Fields["fa_heatrate"] = () => R().TimeHeatPerMinute(R().State.FleetTech);

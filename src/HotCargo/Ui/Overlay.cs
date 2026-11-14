@@ -8,6 +8,7 @@ using Halfling.Input;
 using HotCargo.Core;
 using HotCargo.Tech;
 using HotCargo.Ux;
+using HotCargo.StartJobs;
 
 namespace HotCargo.Ui;
 
@@ -85,7 +86,7 @@ public static class Overlay
         // Spec 60: the tunables hash shows in multiplayer, so players can compare it, and with debug keys on.
         string hash = run.IsMultiplayer ? $"\ntunables {s.TunablesHash}  (mp, no reload)" : t.Debug.DebugKeys ? $"\ntunables {s.TunablesHash}" : "";
         return
-            $"HOT CARGO  sector {s.SectorIndex}/{t.Journey.RunSectorCount}\n" +
+            $"HOT CARGO  sector {s.SectorIndex}/{run.SectorCount()}\n" +
             $"heat {s.Heat:0.0} / 100   +{perMinute:0.0}/min\n" +
             $"stage {stage}   next {next}\n" +
             $"tech {s.FleetTech}   x{mult:0.00}   value {run.TechValue():N0}   notoriety {s.Notoriety:0}\n" +

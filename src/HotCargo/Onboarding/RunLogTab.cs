@@ -50,20 +50,26 @@ static class RunLogTab
         tabs.AddTab(button, page);
         RunLogEntry? newest = null;
         int count = -1;
+        int record = -1;
         page.BeforeDrawWhileActive((_, _) => Errors.Guard("run log tab", () =>
         {
             if (Run.Current is not { } run || run.Game != game) return;
             var log = run.State.Log;
-            if (log.Count == count && ReferenceEquals(newest, log.LastOrDefault())) return;
+            // Spec 1225: the past runs come from the record file; a write or read of it changes the version.
+            var runs = RunRecord.Recorder.Runs ?? RunRecord.Recorder.Load() ?? [];
+            if (log.Count == count && ReferenceEquals(newest, log.LastOrDefault()) && record == RunRecord.Recorder.Version) return;
             count = log.Count;
             newest = log.LastOrDefault();
-            Fill(page, log);
+            record = RunRecord.Recorder.Version;
+            Fill(page, log, runs);
         }));
     });
 
-    static void Fill(ScrollBox page, List<RunLogEntry> log)
+    static void Fill(ScrollBox page, List<RunLogEntry> log, IReadOnlyList<RunRecord.RunEntry> runs)
     {
         page.Children.Clear();
+        foreach (string line in RunRecord.RecordRows.Lines(runs)) page.AddChild(Row(line));
+        page.AddChild(Row(RunRecord.RecordRows.Text("ThisRun")));
         if (log.Count == 0) page.AddChild(Row(RunLog.Text("Empty")));
         for (int i = log.Count - 1; i >= 0; i--)
         {
