@@ -58,9 +58,20 @@ public static class RelaysArea
     public static bool CollectsFee(Run run, Ship station) =>
         ActiveHere(run) is { Kind: LockKind.Fee, Open: false } && IsFeeStation(run, station);
 
-    internal static bool IsFeeStation(Run run, Ship ship) =>
-        !ship.IsHumanPlayerShip && SpaceStation.GetStation(ship, onlyOperating: false) is not null
-        && run.Game.CurrentMapNode.ControllingFaction is { } owner && FactionRules.GetShipFaction(ship)?.ID == owner;
+    /// <summary>
+    /// Spec 956: the stations of the controlling faction collect the toll. A system without a station of that faction
+    /// (small systems) lets every station but the Buyer collect it, so the toll can always be paid.
+    /// </summary>
+    internal static bool IsFeeStation(Run run, Ship ship)
+    {
+        if (!IsTollStation(ship) || run.Game.CurrentMapNode.ControllingFaction is not { } owner) return false;
+        if (FactionRules.GetShipFaction(ship)?.ID == owner) return true;
+        var sim = ship.Sim ?? throw new InvalidOperationException("station has no sim");
+        return !sim.Ships.AllShips.Any(s => IsTollStation(s) && FactionRules.GetShipFaction(s)?.ID == owner);
+    }
+
+    static bool IsTollStation(Ship ship) =>
+        !ship.IsHumanPlayerShip && !Journey.Buyer.IsBuyer(ship) && SpaceStation.GetStation(ship, onlyOperating: false) is not null;
 
     public static int FeeCredits(Run run) =>
         Events.EventRunner.Credits(run, RelaysModel.FeeUnits(run.T.Relays.FeeUnits, run.T.Relays.FeePerHeat, run.State.Heat), 0f, run.CurrentTier, run.TechValue());
