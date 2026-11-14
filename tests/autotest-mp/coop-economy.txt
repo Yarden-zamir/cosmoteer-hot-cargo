@@ -4,6 +4,8 @@
 mphost {PORT}
 mpstart {PLAYERS}
 mp godmode on
+# Loan offers make stations answer with a dialogue page (spec 1402), which changes the listen and comms checks. Only debt.loan turns them on.
+mp debt_set LoanStationChance 0
 # The event window opens after the run intro closes (GUI only). The client's hover needs its window.
 closepanel
 on 1 closepanel
@@ -182,6 +184,8 @@ waitfor ev_courier_offers >= 1 20
 wait 2
 mp contract_pick any HotCargoCourier
 mp contract_terms informant 0
+# Earlier steps fill the holds (stripped cargo, loot); the job needs a free slot for the case (spec 1101).
+mp ev_storage_room 2
 wait 2
 ev_mark
 on 1 ev_mark
@@ -232,6 +236,8 @@ on 1 waitfor ev_hulk_stocked == 0 30
 step events.rescue
 # Spec 1147, 1148: the client fires a rescue beacon from its machine (the item action MP input). The client pays the fee; the tug and
 # the tow run in the sim on both machines. A lost tug ends the tow on both.
+# The beacon needs a free slot in the client's hold.
+mp ev_storage_room 2
 ev_mark
 on 1 ev_mark
 as 1 item_give yarden_zamir.rescue_beacon
@@ -382,6 +388,32 @@ expect fa_peace_allyhits == 0
 expect fa_peace_hunterhits == 0
 on 1 expect fa_peace_allyhits == 0
 on 1 expect fa_peace_hunterhits == 0
+
+step debt.loan
+# Spec 1401, 1403, 1405, 1413: the client takes a loan from its machine; the host pays part of it. One shared balance, no desync.
+mp debt_set LoanStationChance 1
+as 1 debt_goto loan
+mp debt_goto loan
+wait 3
+hc_mark
+on 1 debt_loan
+waitfor debt_count == 1 30
+on 1 waitfor debt_count == 1 30
+expect hc_money_gain == 0
+expect debt_ratio == 1
+debt_pay lender half
+waitfor debt_ratio < 0.6 30
+on 1 waitfor debt_ratio < 0.6 30
+expect hc_money_gain < 0
+
+step debt.payoff
+# Spec 1420, 1422: the lender's station offers Collect a Debt. Its payout runs on every machine and takes the money off the shared debt.
+waitfor debt_collect_offers == 1 30
+debt_mark
+on 1 debt_mark
+mp debt_collect_pay
+waitfor debt_drop_share == 1 30
+on 1 waitfor debt_drop_share == 1 30
 
 step tech.trade-loss
 # Spec 17, 443, 1011: a new run. Each player's starter ship has 4 vaults and a share of the tech (4 + 4, or 3 + 3 + 2 with

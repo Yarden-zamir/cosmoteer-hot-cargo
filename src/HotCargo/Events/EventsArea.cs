@@ -431,6 +431,27 @@ public static class EventsArea
                 while (ship.Resources.RemoveResources(rid, 100) > 0) { }
             Autotest.Wait(1);
         };
+        // ev_storage_room <slots>: every human ship gets at least this many empty cargo tiles that take any item. It empties tiles of
+        // vanilla cargo (not tech, not Hot Cargo items), fullest first, in ship and tile order. Sim state: use "mp" in co-op.
+        Autotest.Commands["ev_storage_room"] = arg =>
+        {
+            int want = Int(arg.Trim());
+            foreach (var ship in Tech.Vaults.HumanShips(RequireSim()).OrderBy(s => s.UniqueID))
+            {
+                var tiles = Cosmoteer.Ships.Parts.Resources.FlexResourceGrid.GetAllOnShip(ship).SelectMany(g => g)
+                    .Where(t => t.PreferredResourceType.Confirmed is null).ToList();
+                int free = tiles.Count(t => !t.HasResources);
+                foreach (var t in tiles.Where(t => t.HasResources && !t.ResourceType!.Value.ToString().StartsWith("yarden_zamir.", StringComparison.Ordinal))
+                    .OrderByDescending(t => t.Resources).ToList())
+                {
+                    if (free >= want) break;
+                    t.ClearResources();
+                    free++;
+                }
+                if (free < want) throw new InvalidOperationException($"{ship.Metadata.PlainShipName}: only {free} of {want} cargo tiles can be free");
+            }
+            Autotest.Wait(1);
+        };
         // Item actions (spec 1111 to 1118). Test only.
         // item_give <resource>: one unit into the acting player's first ship with room.
         Autotest.Commands["item_give"] = arg =>

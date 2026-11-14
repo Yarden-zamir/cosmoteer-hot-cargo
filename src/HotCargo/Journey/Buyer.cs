@@ -107,7 +107,7 @@ public static class Buyer
         var players = new List<PlayerState>();
         run.Game.GetHumanPlayerStates(players, deterministic: true);
         int held = Run.Hooks.CountFleetTech(run.Game.Sim);
-        s.Score = Score(players.Sum(p => (long)p.Money), held, UnitPrice(run));
+        s.Score = Run.Hooks.ScoreAdjust(run, Score(players.Sum(p => (long)p.Money), held, UnitPrice(run)));
         Log.Info($"Buyer delivery: {units} units, {s.DeliveredUnits} in total, {held} still held, score {s.Score}");
         run.Win(Strings.GetText("HotCargoJourney/WinReason"));
     }

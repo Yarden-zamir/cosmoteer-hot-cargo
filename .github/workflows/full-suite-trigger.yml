@@ -1,0 +1,27 @@
+# The safety net of check.yml without the cron: after each push to main (each merge), start a full suite on main when none
+# started in the last 3 hours. GitHub delays or drops scheduled runs at times, and the "17 */3 * * *" schedule of
+# check.yml did not fire on 2026-11-14. A run of this workflow is one small job per merge; the full suite runs in check.yml.
+name: full suite trigger
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: full-suite-trigger
+  cancel-in-progress: true
+permissions:
+  actions: write
+  contents: read
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      # Manual and scheduled runs of check.yml on main take every game test. A GITHUB_TOKEN may start workflow_dispatch runs.
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          since="$(date -u -d '3 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
+          recent="$(gh run list -R "$GITHUB_REPOSITORY" --workflow check.yml --branch main --limit 50 \
+            --json event,createdAt --jq "[.[] | select((.event == \"schedule\" or .event == \"workflow_dispatch\") and .createdAt >= \"$since\")] | length")"
+          if (( recent > 0 )); then echo "A full suite on main started after $since: no new one."; exit 0; fi
+          gh workflow run check.yml -R "$GITHUB_REPOSITORY" --ref main
+          echo "Started a full suite on main (none since $since)." | tee -a "$GITHUB_STEP_SUMMARY"

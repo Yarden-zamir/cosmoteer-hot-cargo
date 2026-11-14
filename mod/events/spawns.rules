@@ -790,7 +790,7 @@ RescueTug
 	]
 }
 
-// Spec 1361, 1362: a small armed ship that answers comms and waits: the join request's ship and the apprentice.
+// Spec 1361, 1362, 1367: a small armed ship that answers comms and waits: the join request, the apprentice and the debtor.
 Recruit
 {
 	Spawners
@@ -851,3 +851,65 @@ Trader
 		}
 	]
 }
+
+// Spec 1365: the riddle ship, a civilian ship that answers comms and waits.
+RiddleShip
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_ev_carrier]
+			Distance = [700, 900]
+			Allegiance = FactionCivilian
+			SuppressLocationAssertions = true
+			NameGenerator = { Type = NameList; Names = ["The Riddler's Wake", "Odd Question", "Painted Sphinx"]; }
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				Tier = -1
+				AllowTierRangeExpansion = true
+				Tags = [civilian]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 50
+				TargetAcquireRangeFromOrigin = 100
+				TargetUnacquireRangeFromOrigin = 100
+			}
+		}
+	]
+}
+
+// Spec 1369, 1370: the Wayfarers, a friendly fleet that helps outclassed players. C# gives them their own allegiance and a hire.
+Wayfarers
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_wayfarer]
+			Count = 2
+			Distance = [1200, 1600]
+			Allegiance = FactionCivilian
+			SuppressLocationAssertions = true
+			NameGenerator = { Type = NameList; Names = ["Wayfarer Kindness", "Wayfarer Second Chance", "Wayfarer Open Hand", "Wayfarer Lantern"]; }
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+			}
+		}
+	]
+}
+

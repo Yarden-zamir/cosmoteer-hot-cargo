@@ -1,0 +1,56 @@
+# Debt (spec 1402 to 1412): the loan offer, a collector at 1x, 2x and 3x, and the heat panel line. Windowed test slot.
+render on
+newgame run
+wait 10
+ev_set Enabled false
+closepanel
+godmode on
+debt_set LoanStationChance 1
+debt_goto loan
+wait 3
+pause on
+debt_open loan
+wait 2
+screenshot debt-loan
+debt_close
+pause off
+debt_loan
+wait 2
+debt_age 3600
+waitfor debt_hailed == 1 30
+pause on
+debt_open collector
+wait 2
+screenshot debt-collector-1x
+debt_close
+pause off
+debt_notnow
+wait 2
+debt_ratio 2.2
+wait 1
+debt_age 2400
+waitfor debt_hailed == 1 30
+pause on
+debt_open collector
+wait 2
+screenshot debt-collector-2x
+debt_close
+pause off
+debt_notnow
+wait 2
+debt_ratio 3.1
+wait 2
+debt_unwant
+wait 1
+debt_age 2400
+waitfor debt_hailed == 1 30
+pause on
+debt_open collector
+wait 2
+screenshot debt-collector-3x
+debt_close
+pause off
+debt_notnow
+wait 3
+screenshot debt-panel
+quit

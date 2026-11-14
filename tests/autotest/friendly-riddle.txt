@@ -1,0 +1,30 @@
+# Riddle ship (spec 1365, 1366): a right answer halves heat; a wrong one adds a little heat. One riddle per run.
+newgame run
+wait 8
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+ev_set CooldownSeconds 0
+heat 60
+event riddle_hole
+ev_carrier_goto
+pause off
+wait 2
+expectcomms carrier Answer my riddle 1
+expectcomms carrier A hole. 1
+ev_mark
+ev_comms carrier A hole.
+expect ev_pending == 0
+expect ev_heat_gain < -25
+expectflag riddle_met 1
+# The pool does not open again this run.
+expecteligible riddle_keys 0
+# A wrong answer (test opens a second riddle directly): heat +3.
+event riddle_stamp
+ev_carrier_goto
+wait 2
+ev_mark
+ev_comms carrier A comet.
+expect ev_heat_gain >= 2.5
+expect ev_heat_gain < 5
+quit

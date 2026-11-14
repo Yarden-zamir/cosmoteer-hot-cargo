@@ -1,0 +1,32 @@
+# Fall back to a donor (spec 1305, 1307): a damaged pirate cargo ship without resources takes them from an ally and repairs.
+# Both are cargo ships: a donor only helps a ship with storage room (combat ships often have none).
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+tacticlog on
+aiset FleeOnVanilla false
+aiset RegroupOnVanilla false
+aiset CallOnVanilla false
+aiset CoverEnabled false
+aiset BaitEnabled false
+aiset TeamEnabled false
+aijitter 0
+# A big cargo ship with 8 crew repairs slowly: give the crew time. The plan and the transfer are the checks.
+aiset FallBackTripSeconds 600
+aitrait Pirate Raiders FallBack 1
+aitrait Pirate Ambushers FallBack 1
+openspace 6000
+aispawn pirates 2 3 trade
+# Vanilla pools the stock of own-player ships within 400, so the donor starts further away.
+ainear 1 0 1500
+wait 3
+aistrip 0 resources
+aidamage 0 0.3
+aigivelacking 1 0
+waitfor ai_fb_donor >= 1 30
+waitfor tactic_fallback_take >= 1 60
+waitfor ai_fb_active == 0 400
+# Only the repaired ship: the player's ship can shoot the donor.
+expect ai_new_first_health >= 0.6
+quit

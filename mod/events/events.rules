@@ -794,6 +794,191 @@ Events
 		]
 	}
 
+	// Spec 1365, 1366: the riddle ship. One riddle per run (flag riddle_met); the pool weighs 5 together, like the other encounters.
+	// A right answer halves heat (effect halve_heat); a wrong one adds a little heat. The riddle and its answers are the page.
+	{
+		ID = riddle_hole
+		Trigger = Arrival
+		Weight = 1
+		Need { MinHeat = 10; NotFlags = [riddle_met] }
+		Carrier = RiddleShip
+		Title = "Riddle Ship"
+		Text = "A painted ship hails you. Its captain grins. \"Answer my riddle, and I talk to my contacts for you. What gets bigger the more you take away from it?\""
+		Choices
+		[
+			{
+				Text = "A hole."
+				Outcomes [ { Text = "\"Ha! Right.\" They open a channel to their contacts and talk about you for a long time."; Effect = halve_heat; SetFlags = [riddle_met] } ]
+			}
+			{
+				Text = "A debt."
+				Outcomes [ { Text = "\"Wrong!\" They tell the story on an open channel, with your ship's name in it."; Heat = 3; SetFlags = [riddle_met] } ]
+			}
+			{
+				Text = "A shadow."
+				Outcomes [ { Text = "\"Wrong!\" They tell the story on an open channel, with your ship's name in it."; Heat = 3; SetFlags = [riddle_met] } ]
+			}
+			{
+				Text = "No time for games."
+				Outcomes [ { Text = "\"Your loss.\" The channel closes." } ]
+			}
+		]
+	}
+
+	{
+		ID = riddle_keys
+		Trigger = Arrival
+		Weight = 1
+		Need { MinHeat = 10; NotFlags = [riddle_met] }
+		Carrier = RiddleShip
+		Title = "Riddle Ship"
+		Text = "A painted ship hails you. Its captain grins. \"Answer my riddle, and I talk to my contacts for you. I have keys but open no locks. I have space but no room. What am I?\""
+		Choices
+		[
+			{
+				Text = "A map."
+				Outcomes [ { Text = "\"Wrong!\" They tell the story on an open channel, with your ship's name in it."; Heat = 3; SetFlags = [riddle_met] } ]
+			}
+			{
+				Text = "A keyboard."
+				Outcomes [ { Text = "\"Ha! Right.\" They open a channel to their contacts and talk about you for a long time."; Effect = halve_heat; SetFlags = [riddle_met] } ]
+			}
+			{
+				Text = "A prison."
+				Outcomes [ { Text = "\"Wrong!\" They tell the story on an open channel, with your ship's name in it."; Heat = 3; SetFlags = [riddle_met] } ]
+			}
+			{
+				Text = "No time for games."
+				Outcomes [ { Text = "\"Your loss.\" The channel closes." } ]
+			}
+		]
+	}
+
+	{
+		ID = riddle_dark
+		Trigger = Arrival
+		Weight = 1
+		Need { MinHeat = 10; NotFlags = [riddle_met] }
+		Carrier = RiddleShip
+		Title = "Riddle Ship"
+		Text = "A painted ship hails you. Its captain grins. \"Answer my riddle, and I talk to my contacts for you. The more of me there is, the less you see. What am I?\""
+		Choices
+		[
+			{
+				Text = "Silence."
+				Outcomes [ { Text = "\"Wrong!\" They tell the story on an open channel, with your ship's name in it."; Heat = 3; SetFlags = [riddle_met] } ]
+			}
+			{
+				Text = "A mirror."
+				Outcomes [ { Text = "\"Wrong!\" They tell the story on an open channel, with your ship's name in it."; Heat = 3; SetFlags = [riddle_met] } ]
+			}
+			{
+				Text = "Darkness."
+				Outcomes [ { Text = "\"Ha! Right.\" They open a channel to their contacts and talk about you for a long time."; Effect = halve_heat; SetFlags = [riddle_met] } ]
+			}
+			{
+				Text = "No time for games."
+				Outcomes [ { Text = "\"Your loss.\" The channel closes." } ]
+			}
+		]
+	}
+
+	{
+		ID = riddle_stamp
+		Trigger = Arrival
+		Weight = 1
+		Need { MinHeat = 10; NotFlags = [riddle_met] }
+		Carrier = RiddleShip
+		Title = "Riddle Ship"
+		Text = "A painted ship hails you. Its captain grins. \"Answer my riddle, and I talk to my contacts for you. What travels across the whole galaxy but never leaves its corner?\""
+		Choices
+		[
+			{
+				Text = "A stamp."
+				Outcomes [ { Text = "\"Ha! Right.\" They open a channel to their contacts and talk about you for a long time."; Effect = halve_heat; SetFlags = [riddle_met] } ]
+			}
+			{
+				Text = "A comet."
+				Outcomes [ { Text = "\"Wrong!\" They tell the story on an open channel, with your ship's name in it."; Heat = 3; SetFlags = [riddle_met] } ]
+			}
+			{
+				Text = "A ghost."
+				Outcomes [ { Text = "\"Wrong!\" They tell the story on an open channel, with your ship's name in it."; Heat = 3; SetFlags = [riddle_met] } ]
+			}
+			{
+				Text = "No time for games."
+				Outcomes [ { Text = "\"Your loss.\" The channel closes." } ]
+			}
+		]
+	}
+
+	{
+		ID = riddle_egg
+		Trigger = Arrival
+		Weight = 1
+		Need { MinHeat = 10; NotFlags = [riddle_met] }
+		Carrier = RiddleShip
+		Title = "Riddle Ship"
+		Text = "A painted ship hails you. Its captain grins. \"Answer my riddle, and I talk to my contacts for you. What has to be broken before you can use it?\""
+		Choices
+		[
+			{
+				Text = "A vow."
+				Outcomes [ { Text = "\"Wrong!\" They tell the story on an open channel, with your ship's name in it."; Heat = 3; SetFlags = [riddle_met] } ]
+			}
+			{
+				Text = "An egg."
+				Outcomes [ { Text = "\"Ha! Right.\" They open a channel to their contacts and talk about you for a long time."; Effect = halve_heat; SetFlags = [riddle_met] } ]
+			}
+			{
+				Text = "A mirror."
+				Outcomes [ { Text = "\"Wrong!\" They tell the story on an open channel, with your ship's name in it."; Heat = 3; SetFlags = [riddle_met] } ]
+			}
+			{
+				Text = "No time for games."
+				Outcomes [ { Text = "\"Your loss.\" The channel closes." } ]
+			}
+		]
+	}
+
+	// Spec 1367: a crew with a debt it cannot pay. Buy the debt: it follows and fights for you until it dies or its time is up,
+	// then pays the full price back (spec 1368). A clear deal: the risk is visible, it can die in your fights.
+	{
+		ID = debtor
+		Trigger = Arrival
+		Weight = 5
+		Carrier = Recruit
+		Title = "The Debtor"
+		Text = "A worn crew hails you. \"The dock bank wants its money today, and we don't have it. Buy our debt, and we fight for you until we can pay it back in full.\""
+		Choices
+		[
+			{
+				Text = "Buy their debt."
+				Cost { Money = 1.5 }
+				Outcomes [ { Text = "They fall in behind you, guns ready."; Effect = debtor } ]
+			}
+			{
+				Text = "Not my problem."
+				Outcomes [ { Text = "\"We'll find someone.\" The channel closes." } ]
+			}
+		]
+	}
+
+	// Spec 1371: the Wayfarers' closing hail after a fight they joined. No trigger: the Friendly area opens it on their leader.
+	{
+		ID = pay_it_forward
+		MaxPerRun = 0
+		Title = "The Wayfarers"
+		Text = "The Wayfarer captain hails you, grinning. \"Someone pulled us out of a fight like that once. No charge. Pay it forward to the next one in need.\""
+		Choices
+		[
+			{
+				Text = "We will."
+				Outcomes [ { Text = "They patch their hulls and spin up their drives."; Effect = wayfarers_leave } ]
+			}
+		]
+	}
+
 	// The run's one relic ship (spec 765). It opens when a ship comes close, and again on each return until the crate is taken.
 	{
 		ID = relic_ship

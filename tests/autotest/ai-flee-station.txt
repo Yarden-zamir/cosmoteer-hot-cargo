@@ -1,0 +1,28 @@
+# Flee to a station (spec 1314-1316): a damaged fleeing faction ship short of crew docks at a friendly station, gets crew,
+# repairs and fights again.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+tacticlog on
+aiset FallBackEnabled false
+aiset RegroupOnVanilla false
+aiset CallOnVanilla false
+aiset CoverEnabled false
+aiset BaitEnabled false
+aiset TeamEnabled false
+aiset FleeChance 1
+aispawn monolith 1
+wait 3
+aistrip new resources
+aistrip new crew 2
+aidamage new 0.2
+waitfor ai_flee_to_station >= 1 60
+# The station can be far away in the system, and a ship with 2 crew flies slowly (little power for its thrusters).
+# The test moves the ship near it: the flight itself is vanilla movement.
+aiplan_near 300
+waitfor ai_flee_supplied >= 1 200
+expect ai_new_min_crew > 2
+waitfor ai_flee_end >= 1 200
+expect ai_new_first_health >= 0.6
+quit

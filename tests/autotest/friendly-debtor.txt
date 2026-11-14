@@ -1,0 +1,37 @@
+# Debtor (spec 1367, 1368): the players buy the debt; the debtor follows as a mercenary, then pays the full price back and leaves.
+# If it dies first, the debt is lost.
+newgame run
+wait 8
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+ev_set CooldownSeconds 0
+event debtor
+ev_carrier_goto
+pause off
+wait 2
+expectcomms carrier Buy their debt 1
+ev_mark
+ev_comms carrier Buy their debt
+expect ev_pending == 0
+expect ev_money_gain < 0
+expect fr_debtors == 1
+expect fr_debtor_hired == 1
+# At its time it pays the same amount back: the money is where it started.
+fr_debtor_end
+wait 2
+expect fr_debtors == 0
+expect ev_money_gain == 0
+# A second debt: the debtor dies first, so the money is lost.
+event debtor
+ev_carrier_goto
+wait 2
+ev_mark
+ev_comms carrier Buy their debt
+expect fr_debtors == 1
+fr_debtor_kill
+wait 2
+expect fr_debtors == 0
+wait 5
+expect ev_money_gain < 0
+quit

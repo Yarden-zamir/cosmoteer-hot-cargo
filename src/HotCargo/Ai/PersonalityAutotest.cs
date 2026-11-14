@@ -20,7 +20,7 @@ using HotCargo.Tactics;
 namespace HotCargo.Ai;
 
 /// <summary>Autotest commands and fields for personalities, cover and teams (spec 360-369). Test only, single player.</summary>
-static class PersonalityAutotest
+internal static class PersonalityAutotest
 {
     static readonly ID<BuiltinShipTag> Combat = new("combat");
 
@@ -106,15 +106,17 @@ static class PersonalityAutotest
             }
         };
 
-        // aispawn <group> <count> [tier]: hostile AI ships near the player. group: a faction ID (military ships with the Normal AI; the
-        // players become wanted by it) or "pirates" (a unique hostile index). tier: default the sector tier. Test only.
+        // aispawn <group> <count> [tier] [tag]: hostile AI ships near the player. group: a faction ID (military ships with the Normal AI;
+        // the players become wanted by it) or "pirates" (one unique hostile index for the run). tier: default the sector tier.
+        // tag: a builtin ship tag, default "combat" ("trade": ships with cargo bays). Test only.
         Autotest.Commands["aispawn"] = arg =>
         {
             var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length is < 2 or > 3) throw new InvalidOperationException("aispawn needs: group count [tier]");
+            if (parts.Length is < 2 or > 4) throw new InvalidOperationException("aispawn needs: group count [tier] [tag]");
             var run = Autotest.RequireRun();
-            int tier = parts.Length == 3 ? int.Parse(parts[2], CultureInfo.InvariantCulture) : run.CurrentTier;
-            Spawn(run, parts[0], int.Parse(parts[1], CultureInfo.InvariantCulture), tier);
+            int tier = parts.Length >= 3 ? int.Parse(parts[2], CultureInfo.InvariantCulture) : run.CurrentTier;
+            var tag = parts.Length == 4 ? new ID<BuiltinShipTag>(parts[3]) : Combat;
+            Spawn(run, parts[0], int.Parse(parts[1], CultureInfo.InvariantCulture), tier, tag);
         };
         // aitrait <personality name> <trait> <weight>: sets one trait weight of a personality for this run. Test only.
         Autotest.Commands["aitrait"] = arg =>
@@ -199,24 +201,30 @@ static class PersonalityAutotest
         && PersonalityStrategy.Profile(s, T()).Sides.Weak != 0);
 
     /// <summary>Hostile AI ships with the personality module, in sim order.</summary>
-    static List<Ship> Hostile() =>
+    /// <summary>The ships of every aispawn of this test process, in spawn order.</summary>
+    internal static readonly List<Cosmoteer.Game.ObjectID> LastSpawned = [];
+    static (Run Run, int Index)? _pirates;
+
+    internal static List<Ship> Hostile() =>
         Sim().Ships.Where(s => !s.IsJunk && s.AI?.GetStrategyModule<PersonalityStrategy>() is not null && AiGate.HostileToPlayers(s)).ToList();
 
-    static void Spawn(Run run, string group, int count, int tier)
+    static void Spawn(Run run, string group, int count, int tier, ID<BuiltinShipTag> tag)
     {
         var sim = run.Game.Sim;
         var career = (CareerSimModeManager)sim.Mode;
         var player = SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("no human ship");
         FactionRules? faction = group == PersonalityStrategy.Pirates ? null
             : GameApp.Rules.Factions.FirstOrDefault(f => f.ID.ToString() == group) ?? throw new InvalidOperationException($"no faction '{group}'");
-        int allegiance = faction?.MilitaryPlayerIndex ?? career.AllocUniquePlayerIndex();
+        // Pirates of one test share one index, so ships of two spawns are allies.
+        if (faction is null && _pirates?.Run != run) _pirates = (run, career.AllocUniquePlayerIndex());
+        int allegiance = faction?.MilitaryPlayerIndex ?? _pirates!.Value.Index;
         float direction = sim.Rand.Direction();
         for (int i = 0; i < count; i++)
         {
             BuiltinShipRules? pick = null;
             for (int wanted = Math.Max(1, tier); wanted >= 1 && pick is null; wanted--)
-                pick = GameApp.Rules.BuiltinShips.GetRandomMatchingShip(sim.Rand, faction is null ? null : [faction.ID], new Range<int>(wanted, wanted), null, [Combat]);
-            if (pick is null) throw new InvalidOperationException($"no combat ship for {group} at tier {tier} or below");
+                pick = GameApp.Rules.BuiltinShips.GetRandomMatchingShip(sim.Rand, faction is null ? null : [faction.ID], new Range<int>(wanted, wanted), null, [tag]);
+            if (pick is null) throw new InvalidOperationException($"no {tag} ship for {group} at tier {tier} or below");
             var near = player.DetWorldCenter + Vector2.FromAngle(direction + i * 0.3f) * 1500f;
             var loc = Autotest.ClearSpotNear(sim, near, 0f, 150f);
             var spawner = new StasisShipSpawner(sim, pick.ID, loc, SpawnedShipFeatures.None, sim.Rand.UInt64())
@@ -228,6 +236,7 @@ static class PersonalityAutotest
             spawner.Spawn(sim);
             var ship = sim.Ships[spawner.ReservedObjectID] ?? throw new InvalidOperationException($"{pick.ID} did not spawn");
             Log.Info($"AUTOTEST spawned {group} {ship.Metadata.PlainShipName} id={ship.UniqueID} tier {pick.Tier} player {allegiance}");
+            LastSpawned.Add(ship.UniqueID);
             if (faction is not null) career.Wanted.WarTriggeredByPlayer(ship);
         }
         if (faction is null) return;

@@ -57,4 +57,63 @@ on 1 waitfor ev_pending == 0 30
 waitfor fr_leaving >= 1 10
 on 1 expect ev_res_processor_gain == 1
 
+step friendly.riddle
+# Spec 1366: the client answers right from its machine. Heat halves in the sim, so both machines see it.
+mp heat 40
+mp event riddle_hole
+waitfor ev_pending == 1 20
+mp ev_carrier_goto
+wait 2
+ev_mark
+on 1 ev_mark
+on 1 ev_comms carrier A hole.
+waitfor ev_pending == 0 30
+on 1 waitfor ev_pending == 0 30
+expect ev_heat_gain < -15
+on 1 expect ev_heat_gain < -15
+
+step friendly.debtor
+# Spec 1367, 1368: the client buys a debt from its machine; at its time the debtor pays the client back. Both machines agree.
+as 1 contract_money 500000
+mp event debtor
+waitfor ev_pending == 1 20
+mp ev_carrier_goto
+wait 2
+ev_mark
+on 1 ev_mark
+on 1 ev_comms carrier Buy their debt
+waitfor fr_debtors == 1 30
+on 1 waitfor fr_debtors == 1 30
+on 1 expect ev_money_gain < 0
+mp fr_debtor_end
+waitfor fr_debtors == 0 20
+on 1 waitfor fr_debtors == 0 30
+on 1 expect ev_money_gain == 0
+expect ev_money_gain == 0
+
+step friendly.forward
+# Spec 1369 to 1371: the Wayfarers' roll, arrival, hail and exit run in the sim, so both machines see them. The client answers.
+mp fr_set PayForwardChance 1
+mp fr_set PayForwardOutclassRatio 0.01
+# An enemy near the start may have used this system's one roll already. This step checks co-op sync, so no hunters
+# join the fight: they could destroy the Wayfarers before it ends.
+mp maxhunters 0
+mp fr_kill_enemies all
+wait 2
+mp fr_help_reset
+mp dip_spawn enemy 900
+# The roll needs an actual fight (spec 1370): the players attack it.
+mp fr_attack
+# Co-op runs in real time: the ships need a while to close in and fire.
+waitfor fr_wayfarers >= 1 60
+on 1 waitfor fr_wayfarers >= 1 30
+expect fr_wayfarer_sides == 1
+on 1 expect fr_wayfarer_sides == 1
+mp fr_kill_enemies all
+waitfor ev_pending == 1 60
+on 1 waitfor ev_pending == 1 30
+on 1 ev_comms carrier We will
+waitfor fr_wayfarers == 0 20
+on 1 waitfor fr_wayfarers == 0 30
+
 end

@@ -48,3 +48,13 @@ After the first wave interval, the mission panel shows **Leave now and keep X cr
 
 ### Orders from the mission panel
 The clickable lines start with **[Click]**. A click sends a multiplayer input (`HotCargoHoldOutOrder`), so all co-op players see the same result. The game checks each order again when it runs. For example, the scan does not start when the scout is out of range.
+
+## Debt missions
+
+Spec 55 (requirements 1420 to 1422). They exist only while the players owe a faction (section 55).
+
+| Mission | Offered at | Money | Fame | Contract terms |
+|---|---|---|---|---|
+| Collect a Debt | A trade station of the lender, once in each system | 1.5×, always off the debt | 1× | free, heat +2 |
+
+Any mission of the lender's faction pays off the debt instead of money with chance `Debt.MissionPayoffChance` (35 %). Its money line shows it.
