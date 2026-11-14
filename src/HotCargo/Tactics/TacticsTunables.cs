@@ -53,6 +53,11 @@ public sealed class TacticsTunables
     [Serialize(Optional = true)] public float FallBackDockGap = 150f;
     /// <summary>A friendly station repairs a docked ship this many damaged or destroyed parts per AI check, at once and for free.</summary>
     [Serialize(Optional = true)] public int FallBackStationRepairsPerTick = 2;
+    /// <summary>
+    /// An AI ship in combat (an enemy within the combat difficulty's no-build radius fired within its no-build time) cancels its
+    /// queued repairs and starts none, except in cover behind its rock or at its station (spec 1317).
+    /// </summary>
+    [Serialize(Optional = true)] public bool RepairCombatHoldEnabled = true;
 
     [Serialize(Optional = true)] public bool BaitEnabled = true;
     [Serialize(Optional = true)] public string BaitMinStage = "Strike";

@@ -7,6 +7,7 @@ closepanel
 wait 1
 ev_set Enabled false
 godmode on
+playerweapons off
 tacticlog on
 aiset FleeOnVanilla false
 aiset RegroupOnVanilla false
@@ -25,16 +26,28 @@ aistrip new crew 2
 aidamage new 0.3
 waitfor ai_fb_station >= 1 30
 aiplan_near 600
+ainew_watch 0 100
 wait 1
-ainew_camera 0 900
+ainew_camera 0 1100
+wait 1
+screenshot fallback-1-wide
+ainew_camera 0 350
 wait 1
 screenshot fallback-1-damaged
 waitfor ai_fb_supplied >= 1 60
-ainew_camera 0 900
+ainew_watch 0 100
+ainew_camera 0 1100
+wait 1
+screenshot fallback-2-wide
+ainew_camera 0 350
 wait 1
 screenshot fallback-2-docked
 waitfor ai_fb_active == 0 200
-ainew_camera 0 900
+ainew_watch 0 100
+ainew_camera 0 1100
+wait 1
+screenshot fallback-3-wide
+ainew_camera 0 350
 wait 1
 screenshot fallback-3-repaired
 quit

@@ -72,6 +72,8 @@ internal sealed class PersonalityStrategy(PersonalityStrategyRules rules) : AISt
     {
         if (Run.Current is not { } run || !AiGate.HostileToPlayers(ship)) return false;
         var t = run.T.Tactics;
+        // This module runs first in every hostile AI and never takes over, so the combat hold (spec 1317) runs on every AI check.
+        Resupply.HoldRepairsInCombat(ship, t);
         Time now = HunterOrders.Sim(ship).LogicalTime;
         if (!_measured || (now - _measuredAt).Seconds >= t.ProfileRefreshSeconds)
         {

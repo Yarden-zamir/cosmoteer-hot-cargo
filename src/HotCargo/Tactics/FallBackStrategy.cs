@@ -71,6 +71,9 @@ internal sealed class FallBackStrategy : AIStrategyModule
     public bool InCover(Ship ship) =>
         Plan == RepairPlan.Cover && _rock is { } rock && Ai.AiGate.NearestHumanEnemy(ship) is { } threat && CoverStrategy.Covered(ship, threat, rock);
 
+    /// <summary>True when the ship falls back to a station and is next to it.</summary>
+    public bool AtStation(Ship ship) => Plan == RepairPlan.Station && Resupply.Station(ship, _target) is { } station && Resupply.AtStation(ship, station);
+
     /// <summary>Place and hull radius of the donor or station of the plan, or null. For autotests.</summary>
     public (Vector2 Center, float Radius)? TargetCenter(Ship ship) => Plan switch
     {
@@ -164,16 +167,16 @@ internal sealed class FallBackStrategy : AIStrategyModule
     }
 
     /// <summary>Holds still while the vanilla module queues repairs. True: this module drives the ship.</summary>
-    bool RepairHere(Ship ship, ShipAI ai)
+    bool RepairHere(Ship ship, ShipAI ai, TacticsTunables t)
     {
-        _repair.OnAITick(ship, ai);
+        if (!Resupply.RepairBlocked(ship, t)) _repair.OnAITick(ship, ai);
         return true;
     }
 
     /// <summary>Spec 47: fly FallBackDistance away from the nearest enemy, then repair with what the ship has.</summary>
     bool Away(Ship ship, ShipAI ai, Ship? threat, TacticsTunables t)
     {
-        if (threat is null || HunterOrders.EdgeDistance(ship, threat) >= t.FallBackDistance) return RepairHere(ship, ai);
+        if (threat is null || HunterOrders.EdgeDistance(ship, threat) >= t.FallBackDistance) return RepairHere(ship, ai, t);
         Vector2 away = Vector2.FromAngle(threat.DetWorldCenter.DirectionTo(ship.DetWorldCenter));
         Ai.PersonalityStrategy.MoveGuarded(ship, threat.DetWorldCenter + away * (t.FallBackDistance * 1.25f + threat.WorldBoundingRadius), t.FallBackDistance * 0.25f, threat, t);
         return true;
@@ -182,7 +185,7 @@ internal sealed class FallBackStrategy : AIStrategyModule
     /// <summary>Spec 1306: hide behind the rock from the nearest enemy and repair there.</summary>
     bool Cover(Ship ship, ShipAI ai, Ship? threat, TacticsTunables t)
     {
-        if (threat is null) return RepairHere(ship, ai);
+        if (threat is null) return RepairHere(ship, ai, t);
         if (_rock is not { } rock || rock.IsDisposed || rock.Sim != ship.Sim || !CoverStrategy.Usable(ship, threat, rock, t)) return Repick(ship, threat, t, "rock lost");
         var spot = CoverStrategy.Spot(ship, threat, rock, t);
         // The vanilla repair stops the ship, so it holds only where the rock blocks the line to the threat.
@@ -191,7 +194,7 @@ internal sealed class FallBackStrategy : AIStrategyModule
             if (!_supplied) TacticsLog.Event(ship, Tactic.FallBack, $"in cover from {threat.Metadata.PlainShipName}");
             // In the cover plan the flag marks the arrival, so the log line shows once.
             _supplied = true;
-            return RepairHere(ship, ai);
+            return RepairHere(ship, ai, t);
         }
         Ai.PersonalityStrategy.MoveGuarded(ship, spot, t.FallBackArriveDistance * 0.5f, threat, t);
         return true;
