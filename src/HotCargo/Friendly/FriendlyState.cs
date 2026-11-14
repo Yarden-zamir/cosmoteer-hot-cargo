@@ -8,6 +8,23 @@ namespace HotCargo.Friendly;
 public sealed class FriendlyState
 {
     [Serialize(Optional = true)] public List<ApprenticeState> Apprentices = [];
+    [Serialize(Optional = true)] public List<DebtorState> Debtors = [];
+}
+
+/// <summary>A ship whose debt a player bought (spec 1367).</summary>
+[ReflectiveSerialization(Explicit = true)]
+public sealed class DebtorState
+{
+    [Serialize] public ObjectID Ship;
+    [Serialize] public int Player;
+    /// <summary>The price that the player paid, in credits. The debtor pays it back in full.</summary>
+    [Serialize] public int Credits;
+    /// <summary>Run game seconds at which it pays.</summary>
+    [Serialize] public double Until;
+    /// <summary>The system of the ship. In another system it cannot die, so it pays at its time.</summary>
+    [Serialize] public ObjectID Node;
+    /// <summary>XML ship name, for messages after the ship is gone.</summary>
+    [Serialize] public string Name = "";
 }
 
 /// <summary>An apprentice that follows a player (spec 1362).</summary>

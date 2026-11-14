@@ -790,7 +790,7 @@ RescueTug
 	]
 }
 
-// Spec 1361, 1362: a small armed ship that answers comms and waits: the join request's ship and the apprentice.
+// Spec 1361, 1362, 1367: a small armed ship that answers comms and waits: the join request, the apprentice and the debtor.
 Recruit
 {
 	Spawners
