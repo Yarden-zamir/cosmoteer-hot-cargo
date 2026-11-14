@@ -239,16 +239,16 @@ public static class CommsHail
 
     /// <summary>
     /// Spec 816: the window grows until the whole page fits (the measured contents of the page box), up to Ux.CommsMaxScreenShare of
-    /// the screen height, and moves up so that it stays on the screen. It never shrinks, so it does not jump while the page changes.
+    /// the screen height, and moves up so that it stays on the screen. It shrinks only to the cap, so it does not jump while the page changes.
     /// </summary>
     static void Fit(CommWindow window, Halfling.Gui.ScrollBox pageBox, Halfling.Geometry.Rect screen)
     {
         float content = pageBox.ScrollBarController.ContentsBoundsProvider.ContentsBounds.Bottom + pageBox.Children.BorderPadding.Bottom;
         float chrome = window.Size.Y - pageBox.ScreenRect.Height;
         float share = Ux.UxKit.Switches?.CommsMaxScreenShare ?? throw new InvalidOperationException("comms page without Hot Cargo switches");
-        float wanted = Math.Min(share * screen.Height, chrome + content);
-        if (window.Size.Y >= wanted) return;
-        window.Size = new Halfling.Geometry.Vector2(window.Size.X, wanted);
+        // Grow to the page, never shrink, but never above the cap: on a small screen the cap also cuts the starting height.
+        float wanted = Math.Min(share * screen.Height, Math.Max(window.Size.Y, chrome + content));
+        if (wanted != window.Size.Y) window.Size = new Halfling.Geometry.Vector2(window.Size.X, wanted);
         var rect = window.ScreenRect;
         if (rect.Bottom > screen.Bottom) window.ScreenRect = rect with { Y = Math.Max(screen.Y, screen.Bottom - rect.Height) };
     }
@@ -376,6 +376,7 @@ public static class CommsHail
             float content = box.ScrollBarController.ContentsBoundsProvider.ContentsBounds.Bottom + box.Children.BorderPadding.Bottom;
             bool whole = content <= box.ScreenRect.Height + 1;
             if (onScreen && (whole || box.VerticalScrollBar.SelfActive)) fit++;
+            else Log.Info($"comms page does not fit: window {rect}, screen {screen}, content {content:0}, box {box.ScreenRect.Height:0}, scroll bar {box.VerticalScrollBar.SelfActive}");
         }
         return (open, fit);
     }
