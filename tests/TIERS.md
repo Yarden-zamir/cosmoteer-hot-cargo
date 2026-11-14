@@ -27,6 +27,7 @@ Actions: **smoke** (in the smoke tier), keep (full tier only), done (changed in 
 |---|---|---|---|---|---|
 | ai-call | 87 s | call start, complete, interrupt by disruptor and EMP, storm block | AI radar, weapon hits, storms | AiModel.NextCall | keep |
 | ai-call-intercept | 60 s | call time, and the longer call that a player sensor intercepts | AI radar, sensors | AiModel.NextCall | keep |
+| ai-flee-station | 50 s | a fleeing faction ship short of crew docks at a station and fights again | stations, crew spawn, repair | AiModel.NextFlee | keep |
 | tactics-fallback-cover | 50 s | a damaged ship with resources hides behind a rock and repairs | AI movement, crew repair | RepairModel.PickPlan | keep |
 | tactics-fallback-donor | 60 s | a damaged cargo ship takes resources from an ally and repairs | resource transfer, crew repair | RepairModel.DonorGives | keep |
 | tactics-fallback-station | 50 s | a damaged faction ship gets crew and repairs at a station | stations, crew spawn, repair | RepairModel.PickPlan | keep |

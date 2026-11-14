@@ -16,10 +16,12 @@ static class RepairAutotest
     {
         foreach (var plan in Enum.GetValues<RepairPlan>().Where(p => p != RepairPlan.None))
             Autotest.Fields[$"ai_fb_{plan.ToString().ToLowerInvariant()}"] = () => Modules().Count(m => m.Plan == plan);
-        foreach (string name in new[] { FallBackStrategy.TakeEvent, FallBackStrategy.SupplyEvent })
+        foreach (string name in new[] { FallBackStrategy.TakeEvent, Resupply.SupplyEvent })
             Autotest.Fields[$"tactic_{name}"] = () => TacticsLog.Count(name);
         Autotest.Fields["ai_fb_active"] = () => Modules().Count(m => m.Plan != RepairPlan.None);
         Autotest.Fields["ai_fb_in_cover"] = () => Hostile().Count(s => s.AI?.GetStrategyModule<FallBackStrategy>()?.InCover(s) == true);
+        Autotest.Fields["ai_flee_to_station"] = () => Hostile().Count(s => s.AI?.GetStrategyModule<Ai.FleeStrategy>()?.StationCenter(s) is not null);
+        Autotest.Fields["ai_flee_supplied"] = () => Hostile().Count(s => s.AI?.GetStrategyModule<Ai.FleeStrategy>() is { Supplied: true });
         Autotest.Fields["ai_fb_supplied"] = () => Modules().Count(m => m.Supplied);
         // The lowest health fraction (spec 47) and the lowest crew count of the ships of the last aispawn.
         Autotest.Fields["ai_new_min_health"] = () => New().Select(s => (double)HunterOrders.HealthFraction(s)).DefaultIfEmpty(-1).Min();
@@ -79,15 +81,16 @@ static class RepairAutotest
             var at = At(parts[0]).WorldCenter;
             Autotest.Commands["camera"](string.Create(CultureInfo.InvariantCulture, $"{at.X} {at.Y} {parts[1]}"));
         };
-        // aiplan_near <distance>: moves each hostile ship with a station or donor plan to this distance from its target's hull.
+        // aiplan_near <distance>: moves each hostile ship that falls back to a station or donor, or flees to a station, to this distance from its target's hull.
         Autotest.Commands["aiplan_near"] = arg =>
         {
             float d = float.Parse(arg, CultureInfo.InvariantCulture);
             foreach (var ship in Hostile())
             {
-                if (ship.AI?.GetStrategyModule<FallBackStrategy>() is not { } m || m.TargetCenter(ship) is not { } at) continue;
-                Autotest.Teleport(ship, Autotest.ClearSpotNear(ship.Sim!, at.Center, at.Radius + d, ship.WorldBoundingRadius));
-                Log.Info($"AUTOTEST {ship.Metadata.PlainShipName} moved {d:0} from its {m.Plan} target");
+                var at = ship.AI?.GetStrategyModule<FallBackStrategy>()?.TargetCenter(ship) ?? ship.AI?.GetStrategyModule<Ai.FleeStrategy>()?.StationCenter(ship);
+                if (at is not { } target) continue;
+                Autotest.Teleport(ship, Autotest.ClearSpotNear(ship.Sim!, target.Center, target.Radius + d, ship.WorldBoundingRadius));
+                Log.Info($"AUTOTEST {ship.Metadata.PlainShipName} moved {d:0} from its repair target");
             }
         };
     }

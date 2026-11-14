@@ -1,6 +1,6 @@
 ## 53. AI upkeep
 
-How enemy AI ships keep fighting over a long fight: how long their calls for help take, and how they get repairs. These rules apply to every hostile AI of requirement 360. Tunables: `Tactics`. Code: `Ai/CallStrategy.cs`, `Tactics/FallBackStrategy.cs`, `Tactics/Resupply.cs`. Pure math: `Tactics/RepairModel.cs`.
+How enemy AI ships keep fighting over a long fight: how long their calls for help take, and how they get repairs. These rules apply to every hostile AI of requirement 360. Tunables: `Tactics`. Code: `Ai/CallStrategy.cs`, `Ai/FleeStrategy.cs`, `Tactics/FallBackStrategy.cs`, `Tactics/Resupply.cs`. Pure math: `Tactics/RepairModel.cs`.
 
 ### Call interception
 
@@ -26,3 +26,9 @@ These rules extend fall back (requirement 47) for every AI that runs it (require
 1311. **Determinism and switch.** Plans, donors, stations and rocks are picked in the AI tick from sim state, by distance, ties by ID. The plan, its target ID, its place and the supplied flag are module state: saved with the ship and part of the integrity hash. Crew spawn uses the ship's sim random source. `FallBackResupplyEnabled` (default on) switches requirements 1305 to 1309 off: the ship then always uses the away plan.
 1312. **Scavenge (later).** Repairs near shipwrecks and loose resources come after the scavenge behavior of the Scavengers area. The hook: a new plan between donor and station in `RepairModel.PickPlan`, with its target from the shared loose resources helper. Until then, no plan collects loot.
 1313. **Tests.** Unit tests: `RepairModelTests` (plan order, lacking amounts, donor share). Autotests: `tactics-fallback-cover`, `tactics-fallback-donor`, `tactics-fallback-station` (a damaged faction ship without resources and short of crew flies to a station, gets crew and repairs, and returns). The co-op step `ai.personalities` runs fall back with supply on two machines with no desync.
+
+### Flee to a station
+
+1314. **Flee to a station.** A fleeing ship that is not a corporate hunter (requirement 195) first keeps `FleeDistance` from the nearest enemy, as before. When it is clear, it checks once per flee what it lacks (requirement 1305). If it lacks a resource or is short of crew and a friendly station is in the system (requirement 1308), it flies to the nearest one, ties to the lower ID. An enemy within `FleeDistance` on the way makes it keep away first, then go on. Else it repairs where it is, as before.
+1315. **At the station.** The station supplies the ship once per visit and repairs it, exactly as in requirement 1308 (`FallBackStationRepairsPerTick`). The ship holds still there until the flee ends (`FleeRecoverFraction` with weapons, requirement 195). An unarmed ship stays at the station. A station that is gone or becomes an enemy makes the ship repair where it is. Tells: movement only (requirement 368).
+1316. **Determinism and tests.** The check, the station ID and the supplied flag are flee module state: saved with the ship and part of the integrity hash. They reset when a new flee starts. `FallBackResupplyEnabled` off switches requirements 1314 and 1315 off. The autotest `ai-flee-station` checks that a damaged fleeing faction ship short of crew docks at a station, gets crew and fights again.

@@ -61,8 +61,8 @@ internal sealed class FallBackStrategy : AIStrategyModule
         });
     }
 
-    /// <summary>Tactics log events of a donor transfer and a station supply (autotest fields tactic_fallback_take, tactic_fallback_supply).</summary>
-    public const string TakeEvent = "fallback_take", SupplyEvent = "fallback_supply";
+    /// <summary>Tactics log event of a donor transfer (autotest field tactic_fallback_take).</summary>
+    public const string TakeEvent = "fallback_take";
 
     public RepairPlan Plan => _active ? (RepairPlan)_plan : RepairPlan.None;
     public bool Supplied => _supplied;
@@ -170,12 +170,6 @@ internal sealed class FallBackStrategy : AIStrategyModule
         return true;
     }
 
-    /// <summary>Stops the ship where it is: no move or attack command.</summary>
-    static void HoldStill(Ship ship)
-    {
-        if (ship.Commands.CurConfirmedCommand is not null) ship.Commands.Clear();
-    }
-
     /// <summary>Spec 47: fly FallBackDistance away from the nearest enemy, then repair with what the ship has.</summary>
     bool Away(Ship ship, ShipAI ai, Ship? threat, TacticsTunables t)
     {
@@ -227,19 +221,7 @@ internal sealed class FallBackStrategy : AIStrategyModule
     bool Station(Ship ship, ShipAI ai, Ship? threat, TacticsTunables t)
     {
         if (Resupply.Station(ship, _target) is not { } station) return Repick(ship, threat, t, "station lost");
-        if (!Resupply.AtStation(ship, station))
-        {
-            Ai.PersonalityStrategy.MoveGuarded(ship, Resupply.Beside(ship, station.Center, station.Radius, t.FallBackDockGap), t.FallBackDockGap * 0.5f, threat, t);
-            return true;
-        }
-        if (!_supplied)
-        {
-            var (units, crew) = Resupply.Supply(ship);
-            _supplied = true;
-            TacticsLog.Event(ship, SupplyEvent, $"station {station.Live?.Metadata.PlainShipName} supplies {units} units and {crew} crew");
-        }
-        Resupply.StationRepair(ship, t.FallBackStationRepairsPerTick);
-        HoldStill(ship);
+        Resupply.VisitStation(ship, station, ref _supplied, threat, t);
         return true;
     }
 
