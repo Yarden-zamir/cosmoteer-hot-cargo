@@ -204,9 +204,15 @@ slot_log() {
 # The two scripts of a co-op session (any runner: PC slots or the headless sim). Args: <session file> <port> [players, default 2].
 # Host: the session file without its "client:" lines. Client: those lines (settings before the join), then client.txt.
 # "{PORT}" becomes the port and "{PLAYERS}" the player count. A line that starts with "@<n>p " runs only with n players.
+# The game speed line of a test script (the game's own clock scale; waits count game seconds, so a script means the same
+# at every speed): the test's "# speed: <x>" line, else HOT_CARGO_TEST_SPEED. Prints nothing at speed 1 or with neither.
+speed_line() {
+  local x; x="$(sed -n 's/^# speed: *\([0-9.]*\)$/\1/p' "$1" | head -1)"; x="${x:-${HOT_CARGO_TEST_SPEED:-1}}"
+  if [[ "$x" != 1 ]]; then echo "defaultspeed $x"; fi
+}
 # Every client runs the same client script. The first line names the run (telename <session>.host / .client); a pass needs it in the log.
 coop_lines() { awk -v p="${2:-2}" '/^@[0-9]+p / { if (substr($1, 2) + 0 != p) next; sub(/^@[0-9]+p /, "") } { print }' "$1"; }
-coop_host_script() { echo "telename $(basename "$1" .txt).host"; coop_lines "$1" "${3:-2}" | grep -v '^client:' | sed "s/{PORT}/$2/g; s/{PLAYERS}/${3:-2}/g"; }
+coop_host_script() { echo "telename $(basename "$1" .txt).host"; speed_line "$1"; coop_lines "$1" "${3:-2}" | grep -v '^client:' | sed "s/{PORT}/$2/g; s/{PLAYERS}/${3:-2}/g"; }
 coop_client_script() {
   echo "telename $(basename "$1" .txt).client"; coop_lines "$1" "${3:-2}" | sed -n 's/^client: *//p'; sed "s/{PORT}/$2/g" "$(dirname "$1")/client.txt"
 }

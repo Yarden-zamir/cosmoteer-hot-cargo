@@ -120,13 +120,13 @@ Chains
 			{
 				ID = depot
 				Title = "Okafor's Depot"
-				Text = "Destroy the corporate supply depot and its guards."
+				Text = "Destroy the corporate supply depot and its guards.\nA tech crate drifts out of the wreck: pick it up."
 				Mission = ChainDepot
 				Where = Arrival
 				AfterSectors = 0
 				Results
 				[
-					{ On = success; Story = "You burned a corporate depot on Okafor's tip."; Effects { Text = "In the depot's wreckage your crew finds a crate with the same tags as the ones in your vault."; Tech = 1 } }
+					{ On = success; Story = "You burned a corporate depot on Okafor's tip."; Effects { Text = "A crate drifts out of the depot's wreckage. It has the same tags as the ones in your vault."; Tech = 1; DropNear = hc_ch_enemy } }
 					{ On = fail; Story = "The depot held." }
 				]
 			}
@@ -196,13 +196,13 @@ Chains
 			{
 				ID = ambush
 				Title = "Take It Back"
-				Text = "Destroy Rook's ships. Your processors are in their holds."
+				Text = "Destroy Rook's ships.\nYour processors drift out of the wreck: pick them up."
 				Mission = ChainAmbush
 				Where = Arrival
 				AfterSectors = 0
 				Results
 				[
-					{ On = success; Story = "Rook's Magpies are scrap."; Effects { Text = "Rook's last ship spins away, venting air. Her cargo drifts free."; Resources [ { ID = processor; Amount = 3 } ]; Fame = 0.3 } }
+					{ On = success; Story = "Rook's Magpies are scrap."; Effects { Text = "Rook's last ship spins away, venting air. Your processors drift out of her hold."; Resources [ { ID = processor; Amount = 3 } ]; Fame = 0.3; DropNear = hc_ch_enemy } }
 					{ On = fail; Story = "Rook kept the processors and her ships." }
 				]
 			}
@@ -362,13 +362,13 @@ Chains
 			{
 				ID = courier
 				Title = "Courier Run"
-				Text = "Destroy the corporate courier's escorts. Keep the courier whole."
+				Text = "Destroy the corporate courier's escorts. Keep the courier whole.\nIts crew then pushes the cargo out: pick it up."
 				Mission = ChainCourierHit
 				Where = Arrival
 				AfterSectors = 0
 				Results
 				[
-					{ On = success; Story = "You took a corporate courier's prototype cargo."; Effects { Text = "The courier's crew surrenders the hold. One crate carries the same tags as yours."; Tech = 1 } }
+					{ On = success; Story = "You took a corporate courier's prototype cargo."; Effects { Text = "The courier's crew pushes a crate out of the airlock. It carries the same tags as yours."; Tech = 1; DropNear = hc_ch_cargo } }
 					{ On = lost; Story = "The courier broke apart, cargo and all."; Effects { Text = "The courier's reactor takes the cargo with it."; Heat = 5 } }
 					{ On = fail; Story = "The courier got away." }
 				]

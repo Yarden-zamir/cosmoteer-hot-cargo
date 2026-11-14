@@ -50,7 +50,9 @@ chain_goto
 chain_kill
 wait 3
 expectstage end
-expect ev_tech_gain == 1
+# Spec 1141: the courier's crew pushes the crate out; it does not go straight into the vault.
+expect ev_tech_gain == 0
+expect ev_loose_yarden_zamir.stolen_tech_gain == 1
 expect chain_story >= 3
 # Spec 665: the chain ended well, so the station's faction shelters the players; its systems show SHELTER, also after a load.
 expect fa_chain_shelters == 1
