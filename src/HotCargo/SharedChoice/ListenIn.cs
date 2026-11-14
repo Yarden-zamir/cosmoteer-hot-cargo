@@ -17,11 +17,12 @@ using HotCargo.Core;
 namespace HotCargo.SharedChoice;
 
 /// <summary>
-/// Co-op listen-in (spec 1131 to 1138). UI only: no sim state, no MP input except the votes of the shared choice panel.
+/// Co-op listen-in (spec 1131 to 1139). UI only: no sim state, no MP input except the votes of the shared choice panel.
 /// The hails come from the vanilla sim set CareerSimModeManager.OpenComms, which MPOpenCommsInput and MPCloseCommsInput keep the
 /// same on every machine. A listen window is a vanilla CommWindow with the speaker's ship as caller, in listen mode: only the
 /// dialogue tab, no open, close or pause inputs, and it closes ListenLingerSeconds after the speaker's channel closes.
-/// Limit: players that share ships share a player index, so they cannot listen to each other. Revisit if shared ships get common.
+/// Players that share ships share a player index, so all of them are speakers: a hail of the local index gets a join button that
+/// opens a normal comms window with the same caller ship (spec 1139).
 /// </summary>
 public static class ListenIn
 {
@@ -39,28 +40,34 @@ public static class ListenIn
 
     static LayoutBox? _bar;
     static Cosmoteer.Game.GameRoot? _barGame;
-    static List<OpenComm<Ship, ObjectID>> _shown = [];
+    static List<Hail<Ship, ObjectID>> _shown = [];
     const float BarWidth = 440f, ButtonHeight = 40f, Gap = 8f;
 
     /// <summary>The speaker's name when the window is a listen window, else null.</summary>
     public static string? SpeakerOf(CommWindow? window) => window is not null && Windows.TryGetValue(window, out var l) ? l.Speaker : null;
 
-    /// <summary>The names of the players with this player index, joined. Players that share ships share an index.</summary>
-    static string PlayerName(Run run, int playerIndex)
+    /// <summary>
+    /// The names of the players with this player index, joined. Players that share ships share an index; for a join button the local
+    /// player leaves its own name out (othersOnly).
+    /// </summary>
+    static string PlayerName(Run run, int playerIndex, bool othersOnly = false)
     {
-        var names = run.Game.HumanPlayersByID.Where(kv => kv.Value == playerIndex).Select(kv => kv.Key).Order()
+        var local = run.Game.NetManager.LocalPlayerID;
+        var names = run.Game.HumanPlayersByID.Where(kv => kv.Value == playerIndex && !(othersOnly && kv.Key == local)).Select(kv => kv.Key).Order()
             .Select(id => SharedChoices.PlayerName(run, id)).ToList();
         return names.Count > 0 ? string.Join(", ", names) : SharedChoices.Text("SomePlayer");
     }
 
-    /// <summary>The hails that the local player can listen to now, in a stable order. Empty in single player.</summary>
-    internal static List<OpenComm<Ship, ObjectID>> Hails(Run run)
+    /// <summary>The hails that the local player can listen to or join now, in a stable order. Empty in single player.</summary>
+    internal static List<Hail<Ship, ObjectID>> Hails(Run run)
     {
         if (!run.IsMultiplayer || run.Game.Sim is not { Mode: CareerSimModeManager mode }) return [];
+        int local = run.Game.LocalPlayerIndex;
+        bool shared = run.Game.HumanPlayersByID.Values.Count(i => i == local) > 1;
         var comms = mode.OpenComms.SelectMany(kv => kv.Value.Select(caller => new OpenComm<Ship, ObjectID>(
             caller, kv.Key, caller.UniqueID, kv.Key.UniqueID, caller.Metadata.PlayerIndex,
-            caller.IsHumanPlayerShip && kv.Key.AI is { } ai && ai.WillProvideDialogue(caller))));
-        return ListenInModel.Hails(comms, run.Game.LocalPlayerIndex);
+            caller.IsHumanPlayerShip && kv.Key.AI is { } ai && ai.WillProvideDialogue(caller), CommWindow.IsCommWindowOpen(kv.Key))));
+        return ListenInModel.Hails(comms, local, shared);
     }
 
     static IEnumerable<(CommWindow Window, Listen Listen)> Open() =>
@@ -72,14 +79,26 @@ public static class ListenIn
     /// <summary>The number of listen buttons that show now. For autotests.</summary>
     internal static int ShownCount => _bar is { SelfActive: true } ? _shown.Count : 0;
 
+    /// <summary>The number of join buttons that show now. For autotests.</summary>
+    internal static int JoinCount => _bar is { SelfActive: true } ? _shown.Count(h => h.Role == HailRole.Join) : 0;
+
     /// <summary>The open listen windows. For autotests.</summary>
     internal static IEnumerable<CommWindow> OpenWindows() => Open().Select(o => o.Window);
 
-    /// <summary>Opens the listen window of the n-th shown hail, or closes it when it is open (the button toggles). Also for autotests.</summary>
+    /// <summary>
+    /// The click on the n-th shown hail. Listen: opens the listen window, or closes it when it is open (the button toggles).
+    /// Join: opens a normal comms window with the shared caller ship (spec 1139); the button goes away while it is open. Also for autotests.
+    /// </summary>
     internal static void Toggle(Run run, int index)
     {
         if (index < 0 || index >= _shown.Count) throw new InvalidOperationException($"no listen button {index + 1}; {_shown.Count} shown");
-        var hail = _shown[index];
+        var (hail, role) = _shown[index];
+        if (role == HailRole.Join)
+        {
+            run.Game.Gui.FloatingWindows.AddChild(new CommWindow(run.Game, hail.Caller, hail.Callee));
+            Log.Info($"listen-in: player {run.Game.LocalPlayerIndex} joins the hail with {hail.Callee.Metadata.PlainShipName}");
+            return;
+        }
         if (WindowOf(hail.Caller, hail.Callee) is { } open) { open.Unparent(); return; }
         string speaker = PlayerName(run, hail.CallerPlayer);
         var window = new CommWindow(run.Game, hail.Caller, hail.Callee);
@@ -122,7 +141,7 @@ public static class ListenIn
         var hails = Hails(run);
         if (hails.Count != _shown.Count)
             Log.Info($"listen-in: player {game.LocalPlayerIndex} sees {hails.Count} hail(s): " +
-                     string.Join(", ", hails.Select(h => $"player {h.CallerPlayer} with {h.Callee.Metadata.PlainShipName}")));
+                     string.Join(", ", hails.Select(h => $"{h.Role} player {h.Comm.CallerPlayer} with {h.Comm.Callee.Metadata.PlainShipName}")));
         _shown = hails;
         _bar.SelfActive = _shown.Count > 0 && game.MapDisplayFactor < 1f;
         if (!_bar.SelfActive) return;
@@ -145,9 +164,9 @@ public static class ListenIn
         while (_bar.Children.Count > _shown.Count) _bar.Children.RemoveAt(_bar.Children.Count - 1);
         for (int i = 0; i < _shown.Count; i++)
         {
-            var h = _shown[i];
-            bool open = WindowOf(h.Caller, h.Callee) is not null;
-            ((ImageButton)_bar.Children[i]).Text = SharedChoices.Format(open ? "ListenStopFmt" : "ListenInFmt", PlayerName(run, h.CallerPlayer), h.Callee.Metadata.PlainShipName);
+            var (h, role) = _shown[i];
+            string key = role == HailRole.Join ? "JoinFmt" : WindowOf(h.Caller, h.Callee) is not null ? "ListenStopFmt" : "ListenInFmt";
+            ((ImageButton)_bar.Children[i]).Text = SharedChoices.Format(key, PlayerName(run, h.CallerPlayer, role == HailRole.Join), h.Callee.Metadata.PlainShipName);
         }
         _bar.Height = _shown.Count * (ButtonHeight + Gap);
         // Above the comms button, or above the comms box while it is open. Without the button (no ship selected): above the tool row.
@@ -206,7 +225,12 @@ public static class ListenIn
             l.ClosedAt = App.Clock.Time.Seconds;
             w.TitleText = SharedChoices.Format("ListenClosedFmt", l.Speaker);
         }
-        if (speakerOpen) l.ClosedAt = null;
+        if (speakerOpen && l.ClosedAt is not null)
+        {
+            // Back open: with shared ships, another window of the speaker's index opens the channel again (vanilla CommWindow frame).
+            l.ClosedAt = null;
+            w.TitleText = SharedChoices.Format("ListenTitleFmt", l.Callee.Metadata.PlainShipName);
+        }
         if (ListenInModel.CloseNow(l.ClosedAt, App.Clock.Time.Seconds, run.T.SharedChoice.ListenLingerSeconds)) { w.SelfActive = false; return; }
         _dialogueOnly = true;
         try { if (!w.UpdateTabs()) w.SelfActive = false; }

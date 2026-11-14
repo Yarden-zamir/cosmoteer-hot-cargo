@@ -192,12 +192,12 @@ public static class CommsHail
             rows.ValueChanged += (view, value) => Errors.Guard("hail row value", () => RowValue(tab, view, value));
             pageBox.Children.Insert(pageBox.Children.IndexOf(__instance._dialogueButtonsBox), rows.Box);
             Rows.AddOrUpdate(__instance, rows);
-            // A Hot Cargo page has more rows than the vanilla surrender page (option rows, co-op bar, buttons), and the tab
-            // does not scroll, so the window grows a little and the rows stack from the top.
+            // A Hot Cargo page has more rows than the vanilla surrender page (option rows, co-op bar, buttons), so the window grows
+            // with the page (ShowRows), the rows stack from the top, and a page that is still too long scrolls (spec 816).
             if (__instance._currentDialogue is HailPage && __instance._window is { } window)
             {
                 window.Size = new Halfling.Geometry.Vector2(Math.Max(window.Size.X, 820f), Math.Max(window.Size.Y, 720f));
-                // Top down instead of centered, so a long page never runs off the bottom of the window.
+                pageBox.ScrollBarController.ShowVertical = Halfling.Gui.ScrollBarShowMode.WhenNeeded;
                 pageBox.Children.LayoutAlgorithm = Halfling.Gui.LayoutAlgorithms.StretchTopToBottom;
                 pageBox.Children.BorderPadding = new Halfling.Gui.Borders(40f, 30f, 40f, 30f);
                 pageBox.Children.WidgetPadding = new Halfling.Geometry.Vector2(12f);
@@ -234,16 +234,24 @@ public static class CommsHail
                 views.Add(new OptionRowView(r.Key, r.Text, r.Active && !readOnly, r.Tooltip, r.Toggle, r.Selected, r.Slider, value, SliderActive: !readOnly && (!r.Toggle || r.Selected)));
             }
         rows.Show(views);
-        // The tab does not scroll: the window grows with the rows and buttons of the page, up to MaxWindowHeight.
-        if (page is not null && tab._window is { } window)
-        {
-            float wanted = Math.Min(MaxWindowHeight, 260f + page.Rows.Count * 84f + page.Buttons.Count * 76f);
-            if (window.Size.Y < wanted) window.Size = new Halfling.Geometry.Vector2(window.Size.X, wanted);
-        }
+        if (page is not null && tab._window is { Parent: { } screen } window && Panels.TryGetValue(tab, out var shared)) Fit(window, shared.PageBox, screen.RectProvider.ScreenRect);
     }
 
-    /// <summary>Tallest hail window. Limit: a page with more rows than fit runs off the bottom; revisit if a page needs more than about seven rows.</summary>
-    const float MaxWindowHeight = 880f;
+    /// <summary>
+    /// Spec 816: the window grows until the whole page fits (the measured contents of the page box), up to Ux.CommsMaxScreenShare of
+    /// the screen height, and moves up so that it stays on the screen. It shrinks only to the cap, so it does not jump while the page changes.
+    /// </summary>
+    static void Fit(CommWindow window, Halfling.Gui.ScrollBox pageBox, Halfling.Geometry.Rect screen)
+    {
+        float content = pageBox.ScrollBarController.ContentsBoundsProvider.ContentsBounds.Bottom + pageBox.Children.BorderPadding.Bottom;
+        float chrome = window.Size.Y - pageBox.ScreenRect.Height;
+        float share = Ux.UxKit.Switches?.CommsMaxScreenShare ?? throw new InvalidOperationException("comms page without Hot Cargo switches");
+        // Grow to the page, never shrink, but never above the cap: on a small screen the cap also cuts the starting height.
+        float wanted = Math.Min(share * screen.Height, Math.Max(window.Size.Y, chrome + content));
+        if (wanted != window.Size.Y) window.Size = new Halfling.Geometry.Vector2(window.Size.X, wanted);
+        var rect = window.ScreenRect;
+        if (rect.Bottom > screen.Bottom) window.ScreenRect = rect with { Y = Math.Max(screen.Y, screen.Bottom - rect.Height) };
+    }
 
     static HailRow? RowOf(CommDialogueTab tab, string key) => (tab._currentDialogue as HailPage)?.Rows.FirstOrDefault(r => r.Key == key);
 
@@ -348,6 +356,42 @@ public static class CommsHail
         foreach (var (tab, rows) in Rows)
             if (tab.Callee == callee && rows.Box.Root is not null) return tab;
         return null;
+    }
+
+    /// <summary>
+    /// Spec 816, for autotests: the number of open comms windows with a Hot Cargo page, and the number of them that fit: the window is
+    /// on the screen, and it shows the whole page or its vertical scroll bar.
+    /// </summary>
+    internal static (int Open, int Fit) PageFit()
+    {
+        int open = 0, fit = 0;
+        foreach (var (tab, shared) in Panels)
+        {
+            var box = shared.PageBox;
+            if (box.Root is null || tab._currentDialogue is not HailPage || tab._window is not { Parent: { } parent } window) continue;
+            open++;
+            var screen = parent.RectProvider.ScreenRect;
+            var rect = window.ScreenRect;
+            bool onScreen = rect.Y >= screen.Y - 1 && rect.Bottom <= screen.Bottom + 1;
+            float content = box.ScrollBarController.ContentsBoundsProvider.ContentsBounds.Bottom + box.Children.BorderPadding.Bottom;
+            bool whole = content <= box.ScreenRect.Height + 1;
+            if (onScreen && (whole || box.VerticalScrollBar.SelfActive)) fit++;
+            else Log.Info($"comms page does not fit: window {rect}, screen {screen}, content {content:0}, box {box.ScreenRect.Height:0}, scroll bar {box.VerticalScrollBar.SelfActive}");
+        }
+        return (open, fit);
+    }
+
+    /// <summary>Scrolls the page of every open comms tab with a Hot Cargo page by this amount (down is positive). Returns the count. For autotests.</summary>
+    internal static int ScrollOpenPages(float amount)
+    {
+        int count = 0;
+        foreach (var (tab, shared) in Panels)
+        {
+            if (shared.PageBox.Root is null || tab._currentDialogue is not HailPage) continue;
+            shared.PageBox.ScrollBarController.ScrollVertical(amount);
+            count++;
+        }
+        return count;
     }
 
     /// <summary>The option rows of an open dialogue tab with this callee, or null. For autotests.</summary>

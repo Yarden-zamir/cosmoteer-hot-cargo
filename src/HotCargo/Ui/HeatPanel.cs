@@ -11,6 +11,7 @@ using Halfling.Gui.Components.Graphics;
 using HotCargo.Core;
 using HotCargo.Tech;
 using HotCargo.Ux;
+using HotCargo.StartJobs;
 
 namespace HotCargo.Ui;
 
@@ -119,7 +120,7 @@ sealed class HeatPanel : LayoutBox
         // Spec 872: the texts below refresh every HudRefreshSeconds, not in every frame.
         if (!UxKit.HudDue(ref _nextText)) return;
 
-        _sector.Text = UxKit.Format("SectorFmt", s.SectorIndex, t.Journey.RunSectorCount);
+        _sector.Text = UxKit.Format("SectorFmt", s.SectorIndex, run.SectorCount());
         float mult = run.HeatMultiplier(s.FleetTech);
         _status.Text = s.Result switch
         {

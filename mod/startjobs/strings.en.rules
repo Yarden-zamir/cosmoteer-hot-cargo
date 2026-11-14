@@ -1,0 +1,28 @@
+HotCargoStartJobs
+{
+	Title = "PICK A JOB"
+	Prompt = "<fame_color>Pick a job.</fame_color> Each job lists all its rules. The pick holds for the whole run."
+	TechFmt = "{0} less tech"
+	HeatFmt = "heat {0} now"
+	SectorsFmt = "Buyer in sector {0}"
+	BuyerFmt = "Buyer pays ×{0:0.##}"
+	NoChanges = "No changes."
+	PickedFmt = "JOB: {0}. {1}."
+	LogFmt = "Job: {0}. {1}."
+	TipFmt = "<gray>JOB</gray>  {0}"
+
+	contractName = "The Contract"
+	contractText = "Deliver the tech. The standard run."
+	prototypeName = "Prototype Cores"
+	prototypeText = "Fewer units, each worth more."
+	deep_spaceName = "Deep Space Buyer"
+	deep_spaceText = "A longer haul for a better price."
+	rushName = "Rush Order"
+	rushText = "A short haul, a lower price."
+	loud_exitName = "Loud Exit"
+	loud_exitText = "The theft made the news. Hunted early, sold high."
+	grudgeName = "Corporate Grudge"
+	grudgeText = "They send their best. The Buyer pays for the trouble."
+	inside_manName = "Inside Man"
+	inside_manText = "He slows the hunt and takes a cut."
+}

@@ -90,15 +90,25 @@ internal static class Autonomous
         return false;
     }
 
-    // ---- Manned state changes: vanilla toggles only re-read PartCrew when it raises ToggleChanged.
+    /// <summary>
+    /// Spec 1051: the crew slot that a Computer fills: the first PartCrew of the part it mans (component order). Null when no
+    /// working Computer mans the part.
+    /// </summary>
+    internal static PartCrew? ServedSlot(Part part) => IsManned(part) ? part.Components.OfType<PartCrew>().FirstOrDefault() : null;
 
-    static readonly ConditionalWeakTable<Ship, HashSet<Part>> MannedBefore = new();
+    static int ComputerCrew(PartCrew slot) => slot.Part is { } p && ServedSlot(p) == slot ? AutonomyModel.ComputerCrew : 0;
+
+    // ---- Served slot changes: vanilla toggles only re-read PartCrew when it raises ToggleChanged, and vanilla raises it only when
+    // the full crew arrives or one leaves. A served slot turns on one crew member earlier, so the tick raises it on each change.
+
+    static readonly ConditionalWeakTable<Ship, Dictionary<PartCrew, bool>> SlotsBefore = new();
     static readonly FieldInfo ToggleChangedField = AccessTools.Field(typeof(PartCrew), nameof(PartCrew.ToggleChanged))
         ?? throw new MissingFieldException(nameof(PartCrew), nameof(PartCrew.ToggleChanged));
 
     /// <summary>
-    /// Spec 1051, 1061. Each sim tick: raises ToggleChanged on parts whose manned state changed, and gives a new autonomous ship Auto on.
-    /// Ships go in sim order. The table only remembers what was announced; IsManned reads the sim, so a loaded game needs no state.
+    /// Spec 1051, 1061. Each sim tick: raises ToggleChanged on each crew slot that a Computer starts or stops serving, and on each
+    /// served slot whose crewed state changed; gives a new autonomous ship Auto on. Ships and parts go in sim order. The table only
+    /// remembers what was announced; the toggles read the sim, so a loaded game needs no state.
     /// </summary>
     internal static void Tick(SimRoot sim)
     {
@@ -106,54 +116,54 @@ internal static class Autonomous
         {
             var ship = sim.Ships[i];
             if (!ship.IsHumanPlayerShip) continue;
-            var now = new HashSet<Part>();
+            var now = new Dictionary<PartCrew, bool>();
             foreach (var part in ship.Parts)
-                if (IsComputer(part) && MannedBy(part) is { } manned) now.Add(manned);
-            var before = MannedBefore.GetValue(ship, _ => []);
-            if (!now.SetEquals(before))
-            {
-                foreach (var part in now.Except(before).Concat(before.Except(now)).OrderBy(p => p.Location.X).ThenBy(p => p.Location.Y))
-                    Announce(part);
-                before.Clear();
-                before.UnionWith(now);
-            }
+                if (IsComputer(part) && MannedBy(part) is { } manned && ServedSlot(manned) is { } slot) now[slot] = slot.IsToggleOn;
+            var before = SlotsBefore.GetValue(ship, _ => []);
+            var changed = now.Where(kv => !before.TryGetValue(kv.Key, out bool on) || on != kv.Value).Select(kv => kv.Key)
+                .Concat(before.Keys.Where(k => !now.ContainsKey(k)))
+                .OrderBy(c => c.Part?.Location.X ?? 0).ThenBy(c => c.Part?.Location.Y ?? 0).ToList();
+            foreach (var slot in changed) Announce(slot);
+            before.Clear();
+            foreach (var kv in now) before[kv.Key] = kv.Value;
             if (IsAutonomous(ship) && ShipAi.ShipTactics.Of(ship) is null) ShipAi.ShipTactics.For(ship).Auto = true;
         }
     }
 
-    static void Announce(Part part)
+    static void Announce(PartCrew slot)
     {
-        if (part.Ship is null) return;
-        foreach (var crew in part.Components.OfType<PartCrew>())
-            (ToggleChangedField.GetValue(crew) as EventHandler<EventArgs>)?.Invoke(crew, EventArgs.Empty);
+        if (slot.Part?.Ship is null) return;
+        (ToggleChangedField.GetValue(slot) as EventHandler<EventArgs>)?.Invoke(slot, EventArgs.Empty);
     }
 
     // ---- Patches
 
-    /// <summary>Spec 1051: a manned part counts as fully crewed.</summary>
+    /// <summary>Spec 1051: the Computer counts as one crew member in the slot it serves.</summary>
     [HarmonyPatch(typeof(PartCrew))]
     static class MannedCrewPatch
     {
         [HarmonyPostfix, HarmonyPatch(nameof(PartCrew.IsToggleOn), MethodType.Getter)]
         static void On(PartCrew __instance, ref bool __result)
         {
-            if (!__result && __instance.Part is { } p && IsManned(p)) __result = true;
+            if (!__result && ComputerCrew(__instance) is var c and > 0)
+                __result = AutonomyModel.CrewMet(__instance._crewJob?.ArrivedCrew.Count ?? 0, __instance.Rules.Crew, c);
         }
 
         [HarmonyPostfix, HarmonyPatch(nameof(PartCrew.IsToggleOnAnticipated), MethodType.Getter)]
         static void Anticipated(PartCrew __instance, ref bool __result)
         {
-            if (!__result && __instance.Part is { } p && IsManned(p)) __result = true;
+            if (!__result && ComputerCrew(__instance) is var c and > 0)
+                __result = AutonomyModel.CrewMet(__instance._crewJob?.AssignedCrew.Count ?? 0, __instance.Rules.Crew, c);
         }
     }
 
-    /// <summary>Spec 1051: vanilla crew do not go to a manned part.</summary>
+    /// <summary>Spec 1051: vanilla crew fill only the rest of a served slot.</summary>
     [HarmonyPatch(typeof(PartCrewJob), nameof(PartCrewJob.DesiredCrew), MethodType.Getter)]
     static class MannedJobPatch
     {
         static void Postfix(PartCrewJob __instance, ref int __result)
         {
-            if (__result > 0 && __instance.Part is { } p && IsManned(p)) __result = 0;
+            if (__result > 0 && ComputerCrew(__instance._partCrew) is var c and > 0) __result = AutonomyModel.CrewStillWanted(__result, c);
         }
     }
 
