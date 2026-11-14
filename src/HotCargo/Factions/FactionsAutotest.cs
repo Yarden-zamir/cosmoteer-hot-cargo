@@ -161,6 +161,9 @@ static class FactionsAutotest
         Autotest.Fields["fa_chain_shelters"] = () => R().State.Factions.ChainShelters.Count;
         Autotest.Fields["fa_tag_watch"] = () => NodesWithTag("TagWatch");
         Autotest.Fields["fa_tag_shelter"] = () => NodesWithTag("TagShelter");
+        // fa_chain_shelter: test only. The chain-shelter path (spec 665) for the nearest station's faction, as if a chain there ended well.
+        Autotest.Commands["fa_chain_shelter"] = _ =>
+            FactionsArea.ShelterAfterChain(R(), TechAutotest.NearestStation().Metadata.PlayerIndex, "a test chain");
         // fa_jump_watched: jumps to an unvisited neighbor in the corporate watch zone (not ally space), like "worlds jumpto" (no FTL animation, no fuel).
         Autotest.Commands["fa_jump_watched"] = _ =>
         {

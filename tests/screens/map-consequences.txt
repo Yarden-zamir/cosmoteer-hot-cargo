@@ -1,0 +1,28 @@
+# Map consequences (spec 664, 665): the galaxy map before and after a Strike (CORPORATE WATCH on the neighbor systems) and a
+# chain that ended well (SHELTER on the systems of the station's faction). Windowed test slot: scripts/screens.sh.
+render on
+newgame run
+wait 10
+pause off
+closepanel
+wait 1
+ev_set Enabled false
+godmode on
+# The ally is another faction, so the nearest station's faction can shelter.
+fa_roles other -
+map on
+wait 3
+screenshot consequences-01-before
+map off
+wait 1
+# Warning, Hunt, Strike.
+stage
+stage
+stage
+wait 2
+fa_chain_shelter
+wait 1
+map on
+wait 3
+screenshot consequences-02-after
+quit
