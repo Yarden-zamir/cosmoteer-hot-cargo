@@ -64,6 +64,7 @@ static class VaultDesigns
                 game.Sim.Ships.Remove(ship, dispose: true, handleLostShip: false);
             });
         };
+        AddFitAutotest();
         Autotest.Fields["designmatches"] = () => _matches ? 1 : 0;
         // 1 when the design kept all its storage parts (a bay with no vault on its tiles goes back).
         Autotest.Fields["storagekept"] = () => _storageKept ? 1 : 0;
@@ -85,6 +86,64 @@ static class VaultDesigns
         {
             var run = Autotest.RequireRun();
             return run.T.Tech.StartingResearch.Count(id => run.Mode.Techs.IsTechUnlocked(new Cosmoteer.Data.ID<Cosmoteer.Modes.Career.TechTree.TechRules>(id)));
+        };
+    }
+
+
+    static Task<string?>? _offer;
+    static bool _fitOk;
+    static int _fitCapacity;
+
+    /// <summary>The vanilla Data folder file of career starter N.</summary>
+    static string VanillaStarter(int index) =>
+        (string)(GameApp.Rules.BuiltInShipsFolder / "Starter" / Path.GetFileName((string)GameApp.Rules.CareerMode.StarterShips[index].Ship.FilePath));
+
+    /// <summary>Spec 1470 to 1476: the Fit Tech Vaults flow. These commands work on the main menu, before a career starts.</summary>
+    static void AddFitAutotest()
+    {
+        // fitship N: builds vaults into vanilla starter N without a game, like Fit Tech Vaults, without the save (the save needs graphics).
+        Autotest.Commands["fitship"] = arg =>
+        {
+            int units = NewGameCheck.RequiredUnits(coop: false);
+            _fitOk = false;
+            using var ship = FitVaults.FitShip(VanillaStarter(int.Parse(arg, System.Globalization.CultureInfo.InvariantCulture)), units, out _);
+            _fitCapacity = NewGameCheck.VaultCapacity(ship);
+            _fitOk = GameApp.Rules.CareerMode.IsShipDesignLegal(ship);
+            Log.Info($"AUTOTEST fitship {arg}: legal={_fitOk} capacity={_fitCapacity} of {units}");
+        };
+        Autotest.Fields["fit_ok"] = () => _fitOk ? 1 : 0;
+        Autotest.Fields["fit_capacity"] = () => _fitCapacity;
+        // 1 when vanilla starter N maps to the vault preset of career starter N (spec 1471).
+        Autotest.Fields["fit_preset_count"] = () => Enumerable.Range(0, GameApp.Rules.CareerMode.StarterShips.Length)
+            .Count(i => FitVaults.Preset(VanillaStarter(i)) == (string)GameApp.Rules.CareerMode.StarterShips[i].Ship.FilePath);
+        Autotest.Fields["starter_count"] = () => GameApp.Rules.CareerMode.StarterShips.Length;
+        Autotest.Fields["starter_problems"] = () => StarterCheck.Find().Count;
+        // fitoffer N sp|coop: a copy of vanilla starter N outside the Starter folder (like a saved design) goes through the pick flow.
+        Autotest.Commands["fitoffer"] = arg =>
+        {
+            var a = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            string copy = Path.Combine((string)Paths.SavedShipsFolder, "HotCargoTest", Path.GetFileName(VanillaStarter(int.Parse(a[0], System.Globalization.CultureInfo.InvariantCulture))));
+            Directory.CreateDirectory(Path.GetDirectoryName(copy)!);
+            File.Copy(VanillaStarter(int.Parse(a[0], System.Globalization.CultureInfo.InvariantCulture)), copy, overwrite: true);
+            _offer = FitVaults.Picked(Task.FromResult<string?>(copy), a[1] == "coop");
+            Autotest.Wait(1);
+        };
+        // fitanswer fit|cancel: presses a button of the Fit Tech Vaults dialog, like the player.
+        Autotest.Commands["fitanswer"] = arg =>
+        {
+            var dialog = Halfling.App.Director.States.OfType<Halfling.Gui.Dialogs.TwoButtonDialog>().LastOrDefault()
+                ?? throw new InvalidOperationException("no Fit Tech Vaults dialog");
+            (arg == "fit" ? dialog.Option1Button : dialog.Option2Button).ClickController.InvokeClicked();
+            Autotest.WaitFor(() => _offer?.IsCompleted == true, 30, "the fit to finish");
+        };
+        Autotest.Fields["fit_shown"] = () => FitVaults.Shown ? 1 : 0;
+        // The result of the pick flow: -1 still open, 0 cancelled, 1 a file that passes the vault check.
+        Autotest.Fields["fit_result"] = () =>
+        {
+            if (_offer is not { IsCompleted: true } t) return -1;
+            if (t.Result is not { } path) return 0;
+            using var ship = Cosmoteer.Ships.Ship.Load(path, blueprintsOnly: true);
+            return NewGameCheck.VaultCapacity(ship) >= NewGameCheck.RequiredUnits(coop: false) ? 1 : -2;
         };
     }
 

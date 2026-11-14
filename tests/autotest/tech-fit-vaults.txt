@@ -1,0 +1,23 @@
+# Fit Tech Vaults (spec 1470 to 1476), on the main menu before a career. The save of a fitted copy needs graphics:
+# tests/screens/fitvaults.txt covers it.
+# Spec 1474: every career starter is a vault preset, and every preset replaces a starter.
+expect starter_problems == 0
+expect starter_count == 4
+# Spec 1471: each vanilla starter of the Built-In library maps to the preset of the same starter.
+expect fit_preset_count == starter_count
+# Spec 1472: each vanilla starter gets vaults for the starting tech without a game, and then passes the new-game check.
+fitship 0
+expect fit_ok == 1
+expect fit_capacity >= 8
+fitship 1
+expect fit_ok == 1
+fitship 2
+expect fit_ok == 1
+fitship 3
+expect fit_ok == 1
+# Spec 1470: a design without vaults gets the offer; Cancel picks nothing.
+fitoffer 0 coop
+expect fit_shown == 1
+fitanswer cancel
+expect fit_result == 0
+quit
