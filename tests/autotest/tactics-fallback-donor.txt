@@ -27,5 +27,6 @@ aigivelacking 1 0
 waitfor ai_fb_donor >= 1 30
 waitfor tactic_fallback_take >= 1 60
 waitfor ai_fb_active == 0 400
-expect ai_new_min_health >= 0.6
+# Only the repaired ship: the player's ship can shoot the donor.
+expect ai_new_first_health >= 0.6
 quit

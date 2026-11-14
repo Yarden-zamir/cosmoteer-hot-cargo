@@ -23,6 +23,7 @@ static class RepairAutotest
         Autotest.Fields["ai_fb_supplied"] = () => Modules().Count(m => m.Supplied);
         // The lowest health fraction (spec 47) and the lowest crew count of the ships of the last aispawn.
         Autotest.Fields["ai_new_min_health"] = () => New().Select(s => (double)HunterOrders.HealthFraction(s)).DefaultIfEmpty(-1).Min();
+        Autotest.Fields["ai_new_first_health"] = () => New().Select(s => (double)HunterOrders.HealthFraction(s)).DefaultIfEmpty(-1).First();
         Autotest.Fields["ai_new_min_crew"] = () => New().Select(s => (double)s.Crew.Assigned.Count).DefaultIfEmpty(-1).Min();
 
         // aidamage <index>|new <fraction>: sets every part of ship <index> of the last aispawn to this fraction of its health.
@@ -69,6 +70,14 @@ static class RepairAutotest
             var (ship, to) = (At(parts[0]), At(parts[1]));
             float d = float.Parse(parts[2], CultureInfo.InvariantCulture);
             Autotest.Teleport(ship, Autotest.ClearSpotNear(ship.Sim!, to.DetWorldCenter, to.WorldBoundingRadius + ship.WorldBoundingRadius + d, ship.WorldBoundingRadius));
+        };
+        // ainew_camera <i> <size>: the camera stops following ships and shows ship <i> of the aispawn list (screenshots).
+        Autotest.Commands["ainew_camera"] = arg =>
+        {
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length != 2) throw new InvalidOperationException("ainew_camera needs: i size");
+            var at = At(parts[0]).WorldCenter;
+            Autotest.Commands["camera"](string.Create(CultureInfo.InvariantCulture, $"{at.X} {at.Y} {parts[1]}"));
         };
         // aiplan_near <distance>: moves each hostile ship with a station or donor plan to this distance from its target's hull.
         Autotest.Commands["aiplan_near"] = arg =>
