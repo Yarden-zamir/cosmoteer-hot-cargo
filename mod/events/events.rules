@@ -1060,30 +1060,6 @@ Events
 		]
 	}
 
-	// Spec 1147: stations sell the Rescue Beacon, a clear deal. Limit: the price is paid even when the hold has no room (the result
-	// line says so); revisit if players lose money this way.
-	{
-		ID = rescue_beacon_sale
-		Trigger = Hail
-		HailTarget = Station
-		HailLine = "Buy a rescue beacon."
-		MaxPerRun = 0
-		Title = "Rescue Beacon"
-		Text = "The dock officer slides a scuffed beacon across. \"Fire it when you're dead in space. A tug tows you to the nearest friendly dock. The tug crew bills you, and the whole sector hears the call.\""
-		Choices
-		[
-			{
-				Text = "Buy the beacon."
-				Cost { Money = 0.3 }
-				Outcomes [ { Text = "The beacon goes into your hold."; Resources = [{ ID = yarden_zamir.rescue_beacon; Amount = 1 }] } ]
-			}
-			{
-				Text = "Not now."
-				Outcomes [ { Text = "\"Hope you never need one.\"" } ]
-			}
-		]
-	}
-
 	// Spec 46: the gamble ("ask nicely") is a world action now, a sensor array that listens to the ship (spec 1122). This page is the clear deal.
 	{
 		ID = hunter_intel

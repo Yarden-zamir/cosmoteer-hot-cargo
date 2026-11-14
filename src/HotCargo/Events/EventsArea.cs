@@ -553,6 +553,17 @@ public static class EventsArea
             Log.Info($"AUTOTEST rescue tip: {tip}");
             return tip.Contains(RescueBeacon.Fee(run).ToString("N0"), StringComparison.Ordinal) ? 1 : 0;
         };
+        // The nearest trade station's beacon stock, and its shop price as a share of Events.RescueBeaconPrice money units (1 or more: only
+        // the heat markup comes on top).
+        // ev_stop: the player ships drop their orders (vanilla CommandManager.Clear), for example a move order from pt_goto.
+        Autotest.Commands["ev_stop"] = _ => { foreach (var s in RequireSim().Ships.HumanPlayerSignificantShips.ToList()) s.Commands.Clear(); };
+        Autotest.Fields["ev_station_beacons"] = () => NearestStation()?.Resources.GetResourceTotal(RescueBeacon.Id, includeStored: true, includeCarried: false) ?? -1;
+        Autotest.Fields["ev_rescue_price_ratio"] = () =>
+        {
+            var run = RequireRun();
+            var station = NearestStation() ?? throw new InvalidOperationException("no live trade station");
+            return RequireSim().Mode.GetResourceBuyCost(RescueBeacon.Id, station.Metadata.PlayerIndex) / (double)RescueBeacon.Price(run);
+        };
         Autotest.Fields["ev_rescues"] = () => RequireRun().State.Events.Rescues.Count(r => r.LeaveAt < 0);
         Autotest.Fields["ev_rescue_pulling"] = () => RequireRun().State.Events.Rescues.Any(r => r.Pulling && r.LeaveAt < 0) ? 1 : 0;
         Autotest.Fields["ev_rescue_arrivals"] = () => RescueBeacon.Arrivals;
@@ -845,6 +856,14 @@ public static class EventsArea
 
     static Ship TestHulk() =>
         (_hulk is { } id ? RequireSim().Ships[id] : null) ?? throw new InvalidOperationException("no live test hulk (ev_abandoned first)");
+
+    /// <summary>The live trade station nearest to the first player ship, or null.</summary>
+    static Ship? NearestStation()
+    {
+        var sim = RequireSim();
+        var me = SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("no player ship");
+        return sim.Ships.Where(s => EventHail.TargetOf(s, me) == HailTarget.Station).MinBy(s => s.DetWorldCenter.DistanceSquaredTo(me.DetWorldCenter));
+    }
 
     static void SpawnVanillaAbandoned()
     {

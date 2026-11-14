@@ -47,6 +47,31 @@ public static class RescueBeacon
 
     static string Text(string key, params object?[] args) => Strings.FormatText("HotCargoItems/" + key, args);
 
+    public static readonly ID<Cosmoteer.Resources.ResourceRules> Id = new("yarden_zamir.rescue_beacon");
+
+    /// <summary>Spec 1147: the beacon's price in a station's trade window: Events.RescueBeaconPrice money units at the current tier.</summary>
+    public static int Price(Run run) => EventRunner.Credits(run, run.T.Events.RescueBeaconPrice, 0f, run.CurrentTier, 0);
+
+    /// <summary>
+    /// Spec 1147: stations sell the beacon at its price and buy it back at half, like fuel. All inputs are sim state, so every client
+    /// computes the same price. The Factions heat markup runs after this (lower priority), as for every good.
+    /// </summary>
+    [HarmonyLib.HarmonyPatch(typeof(Cosmoteer.Modes.Career.CareerSimModeManager))]
+    static class PricePatches
+    {
+        [HarmonyLib.HarmonyPostfix, HarmonyLib.HarmonyPatch(nameof(Cosmoteer.Modes.Career.CareerSimModeManager.GetResourceBuyCost))]
+        static void BuyCost(Cosmoteer.Modes.Career.CareerSimModeManager __instance, ID<Cosmoteer.Resources.ResourceRules> resourceType, ref int __result)
+        {
+            if (resourceType == Id && Tech.TechPrice.For(__instance) is { } run) __result = Price(run);
+        }
+
+        [HarmonyLib.HarmonyPostfix, HarmonyLib.HarmonyPatch(nameof(Cosmoteer.Modes.Career.CareerSimModeManager.GetResourceSellRefund))]
+        static void SellRefund(Cosmoteer.Modes.Career.CareerSimModeManager __instance, ID<Cosmoteer.Resources.ResourceRules> resourceType, ref int __result)
+        {
+            if (resourceType == Id && Tech.TechPrice.For(__instance) is { } run) __result = Price(run) / 2;
+        }
+    }
+
     /// <summary>The fee in credits now: Events.RescueFee event money units at the current tier.</summary>
     public static int Fee(Run run) => EventRunner.Credits(run, run.T.Events.RescueFee, 0f, run.CurrentTier, 0);
 
