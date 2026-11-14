@@ -1,0 +1,27 @@
+# Relays: a lockdown is marked on a neighbour system and shows on the galaxy map before the jump (spec 951, 953, 954).
+# With ChancePerSystem 1 the real roll marks a neighbour. The jump into the marked system starts the lockdown there.
+# Headless slots draw no frames, so the sim stays paused after a jump (see journey-jump.txt): the system switch starts it.
+newgame
+wait 8
+ev_set Enabled false
+rl_set ChancePerSystem 1
+rl_set MinSector 0
+rl_reroll
+wait 2
+expect rl_marked >= 1
+expect rl_maptag == 1
+expect rl_tipline == 1
+rl_tooltip
+# Pin the kind, so the arrival check below is exact. rl_mark marks the same first unvisited neighbour.
+rl_mark closed
+wait 1
+expect rl_marked == 1
+expect rl_maptag == 1
+fa_jump relay
+wait 20
+expect sector == 2
+expect rl_active == 1
+expect rl_started == 1
+expect rl_blocks == 1
+expect rl_marked == 0
+quit

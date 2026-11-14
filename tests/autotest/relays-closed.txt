@@ -1,0 +1,49 @@
+# Relays: a closed relay (spec 954, 955). ENGAGE does nothing while the relays are closed, a blind jump passes,
+# and the relays open after ClosedSeconds. The ship spins up at a relay like a real jump (see factions-combat-jump.txt).
+newgame
+wait 8
+ev_set Enabled false
+godmode on
+pause off
+fa_drive
+wait 1
+fa_torelay
+wait 2
+rl_here closed
+wait 1
+expect rl_active == 1
+expect rl_blocks == 1
+fa_gatejump
+waitfor fa_ready == 1 120
+fa_engage
+wait 5
+expect rl_ready == 0
+expect fa_jumpstarts == 0
+# The closed time passes: the relays open and the same click jumps.
+rl_set ClosedSeconds 1
+waitfor rl_blocks == 0 10
+fa_engage
+waitfor fa_jumpstarts == 1 60
+
+# Blind jump out of a closed relay.
+newgame
+wait 8
+ev_set Enabled false
+godmode on
+pause off
+fa_drive
+wait 1
+fa_torelay
+wait 2
+rl_here closed
+rl_set ClosedSeconds 0
+wait 1
+fa_blind on
+wait 1
+expect rl_blocks == 0
+fa_gatejump
+waitfor fa_ready == 1 180
+fa_engage
+# fa_jumpstarts counts for the whole test process: the first game jumped once.
+waitfor fa_jumpstarts >= 2 60
+quit

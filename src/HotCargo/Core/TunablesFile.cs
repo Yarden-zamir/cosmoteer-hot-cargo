@@ -113,6 +113,8 @@ public static class TunablesFile
         // Level IDs are checked once the game rules exist; the boot-time check of the defaults runs before that.
         t.RunModes.Validate(Require, Cosmoteer.GameApp.Assets?.Rules is null ? null : RunModes.Difficulty.IsVanillaLevel);
         t.Factions.Validate(Require);
+        t.Relays.Validate(Require);
+        t.Stash.Validate(Require);
         t.Telemetry.Validate(Require);
         t.Pursuit.Validate(Require, stages);
     }

@@ -1,0 +1,19 @@
+HotCargoStash
+{
+	Name = "Rumoured Stash"
+	Desc = "A drunk at the bar sells you coordinates in the {mission_location} system: a smuggler's stash, credits and maybe tech. Others heard the rumour too. Go now, or the corporation gets there first."
+
+	// Objective line. {0} is the found-first chance, {1} the tech chance.
+	FindFmt = "Find the stash. Found first: {0}%. Tech: {1}%."
+	LineLooted = "Stash recovered"
+	LineEmpty = "Stash: empty"
+	LineAmbushFmt = "Survive the ambush ({0}/{1})"
+	LineAmbushDone = "Stash: a corporate trap"
+
+	// Toasts and chat lines.
+	Looted = "The stash is still here."
+	TechFmt = "+{0} tech in the vaults."
+	TechNoRoomFmt = "+{0} tech in the vaults. No vault room for {1}: it floats next to you."
+	Empty = "Empty. Someone got here first."
+	Ambush = "The corporation got here first. It's a trap!"
+}
