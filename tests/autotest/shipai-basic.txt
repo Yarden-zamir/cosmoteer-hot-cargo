@@ -14,7 +14,7 @@ expect tactics_rows == 0
 tactics Aggressive
 expecttactics Aggressive
 expect tactics_auto == 0
-expect tactics_rows == 4
+expect tactics_rows == 5
 # Order and kinds: health row first (not met), then the first target row and the first move row win; HoldFire on all weapons.
 tactics HC1:HealthBelow=40>RetreatRepair;Always>TargetStrongest;Always>TargetNearest;Always>Kite;Always>CloseIn;Always>HoldFire=0
 tacticsauto on
@@ -48,6 +48,9 @@ tactics HC1:Always>TargetWeakest;Always>CloseIn
 wait 3
 expect tactics_target == 2
 expect tactics_follow_radius <= 100
+# Who attacks me: an enemy with an attack order on this ship.
+tactics HC1:TargetedByEnemy>TargetMyAttacker;Always>CloseIn
+waitfor tactics_target_row == 0 60
 # Aim at weapons: every aimed weapon aims at a weapon part of the target. A weapon aims only while the target is in sight.
 tactics HC1:Always>TargetNearest;Always>CloseIn;Always>TargetWeapons=0
 waitfor tactics_aimed >= 1 60

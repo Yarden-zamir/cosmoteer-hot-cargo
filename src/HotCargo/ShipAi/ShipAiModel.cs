@@ -20,7 +20,7 @@ public enum Cond
 public enum Act
 {
     // Target
-    TargetNearest, TargetWeakest, TargetStrongest, TargetAllyAttacker, TargetVaultAttacker, TargetTechHolder, TargetCaller,
+    TargetNearest, TargetWeakest, TargetStrongest, TargetAllyAttacker, TargetVaultAttacker, TargetTechHolder, TargetCaller, TargetMyAttacker,
     // Move
     Kite, CloseIn, HoldPosition, RetreatToAlly, RetreatRepair, FleeJump, FollowLeader, Guard, CollectTech,
     CollectLoot, GoToStation, Mine, Salvage, ReturnToFleet,
@@ -149,7 +149,7 @@ public static class ShipAiModel
 
     public static ActKind KindOf(Act act) => act switch
     {
-        <= Act.TargetCaller => ActKind.Target,
+        <= Act.TargetMyAttacker => ActKind.Target,
         <= Act.KeepSpacing => ActKind.Move,
         <= Act.FireDisruptors => ActKind.Weapons,
         Act.Face => ActKind.Facing,
@@ -459,6 +459,8 @@ public static class ShipAiModel
             new(Cond.Always, 0, Act.TargetWeakest, 0),
             new(Cond.Always, 0, Act.CloseIn, 0),
             new(Cond.Always, 0, Act.FocusTarget, 0),
+            // Without an enemy, a second ship stays with the fleet. The first ship has no leader, so the row never runs there.
+            new(Cond.Always, 0, Act.FollowLeader, 0),
         ],
         Preset.Defensive =>
         [
@@ -473,11 +475,13 @@ public static class ShipAiModel
             new(Cond.Always, 0, Act.TargetNearest, 0),
             new(Cond.Always, 0, Act.Kite, 0),
             new(Cond.Always, 0, Act.TargetWeapons, 0),
+            new(Cond.Always, 0, Act.FollowLeader, 0),
         ],
         Preset.Escort =>
         [
             new(Cond.HealthBelow, 25, Act.RetreatToAlly, 0),
             new(Cond.AllyUnderAttack, 0, Act.TargetAllyAttacker, 0),
+            new(Cond.TargetedByEnemy, 0, Act.TargetMyAttacker, 0),
             new(Cond.Always, 0, Act.Guard, (int)GuardWho.Flagship),
         ],
         Preset.VaultGuard =>

@@ -151,6 +151,7 @@ public class ShipAiModelTests
         Assert.Equal(ActKind.Move, ShipAiModel.KindOf(Act.Guard));
         Assert.Equal(ActKind.Weapons, ShipAiModel.KindOf(Act.FireAtWill));
         Assert.Equal(ActKind.Target, ShipAiModel.KindOf(Act.TargetCaller));
+        Assert.Equal(ActKind.Target, ShipAiModel.KindOf(Act.TargetMyAttacker));
         Assert.Equal(ActKind.Move, ShipAiModel.KindOf(Act.CollectTech));
         Assert.Equal(ActKind.Weapons, ShipAiModel.KindOf(Act.FireDisruptors));
         Assert.Equal(ActKind.Facing, ShipAiModel.KindOf(Act.Face));

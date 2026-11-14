@@ -119,11 +119,11 @@ HotCargoCodex
 
 	ShipTactics
 	{
-		Title = "Hot Cargo: Ship Tactics"
+		Title = "Hot Cargo: Ship AI"
 		Open = "Give your ships standing orders: <b>Ctrl+K</b>, or the AI button in the ships card."
 		Rows = "Each row is a condition and an action, checked from the top. Start from a preset."
-		Orders = "Your own orders come first. The tactics wait until a player order is done."
-		Save = "Tactics save with the ship design."
+		Orders = "Your own orders come first. The AI waits until a player order is done."
+		Save = "AI rows save with the ship design."
 	}
 
 	Jobs

@@ -277,6 +277,9 @@ internal sealed class TacticsEditor : WindowBox
         page.Children.Add(bar);
 
         var bar2 = Strip(36f);
+        var nameLabel = new Label { Text = Text("PresetName") };
+        nameLabel.TextRenderer.HAlignment = HAlignment.Right;
+        Place(bar2, nameLabel, 0f, 26f);
         _presetName = new TextEditField(TextEditField.Style.SingleLine) { MaxTextLength = ShipAiModel.MaxPresetName };
         _presetName.ToolTips.TextProvider = new Ux.LiveText(() => Text("PresetNameTip"));
         Place(bar2, _presetName, 26f, 22f);
@@ -437,6 +440,8 @@ internal sealed class TacticsEditor : WindowBox
         Place(_cargoBar, NewTextButton(AFormat("SellFmt", Count(_cargo.Sell, "ListAll")), () => Pick(AFormat("SellFmt", ""), false, _cargo.Sell, l => _cargo with { Sell = l })), 36f, 14f);
         Place(_cargoBar, NewTextButton(AFormat("MineFmt", Count(_cargo.Mine, "ListAny")), () => Pick(AFormat("MineFmt", ""), true, _cargo.Mine, l => _cargo with { Mine = l })), 50f, 14f);
         Place(_cargoBar, NewTextButton(AFormat("BuyFmt", Count(_cargo.Buy, "ListNone")), () => Pick(AFormat("BuyFmt", ""), false, _cargo.Buy, l => _cargo with { Buy = l })), 64f, 14f);
+        // Spec 1064: only an autonomous ship needs a recall switch; the player gives a crewed ship orders.
+        if (!Autonomy.Autonomous.IsAutonomous(_ship)) return;
         var recall = XmlButton(AText(_recall ? "ReturnOn" : "ReturnOff"), AText("ReturnTip"), () => { _recall = !_recall; Send(); _dirty = true; });
         Place(_cargoBar, recall, 78f, 22f);
     }
@@ -555,14 +560,15 @@ internal sealed class TacticsEditor : WindowBox
             Place(line, param, ColParam, ParamWidth);
         }
         var addTerm = NewButton("AddTerm", () => Edit(i, ShipAiModel.AddTerm(_rows[i])));
+        addTerm.ToolTips.TextProvider = new Ux.LiveText(() => Text("AddTermTip"));
         addTerm.SelfInputActive = row.Terms.Length < ShipAiModel.MaxTerms;
-        Place(line, addTerm, ColEnd, 8f);
+        Place(line, addTerm, ColEnd, 7f);
         var up = NewButton("Up", () => Swap(i, i - 1));
         up.SelfInputActive = i > 0;
-        Place(line, up, 85f, 5f);
+        Place(line, up, 84f, 5f);
         var down = NewButton("Down", () => Swap(i, i + 1));
         down.SelfInputActive = i < _rows.Count - 1;
-        Place(line, down, 90f, 5f);
+        Place(line, down, 89f, 6f);
         Place(line, NewButton("Remove", () => { _rows.RemoveAt(i); SendRows(); }), 95f, 5f);
     }
 
@@ -730,6 +736,10 @@ internal sealed class TacticsEditor : WindowBox
         _autoToggle.IsSelected = _auto;
         _updating = false;
         _dirty = true;
+        // The preset list shows the preset that the rows are, if they are one.
+        string text = ShipAiModel.Encode(_rows);
+        int preset = _presetEntries.FindIndex(p => p.Text == text);
+        if (preset >= 0) _presets.SelectedWidget = _presets.ListBox.Children[preset];
     }
 
     void Refresh()
@@ -757,16 +767,25 @@ internal sealed class TacticsEditor : WindowBox
         }
     }
 
+    /// <summary>Spec 410: Auto is on; the target and the move action in effect now, with its row number.</summary>
+    string ActiveStatus(ShipTactics t)
+    {
+        var parts = new List<string> { Text(Autonomy.Autonomous.IsAutonomous(_ship) ? "StatusAutonomous" : "StatusActive") };
+        if (t.Target is { } id && _run.Game.Sim[id] is Ship target) parts.Add(Format("StatusTargetFmt", target.Metadata.XmlShipName));
+        if (t.Recall) parts.Add(AText("ReturnOn"));
+        else if (t.MoveRow >= 0 && t.MoveRow < t.Rows.Count) parts.Add(Format("StatusMoveFmt", t.MoveRow + 1, Text("Act_" + t.Rows[t.MoveRow].Act)));
+        if (parts.Count == 1 && t.Rows.Count > 0) parts.Add(Text("StatusIdle"));
+        return string.Join(" ", parts);
+    }
+
     void UpdateStatus(ShipTactics? t)
     {
         string status;
         if (_note is not null && App.Clock.Time.Seconds < _noteUntil) status = _note;
         else if (!_run.T.ShipAi.Enabled) status = Text("StatusDisabled");
         else if (t is not { Auto: true }) status = Text("StatusOff");
-        else if (Autonomy.Autonomous.IsAutonomous(_ship) && t.Target is null) status = AText("NoOrders");
         else if (t.Waiting) status = Text("StatusWaiting");
-        else if (t.Target is { } id && _run.Game.Sim[id] is Ship target) status = Format("StatusTargetFmt", target.Metadata.XmlShipName);
-        else status = Text("StatusActive");
+        else status = ActiveStatus(t);
         _status.Text = status;
         // Row markers: the rows in effect now (the target row, the move row and the matched weapons rows) are bright.
         bool live = t is { Auto: true, Waiting: false } && t.Text == ShipAiModel.Encode(_rows);

@@ -1,0 +1,38 @@
+# Enemy AI review: watch pirates and Monolith ships fight two player ships (one on the Aggressive preset).
+# Windowed test slot (needs graphics): scripts/screens.sh tests/screens/ai-watch.txt <out-dir>
+render on
+newgame run
+wait 10
+ev_set Enabled false
+closepanel
+pause off
+godmode on
+tacticlog on
+shipai Log on
+tactics_ally
+tactics_ship 1
+tactics Aggressive
+tacticsauto on
+tactics_ship 0
+aispawn pirates 3
+aispawn monolith 2
+wait 8
+vault focus wide
+wait 1
+screenshot watch-08
+wait 10
+vault focus wide
+screenshot watch-18
+wait 12
+vault focus wide
+screenshot watch-30
+wait 15
+vault focus wide
+screenshot watch-45
+wait 20
+vault focus wide
+screenshot watch-65
+wait 25
+vault focus wide
+screenshot watch-90
+quit
