@@ -167,4 +167,15 @@ public class AutonomyModelTests
             Assert.Equal(rows, ShipAiModel.Decode(ShipAiModel.Encode(rows)));
         }
     }
+
+    [Theory]
+    [InlineData(0, 1, true)]    // a 1-crew slot: the Computer alone fills it
+    [InlineData(0, 2, false)]   // a 2-crew slot: one crew member short
+    [InlineData(1, 2, true)]    // a 2-crew slot with 1 crew member there
+    [InlineData(2, 4, false)]   // a 4-crew slot with 2 there: one short
+    public void A_computer_is_one_crew_member_in_the_slot_it_serves(int crew, int needed, bool full)
+    {
+        Assert.Equal(full, AutonomyModel.CrewMet(crew, needed, AutonomyModel.ComputerCrew));
+        Assert.Equal(Math.Max(0, needed - 1), AutonomyModel.CrewStillWanted(needed, AutonomyModel.ComputerCrew));
+    }
 }

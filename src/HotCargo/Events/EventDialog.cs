@@ -276,21 +276,7 @@ internal sealed class EventDialog : WindowBox
 
     ImageButton NewButton(int slot)
     {
-        var b = new ImageButton();
-        b.CopySettingsFrom(WidgetRules.Instance.FlatButton);
-        b.AutoSize.AutoHeightMode = AutoSizeMode.Enable;
-        b.AutoSize.MinHeight = 52f;
-        foreach (var r in new[] { b.StateNormalTextRenderer, b.StateHighlightedTextRenderer, b.StatePressedTextRenderer, b.StateDisabledTextRenderer })
-        {
-            r.XmlFormatting = true;
-            r.FontSize = 18;
-            r.HAlignment = HAlignment.Left;
-            r.Padding = new Borders(10f);
-        }
-        b.ImageSprite.CopySpriteFrom(Comms.DefaultDialogueLineIcon);
-        b.ImageRectController.InnerRectMode = InnerRectMode.Left;
-        b.ImageRectController.BorderPadding = new Borders(10f);
-        b.ImageRectController.InnerRectSize = b.ImageSprite.DesiredSize;
+        var b = Ui.ChoiceButton.New();
         b.Clicked += (_, _) => OnClicked(slot);
         return b;
     }

@@ -117,5 +117,6 @@ public static class TunablesFile
         t.Stash.Validate(Require);
         t.Telemetry.Validate(Require);
         t.Pursuit.Validate(Require, stages);
+        t.StartJobs.Validate(Require);
     }
 }
