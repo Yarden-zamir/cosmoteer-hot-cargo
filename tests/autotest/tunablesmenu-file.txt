@@ -1,10 +1,12 @@
 # A change of tunables.rules while the settings window is open (spec 52, 53, 851, 852): the window shows the new values,
 # a bad file keeps the values in effect, and a new fuel floor tops up the live stations at once.
+# The file and request watchers poll in real time, and Mac sim waits run faster than real time.
+# runner: pc
 newgame run
 wait 8
 menu open
 tunablesfile Heat { HeatPerGameMinute = 7 }; Balance { StationFuelMinimum = 30 }
-# The file poll runs once per real second; a game-time wait can be shorter than that on the Mac sim.
+# The file poll runs once per real second.
 waitfor heatperminute == 7 120
 menu value Heat.HeatPerGameMinute == 7
 menu shows Heat.HeatPerGameMinute 7
