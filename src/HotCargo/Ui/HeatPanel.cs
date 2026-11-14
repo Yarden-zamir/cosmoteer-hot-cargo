@@ -32,6 +32,7 @@ sealed class HeatPanel : LayoutBox
     readonly Label _status;
     readonly Label _tech;
     readonly Label _contracts;
+    readonly Label _extra;
     readonly Label _alert;
     readonly Label _debug;
 
@@ -40,6 +41,12 @@ sealed class HeatPanel : LayoutBox
 
     /// <summary>The tech line as the panel last showed it. For autotests.</summary>
     internal static string TechText = "";
+
+    /// <summary>Lines that areas add under the contracts line, in registration order, or null for none (spec 1412).</summary>
+    public static readonly List<Func<Run, string?>> ExtraLines = [];
+
+    /// <summary>The extra lines as the panel last showed them. For autotests.</summary>
+    internal static string ExtraText = "";
 
     ObjectID? _node;
     int _seenStages = -1;
@@ -80,6 +87,8 @@ sealed class HeatPanel : LayoutBox
         AddChild(_tech);
         _contracts = NewLabel(14, "");
         AddChild(_contracts);
+        _extra = NewLabel(14, "");
+        AddChild(_extra);
         _alert = NewLabel(18, "");
         AddChild(_alert);
         _debug = NewLabel(12, "");
@@ -137,6 +146,9 @@ sealed class HeatPanel : LayoutBox
         string? contracts = Contracts.ContractsUi.HeatPanelLine(run);
         _contracts.SelfActive = contracts is not null;
         _contracts.Text = contracts ?? "";
+        string extra = string.Join("\n", ExtraLines.Select(f => f(run)).Where(l => l is not null));
+        _extra.SelfActive = extra.Length > 0;
+        _extra.Text = ExtraText = extra;
         // Spec 60: in multiplayer the tunables hash stays visible, so players can compare it.
         _debug.SelfActive = t.Debug.DebugKeys || run.IsMultiplayer;
         if (_debug.SelfActive)

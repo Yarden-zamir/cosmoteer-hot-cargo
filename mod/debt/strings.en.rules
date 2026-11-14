@@ -1,0 +1,43 @@
+HotCargoDebt
+{
+	// Loan offer at a trade station (spec 1402). {0} faction, {1} amount, {2} interest %, {3} minutes per interest step,
+	// {4} minutes between collectors, {5} firm ratio, {6} hostile ratio, {7} score factor.
+	LoanOfferFmt = "<b>LOAN</b>\nThe {0} lend {1}, no questions asked.\nInterest: +{2}% every {3} min. A collector comes every {4} min. Pay at any {0} station.\nAt {5}× they lose patience. At {6}× they hunt you.\nDebt counts {7}× against your score."
+	TakeLoanFmt = "Take the loan (+{0})"
+
+	// Collector pages (spec 1408). {0} faction, {1} hostile ratio.
+	CollectorCalmFmt = "<b>COLLECTOR</b>\nA courtesy call from the {0}. Ready to settle up?"
+	CollectorFirmFmt = "<b>COLLECTOR</b>\nThe {0} are done being polite. Pay now. At {1}× we stop asking."
+	CollectorHostileFmt = "<b>COLLECTOR</b>\nLast warning from the {0}. Pay it below {1}×, or we take it out of your hull."
+
+	// {0} balance, {1} faction, {2} ratio, {3} interest %, {4} time to the next interest.
+	BalanceFmt = "You owe {0} to the {1} ({2}×). +{3}% in {4}."
+	SliderPay = "Pay"
+	PayFmt = "Pay {0} ({1} left)"
+	NoMoney = "<gray>You cannot pay even a tenth of it.</gray>"
+	NotNow = "Not now"
+	NotNowHostile = "Not now <bad>(they hunt you)</bad>"
+
+	// Chat lines and center texts.
+	LoanTakenFmt = "The {0} lend you {1}."
+	PaidFmt = "You pay {0} to the {1}. {2} left."
+	CollectorArrivesFmt = "A {1} collector arrives: {0}."
+	CollectorLeavesFmt = "{0} jumps out."
+	CollectorTurnsFmt = "{0} powers up its guns. The {1} want their money in blood."
+	FirmChatFmt = "Your debt to the {0} reached {1}×. Their collectors lose patience."
+	HostileChatFmt = "Your debt to the {0} reached {1}×. They hunt you now."
+	HostileCenterFmt = "<bad>THE {0} HUNT YOU FOR YOUR DEBT</bad>"
+
+	// Run log lines.
+	LogLoanFmt = "Took a loan of {1} from the {0}."
+	LogPaidOffFmt = "Paid off the debt to the {0}."
+	LogFirmFmt = "The debt to the {0} reached {1}×."
+	LogHostileFmt = "The debt to the {0} reached {1}×. They hunt you."
+
+	// Heat panel (spec 1412). {0} balance, {1} faction, {2} ratio, {3} interest part, {4} collector part.
+	PanelFmt = "DEBT {0} {1} ×{2}{3}{4}"
+	PanelInterestFmt = "  +{0}% in {1}"
+	PanelCollectorFmt = "  collector in {0}"
+	PanelCollectorHere = "  collector here"
+	PanelHunted = "  HUNTED"
+}

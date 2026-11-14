@@ -19,7 +19,7 @@ using HotCargo.StartJobs;
 namespace HotCargo.Onboarding;
 
 /// <summary>Kind of a run log line. The career log tab colors the line by kind.</summary>
-public enum RunLogKind { Sector, Stage, Sale, Delivery, Contract, Chain, Event, Loss, Won, Lost, Job }
+public enum RunLogKind { Sector, Stage, Sale, Delivery, Contract, Chain, Event, Loss, Won, Lost, Job, Debt }
 
 /// <summary>One line of the run log (spec 730). The text is XML for a game label, written in the language of the machine that logged it.</summary>
 [ReflectiveSerialization(Explicit = true)]

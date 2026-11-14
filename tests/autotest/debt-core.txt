@@ -1,0 +1,75 @@
+# Debt (spec 1402 to 1412): a loan at a station, interest, a payment, collectors at 1x, 2x and 3x, the wanted state,
+# a collector after the wanted state ends, the heat panel line and the score.
+# tier: smoke
+newgame run
+wait 8
+ev_set Enabled false
+debt_set LoanStationChance 1
+expect debt_loan_stations >= 1
+expect debt_count == 0
+debt_goto loan
+wait 2
+debt_page loan
+debt_loan
+wait 1
+expect debt_count == 1
+expect debt_ratio == 1
+expect debt_principal > 0
+# Two interest steps: 1.05 x 1.05.
+debt_age 1200
+wait 1
+expect debt_ratio > 1.1
+expect debt_ratio < 1.11
+waitfor debt_panel == 1 5
+# A payment at the lender's station.
+debt_goto lender
+wait 1
+debt_page lender
+debt_pay lender half
+wait 1
+expect debt_ratio < 0.6
+# A collector at 1x arrives, hails, and leaves after "Not now".
+debt_age 2400
+waitfor debt_collectors == 1 10
+waitfor debt_hailed == 1 15
+debt_page collector
+debt_notnow
+wait 1
+expect debt_collectors == 0
+expect debt_wanted == 0
+# 2x: the firm stage. "Not now" still costs nothing.
+debt_ratio 2.1
+wait 1
+expect debt_stage == 1
+debt_age 2400
+waitfor debt_hailed == 1 15
+debt_page collector
+debt_notnow
+wait 1
+expect debt_wanted == 0
+# 3x: the lender wants the players at once, and no collector comes while it does.
+godmode on
+debt_ratio 3.1
+wait 1
+expect debt_stage == 2
+expect debt_wanted == 1
+debt_age 2400
+wait 2
+expect debt_collectors == 0
+debt_age -2400
+# The wanted state ends: the next collector comes within ReturnSeconds. "Not now" at 3x makes the lender want the players again.
+debt_unwant
+wait 1
+expect debt_wanted == 0
+expect debt_collector_in <= 180
+debt_age 200
+waitfor debt_hailed == 1 15
+debt_page collector
+debt_notnow
+wait 1
+expect debt_wanted == 1
+# The score counts the debt twice.
+buyer deliver 0
+wait 1
+expect debt_score_factor == 2
+quit
