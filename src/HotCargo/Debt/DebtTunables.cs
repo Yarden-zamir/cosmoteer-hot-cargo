@@ -46,6 +46,33 @@ public sealed class DebtTunables
     /// <summary>Spec 1422: the collect job pays this many standard missions' money (always off the debt).</summary>
     [Serialize(Optional = true)] public float CollectRewardFactor = 1.5f;
 
+    /// <summary>Spec 1430: off turns paid help off.</summary>
+    [Serialize(Optional = true)] public bool HelpEnabled = true;
+    /// <summary>Spec 1430: chance that the system's faction sends help, rolled once in each system at the first fight.</summary>
+    [Serialize(Optional = true)] public float HelpChance = 0.3f;
+    /// <summary>Spec 1430: a fight is at least this many enemy ships near a human ship.</summary>
+    [Serialize(Optional = true)] public int HelpMinEnemies = 2;
+    /// <summary>Spec 1430 and 1433: "near a human ship" for the fight check.</summary>
+    [Serialize(Optional = true)] public float HelpFightRadius = 3000f;
+    /// <summary>Spec 1430: the faction helps only with at least this reputation.</summary>
+    [Serialize(Optional = true)] public int HelpMinReputation = 0;
+    /// <summary>Spec 1431: ships that come to help.</summary>
+    [Serialize(Optional = true)] public int HelpShips = 2;
+    /// <summary>Spec 1431: the helpers jump in this far from the fleet center.</summary>
+    [Serialize(Optional = true)] public float HelpDistance = 1200f;
+    /// <summary>Spec 1433: game seconds with no enemy near before the fight counts as over.</summary>
+    [Serialize(Optional = true)] public float HelpCalmSeconds = 20f;
+    /// <summary>Spec 1433: below this damage share the helpers ask nothing and leave.</summary>
+    [Serialize(Optional = true)] public float HelpMinShare = 0.1f;
+    /// <summary>Spec 1434: the price is the share × this many event money units.</summary>
+    [Serialize(Optional = true)] public float HelpPricePerShare = 4f;
+    /// <summary>Spec 1435: "we didn't ask for help" works below this damage share.</summary>
+    [Serialize(Optional = true)] public float ClaimMaxShare = 0.25f;
+    /// <summary>Spec 1435: reputation that a failed "we didn't ask" costs.</summary>
+    [Serialize(Optional = true)] public int ClaimReputationLoss = 150;
+    /// <summary>Spec 1436: game seconds that the helper waits for an answer; then the price goes on the tab.</summary>
+    [Serialize(Optional = true)] public float HelpWaitSeconds = 120f;
+
     public void Validate(Action<bool, string> require)
     {
         require(LoanStationChance is >= 0 and <= 1, "Debt.LoanStationChance must be 0 to 1");
@@ -54,6 +81,9 @@ public sealed class DebtTunables
         require(FirmRatio > 1 && HostileRatio >= FirmRatio, "Debt.FirmRatio must be above 1 and HostileRatio at least FirmRatio");
         require(MissionPayoffChance is >= 0 and <= 1 && RefinanceStationChance is >= 0 and <= 1, "Debt.MissionPayoffChance and RefinanceStationChance must be 0 to 1");
         require(RefinanceRateFactor >= 0 && RefinanceReputationLoss >= 0 && CollectRewardFactor >= 0, "Debt.RefinanceRateFactor, RefinanceReputationLoss and CollectRewardFactor must not be negative");
+        require(HelpChance is >= 0 and <= 1 && HelpMinShare is >= 0 and <= 1 && ClaimMaxShare is >= 0 and <= 1, "Debt.HelpChance, HelpMinShare and ClaimMaxShare must be 0 to 1");
+        require(HelpMinEnemies >= 1 && HelpShips >= 1 && HelpFightRadius > 0 && HelpDistance > 0, "Debt.HelpMinEnemies and HelpShips must be at least 1, the help distances above 0");
+        require(HelpCalmSeconds >= 0 && HelpWaitSeconds > 0 && HelpPricePerShare >= 0 && ClaimReputationLoss >= 0, "Debt help times and prices must not be negative (HelpWaitSeconds above 0)");
         require(CollectorDistance > 0 && ScoreDebtFactor >= 0, "Debt.CollectorDistance must be above 0, ScoreDebtFactor not negative");
     }
 }

@@ -53,4 +53,20 @@ HotCargoDebt
 	LogRefinancedFmt = "The {0} bought the debt to the {1}."
 	CollectName = "Collect a Debt"
 	CollectDesc = "Defeat the debtor in the {mission_location} system.\nThe pay goes off your own debt."
+
+	// Paid help (spec 1430 to 1436).
+	HelpCenterFmt = "<good>{0} SHIPS JOIN THE FIGHT</good>"
+	HelpChatFmt = "{0} warships join the fight on your side. They will want pay for it."
+	HelpIdleFmt = "The {0} ships did next to nothing and leave."
+	// {0} faction, {1} players' share %, {2} helpers' share %, {3} price.
+	HelpAskFmt = "<b>PAID HELP</b>\nThe {0} want pay for the fight.\nYou did {1}% of the damage; we did {2}%. Price: {3}."
+	HelpPayFmt = "Pay {0}"
+	HelpTabChoiceFmt = "Put it on my tab ({0} debt to the {1})"
+	// {0} claim limit %, {1} helpers' share %, {2} reputation loss.
+	ClaimChoiceWorksFmt = "We didn't ask for help <good>(works below {0}%: they did {1}%)</good>"
+	ClaimChoiceFailsFmt = "We didn't ask for help <bad>(works below {0}%: they did {1}%. -{2} reputation)</bad>"
+	HelpPaidFmt = "You pay {0} to the {1} for their help."
+	HelpTabFmt = "{0} goes on your debt to the {1}."
+	ClaimWorksFmt = "The {0} shrug and leave. They barely fired a shot."
+	ClaimFailsFmt = "The {0} remember this. -{1} reputation."
 }

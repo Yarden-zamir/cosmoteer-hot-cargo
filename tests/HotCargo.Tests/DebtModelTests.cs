@@ -41,7 +41,7 @@ public class DebtModelTests
         int option = DebtModel.Option(DebtChoice.Pay, 124);
         Assert.Equal((DebtChoice.Pay, 124), DebtModel.Decode(option));
         Assert.Equal((DebtChoice.NotNow, 0), DebtModel.Decode(DebtModel.Option(DebtChoice.NotNow, 0)));
-        Assert.Throws<ArgumentOutOfRangeException>(() => DebtModel.Decode(7 * DebtModel.Span));
+        Assert.Throws<ArgumentOutOfRangeException>(() => DebtModel.Decode(9 * DebtModel.Span));
         Assert.Throws<ArgumentOutOfRangeException>(() => DebtModel.Option(DebtChoice.Pay, DebtModel.Span));
     }
 
@@ -52,6 +52,18 @@ public class DebtModelTests
         Assert.Equal((10_000L, 2_000L), DebtModel.PayoffSplit(12_000, 10_000));
         Assert.Equal((0L, 500L), DebtModel.PayoffSplit(500, 0));
         Assert.Throws<ArgumentOutOfRangeException>(() => DebtModel.PayoffSplit(-1, 10));
+    }
+
+    [Fact]
+    public void Help_share_price_and_claim_follow_the_damage()
+    {
+        Assert.Equal(0.4f, DebtModel.Share(400, 600), 5);
+        Assert.Equal(0f, DebtModel.Share(0, 0));
+        Assert.Equal(1.6f, DebtModel.HelpPriceUnits(0.4f, 4f), 5);
+        Assert.True(DebtModel.ClaimWorks(0.24f, 0.25f));
+        Assert.False(DebtModel.ClaimWorks(0.25f, 0.25f));
+        Assert.Equal(40, DebtModel.Percent(0.4f));
+        Assert.Throws<ArgumentOutOfRangeException>(() => DebtModel.Share(-1, 0));
     }
 
     [Fact]

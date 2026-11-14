@@ -114,10 +114,16 @@ static class DebtTick
         }
         TickCollectors(run, sim, now);
         DebtMissions.Tick(run, sim);
+        DebtHelp.Tick(run, sim, now);
     }
 
     /// <summary>Collectors belong to the system they came to.</summary>
-    public static void OnSystemEntered(Run run, bool firstVisit) => run.State.Debt.Collectors.Clear();
+    public static void OnSystemEntered(Run run, bool firstVisit)
+    {
+        run.State.Debt.Collectors.Clear();
+        // Spec 1433: helpers stay behind and ask nothing.
+        run.State.Debt.Help = null;
+    }
 
     static void StageRose(Run run, SimRoot sim, Debt d, DebtStage stage)
     {
@@ -174,21 +180,33 @@ static class DebtTick
         DebtArea.Chat(run, DebtArea.Format("CollectorLeavesFmt", ship.Metadata.PlainShipName));
     }
 
-    /// <summary>Spec 1407: one combat ship of the lender, at the sector tier or the nearest lower tier, near the fleet.</summary>
+    /// <summary>Spec 1407: one combat ship of the lender near the fleet.</summary>
     static void SpawnCollector(Run run, SimRoot sim, Debt d, Vector2 center)
     {
         var t = run.T.Debt;
-        var faction = GameApp.Rules.GetFactionRules(d.FactionId);
+        var ship = SpawnFactionShip(run, sim, d.FactionId, center, t.CollectorDistance);
+        run.State.Debt.Collectors.Add(new Collector { Ship = ship.UniqueID, Faction = d.Faction, LeaveAt = run.State.GameSeconds + t.CollectorWaitSeconds });
+        DebtArea.Chat(run, DebtArea.Format("CollectorArrivesFmt", ship.Metadata.PlainShipName, Lenders.Name(d.Faction)));
+        Log.Info($"debt: collector {ship.Metadata.PlainShipName} of {d.Faction} arrived, balance {d.Balance}, stage {Lenders.StageOf(run, d)}");
+    }
+
+    /// <summary>
+    /// Spec 1407 and 1431: a combat ship of a faction (its military player index, the sector tier or the nearest lower tier), with the
+    /// FTL jump-in effect, at this distance from the center.
+    /// </summary>
+    public static Ship SpawnFactionShip(Run run, SimRoot sim, ID<FactionRules> factionId, Vector2 center, float distance)
+    {
+        var faction = GameApp.Rules.GetFactionRules(factionId);
         BuiltinShipRules? built = null;
         for (int tier = Math.Max(1, run.CurrentTier); tier >= 1 && built is null; tier--)
             built = GameApp.Rules.BuiltinShips.GetRandomMatchingShip(sim.Rand, [faction.ID], new Range<int>(tier, tier), null, [Combat]);
-        if (built is null) throw new InvalidOperationException($"no built-in combat ship of {d.Faction} at tier {run.CurrentTier} or below");
+        if (built is null) throw new InvalidOperationException($"no built-in combat ship of {faction.ID} at tier {run.CurrentTier} or below");
         var wanted = GameApp.Rules.CareerMode.Wanted;
         Vector2 loc = center;
         // Same retry rule as police spawns (WantedManager.GetPoliceSpawnLoc): avoid suns, give up after 100 tries.
         for (int i = 0; i < 100; i++)
         {
-            loc = center + sim.Rand.Normal() * t.CollectorDistance;
+            loc = center + sim.Rand.Normal() * distance;
             if (!sim.ShouldAIAvoidLocation(loc, wanted.PoliceSpawnAvoidableDoodadTags, wanted.PoliceSpawnAvoidableDoodadBuffer)) break;
         }
         var spawner = new StasisShipSpawner(sim, built.ID, loc, SpawnedShipFeatures.None, sim.Rand.UInt64())
@@ -198,10 +216,8 @@ static class DebtTick
             ObjectAllegiance = faction.MilitaryPlayerIndex,
         };
         spawner.Spawn(sim);
-        var ship = sim.Ships[spawner.ReservedObjectID] ?? throw new InvalidOperationException($"collector {built.ID} did not spawn");
+        var ship = sim.Ships[spawner.ReservedObjectID] ?? throw new InvalidOperationException($"{built.ID} of {faction.ID} did not spawn");
         _ = ship.Renderer.AnimateFtlJumpIn(ship.WorldFlightDirection);
-        run.State.Debt.Collectors.Add(new Collector { Ship = ship.UniqueID, Faction = d.Faction, LeaveAt = run.State.GameSeconds + t.CollectorWaitSeconds });
-        DebtArea.Chat(run, DebtArea.Format("CollectorArrivesFmt", ship.Metadata.PlainShipName, faction.NameKey.Text));
-        Log.Info($"debt: collector {ship.Metadata.PlainShipName} of {d.Faction} arrived, balance {d.Balance}, stage {Lenders.StageOf(run, d)}");
+        return ship;
     }
 }

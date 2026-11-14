@@ -24,6 +24,20 @@ counttag pirate
 @2p expect tagcount == 8
 @3p expect tagcount == 12
 
+step debt.help
+# Spec 1435, 1437: helpers ask for pay; the client puts it on the tab from its machine; both machines show the same debt.
+mp debt_set HelpCalmSeconds 2
+mp debt_help_spawn
+mp debt_help_share 500 500
+waitfor debt_help_hailed == 1 60
+as 1 debt_goto helper
+wait 2
+on 1 debt_help_answer tab
+waitfor debt_count == 1 30
+on 1 waitfor debt_count == 1 30
+expect debt_ratio == 1
+on 1 expect debt_ratio == 1
+
 step diplomacy.payoff
 # Spec 587 (#25): the client ticks tech on the hunter page, and the draft is shared, so the host adds money to it. The client
 # sends the pay-off through the shared choice input. Both machines see the hunters leave and the same vault tech.
