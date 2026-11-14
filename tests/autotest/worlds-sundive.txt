@@ -1,0 +1,27 @@
+# Sundive recorder (spec 1144): with no free storage the salvage waits; then the recorder goes into the hold; a lost recorder fails
+# the job. worlds-solar covers the escape.
+newgame run
+wait 8
+godmode
+worlds jumpto hc_solar_zone
+pause off
+worlds set SundiveSalvageSeconds 2
+worlds generate sundive
+worlds accept sundive
+ev_mark
+ev_storage_fill steel
+worlds goto sundive
+wait 4
+expect worlds_sundive_salvage >= 2
+expect worlds_sundive_held == 0
+expect worlds_sundive_done == 0
+# Room again: the recorder goes aboard.
+ev_storage_clear steel
+wait 2
+expect worlds_sundive_held == 1
+expect ev_res_yarden_zamir.flight_recorder_gain == 1
+# The storage that holds it is gone, and nothing drifts loose: the job fails.
+ev_storage_clear yarden_zamir.flight_recorder
+wait 2
+expect worlds_sundive_done == -1
+quit

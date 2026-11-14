@@ -47,9 +47,7 @@ public static class Loot
     static void Drop(SimRoot sim, Ship near, ID<ResourceRules> id, int amount)
     {
         if (amount <= 0) return;
-        float r = near.WorldBoundingRadius + 30f;
-        var rect = new RotRect(near.DetWorldCenter + new Vector2(r, 0f), new Vector2(40f, 40f), Direction.Zero);
-        sim.Nuggets.DropNuggets(id, amount, rect, Vector2.Zero, randomVelocity: true);
+        SimQueries.DropLoose(sim, near.DetWorldCenter, near.WorldBoundingRadius, id, amount);
     }
 
     /// <summary>Gives the fuel and the extra resource of a ship that surrendered. Returns the result lines (XML).</summary>

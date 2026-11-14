@@ -1,3 +1,4 @@
+# speed: 1
 # Telemetry: a short scripted run that makes data for a report (tools/telemetry) and checks that each event kind shows.
 # Three systems: an event, a contract, an escort, a sale, heat stages with hunters, won fights, a destroyed vault, an event,
 # a save and a load, and a win at the Buyer. It checks telemetry coverage, not balance, so the player's ships cannot be hurt
