@@ -1,0 +1,22 @@
+# Relays: a blind jump passes a closed relay (spec 650, 954). The blind spin-up takes BlindSpinUpFactor (2) x the vanilla time.
+# Its own test, so it runs in the first game of the process (see relays-closed.txt: one jump per test).
+newgame
+wait 8
+ev_set Enabled false
+godmode on
+pause off
+fa_drive
+wait 1
+fa_torelay
+wait 2
+rl_here closed
+rl_set ClosedSeconds 0
+wait 1
+fa_blind on
+wait 1
+expect rl_blocks == 0
+fa_gatejump
+waitfor fa_ready == 1 180
+fa_engage
+waitfor fa_jumpstarts == 1 60
+quit
