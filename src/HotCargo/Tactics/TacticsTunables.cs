@@ -51,6 +51,8 @@ public sealed class TacticsTunables
     [Serialize(Optional = true)] public float FallBackDonorShare = 0.5f;
     /// <summary>A ship stops this far from the hull of a donor or a station. Must stay under the vanilla transfer distance (400).</summary>
     [Serialize(Optional = true)] public float FallBackDockGap = 150f;
+    /// <summary>A friendly station repairs a docked ship this many damaged or destroyed parts per AI check, at once and for free.</summary>
+    [Serialize(Optional = true)] public int FallBackStationRepairsPerTick = 2;
 
     [Serialize(Optional = true)] public bool BaitEnabled = true;
     [Serialize(Optional = true)] public string BaitMinStage = "Strike";
@@ -188,6 +190,7 @@ public sealed class TacticsTunables
         require(FallBackTripSeconds > 0 && FallBackArriveDistance > 0 && FallBackDonorRange >= 0,
             "Tactics.FallBackTripSeconds and FallBackArriveDistance must be above 0, FallBackDonorRange 0 or more");
         require(FallBackCrewFraction is >= 0 and <= 1 && FallBackDonorShare is >= 0 and <= 1, "Tactics.FallBackCrewFraction and FallBackDonorShare must be 0 to 1");
+        require(FallBackStationRepairsPerTick >= 1, "Tactics.FallBackStationRepairsPerTick must be 1 or more");
         require(FallBackDockGap is >= 0 and < 400, "Tactics.FallBackDockGap must be 0 or more and below the vanilla transfer distance 400");
         require(TeamRadius > 0 && CoverSearchRange > 0 && CoverPeekSeconds > 0 && CoverHideSeconds > 0,
             "Tactics.TeamRadius, CoverSearchRange, CoverPeekSeconds and CoverHideSeconds must be above 0");

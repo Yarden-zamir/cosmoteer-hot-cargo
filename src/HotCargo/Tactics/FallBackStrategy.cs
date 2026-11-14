@@ -61,8 +61,15 @@ internal sealed class FallBackStrategy : AIStrategyModule
         });
     }
 
+    /// <summary>Tactics log events of a donor transfer and a station supply (autotest fields tactic_fallback_take, tactic_fallback_supply).</summary>
+    public const string TakeEvent = "fallback_take", SupplyEvent = "fallback_supply";
+
     public RepairPlan Plan => _active ? (RepairPlan)_plan : RepairPlan.None;
     public bool Supplied => _supplied;
+
+    /// <summary>True when the ship falls back in cover and its rock blocks the line to the nearest enemy. For autotests.</summary>
+    public bool InCover(Ship ship) =>
+        Plan == RepairPlan.Cover && _rock is { } rock && Ai.AiGate.NearestHumanEnemy(ship) is { } threat && CoverStrategy.Covered(ship, threat, rock);
 
     /// <summary>Place and hull radius of the donor or station of the plan, or null. For autotests.</summary>
     public (Vector2 Center, float Radius)? TargetCenter(Ship ship) => Plan switch
@@ -133,7 +140,7 @@ internal sealed class FallBackStrategy : AIStrategyModule
     void SetPlan(RepairPlan plan, ObjectID target = default, Ship? rock = null) => (_plan, _target, _rock, _supplied) = ((int)plan, target, rock, false);
 
     /// <summary>Spec 1305. Measures what the ship lacks and picks the first plan that applies.</summary>
-    void PickPlan(Ship ship, Ship? threat, TacticsTunables t, bool allowDonor = true)
+    void PickPlan(Ship ship, Ship? threat, TacticsTunables t)
     {
         if (!t.FallBackResupplyEnabled)
         {
@@ -143,7 +150,7 @@ internal sealed class FallBackStrategy : AIStrategyModule
         var lacking = Resupply.Lacking(ship);
         bool shortOfCrew = Resupply.ShortOfCrew(ship, t);
         var rock = threat is null ? null : CoverStrategy.FindRock(ship, threat, t);
-        var donor = allowDonor ? Resupply.FindDonor(ship, lacking, t) : null;
+        var donor = Resupply.FindDonor(ship, lacking, t);
         var station = Resupply.FindStation(ship);
         var plan = RepairModel.PickPlan(lacking.Count > 0, shortOfCrew, new RepairOptions(rock is not null, donor is not null, station is not null));
         SetPlan(plan, plan switch
@@ -163,6 +170,12 @@ internal sealed class FallBackStrategy : AIStrategyModule
         return true;
     }
 
+    /// <summary>Stops the ship where it is: no move or attack command.</summary>
+    static void HoldStill(Ship ship)
+    {
+        if (ship.Commands.CurConfirmedCommand is not null) ship.Commands.Clear();
+    }
+
     /// <summary>Spec 47: fly FallBackDistance away from the nearest enemy, then repair with what the ship has.</summary>
     bool Away(Ship ship, ShipAI ai, Ship? threat, TacticsTunables t)
     {
@@ -176,16 +189,27 @@ internal sealed class FallBackStrategy : AIStrategyModule
     bool Cover(Ship ship, ShipAI ai, Ship? threat, TacticsTunables t)
     {
         if (threat is null) return RepairHere(ship, ai);
-        if (_rock is not { } rock || !rock.IsLiveWith(ship) || !CoverStrategy.Usable(ship, threat, rock, t)) return Repick(ship, threat, t, "rock lost");
+        if (_rock is not { } rock || rock.IsDisposed || rock.Sim != ship.Sim || !CoverStrategy.Usable(ship, threat, rock, t)) return Repick(ship, threat, t, "rock lost");
         var spot = CoverStrategy.Spot(ship, threat, rock, t);
-        if (spot.DistanceTo(ship.DetWorldCenter) <= t.FallBackArriveDistance) return RepairHere(ship, ai);
+        // The vanilla repair stops the ship, so it holds only where the rock blocks the line to the threat.
+        if (spot.DistanceTo(ship.DetWorldCenter) <= t.FallBackArriveDistance && CoverStrategy.Covered(ship, threat, rock))
+        {
+            if (!_supplied) TacticsLog.Event(ship, Tactic.FallBack, $"in cover from {threat.Metadata.PlainShipName}");
+            // In the cover plan the flag marks the arrival, so the log line shows once.
+            _supplied = true;
+            return RepairHere(ship, ai);
+        }
         Ai.PersonalityStrategy.MoveGuarded(ship, spot, t.FallBackArriveDistance * 0.5f, threat, t);
         return true;
     }
 
-    /// <summary>Spec 1307: fly next to the donor, take the resources at once, then pick the plan again.</summary>
+    /// <summary>
+    /// Spec 1307: fly next to the donor and take the resources at once. Then repair as in the away plan, within the trip time.
+    /// One donor visit per fall back, so a ship does not drain its allies one share after another.
+    /// </summary>
     bool Donor(Ship ship, ShipAI ai, Ship? threat, TacticsTunables t)
     {
+        if (_supplied) return Away(ship, ai, threat, t);
         if (HunterOrders.Sim(ship).Ships[_target] is not { } donor || !donor.IsLiveWith(ship) || ship.IsEnemiesWith(donor))
             return Repick(ship, threat, t, "donor lost");
         if (!Resupply.InTransferRange(ship, donor))
@@ -193,18 +217,10 @@ internal sealed class FallBackStrategy : AIStrategyModule
             Ai.PersonalityStrategy.MoveGuarded(ship, Resupply.Beside(ship, donor.DetWorldCenter, donor.WorldBoundingRadius, t.FallBackDockGap), t.FallBackDockGap * 0.5f, threat, t);
             return true;
         }
-        int moved = Resupply.TakeFrom(ship, donor, Resupply.Lacking(ship), t);
-        TacticsLog.Event(ship, Tactic.FallBack, $"takes {moved} units from {donor.Metadata.PlainShipName}");
-        // A donor that gave nothing would be picked again at once: the ship repairs away from the players instead.
-        if (moved == 0)
-        {
-            SetPlan(RepairPlan.Away);
-            return Away(ship, ai, threat, t);
-        }
-        // One donor visit per fall back, so a ship does not drain its allies one share after another.
-        TacticsLog.Event(ship, Tactic.FallBack, "new plan: supplied by a donor");
-        PickPlan(ship, threat, t, allowDonor: false);
-        return true;
+        int moved = Resupply.TakeFrom(ship, donor, t);
+        _supplied = true;
+        TacticsLog.Event(ship, TakeEvent, $"takes {moved} units from {donor.Metadata.PlainShipName}");
+        return Away(ship, ai, threat, t);
     }
 
     /// <summary>Spec 1308: fly to the station, take its free supply once, then hold there and repair with the station crews.</summary>
@@ -218,11 +234,13 @@ internal sealed class FallBackStrategy : AIStrategyModule
         }
         if (!_supplied)
         {
-            var (units, crew) = Resupply.Supply(ship, station.Center);
+            var (units, crew) = Resupply.Supply(ship);
             _supplied = true;
-            TacticsLog.Event(ship, Tactic.FallBack, $"station {station.Live?.Metadata.PlainShipName} supplies {units} units and {crew} crew");
+            TacticsLog.Event(ship, SupplyEvent, $"station {station.Live?.Metadata.PlainShipName} supplies {units} units and {crew} crew");
         }
-        return RepairHere(ship, ai);
+        Resupply.StationRepair(ship, t.FallBackStationRepairsPerTick);
+        HoldStill(ship);
+        return true;
     }
 
     bool Repick(Ship ship, Ship? threat, TacticsTunables t, string why)

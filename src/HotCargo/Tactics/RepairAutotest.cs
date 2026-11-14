@@ -16,7 +16,10 @@ static class RepairAutotest
     {
         foreach (var plan in Enum.GetValues<RepairPlan>().Where(p => p != RepairPlan.None))
             Autotest.Fields[$"ai_fb_{plan.ToString().ToLowerInvariant()}"] = () => Modules().Count(m => m.Plan == plan);
+        foreach (string name in new[] { FallBackStrategy.TakeEvent, FallBackStrategy.SupplyEvent })
+            Autotest.Fields[$"tactic_{name}"] = () => TacticsLog.Count(name);
         Autotest.Fields["ai_fb_active"] = () => Modules().Count(m => m.Plan != RepairPlan.None);
+        Autotest.Fields["ai_fb_in_cover"] = () => Hostile().Count(s => s.AI?.GetStrategyModule<FallBackStrategy>()?.InCover(s) == true);
         Autotest.Fields["ai_fb_supplied"] = () => Modules().Count(m => m.Supplied);
         // The lowest health fraction (spec 47) and the lowest crew count of the ships of the last aispawn.
         Autotest.Fields["ai_new_min_health"] = () => New().Select(s => (double)HunterOrders.HealthFraction(s)).DefaultIfEmpty(-1).Min();
@@ -57,6 +60,15 @@ static class RepairAutotest
                 int added = from.Resources.AddResources(new ID<ResourceRules>(id), 2 * n);
                 Log.Info($"AUTOTEST {from.Metadata.PlainShipName} gets {added} of {2 * n} {id}");
             }
+        };
+        // ainear <i> <j> <distance>: moves ship <i> of the aispawn list to this distance from the hull of ship <j>.
+        Autotest.Commands["ainear"] = arg =>
+        {
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length != 3) throw new InvalidOperationException("ainear needs: i j distance");
+            var (ship, to) = (At(parts[0]), At(parts[1]));
+            float d = float.Parse(parts[2], CultureInfo.InvariantCulture);
+            Autotest.Teleport(ship, Autotest.ClearSpotNear(ship.Sim!, to.DetWorldCenter, to.WorldBoundingRadius + ship.WorldBoundingRadius + d, ship.WorldBoundingRadius));
         };
         // aiplan_near <distance>: moves each hostile ship with a station or donor plan to this distance from its target's hull.
         Autotest.Commands["aiplan_near"] = arg =>

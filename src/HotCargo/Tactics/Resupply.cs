@@ -69,11 +69,17 @@ internal static class Resupply
     /// <summary>Units of a resource in the ship's storage. Carried units and construction stock do not count.</summary>
     static int Stock(Ship ship, ID<ResourceRules> type) => ship.Resources.GetResourceTotal(type, includeStored: true, includeCarried: false);
 
-    /// <summary>Spec 1307: the nearest donor in range that holds a lacking resource. Ties go to the lower ID.</summary>
+    /// <summary>Free room in the ship's storage for a resource.</summary>
+    static int Room(Ship ship, ID<ResourceRules> type) => Math.Max(0, ship.Resources.GetRemainingCapacity(type, includeUntypedStorages: true));
+
+    /// <summary>
+    /// Spec 1307: the nearest donor in range that holds a resource that the ship lacks and has room for. Ties go to the lower ID.
+    /// A ship without storage room gets no donor: its crews could not take the units.
+    /// </summary>
     public static Ship? FindDonor(Ship ship, IReadOnlyDictionary<string, int> lacking, TacticsTunables t)
     {
-        if (lacking.Count == 0) return null;
-        var types = lacking.Keys.Select(k => new ID<ResourceRules>(k)).ToList();
+        var types = lacking.Keys.Select(k => new ID<ResourceRules>(k)).Where(type => Room(ship, type) > 0).ToList();
+        if (types.Count == 0) return null;
         Ship? best = null;
         float bestDistance = float.MaxValue;
         foreach (var other in HunterOrders.Sim(ship).Ships)
@@ -92,18 +98,23 @@ internal static class Resupply
     public static bool InTransferRange(Ship a, Ship b) =>
         a.DetWorldBoundingCircle.DistanceTo(b.DetWorldBoundingCircle) <= GameApp.Rules.Crew.LoseHomeShipWarningDistance;
 
-    /// <summary>Spec 1307: moves up to the donor share of each lacking resource from the donor's storage to the ship. Returns the units moved.</summary>
-    public static int TakeFrom(Ship ship, Ship donor, IReadOnlyDictionary<string, int> lacking, TacticsTunables t)
+    /// <summary>
+    /// Spec 1307: moves up to the donor share of each resource that the ship's own storage lacks, into the ship's storage.
+    /// Own storage only: the vanilla repair counts an own-player donor within 400 as usable, but crews reach another ship only
+    /// through airlocks. Units that find no room go back to the donor. Returns the units moved.
+    /// </summary>
+    public static int TakeFrom(Ship ship, Ship donor, TacticsTunables t)
     {
         int moved = 0;
-        foreach (var (id, need) in lacking.OrderBy(kv => kv.Key, StringComparer.Ordinal))
+        foreach (var (id, need) in Lacking(ship, ownOnly: true).OrderBy(kv => kv.Key, StringComparer.Ordinal))
         {
             var type = new ID<ResourceRules>(id);
-            int give = RepairModel.DonorGives(need, Stock(donor, type), t.FallBackDonorShare);
+            int give = Math.Min(Room(ship, type), RepairModel.DonorGives(need, Stock(donor, type), t.FallBackDonorShare));
             if (give <= 0) continue;
             int removed = donor.Resources.RemoveResources(type, give);
-            Give(ship, type, removed, toward: donor.DetWorldCenter);
-            moved += removed;
+            int placed = ship.Resources.AddResources(type, removed, excludeConstructionSinks: true);
+            if (placed < removed) donor.Resources.AddResources(type, removed - placed, excludeConstructionSinks: true);
+            moved += placed;
         }
         return moved;
     }
@@ -122,51 +133,42 @@ internal static class Resupply
         station.Live is { } live && HunterOrders.Sim(ship).Mode.AllowResourceTrade(ship, live);
 
     /// <summary>
-    /// Spec 1308: the station supplies the ship for free: each lacking resource, crew for the free crew places, and all repairs
-    /// queued. The queue skips the money check of the vanilla repair module (AISelfRepairModule.TryRepairObject): next to a
-    /// trading station the vanilla cost asks for credits, which an AI player does not have, so the vanilla module queues nothing.
+    /// Spec 1308: the station supplies the ship for free: each resource that its own storage lacks, as far as its storage has room,
+    /// and crew for the free crew places. Returns the units and crew given.
     /// </summary>
-    public static (int Units, int Crew) Supply(Ship ship, Vector2 station)
+    public static (int Units, int Crew) Supply(Ship ship)
     {
         int units = 0;
         foreach (var (id, need) in Lacking(ship, ownOnly: true).OrderBy(kv => kv.Key, StringComparer.Ordinal))
-        {
-            Give(ship, new ID<ResourceRules>(id), need, toward: station);
-            units += need;
-        }
+            units += ship.Resources.AddResources(new ID<ResourceRules>(id), need, excludeConstructionSinks: true);
         int crew = ship.Crew.CreateCrewsAtRandomParts(ship.Crew.RemainingCrewCapacity);
-        foreach (var repair in RepairObjects(ship).ToList())
-        {
-            using var info = ShipUpdateInfo.Alloc(ship);
-            if (AddRepair(info, repair) && info.CanQueuePhysical()) info.QueuePhysical(updateDestroyed: true, isRepair: true, allowPartialConstruction: true);
-        }
         return (units, crew);
     }
 
     /// <summary>
-    /// Spec 1307-1308: puts the units into the ship's storage, and drops what does not fit as loose nuggets beside the hull,
-    /// on the side of the giver. Many combat ships have no storage bays. The vanilla repair counts nuggets within 400 of the ship
-    /// as usable (ResourceManager.GetUsableConstructionResourceTotal), so its crews fetch them for the repairs.
+    /// Spec 1308: the station repairs up to count of the ship's repairs at once, for free. Returns the repairs done.
+    /// The vanilla crew repair cannot do this job for many AI ships: combat ships often have no storage bays, crews reach the
+    /// station only through airlocks, and next to a trading station the vanilla repair module asks for credits, which an AI player
+    /// does not have (AISelfRepairModule.TryRepairObject with the final cost of ShipUpdateInfo.GetTotalPhysicalCost).
     /// </summary>
-    static void Give(Ship ship, ID<ResourceRules> type, int amount, Vector2 toward)
+    public static int StationRepair(Ship ship, int count)
     {
-        int left = amount - ship.Resources.AddResources(type, amount, excludeConstructionSinks: true);
-        if (left <= 0) return;
-        var at = Beside(ship.DetWorldCenter, toward, ship.WorldBoundingRadius, NuggetGap);
-        HunterOrders.Sim(ship).Nuggets.DropNuggets(type, left, new RotRect(at, new Vector2(NuggetGap, NuggetGap), Direction.Zero));
+        int done = 0;
+        foreach (var repair in RepairObjects(ship).ToList())
+        {
+            if (done >= count) break;
+            using var info = ShipUpdateInfo.Alloc(ship);
+            if (!AddRepair(info, repair) || !info.CanApplyPhysical()) continue;
+            info.ApplyPhysical(destroyBlocking: false, builtByPlayer: false, updateDestroyed: true);
+            done++;
+        }
+        return done;
     }
 
-    /// <summary>Nuggets land this far out from the hull, well inside the 400 that the vanilla repair reaches.</summary>
-    const float NuggetGap = 60f;
-
     /// <summary>A spot gap from the target's hull on the ship's side, so the ship stops next to it and not inside it.</summary>
-    public static Vector2 Beside(Ship ship, Vector2 center, float radius, float gap) =>
-        Beside(center, ship.DetWorldCenter, radius + ship.WorldBoundingRadius, gap);
-
-    /// <summary>A point radius + gap from center, toward the other point (or along +X when the two meet).</summary>
-    static Vector2 Beside(Vector2 center, Vector2 toward, float radius, float gap)
+    public static Vector2 Beside(Ship ship, Vector2 center, float radius, float gap)
     {
-        var dir = center.DistanceTo(toward) < 1f ? new Vector2(1f, 0f) : Vector2.FromAngle(center.DirectionTo(toward));
-        return center + dir * (radius + gap);
+        var dir = center.DistanceTo(ship.DetWorldCenter) < 1f ? new Vector2(1f, 0f) : Vector2.FromAngle(center.DirectionTo(ship.DetWorldCenter));
+        return center + dir * (radius + ship.WorldBoundingRadius + gap);
     }
 }
