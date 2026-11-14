@@ -91,4 +91,26 @@ on 1 waitfor fr_debtors == 0 30
 on 1 expect ev_money_gain == 0
 expect ev_money_gain == 0
 
+step friendly.forward
+# Spec 1369 to 1371: the Wayfarers' roll, arrival, hail and exit run in the sim, so both machines see them. The client answers.
+mp fr_set PayForwardChance 1
+mp fr_set PayForwardOutclassRatio 0.01
+# An enemy near the start may have used this system's one roll already. This step checks co-op sync, so no hunters
+# join the fight: they could destroy the Wayfarers before it ends.
+mp maxhunters 0
+mp fr_kill_enemies all
+wait 2
+mp fr_help_reset
+mp dip_spawn enemy 900
+waitfor fr_wayfarers >= 1 30
+on 1 waitfor fr_wayfarers >= 1 30
+expect fr_wayfarer_sides == 1
+on 1 expect fr_wayfarer_sides == 1
+mp fr_kill_enemies all
+waitfor ev_pending == 1 60
+on 1 waitfor ev_pending == 1 30
+on 1 ev_comms carrier We will
+waitfor fr_wayfarers == 0 20
+on 1 waitfor fr_wayfarers == 0 30
+
 end
