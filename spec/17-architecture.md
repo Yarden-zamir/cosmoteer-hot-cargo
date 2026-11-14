@@ -20,6 +20,7 @@ src/HotCargo/
   ShipAi/                  player ship tactics: model (ShipAiModel), per-ship state and save hooks (ShipTactics), sim controller, MP input, editor
   Autonomy/                autonomous ships (section 45): Computer manning and ownership, Funnel, cargo and trade (AutonomyModel, AutonomyWorld)
   Pursuit/                 the Pursuit director: wave ramp, fleet factor, big event pacer (Pacer), reporting scout, relay blockade, network outage, hacker
+  Debris/                  debris decay (section 48): old loose junk glows, then burns up (DebrisModel, DebrisGlow)
   Ui/                      overlay, heat panel, run intro and end panels
   Dev/Autotest.cs          headless test commands
   Telemetry/               session telemetry files (TELEMETRY.md); read-only hooks and patches
