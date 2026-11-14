@@ -1,6 +1,6 @@
 // Funnel (spec 1054, 1055). 2x2, no crew, no power. C# (Autonomy.Funnel) takes in loot under it and moves it into the parts
 // that touch its sides. Its filter is the vanilla popout part setting "hc_funnel_filter" (modes: FunnelChoice in AutonomyModel).
-// Art: the round hyperdrive grate as the intake, in storage bay walls, with an amber tint. No roof: the intake is open.
+// Art: sprites/funnel (tools/sprites/make_sprites.py): a ringed intake cone with turning vanes. No roof: the intake is open.
 Part : <./Data/ships/terran/base_part_terran.rules>/Part
 {
 	NameKey = "HotCargoAutonomy/Funnel"
@@ -20,16 +20,14 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 	TypeCategories = [storage]
 	ReceivableBuffs : ^/0/ReceivableBuffs []
 	IgnoreRotationForMirroredSelection = true
-	TINT = [255, 205, 150]
 	EditorIcon
 	{
 		Texture
 		{
-			File = "./Data/ships/terran/hyperdrive_small/icon.png"
+			File = "sprites/funnel/icon.png"
 			SampleMode = Linear
 		}
 		Size = [56, 56]
-		VertexColor = &~/Part/TINT
 	}
 	Components : ^/0/Components
 	{
@@ -57,37 +55,29 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 			Floor
 			{
 				Layer = "floors"
-				DamageLevels
-				[
-					{ File = "./Data/ships/terran/hyperdrive_small/floor.png"; Size = [2, 2]; VertexColor = &~/Part/TINT }
-					{ File = "./Data/ships/terran/hyperdrive_small/floor_33.png"; Size = [2, 2]; VertexColor = &~/Part/TINT }
-					{ File = "./Data/ships/terran/hyperdrive_small/floor_66.png"; Size = [2, 2]; VertexColor = &~/Part/TINT }
+				DamageLevels [
+					{ File = "sprites/funnel/floor.png"; Size = [2, 2] }
+					{ File = "sprites/funnel/floor_33.png"; Size = [2, 2] }
+					{ File = "sprites/funnel/floor_66.png"; Size = [2, 2] }
 				]
 			}
 			OperationalDoodad
 			{
 				Layer = "doodads_low"
-				DamageLevels
-				[
-					{ File = "./Data/ships/terran/reactor_small/reactor.png"; Size = [1.3, 1.3]; RotSpeed = 45d; VertexColor = &~/Part/TINT }
-				]
+				DamageLevels [ { File = "sprites/funnel/vanes.png"; Size = [1.3125, 1.3125]; RotSpeed = 90d } ]
 			}
 			NonOperationalDoodad
 			{
 				Layer = "doodads_low"
-				DamageLevels
-				[
-					{ File = "./Data/ships/terran/reactor_small/reactor.png"; Size = [1.3, 1.3]; VertexColor = [120, 110, 100] }
-				]
+				DamageLevels [ { File = "sprites/funnel/vanes.png"; Size = [1.3125, 1.3125] } ]
 			}
 			Walls
 			{
 				Layer = "walls"
-				DamageLevels
-				[
-					{ File = "./Data/ships/terran/storage_2x2/walls.png"; Size = [2, 2] }
-					{ File = "./Data/ships/terran/storage_2x2/walls_33.png"; Size = [2, 2] }
-					{ File = "./Data/ships/terran/storage_2x2/walls_66.png"; Size = [2, 2] }
+				DamageLevels [
+					{ File = "sprites/funnel/walls.png"; Size = [2, 2] }
+					{ File = "sprites/funnel/walls_33.png"; Size = [2, 2] }
+					{ File = "sprites/funnel/walls_66.png"; Size = [2, 2] }
 				]
 			}
 		}
@@ -115,7 +105,7 @@ Part : <./Data/ships/terran/base_part_terran.rules>/Part
 		Blueprints
 		{
 			Type = BlueprintSprite
-			File = "./Data/ships/terran/storage_2x2/blueprints.png"
+			File = "sprites/funnel/blueprints.png"
 			Size = [2, 2]
 		}
 	}

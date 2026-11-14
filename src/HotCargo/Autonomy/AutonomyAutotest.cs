@@ -105,6 +105,35 @@ internal static class AutonomyAutotest
             float size = float.Parse(arg, CultureInfo.InvariantCulture);
             ship.Sim.Camera.ViewController.ZoomToFit(new Vector2(size));
         };
+        // auto_buildmode on|off: selects the test ship and opens or closes build mode, like the build button (screenshots, UI only).
+        Autotest.Commands["auto_buildmode"] = arg =>
+        {
+            var ship = TestShip();
+            ship.Sim.PlayerInput.SelectSingleShip(ship);
+            Autotest.RequireRun().Game.Gui.ShipGui.BuildButton.IsSelected = arg switch
+            {
+                "on" => true,
+                "off" => false,
+                _ => throw new InvalidOperationException($"auto_buildmode needs on or off, not '{arg}'"),
+            };
+        };
+        // auto_buildpart <part id>: picks a part in the build toolbox, like a click in the part list (screenshots, UI only).
+        Autotest.Commands["auto_buildpart"] = arg =>
+        {
+            var rules = TestShip().Rules.PartsByID[new ID<PartRules>(arg)];
+            if (!Autotest.RequireRun().Game.Gui.ShipGui.BuildToolbox.SelectPartType(rules)) throw new InvalidOperationException($"the build toolbox did not take {arg}");
+        };
+        // auto_damage <part id> <fraction>: sets every such part of the test ship to this fraction of its health (screenshots of the
+        // damage levels). Single player only; turn godmode off first.
+        Autotest.Commands["auto_damage"] = arg =>
+        {
+            if (Autotest.RequireRun().IsMultiplayer) throw new InvalidOperationException("auto_damage is single player only");
+            var p = Args(arg, 2);
+            float f = float.Parse(p[1], CultureInfo.InvariantCulture);
+            var parts = TestShip().Parts.Where(part => part.Rules.ID.ToString() == p[0]).ToList();
+            if (parts.Count == 0) throw new InvalidOperationException($"no {p[0]} on {_shipName}");
+            foreach (var part in parts) part.Health = Math.Max(1, (int)(part.Rules.MaxHealth * f));
+        };
         // auto_log <label>: logs the test ship's state, so a failed wait shows what the ship did.
         Autotest.Commands["auto_log"] = arg =>
         {

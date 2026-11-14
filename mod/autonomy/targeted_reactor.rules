@@ -1,6 +1,6 @@
 // Targeted reactor (spec 1053). reactor_small with half its battery output, sent straight into the BatteryStorage of each part
 // that touches one of its sides (one vanilla ResourceStorageProxy per outside edge tile). No crew can take power from it, and
-// crew cannot walk through it. Art: the reactor_small art with the thermal battery roof and a cold glow.
+// crew cannot walk through it. Art: sprites/targeted_reactor (tools/sprites/make_sprites.py): a sealed core with an emitter toward each side.
 Part : <./Data/ships/terran/reactor_small/reactor_small.rules>/Part
 {
 	NameKey = "HotCargoAutonomy/TargetedReactor"
@@ -24,11 +24,10 @@ Part : <./Data/ships/terran/reactor_small/reactor_small.rules>/Part
 	{
 		Texture
 		{
-			File = "./Data/ships/terran/reactor_small/icon.png"
+			File = "sprites/targeted_reactor/icon.png"
 			SampleMode = Linear
 		}
 		Size = [56, 56]
-		VertexColor = [150, 210, 255]
 	}
 	Components : ^/0/Components
 	{
@@ -74,34 +73,66 @@ Part : <./Data/ships/terran/reactor_small/reactor_small.rules>/Part
 		PowerLeft0 : PowerUp0 { PartLocation = [-1, 0] }
 		PowerLeft1 : PowerUp0 { PartLocation = [-1, 1] }
 
-		Graphics : ^/0/Graphics
+		// Own art (sprites/targeted_reactor, tools/sprites/make_sprites.py). These names replace the vanilla visual components.
+		Graphics
 		{
+			Type = Graphics
+			Location = [1, 1]
+			OperationalToggle = IsOperational
+			Floor
+			{
+				Layer = "floors"
+				DamageLevels [
+					{ File = "sprites/targeted_reactor/floor.png"; Size = [2, 2] }
+					{ File = "sprites/targeted_reactor/floor_33.png"; Size = [2, 2] }
+					{ File = "sprites/targeted_reactor/floor_66.png"; Size = [2, 2] }
+				]
+			}
+			OperationalDoodad
+			{
+				Layer = "doodads_low"
+				DamageLevels
+				[
+					{ AnimationFiles [ "sprites/targeted_reactor/doodads_on1.png", "sprites/targeted_reactor/doodads_on2.png", "sprites/targeted_reactor/doodads_on3.png", "sprites/targeted_reactor/doodads_on4.png" ]; Size = [2, 2]; AnimationInterval = 0.25 }
+				]
+			}
+			NonOperationalDoodad
+			{
+				Layer = "doodads_low"
+				DamageLevels [ { File = "sprites/targeted_reactor/doodads_off.png"; Size = [2, 2] } ]
+			}
+			OperationalLighting
+			{
+				Layer = "lights_add"
+				DamageLevels [ { File = "sprites/targeted_reactor/lights.png"; Size = [2, 2] } ]
+			}
+			Walls
+			{
+				Layer = "walls"
+				DamageLevels [
+					{ File = "sprites/targeted_reactor/walls.png"; Size = [2, 2] }
+					{ File = "sprites/targeted_reactor/walls_33.png"; Size = [2, 2] }
+					{ File = "sprites/targeted_reactor/walls_66.png"; Size = [2, 2] }
+				]
+			}
 			Roof
 			{
 				Layer = "roofs"
-				DamageLevels
-				[
-					{ File = "./Data/ships/terran/thermal_battery/roof.png"; NormalsFile = "./Data/ships/terran/thermal_battery/roof_normals.png"; Size = [2, 2] }
-					{ File = "./Data/ships/terran/thermal_battery/roof_33.png"; NormalsFile = "./Data/ships/terran/thermal_battery/roof_normals_33.png"; Size = [2, 2] }
-					{ File = "./Data/ships/terran/thermal_battery/roof_66.png"; NormalsFile = "./Data/ships/terran/thermal_battery/roof_normals_66.png"; Size = [2, 2] }
+				DamageLevels [
+					{ File = "sprites/targeted_reactor/roof.png"; NormalsFile = "sprites/targeted_reactor/roof_normals.png"; Size = [2, 2] }
+					{ File = "sprites/targeted_reactor/roof_33.png"; NormalsFile = "sprites/targeted_reactor/roof_normals_33.png"; Size = [2, 2] }
+					{ File = "sprites/targeted_reactor/roof_66.png"; NormalsFile = "sprites/targeted_reactor/roof_normals_66.png"; Size = [2, 2] }
 				]
 			}
-			OperationalRoofDoodad
-			{
-				Layer = "roof_doodads"
-				DamageLevels
-				[
-					{ File = "./Data/ships/terran/thermal_battery/roof_glows.png"; Size = [2, 2]; VertexColor = [90, 190, 255] }
-				]
-			}
-			OperationalRoofLighting
-			{
-				Layer = "roof_lights_fancy"
-				DamageLevels
-				[
-					{ File = "./Data/ships/common/light_blob.png"; Size = [5, 5]; Z = 1.5; VertexColor = [70, 170, 255] }
-				]
-			}
+		}
+		ReactorLights_NonOverclocked_Components { Type = ToggledComponents; Toggle = IsOperational; Components {} }
+		ReactorLights_Overclocked_Components { Type = ToggledComponents; Toggle = IsOperational; Components {} }
+		BatterySprites { Type = ToggledComponents; Toggle = IsOperational; Components {} }
+		Blueprints
+		{
+			Type = BlueprintSprite
+			File = "sprites/targeted_reactor/blueprints.png"
+			Size = [2, 2]
 		}
 	}
 }
