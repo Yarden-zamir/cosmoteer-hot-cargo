@@ -1,0 +1,23 @@
+# Spec 1127: the guard of a station stage offer stays neutral until the players accept the stage; then it fights.
+# The Black Box's first stage is a station offer with a raider guard (vanilla Normal AI) at the wreck.
+newgame run
+wait 8
+ev_set Enabled false
+chain_force black_box
+expect chain_held >= 1
+# Next to the guard before the accept: it is no enemy and gives no attack order.
+chain_guard_goto
+wait 10
+expect chain_guard_hostile == 0
+expect chain_guard_attacks == 0
+# The accept at the station gives the guard its hostile allegiance back.
+chain_tostation
+chain_accept
+expect chain_accepted == 1
+wait 2
+expect chain_held == 0
+chain_guard_goto
+wait 10
+expect chain_guard_hostile >= 1
+expect chain_guard_attacks >= 1
+quit

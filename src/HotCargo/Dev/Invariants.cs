@@ -119,20 +119,23 @@ public static class Invariants
     /// <summary>
     /// Spec 994, 995: a Hot Cargo hostile ship attacks the players only after its trigger. A chain ship (tag hc_ch_*) with the hunter AI
     /// waits until a chain mission is in progress: a stage mission of this system that the players accepted, or a Return or Arrival
-    /// mission, which goes straight to the log. A chain guard with the vanilla Normal AI defends its post like a vanilla bounty guard,
-    /// so it does not count. A hunter waits until heat is above 0 and a stage started, or a hunter wave spawned.
+    /// mission, which goes straight to the log. A ship of a stage offer, with any AI, waits for the accept (spec 1127). After its stage
+    /// ends, a guard with the vanilla Normal AI may defend its post like a vanilla bounty guard.
+    /// A hunter waits until heat is above 0 and a stage started, or a hunter wave spawned.
     /// Limit: "attacks" means an attack command on a human ship. A weapon that fires at a ship in range without a command
     /// does not count. Revisit if a playtest shows hits from ships that have no attack command.
     /// </summary>
     static void HostilesWaitForTrigger(Run run, SimRoot sim)
     {
         bool chainAccepted = ChainMissionInProgress(run);
+        var held = run.State.Chains.Instances.SelectMany(c => c.HeldShips.Keys).ToHashSet();
         // A wave in this session (a stage, a strike wave, an informant, an event or a test command) is the trigger too.
         bool hunterTrigger = (run.State.Heat > 0f && run.State.StagesStarted > 0) || Hunters.HunterSpawner.WavesSpawned > 0;
         foreach (Ship ship in sim.Ships)
         {
             if (ship.IsHumanPlayerShip || ship.IsJunk || ship.Tags is not { Count: > 0 } tags) continue;
-            bool chain = !chainAccepted && Ai.AiGate.IsHunterAi(ship) && tags.Any(t => t.ToString().StartsWith("hc_ch_", StringComparison.Ordinal));
+            bool chain = held.Contains(ship.UniqueID)
+                || !chainAccepted && Ai.AiGate.IsHunterAi(ship) && tags.Any(t => t.ToString().StartsWith("hc_ch_", StringComparison.Ordinal));
             bool hunter = !hunterTrigger && ship.HasTag(Hunters.HunterSpawner.HunterTag);
             if (!chain && !hunter) continue;
             if (AttackTarget(ship) is not { } target) continue;
