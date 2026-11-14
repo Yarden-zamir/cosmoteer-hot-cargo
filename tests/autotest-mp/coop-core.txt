@@ -142,11 +142,11 @@ on 1 tactics_editor addterm 1
 on 1 tactics_editor cond 1 HuntersInSystem 2
 on 1 tactics_editor not 1 2
 on 1 wait 3
-on 1 expecttactics HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
+on 1 expecttactics HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;TargetedByEnemy>TargetMyAttacker;AllyUnderAttack>TargetAllyAttacker;Always>Guard=0
 on 1 expect tactics_auto == 1
 on 1 tactics_editor close
 wait 2
-expecttacticsany HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;Always>Guard=0;AllyUnderAttack>TargetAllyAttacker
+expecttacticsany HC1:HealthBelow=25&!HuntersInSystem>RetreatRepair;TargetedByEnemy>TargetMyAttacker;AllyUnderAttack>TargetAllyAttacker;Always>Guard=0
 
 step shipai.fight
 # Both machines run the same tactics decisions in a fight.

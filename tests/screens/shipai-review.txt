@@ -1,0 +1,78 @@
+# Ship AI editor review: the setups a player builds first (escort, focus the weakest, flee when hurt, formation, miner).
+# Windowed test slot (needs graphics): scripts/screens.sh tests/screens/shipai-review.txt <out-dir>
+render on
+newgame run
+wait 10
+ev_set Enabled false
+closepanel
+pause off
+godmode on
+# A new ship: the empty editor, then one new row.
+tactics_editor open
+wait 2
+screenshot review-empty
+tactics_editor add
+wait 1
+screenshot review-new-row
+tactics_editor close
+# Escort: a second ship runs the Escort preset; the first ship has no rows.
+tactics_ally
+tactics_ship 1
+tactics Escort
+tacticsauto on
+tactics_ship 0
+stageset Warning EarlyScale 1
+spawnstage Warning
+wait 20
+vault focus wide
+wait 2
+screenshot review-escort-world
+tactics_ship 1
+tactics_editor open
+wait 2
+screenshot review-escort-editor
+tactics_editor close
+# Focus the weakest and flee when hurt, built in the editor on the first ship.
+tactics_ship 0
+tactics_editor open
+tactics_editor apply Aggressive
+tactics_editor cond 1 HealthBelow
+tactics_editor param 1 30
+tactics_editor act 1 FleeJump
+tactics_editor auto on
+wait 4
+screenshot review-aggressive-live
+# godmode heals each tick: turn it off for the damage.
+godmode off
+tactics_damage 0.25
+wait 5
+screenshot review-flee-status
+tactics_editor close
+wait 6
+vault focus wide
+wait 1
+screenshot review-flee-world
+# Formation preset at the smallest window.
+tactics_editor open
+tactics_editor apply Formation
+tactics_editor minsize
+wait 2
+screenshot review-formation-min
+tactics_editor close
+# An autonomous miner with the Miner preset.
+auto_build Miner player yarden_zamir.computer@2,0,1 cosmoteer.mining_laser_small@3,0,1 yarden_zamir.targeted_reactor@2,2 cosmoteer.storage_2x2@0,0 yarden_zamir.funnel@0,2 cosmoteer.thruster_small@0,4 cosmoteer.thruster_small@3,4 cosmoteer.thruster_small@0,-2,2 cosmoteer.thruster_small@3,-2,2 cosmoteer.thruster_small@-2,0,1 cosmoteer.thruster_small@-2,2,1 cosmoteer.thruster_small@4,2,3
+wait 1
+tactics_ship Miner
+tactics_editor open
+wait 2
+screenshot review-miner-new
+tactics_editor apply Miner
+tactics_editor auto on
+wait 4
+screenshot review-miner-editor
+tactics_editor close
+wait 25
+auto_focus 70
+wait 1
+screenshot review-miner-world
+quit

@@ -892,6 +892,7 @@ internal static class ShipAiController
                 Act.TargetVaultAttacker => _enemies.Where(e => AttackTarget(e) is { } v && (v == _self || Allies.Contains(v)) && HasVault(v)).MinBy(Distance),
                 Act.TargetTechHolder => _enemies.Where(HoldsTech).MinBy(Distance),
                 Act.TargetCaller => Caller,
+                Act.TargetMyAttacker => _enemies.Where(e => AttackTarget(e) == _self).MinBy(Distance),
                 _ => throw new ArgumentOutOfRangeException(nameof(act), act, "not a target action"),
             };
             _targets[act] = pick;
