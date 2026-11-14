@@ -11,12 +11,10 @@
 # because this agent's turn is not active (see LINK_REFUSED_TEXT in autotest-lib.sh); keep the turn open while tests run.
 set -euo pipefail
 SCRIPT="${1:?usage: autotest.sh <script> [timeout]}"
-TIMEOUT="${2:-300}"
-# A script can ask for more time with a "# timeout: <seconds>" line (long playthroughs). The larger value wins.
-SCRIPT_TIMEOUT="$(grep -m1 '^# timeout:' "$SCRIPT" | cut -d: -f2 | tr -d ' ' || true)"
-[[ -n "$SCRIPT_TIMEOUT" && "$SCRIPT_TIMEOUT" -gt "$TIMEOUT" ]] && TIMEOUT="$SCRIPT_TIMEOUT"
 RETRY="${AUTOTEST_RETRY:-1}"
 source "$(dirname "$0")/autotest-lib.sh"
+# A script can ask for more time with a "# timeout: <seconds>" line (long playthroughs). The larger value wins.
+TIMEOUT="$(test_timeout "$SCRIPT" "${2:-300}")"
 NAME="$(basename "$SCRIPT" .txt)"
 
 SLOT=""

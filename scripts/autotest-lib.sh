@@ -204,6 +204,13 @@ slot_log() {
 # The two scripts of a co-op session (any runner: PC slots or the headless sim). Args: <session file> <port> [players, default 2].
 # Host: the session file without its "client:" lines. Client: those lines (settings before the join), then client.txt.
 # "{PORT}" becomes the port and "{PLAYERS}" the player count. A line that starts with "@<n>p " runs only with n players.
+# The timeout of a test run: the runner's timeout ($2), or the script's "# timeout: <seconds>" line ($1) when that is
+# larger (long playthroughs). Every runner uses it: scripts/autotest.sh (PC), scripts/autotest-sim.sh (Mac, CI shards).
+test_timeout() {
+  local x; x="$(grep -m1 '^# timeout:' "$1" | cut -d: -f2 | tr -d ' ' || true)"
+  case "$x" in "") echo "$2"; return ;; *[!0-9]*) echo "test_timeout: '# timeout: $x' in $1 is not a number of seconds" >&2; return 1 ;; esac
+  if (( x > $2 )); then echo "$x"; else echo "$2"; fi
+}
 # The game speed line of a test script (the game's own clock scale; waits count game seconds, so a script means the same
 # at every speed): the test's "# speed: <x>" line, else HOT_CARGO_TEST_SPEED. Prints nothing at speed 1 or with neither.
 speed_line() {
