@@ -1,0 +1,12 @@
+# Fit Tech Vaults (spec 1470, 1472, 1473): the offer over the co-op game setup screen, then the fit with its save (needs graphics).
+render on
+wait 6
+mphost 27123
+wait 2
+fitoffer 0 coop
+expect fit_shown == 1
+wait 1
+screenshot fitvaults-offer
+fitanswer fit
+expect fit_result == 1
+quit
