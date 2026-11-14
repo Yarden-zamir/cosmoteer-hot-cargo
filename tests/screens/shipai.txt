@@ -1,4 +1,4 @@
-# Ship tactics editor screenshots (spec 410, 419). Main slot only (needs graphics).
+# Ship tactics editor screenshots (spec 410, 419). Windowed test slot (needs graphics).
 render on
 newgame run
 wait 10

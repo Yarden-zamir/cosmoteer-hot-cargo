@@ -1,4 +1,4 @@
-# Settings menu screenshots. Main slot only (needs graphics), under the main-slot lock: see UX.md "Screenshots" for the steps.
+# Settings menu screenshots. Windowed test slot (needs graphics): see UX.md "Screenshots" for the steps.
 # The script resets every value that it changes, so the slot's tunables.rules holds no values at the end.
 render on
 newgame run

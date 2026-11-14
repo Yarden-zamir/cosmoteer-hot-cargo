@@ -1,4 +1,4 @@
-# New career screen with the enemy scaling slider (spec 330). Main slot only (needs graphics).
+# New career screen with the enemy scaling slider (spec 330). Windowed test slot (needs graphics).
 # The resting cursor opens the slider tooltip over the value, so the second shot hides tooltips to show the value.
 render on
 enemysetting 1.5

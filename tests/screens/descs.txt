@@ -1,5 +1,5 @@
 # Mission descriptions: a story chain stage, a Hot Cargo escort, a mechanics mission and a shady offer in the comms list.
-# Main slot only (needs graphics): scripts/screens.sh tests/screens/descs.txt <out-dir>
+# Windowed test slot (needs graphics): scripts/screens.sh tests/screens/descs.txt <out-dir>
 render on
 newgame run
 wait 8

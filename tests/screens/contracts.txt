@@ -1,6 +1,6 @@
 # Visual pass, part 2: contract terms in the comms Missions tab, the accept button, open contracts in the heat panel,
 # chain offers and pages, Hot Cargo missions in the mission log.
-# Main slot only (needs graphics): scripts/screens.sh tests/screens/contracts.txt <out-dir>
+# Windowed test slot (needs graphics): scripts/screens.sh tests/screens/contracts.txt <out-dir>
 render on
 newgame run
 wait 8

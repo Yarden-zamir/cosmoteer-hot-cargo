@@ -1,5 +1,5 @@
 # Visual pass, part 3: hunter tells, sector arrival lines, heat zone and current HUD, the Buyer.
-# Main slot only (needs graphics): scripts/screens.sh tests/screens/world.txt <out-dir>
+# Windowed test slot (needs graphics): scripts/screens.sh tests/screens/world.txt <out-dir>
 render on
 newgame run
 wait 8

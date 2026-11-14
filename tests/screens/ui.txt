@@ -1,5 +1,5 @@
 # UI pass (spec 41): the mission list with kind icons, risk and the filter, event options, and the win panel buttons.
-# Main slot only (needs graphics): scripts/screens.sh tests/screens/ui.txt <out-dir>
+# Windowed test slot (needs graphics): scripts/screens.sh tests/screens/ui.txt <out-dir>
 render on
 newgame run
 wait 8
