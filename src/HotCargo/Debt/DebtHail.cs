@@ -18,7 +18,8 @@ public sealed class DebtHailProvider : IHailProvider
     public bool Answers(Ship caller, Ship callee) =>
         Run.Current is { } run && caller.Sim is { } sim && sim == run.Game.Sim && Offers(run, callee);
 
-    internal static bool Offers(Run run, Ship callee) => Lenders.OffersLoan(run, callee) || Lenders.DebtAt(run, callee) is not null;
+    internal static bool Offers(Run run, Ship callee) =>
+        Lenders.OffersLoan(run, callee) || Lenders.DebtAt(run, callee) is not null || Lenders.Refinances(run, callee).Count > 0;
 
     public void Build(Ship caller, Ship callee, HailPage page)
     {
@@ -33,8 +34,16 @@ public sealed class DebtHailProvider : IHailProvider
             page.AddText(DebtArea.Format("LoanOfferFmt", f.NameKey.Text, Money(credits), Percent(t.InterestRate), Minutes(t.InterestSeconds),
                 Minutes(t.CollectorSeconds), Ratio(t.FirmRatio), Ratio(t.HostileRatio), Ratio(t.ScoreDebtFactor)));
             page.AddChoice(DebtArea.Format("TakeLoanFmt", Money(credits)), DebtModel.Option(DebtChoice.Loan, 0));
-            return;
         }
+        // Spec 1421: one choice for each debt that this station buys. The option amount is the debt's place in the list.
+        if (Lenders.FactionOf(callee) is { } buyer)
+            foreach (var old in Lenders.Refinances(run, callee))
+            {
+                string oldName = Lenders.Name(old.Faction);
+                page.AddText(DebtArea.Format("RefinanceOfferFmt", buyer.NameKey.Text, oldName, Money(old.Balance),
+                    Percent(t.InterestRate * t.RefinanceRateFactor), Minutes(t.InterestSeconds), t.RefinanceReputationLoss));
+                page.AddChoice(DebtArea.Format("RefinanceFmt", oldName), DebtModel.Option(DebtChoice.Refinance, run.State.Debt.Debts.IndexOf(old)));
+            }
         if (Lenders.DebtAt(run, callee) is not { } d) return;
         var collector = Lenders.CollectorOf(run, callee);
         string name = Lenders.Name(d.Faction);
@@ -42,7 +51,7 @@ public sealed class DebtHailProvider : IHailProvider
         if (collector is not null)
             page.AddText(DebtArea.Format(stage switch { DebtStage.Hostile => "CollectorHostileFmt", DebtStage.Firm => "CollectorFirmFmt", _ => "CollectorCalmFmt" },
                 name, Ratio(t.HostileRatio)));
-        page.AddText(DebtArea.Format("BalanceFmt", Money(d.Balance), name, Ratio(Lenders.Ratio(d)), Percent(t.InterestRate),
+        page.AddText(DebtArea.Format("BalanceFmt", Money(d.Balance), name, Ratio(Lenders.Ratio(d)), Percent(t.InterestRate * d.RateFactor),
             Pursuit.PursuitModel.Clock(Math.Max(0, d.NextInterestAt - run.State.GameSeconds))));
         long money = run.Game.GetPlayerState(run.Game.LocalPlayerIndex, deterministic: true).Money;
         if (DebtModel.PayRange(d.Balance, money, t.PayStepShare) is { } range)
@@ -113,6 +122,17 @@ static class DebtDeals
 {
     public static int LoanCredits(Run run) => Events.EventRunner.Credits(run, run.T.Debt.LoanUnits, 0f, run.CurrentTier, run.TechValue());
 
+    /// <summary>Takes credits off a debt. A debt at 0 closes with a run log line; its collectors leave in the next tick.</summary>
+    public static void Reduce(Run run, Debt d, long credits)
+    {
+        if (credits < 0 || credits > d.Balance) throw new ArgumentOutOfRangeException(nameof(credits), credits, $"a debt of {d.Balance} cannot lose this");
+        d.Balance -= credits;
+        d.Stage = Lenders.StageOf(run, d);
+        if (d.Balance > 0) return;
+        run.State.Debt.Debts.Remove(d);
+        Onboarding.RunLog.Add(run, Onboarding.RunLogKind.Debt, DebtArea.Format("LogPaidOffFmt", Lenders.Name(d.Faction)));
+    }
+
     public static bool Choose(Run run, SimRoot sim, int player, Ship callee, DebtChoice kind, int amount)
     {
         var s = run.State.Debt;
@@ -141,18 +161,31 @@ static class DebtDeals
                 long credits = DebtModel.PayCredits(amount, d.Balance);
                 if (credits <= 0 || playerState.Money < credits) { Log.Info($"debt: player {player} cannot pay {credits}"); return false; }
                 playerState.AddMoney(-(int)credits);
-                d.Balance -= credits;
-                d.Stage = Lenders.StageOf(run, d);
-                string name = Lenders.Name(d.Faction);
-                DebtArea.Chat(run, DebtArea.Format("PaidFmt", Cosmoteer.Extensions.ToXmlCostString((int)credits), name, Cosmoteer.Extensions.ToXmlCostString((int)Math.Min(int.MaxValue, d.Balance))));
-                Log.Info($"debt: player {player} paid {credits} to {d.Faction}, {d.Balance} left");
                 var collector = Lenders.CollectorOf(run, callee);
-                if (d.Balance == 0)
-                {
-                    s.Debts.Remove(d);
-                    Onboarding.RunLog.Add(run, Onboarding.RunLogKind.Debt, DebtArea.Format("LogPaidOffFmt", name));
-                }
+                Reduce(run, d, credits);
+                DebtArea.Chat(run, DebtArea.Format("PaidFmt", Cosmoteer.Extensions.ToXmlCostString((int)credits), Lenders.Name(d.Faction), Cosmoteer.Extensions.ToXmlCostString((int)Math.Min(int.MaxValue, d.Balance))));
+                Log.Info($"debt: player {player} paid {credits} to {d.Faction}, {d.Balance} left");
                 if (collector is not null) DebtTick.Leave(run, sim, collector, callee);
+                return true;
+            }
+            case DebtChoice.Refinance:
+            {
+                if (amount >= s.Debts.Count || Lenders.FactionOf(callee) is not { } buyer || !Lenders.Refinances(run, callee).Contains(s.Debts[amount])) return false;
+                var old = s.Debts[amount];
+                var t = run.T.Debt;
+                double now = run.State.GameSeconds;
+                s.Debts.Remove(old);
+                s.Debts.Add(new Debt
+                {
+                    Faction = buyer.ID.ToString(), Principal = old.Balance, Balance = old.Balance, RateFactor = t.RefinanceRateFactor,
+                    NextInterestAt = now + t.InterestSeconds, NextCollectorAt = now + t.CollectorSeconds,
+                });
+                var oldId = old.FactionId;
+                run.Mode.SetFactionReputation(oldId, run.Mode.GetFactionReputation(oldId) - t.RefinanceReputationLoss);
+                string oldName = Lenders.Name(old.Faction);
+                DebtArea.Chat(run, DebtArea.Format("RefinancedFmt", buyer.NameKey.Text, oldName, t.RefinanceReputationLoss));
+                Onboarding.RunLog.Add(run, Onboarding.RunLogKind.Debt, DebtArea.Format("LogRefinancedFmt", buyer.NameKey.Text, oldName));
+                Log.Info($"debt: {buyer.ID} bought the {old.Faction} debt of {old.Balance}");
                 return true;
             }
             case DebtChoice.NotNow:

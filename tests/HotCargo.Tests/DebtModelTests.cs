@@ -46,6 +46,15 @@ public class DebtModelTests
     }
 
     [Fact]
+    public void Payoff_takes_what_it_can_off_the_debt_and_pays_the_rest()
+    {
+        Assert.Equal((4_000L, 0L), DebtModel.PayoffSplit(4_000, 10_000));
+        Assert.Equal((10_000L, 2_000L), DebtModel.PayoffSplit(12_000, 10_000));
+        Assert.Equal((0L, 500L), DebtModel.PayoffSplit(500, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => DebtModel.PayoffSplit(-1, 10));
+    }
+
+    [Fact]
     public void Score_loses_the_debt_times_the_factor()
     {
         Assert.Equal(80_000, DebtModel.Score(100_000, 10_000, 2f));

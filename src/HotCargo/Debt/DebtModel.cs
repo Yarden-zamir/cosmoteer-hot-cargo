@@ -4,7 +4,7 @@ namespace HotCargo.Debt;
 public enum DebtStage { Calm = 0, Firm = 1, Hostile = 2 }
 
 /// <summary>The kinds of debt choices (spec 1413). The integer values travel in shared choice options.</summary>
-public enum DebtChoice { Loan = 1, Pay = 2, NotNow = 3 }
+public enum DebtChoice { Loan = 1, Pay = 2, NotNow = 3, Refinance = 4 }
 
 /// <summary>The pay slider of a page in hundreds of credits (spec 1405).</summary>
 public readonly record struct PayRange(int Min, int Max, int Step);
@@ -54,6 +54,11 @@ public static class DebtModel
 
     /// <summary>Spec 1411: the score minus the debt factor × the sum of the balances.</summary>
     public static long Score(long score, long debt, float factor) => score - (long)Math.Ceiling(debt * (double)factor);
+
+    /// <summary>Spec 1420: a pay-off reward of this many credits takes what it can off the balance; the rest pays as money.</summary>
+    public static (long Off, long Money) PayoffSplit(long amount, long balance) =>
+        amount >= 0 && balance >= 0 ? (Math.Min(amount, balance), amount - Math.Min(amount, balance))
+            : throw new ArgumentOutOfRangeException(nameof(amount), (amount, balance), "a pay-off needs amounts of 0 or more");
 
     /// <summary>Spec 1402: the loan offer roll of a station, from a value in [0, 1).</summary>
     public static bool Offers(float roll, float chance) => roll < chance;

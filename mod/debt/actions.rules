@@ -1,0 +1,31 @@
+// Debt (spec 1400 to 1439). The Collect a Debt job (spec 1422): C# spawns it from debt/collect.rules at a lender's station.
+{
+	Action = Overrides
+	OverrideIn = "<modes/career/mission_metatypes.rules>"
+	Overrides
+	{
+		HotCargoDebtCollect
+		{
+			NameKey = "HotCargoDebt/CollectName"
+			DescriptionKey = "HotCargoDebt/CollectDesc"
+			CategoryID = bounties
+		}
+	}
+}
+// Spec 805: the kind icon of the job.
+{
+	Action = Add
+	AddTo = "<gui/text_sprites.rules>"
+	Name = hc_mission_HotCargoDebtCollect
+	ToAdd
+	{
+		Texture
+		{
+			File = "./Data/roof_decals/icons/icon_credit.png"
+			MipLevels = max
+			SampleMode = Linear
+		}
+		Size = [1, 1]
+		ProportionalSize = true
+	}
+}
