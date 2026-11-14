@@ -4,6 +4,8 @@
 mphost {PORT}
 mpstart {PLAYERS}
 mp godmode on
+# Loan offers make stations answer with a dialogue page (spec 1402), which changes the listen and comms checks. Only debt.loan turns them on.
+mp debt_set LoanStationChance 0
 # The event window opens after the run intro closes (GUI only). The client's hover needs its window.
 closepanel
 on 1 closepanel

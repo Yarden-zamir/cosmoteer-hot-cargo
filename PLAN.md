@@ -25,3 +25,13 @@ Three PRs, one branch each, all from origin/main:
 - [ ] score hook, heat panel line, run log
 - [ ] autotest debt-core, co-op step debt.loan
 - [ ] screenshots tests/screens/debt.txt
+
+## PR 2 design (debt missions, 1420 to 1429)
+- 1420 pay-off rewards: a mission of a lender's faction (`Mission.Faction`) pays debt instead of money with a chance seeded by the mission ID. Patch `MoneyReward.GiveReward` and `GetRewardText`. No save state: the roll is a pure function of the mission ID; the line shows while the debt exists.
+- 1421 refinance: a station of another faction buys a debt. New debt: principal = balance, interest x `RefinanceRateFactor`. Old lender: reputation down (`SetFactionReputation`), its collectors leave. Station deal in the `debt` domain.
+- 1422 debtor hunt ("collect for the lender"): a lender station offers a bounty-like mission on a fleeing debtor. Runtime spawn like `StashArea.Spawn`. Its money reward always pays debt (1420 rule by metatype).
+- Not picked: escort the lender's convoy (Convoy Duty exists already); hot crate (needs the hand-over item flow; heat cost overlaps contracts).
+
+## PR 3 design (paid help, 1430 to 1439)
+- Damage share from `DamageEffectRules.DoEffect` (source ship, hit ship). Helpers: friendly faction military ships that join a fight.
+- After the fight, if their share >= a minimum, they hail: pay (clear), refuse (price added to a debt with that faction), "you didn't ask": works when share < `ClaimMaxShare`, shown in the text; else reputation loss.
