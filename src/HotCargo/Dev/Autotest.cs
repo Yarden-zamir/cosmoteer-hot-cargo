@@ -406,6 +406,32 @@ public static class Autotest
             double timeout = parts.Length == 4 ? double.Parse(parts[3], CultureInfo.InvariantCulture) : 60;
             WaitFor(() => Compare(Field(parts[0]), parts[1], parts[2]), timeout, $"{parts[0]} {parts[1]} {parts[2]}");
         };
+        // openspace <distance>: moves the fleet to the nearest point at least <distance> from every station (live or in stasis) and
+        // clear of suns, on rings around the fleet. For fights that must not depend on which faction owns a nearby station.
+        Commands["openspace"] = arg =>
+        {
+            var sim = Game?.Sim ?? throw new InvalidOperationException("no game");
+            float clearance = float.Parse(arg, CultureInfo.InvariantCulture);
+            var from = SimQueries.FleetCenter(sim) ?? throw new InvalidOperationException("no player ships");
+            var stations = SimQueries.TaggedShips(sim, new("station")).Select(t => t.Location).ToList();
+            var avoid = GameApp.Rules.CareerMode.Wanted.PoliceSpawnAvoidableDoodadTags;
+            for (int ring = 0; ring < 40; ring++)
+                for (int k = 0; k < 16; k++)
+                {
+                    var p = from + Halfling.Geometry.Vector2.FromAngle(k * MathF.Tau / 16f) * (ring * 500f);
+                    if (stations.Any(s => s.DistanceTo(p) < clearance) || sim.ShouldAIAvoidLocation(p, avoid, 1000f)) continue;
+                    float offset = 0f;
+                    foreach (var ship in sim.Ships.HumanPlayerSignificantShips.ToList())
+                    {
+                        Teleport(ship, ClearSpotNear(sim, p + new Halfling.Geometry.Vector2(offset, 0f), 0f, ship.WorldBoundingRadius));
+                        offset += 2 * ship.WorldBoundingRadius + 100f;
+                    }
+                    Log.Info($"AUTOTEST open space at {p}, {p.DistanceTo(from):0} from the fleet, {stations.DefaultIfEmpty(new(float.MaxValue, 0f)).Min(s => s.DistanceTo(p)):0} from the nearest station");
+                    Wait(3);
+                    return;
+                }
+            throw new InvalidOperationException($"no point {clearance:0} from every station within 19,500 of the fleet");
+        };
         Commands["godmode"] = arg =>
         {
             // Test only: keeps human ships at full part health each sim tick, so long AI tests are not cut short by a lost ship.

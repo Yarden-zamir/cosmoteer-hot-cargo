@@ -15,7 +15,9 @@ expect fa_zone == 1
 spawnstage Warning
 waitfor hunters >= 1 30
 hunternear 0 600
+# Two ally warships: the start station's owner changes with the layout, so its guards may not be the ally's.
 dip_spawn ally 400
+dip_spawn ally 700
 fa_peace_watch ally
 wait 1
 expect fa_peace_ships >= 2

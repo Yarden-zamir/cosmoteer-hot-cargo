@@ -122,9 +122,10 @@ step sharedchoice.listen-event
 mp event broken_down
 waitfor ev_carrier == 1 20
 on 1 expect listen_hails == 0
-# Comms range: the host's ship next to the carrier.
+# Comms range: the host's ship next to the carrier. Wait for the vanilla call rules, not for a fixed time.
 mp ev_carrier_goto
-wait 2
+listen_target carrier
+waitfor listen_reach == 1 30
 ev_open carrier
 on 1 waitfor listen_hails == 1 30
 on 1 listen 1

@@ -1,7 +1,7 @@
 # Co-op session: enemy scaling, diplomacy, missions, AI personalities, currents, the loss timer and the win.
 # See coop-core.txt for "client:", "as 1", "on 1" and steps.
 # Before the join: the host's enemy slider is 2.0 and the client's is 1.0. The host's value counts, so every step of this
-# session runs with an enemy factor of 2 (2 players).
+# session runs with an enemy factor of 2 (2 players) or 3 (3 players).
 enemysetting 2.0
 client: enemysetting 1.0
 mphost {PORT}
@@ -12,7 +12,8 @@ mp ev_set Enabled false
 step scaling.generation
 # Spec 330 to 336: the host's value reaches the client. Both machines generate the first system with factor 2:
 # pirate wanderers are round([14, 16] x Area) = 4 at SystemScale 0.5 (mod/contracts/actions.rules), so 8. The state hash compares the ship counts.
-# With 3 players the factor is 1 + (2 - 1) x 2 = 3 (spec 331), so 12.
+# With 3 players the factor is 1 + (2 - 1) x 2 = 3 (spec 331), so 12. The group spacing shrinks with the factor, so the
+# system has room for all of them (spec 332).
 expect enemysetting == 2
 @2p expect enemyfactor == 2
 @3p expect enemyfactor == 3
@@ -20,8 +21,8 @@ on 1 expect enemysetting == 2
 @2p on 1 expect enemyfactor == 2
 @3p on 1 expect enemyfactor == 3
 counttag pirate
-@2p expect tagcount >= 8
-@3p expect tagcount >= 12
+@2p expect tagcount == 8
+@3p expect tagcount == 12
 
 step diplomacy.payoff
 # Spec 587 (#25): the client ticks tech on the hunter page, and the draft is shared, so the host adds money to it. The client
@@ -79,8 +80,9 @@ mp sc_reset
 votemode on
 waitfor sc_votemode == 1 10
 mp dip_near hunter0
-# Sight and comms range need a moment after the move.
-wait 3
+# Sight and comms range need a moment after the move: wait for the vanilla call rules, not for a fixed time.
+listen_target hunter0
+waitfor listen_reach == 1 30
 dip_open hunter0
 on 1 waitfor listen_hails == 1 30
 on 1 listen 1
@@ -163,7 +165,12 @@ on 1 expect ai_personality > 0
 
 step worlds.current
 # Spec 221, 227: a current painted on both machines pushes the host's ship the same way on both. Co-op tests cannot jump,
-# so "worlds paint" makes the current in the starting system.
+# so "worlds paint" makes the current in the starting system. A new run: with 3 players, the ai.personalities fight can
+# destroy the host's ship (godmode does not save parts that one hit destroys), and this step needs it.
+mprestart
+mp godmode on
+mp ev_set Enabled false
+mp pu_set Enabled false
 mp worlds paint
 mp worlds goto current
 wait 3
