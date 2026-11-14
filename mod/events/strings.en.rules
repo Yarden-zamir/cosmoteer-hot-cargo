@@ -62,3 +62,20 @@ HotCargoItems
 	SpacedTracerFmt = "{0} spaced the tracer beacon."
 	TracerPingFmt = "The tracer beacon calls home: heat +{0}."
 }
+
+// Patrol listen (spec 1122, 1123). {0} = the listening ship or the faction ship, as each line says.
+HotCargoListen
+{
+	Name = "Listen to patrol chatter"
+	Tip = "Tune this sensor array to the nearest faction ship's channel for a few seconds. Stay in range and out of a fight. With more heat, they are more likely to notice."
+	NeedIdle = "Your crew already listens to a channel."
+	NeedWorking = "The sensor array is destroyed."
+	NeedTarget = "No faction ship in range that you have not heard yet."
+	StartFmt = "{0} listens to the chatter of {1}."
+	SuccessFmt = "You overhear the patrol routes of {0} and plot around them. Heat {1}."
+	FailFmt = "{0} notices the tap and logs it. The corporation reads those logs. Heat {1}."
+	BrokeSensor = "The listen stops: the sensor array is down."
+	BrokeChannel = "The listen stops: the channel goes dead."
+	BrokeRangeFmt = "The listen stops: {0} is out of range."
+	BrokeCombat = "The listen stops: weapons fire drowns out the channel."
+}

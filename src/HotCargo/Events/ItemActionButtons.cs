@@ -1,3 +1,4 @@
+using Cosmoteer;
 using Cosmoteer.Game;
 using Cosmoteer.Game.Gui;
 using Cosmoteer.Resources;
@@ -11,7 +12,7 @@ using HotCargo.Core;
 namespace HotCargo.Events;
 
 /// <summary>
-/// Spec 1111: item action buttons in the vanilla parts card (lower left), in the same box as the part trigger and toggle buttons.
+/// Spec 1111, 1122: item action buttons and the patrol listen button in the vanilla parts card (lower left), in the same box as the part trigger and toggle buttons.
 /// GUI only: a click sends the item action MP input.
 /// </summary>
 [HarmonyPatch(typeof(PartsCard), MethodType.Constructor, typeof(GameRoot), typeof(GameGui), typeof(IRectProvider))]
@@ -24,6 +25,10 @@ static class ItemActionButtons
         int at = box.Children.IndexOf(__instance._extraCmdBtn);
         if (at < 0) throw new InvalidOperationException("the parts card has no filler button");
         foreach (var (item, action) in ItemActions.All()) box.Children.Insert(at++, new ItemActionButton(__instance, item, action));
+        // Spec 1122: the patrol listen button of a selected sensor array.
+        var sensorArray = GameApp.Rules.Ships.Select(s => s.PartsByID.GetValueOrDefault(PatrolListen.SensorArrayId)).FirstOrDefault(p => p is not null)
+            ?? throw new InvalidOperationException($"no part rules {PatrolListen.SensorArrayId}");
+        box.Children.Insert(at, new PatrolListenButton(__instance, sensorArray));
     });
 }
 

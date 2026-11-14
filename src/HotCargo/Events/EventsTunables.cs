@@ -46,6 +46,22 @@ public sealed class EventsTunables
     [Serialize(Optional = true)] public float HulkLootChance = 0.6f;
     /// <summary>Distance at which a hulk with loot shows its message (once per hulk).</summary>
     [Serialize(Optional = true)] public float AbandonedTriggerDistance = 800f;
+    /// <summary>Patrol listen (spec 1122): game seconds that a sensor array listens to a faction ship.</summary>
+    [Serialize(Optional = true)] public float ListenSeconds = 8f;
+    /// <summary>Patrol listen: the most hull-to-hull distance between the listening ship and the faction ship.</summary>
+    [Serialize(Optional = true)] public float ListenRange = 1500f;
+    /// <summary>Patrol listen: success chance at heat 0. The chance falls in a line to ListenChanceAtMaxHeat at heat 100.</summary>
+    [Serialize(Optional = true)] public float ListenChanceAtNoHeat = 1f;
+    /// <summary>Patrol listen: success chance at heat 100.</summary>
+    [Serialize(Optional = true)] public float ListenChanceAtMaxHeat = 0.6f;
+    /// <summary>Patrol listen: heat change on a success (they give away the patrol routes).</summary>
+    [Serialize(Optional = true)] public float ListenSuccessHeat = -4f;
+    /// <summary>Patrol listen: heat change on a failure (they log your question).</summary>
+    [Serialize(Optional = true)] public float ListenFailHeat = 5f;
+    /// <summary>Patrol listen: weapons fire within this distance of the listening ship breaks the listen.</summary>
+    [Serialize(Optional = true)] public float ListenCombatRadius = 800f;
+    /// <summary>Patrol listen: a shot counts as combat for this many game seconds.</summary>
+    [Serialize(Optional = true)] public float ListenCombatSeconds = 5f;
     /// <summary>A hulk whose tanks blow (spec 1126) damages player ships within this hull-to-hull distance.</summary>
     [Serialize(Optional = true)] public float HulkBlastRadius = 300f;
     /// <summary>One relic ship per run holds 1 tech unit. Off: new runs get none.</summary>

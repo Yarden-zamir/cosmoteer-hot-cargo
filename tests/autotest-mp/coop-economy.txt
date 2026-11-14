@@ -8,6 +8,28 @@ mp godmode on
 closepanel
 on 1 closepanel
 
+step events.patrol-listen
+# Spec 1122, 1123: the client's sensor array listens to a faction ship (the real MP input from its machine). The roll and the heat
+# change run in the sim, so both machines see the same result (forced on both). First step: the start system's faction ships are live.
+# The start can have a fight nearby; this step checks co-op sync, so weapons fire does not stop the listen here.
+mp ev_set ListenCombatSeconds 0
+mp ev_set ListenCombatRadius -1
+as 1 ev_sensor_build
+mp heat 30
+mp ev_faction_goto 150
+mp ev_listen_force 1
+# The mp lines run in the sim a moment later; the marks wait for them.
+wait 2
+ev_mark
+on 1 ev_mark
+on 1 ev_listen
+waitfor ev_listened == 1 30
+expect ev_heat_gain < 0
+on 1 waitfor ev_listened == 1 30
+on 1 expect ev_heat_gain < 0
+mp ev_set ListenCombatSeconds 5
+mp ev_set ListenCombatRadius 800
+
 step events.client-pays
 # The client pays the toll (choice 1, costs the chooser money).
 mp event toll_gate
