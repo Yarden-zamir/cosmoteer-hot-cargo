@@ -322,6 +322,9 @@ Hunter demands ("hand over the tech") are the diplomacy area's, through the same
 
 Page options (spec 810 to 812): the "options" above are rows of a multiselect page. Players select them and set their amounts, then pick the submit choice. The old choices cost the same for the same result.
 
+#### 35. Rescue Beacon (Hail line, trade stations; an item, spec 1127 to 1129)
+Trade stations sell it in their comms: "Buy a rescue beacon." for 0.3 money units (a clear deal, once per station per run). In the hold, select its storage and press "Fire the beacon". The button tooltip shows the fee (0.4 money units in credits) and the heat (+10). A tug comes, takes the ship on a tow line and tows it to the nearest trade station that is not hostile, around the heat zones of stars. The mission log shows the Rescue Tow. Too little money: the tug takes what there is and comes anyway. No friendly station in the system: nothing happens, and the beacon stays. The tug destroyed: the tow stops, and the mission stays for the players.
+
 All catalog items are implemented.
 
 ## 4. Content rules for authors

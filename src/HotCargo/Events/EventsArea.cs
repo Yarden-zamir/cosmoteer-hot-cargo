@@ -478,6 +478,19 @@ public static class EventsArea
             ? tug.DetWorldCenter.DistanceTo(r.Destination) : -1;
         Autotest.Fields["ev_tug_speed"] = () => RequireRun().State.Events.Rescues.FirstOrDefault(x => x.LeaveAt < 0) is { } r && RequireSim().Ships[r.Tug] is { } tug
             ? tug.Physics.Body.LinearVelocity.Length() : -1;
+        // ev_rescue_camera: test only. The camera stops following ships and frames the tug and the towed ship (screenshots).
+        Autotest.Commands["ev_rescue_camera"] = _ =>
+        {
+            var sim = RequireSim();
+            var r = RequireRun().State.Events.Rescues.FirstOrDefault(x => x.LeaveAt < 0) ?? throw new InvalidOperationException("no running rescue");
+            var tug = sim.Ships[r.Tug] ?? throw new InvalidOperationException("the tug is not live");
+            var towed = sim.Ships[r.Towed] ?? throw new InvalidOperationException("the towed ship is not live");
+            var view = sim.Camera.ViewController;
+            view.ClearFocus(clearFramesOfReferenceAndRotation: true);
+            view.FRLocation = (tug.WorldCenter + towed.WorldCenter) / 2f;
+            float size = tug.WorldCenter.DistanceTo(towed.WorldCenter) + tug.WorldBoundingRadius + towed.WorldBoundingRadius + 100f;
+            view.ZoomToFit(new Vector2(size, size), instant: true);
+        };
         // ev_tug_kill: removes the tug of the first running rescue, as if it was destroyed.
         Autotest.Commands["ev_tug_kill"] = _ =>
         {

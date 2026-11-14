@@ -101,6 +101,14 @@ public static class RescueBeacon
     static void Move(Ship ship, Vector2 to) =>
         ship.Commands.EnqueueCommand(new MoveCommand(ship, ship.Commands.AllocGlobalCommandID(), to, null, CollisionAvoidanceFlags.All, isTentative: false), append: false, confirmed: true);
 
+    /// <summary>The tug's next point to the station: around the heat zones of stars (RescueModel.Waypoint).</summary>
+    static Vector2 Route(SimRoot sim, Vector2 from, Vector2 to, float margin)
+    {
+        var zones = Worlds.HeatZone.Suns(sim).Select(s => (new System.Numerics.Vector2(s.Center.X, s.Center.Y), s.EdgeRadius)).ToList();
+        var p = RescueModel.Waypoint(new(from.X, from.Y), new(to.X, to.Y), zones, margin);
+        return new Vector2(p.X, p.Y);
+    }
+
     static float Distance(Ship a, Ship b) => a.DetWorldBoundingCircle.DistanceTo(b.DetWorldBoundingCircle);
 
     /// <summary>Game seconds between new move orders of a tug, so it follows a ship that drifts and keeps its course.</summary>
@@ -155,13 +163,13 @@ public static class RescueBeacon
                 if (d <= t.RescueTowLength)
                 {
                     r.Pulling = true;
-                    Move(tug, r.Destination);
+                    Move(tug, Route(sim, tug.DetWorldCenter, r.Destination, t.RescueSunMargin));
                     Log.Info($"rescue: the tug has {towed.Metadata.PlainShipName} on the line");
                 }
                 else if (order) Move(tug, towed.DetWorldCenter);
                 continue;
             }
-            if (order) Move(tug, r.Destination);
+            if (order) Move(tug, Route(sim, tug.DetWorldCenter, r.Destination, t.RescueSunMargin));
             // The tow line: past its length, the towed ship takes the tug's velocity plus a pull toward it.
             if (d <= t.RescueTowLength) continue;
             Vector2 dir = (tug.DetWorldCenter - towed.DetWorldCenter).Normalize();

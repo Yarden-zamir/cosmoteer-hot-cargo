@@ -53,6 +53,8 @@ public sealed class EventsTunables
     [Serialize(Optional = true)] public float RescueTowLength = 150f;
     /// <summary>Rescue Beacon: how hard the tow line pulls the towed ship back to its length, per game second.</summary>
     [Serialize(Optional = true)] public float RescueTowPull = 1f;
+    /// <summary>Rescue Beacon: the tug keeps this far outside the heat zone of a star on its way to the station.</summary>
+    [Serialize(Optional = true)] public float RescueSunMargin = 300f;
     /// <summary>Rescue Beacon: game seconds that the tug flies off before it leaves the sim.</summary>
     [Serialize(Optional = true)] public float RescueTugLeaveSeconds = 20f;
     /// <summary>One relic ship per run holds 1 tech unit. Off: new runs get none.</summary>
