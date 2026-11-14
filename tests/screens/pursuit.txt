@@ -1,5 +1,5 @@
 # Pursuit screenshots (spec 911, 923, 933): the reporting scout marker, the blue heat panel of an outage, the hacker page.
-# Main slot only (needs graphics): see the hot-cargo-screenshots skill.
+# Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
 render on
 newgame run
 wait 10

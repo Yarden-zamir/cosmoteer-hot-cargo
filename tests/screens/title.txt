@@ -1,4 +1,4 @@
-# Main menu screenshot with the Hot Cargo title. Main slot only (needs graphics).
+# Main menu screenshot with the Hot Cargo title. Windowed test slot (needs graphics).
 render on
 wait 3
 screenshot title

@@ -1,5 +1,5 @@
 # Diplomacy dialogs (spec 560 to 597): the hunter demand page (pay-off rows ticked, bluff, fight),
-# a friendly ship's rows, a holder and a mercenary page. Main slot only (needs graphics).
+# a friendly ship's rows, a holder and a mercenary page. Windowed test slot (needs graphics).
 render on
 newgame run
 wait 10

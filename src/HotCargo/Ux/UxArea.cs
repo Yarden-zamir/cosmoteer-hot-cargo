@@ -50,7 +50,8 @@ public static class UxArea
 
     static void AddAutotestCommands()
     {
-        // render on|off: draw while minimized, for screenshots (main slot only; headless slots have no graphics).
+        // render on|off: draw while minimized, for screenshots (windowed test slots, scripts/screens.sh; headless slots have no graphics).
+        // "on" also closes the vanilla Steam notice: test slots run with --nosteam, and the notice would cover every screenshot.
         Autotest.Commands["render"] = arg =>
         {
             if (!_screenshotPatched)
@@ -59,6 +60,10 @@ public static class UxArea
                 _screenshotPatched = true;
             }
             Screenshot.SetForceRender(arg != "off");
+            if (arg == "off") return;
+            string steamNotice = Cosmoteer.Localization.Strings.GetText("Misc/SteamNotInitialized");
+            foreach (var dialog in Halfling.App.Director.States.OfType<Halfling.Gui.Dialogs.OneButtonDialog>().Where(d => d.MessageLabel.Text == steamNotice).ToList())
+                Halfling.App.Director.PopState(dialog);
         };
         Autotest.Commands["screenshot"] = arg => { Screenshot.Capture(arg); Autotest.Wait(1.5); };
         // ux <Field> on|off|<number>: sets one UxTunables field for this run (before/after screenshots, thresholds in tests).
