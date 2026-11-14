@@ -1,0 +1,94 @@
+// Spec 1422: Collect a Debt. C# reads this file (Debt/DebtMissions.cs) and spawns it at a trade station of a lender, once in each
+// system. C# sets the mission's faction (the lender) and scales its money by Debt.CollectRewardFactor; the money always pays the debt.
+// It is not part of the game rules tree, so "&/" references do not work here. Use "&<./Data/...>" paths. A change needs a game restart.
+Collect
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_debtor]
+			Count = 1
+			Distance = [3000, 7000]
+			MinDistanceFromTags = [[sun, 5250], [station, 2500]]
+			MinDistanceFromNebulas = [[ion_storm, 1000]]
+			Allegiance = Unique
+			SuppressLocationAssertions = true
+			FamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+			MaxFamePerTier = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				Tier = -1
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+			}
+			AI
+			{
+				Type = Normal
+				PatrolRadius = 600
+				TargetAcquireRangeFromOrigin = 2500
+				TargetUnacquireRangeFromOrigin = 3500
+			}
+			SubSpawners
+			[
+				{
+					Type = Doodads
+					Distance = 0
+					ScaleFactor = 1500
+					Tags = [hc_debtor_area]
+					DoodadType = cosmoteer.poi_target_area
+					ShowOnlyInFog = true
+					AutoRemoveWhenTagDestroyed = hc_debtor
+				}
+				{
+					Type = Mission
+					Metatype = HotCargoDebtCollect
+					SpawnAt = Tag
+					SpawnAtTag = { Mode=Nearest; Tag=trade_station; }
+					Faction = None
+					Objectives
+					[
+						{
+							Type = Sequential
+							SubObjectives
+							[
+								{
+									Type = DefeatShips
+									TargetsTag = { Tag=hc_debtor; Max=1; }
+									TargetAreaTag = { Mode=Latest; Tag=hc_debtor_area; }
+									AutoDiscoverTargetArea = true
+									AllowSurrender = true
+								}
+								{
+									Type = ReceiveRewards
+								}
+							]
+						}
+					]
+					Rewards
+					[
+						{
+							Type = Money
+							MoneyPerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMoneyPerTier
+							RoundToMultiple = 500
+						}
+						{
+							Type = Fame
+							FamePerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardFamePerTier
+							MaxFamePerHighTier = &<./Data/modes/career/tier_tables.rules>/StandardMaxFamePerTier
+						}
+						// Spec 100: the lender's own job, no fee, a little noise.
+						{
+							Type = HotCargoContract
+							AcceptFee = 0
+							FlatHeat = 2
+							InformantChance = 0
+						}
+					]
+				}
+			]
+		}
+	]
+}

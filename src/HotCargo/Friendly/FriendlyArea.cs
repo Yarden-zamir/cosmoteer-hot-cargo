@@ -20,6 +20,12 @@ public static class FriendlyArea
         EventRunner.Effects.Add("apprentice", Apprentice.Apply);
         EventRunner.Effects.Add("leave", Leave);
         EventRunner.Effects.Add("halve_heat", HalveHeat);
+        EventRunner.Effects.Add("debtor", Debtor.Apply);
+        EventRunner.Effects.Add("wayfarers_leave", PayItForward.LeaveEffect);
+        Run.Hooks.Tick += PayItForward.OnTick;
+        Run.Hooks.SystemEntered += PayItForward.OnSystemEntered;
+        Run.Hooks.Tick += Debtor.OnTick;
+        Run.Hooks.SystemEntered += Debtor.OnSystemEntered;
         Run.Hooks.Tick += Apprentice.OnTick;
         Run.Hooks.SystemEntered += Apprentice.OnSystemEntered;
         AddAutotest();
@@ -80,6 +86,69 @@ public static class FriendlyArea
         // fr_apprentices: running apprentices. fr_apprentice_fights: fights the first one saw.
         // fr_leaving: ships that are about to jump out or are jumping (Diplomacy leaving list).
         Autotest.Fields["fr_leaving"] = () => Autotest.RequireRun().State.Diplomacy.Leaving.Count;
+        // Debtor (spec 1367, 1368): running debtors, the first one's hire, and test commands to end it now or to kill it.
+        Autotest.Fields["fr_debtors"] = () => Autotest.RequireRun().State.Friendly.Debtors.Count;
+        Autotest.Fields["fr_debtor_hired"] = () => Autotest.RequireRun().State.Friendly.Debtors.FirstOrDefault() is { } d
+            && Autotest.RequireRun().State.Diplomacy.Hires.Any(h => h.Ship == d.Ship) ? 1 : 0;
+        Autotest.Commands["fr_debtor_end"] = _ =>
+        {
+            var d = Autotest.RequireRun().State.Friendly.Debtors.FirstOrDefault() ?? throw new InvalidOperationException("no debtor");
+            d.Until = Autotest.RequireRun().State.GameSeconds;
+            Autotest.Wait(1);
+        };
+        Autotest.Commands["fr_debtor_kill"] = _ =>
+        {
+            var d = Autotest.RequireRun().State.Friendly.Debtors.FirstOrDefault() ?? throw new InvalidOperationException("no debtor");
+            var ship = Sim().Ships[d.Ship] ?? throw new InvalidOperationException("the debtor is not live");
+            foreach (var part in ship.Parts.ToList()) part.Health = 0;
+            Autotest.Wait(1);
+        };
+        // Pay it forward (spec 1369 to 1371): Wayfarers that help now; 1 when the first one is a friend of the first player ship and an
+        // enemy of the nearest enemy of it. fr_kill_enemies [all]: destroys every enemy ship within 4,000 of a player ship (all: in the system).
+        Autotest.Fields["fr_wayfarers"] = () => Autotest.RequireRun().State.Friendly.Wayfarers.Count;
+        Autotest.Fields["fr_wayfarer_sides"] = () =>
+        {
+            var sim = Sim();
+            var me = Core.SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("no player ship");
+            var w = Autotest.RequireRun().State.Friendly.Wayfarers.Select(id => sim.Ships[id]).FirstOrDefault(s => s is not null) ?? throw new InvalidOperationException("no Wayfarer");
+            var enemy = sim.Ships.Where(s => !s.IsJunk && s.IsSignificant && s.IsEnemiesWith(me)).MinBy(s => s.DetWorldCenter.DistanceSquaredTo(me.DetWorldCenter));
+            return !w.IsEnemiesWith(me) && (enemy is null || w.IsEnemiesWith(enemy)) ? 1 : 0;
+        };
+        // fr_wayfarer_health: health share of the first Wayfarer. fr_damage_wayfarer: halves the health of every part of it.
+        Autotest.Fields["fr_wayfarer_health"] = () => FirstWayfarer() is { } w ? w.Parts.Sum(x => x.Health) / (double)w.Parts.Sum(x => x.Rules.MaxHealth) : -1;
+        Autotest.Commands["fr_damage_wayfarer"] = _ =>
+        {
+            var w = FirstWayfarer() ?? throw new InvalidOperationException("no Wayfarer");
+            foreach (var part in w.Parts.ToList()) part.Health = Math.Max(1, part.Health / 2);
+        };
+        // fr_help_reset: the systems can roll the Wayfarers' help again (sim state: use "mp" in co-op). It keeps the once-per-run flag.
+        Autotest.Commands["fr_help_reset"] = _ => Autotest.RequireRun().State.Friendly.HelpRolled.Clear();
+        // fr_help_rolled: systems where the help roll ran. fr_idle_enemies: enemy ships of the players lose their AI (they stop fighting).
+        Autotest.Fields["fr_help_rolled"] = () => Autotest.RequireRun().State.Friendly.HelpRolled.Count;
+        Autotest.Commands["fr_idle_enemies"] = _ =>
+        {
+            var sim = Sim();
+            var players = sim.Ships.HumanPlayerSignificantShips.ToList();
+            foreach (var e in sim.Ships.Where(s => !s.IsJunk && players.Any(p => s.IsEnemiesWith(p))).ToList()) e.AI = null;
+        };
+        // fr_attack: every player ship gets an attack order on its nearest enemy ship (sim state: use "mp" in co-op).
+        Autotest.Commands["fr_attack"] = _ =>
+        {
+            var sim = Sim();
+            foreach (var p in sim.Ships.HumanPlayerSignificantShips.OrderBy(s => s.UniqueID).ToList())
+                if (sim.Ships.Where(s => !s.IsJunk && s.IsSignificant && s.IsEnemiesWith(p)).MinBy(s => s.DetWorldCenter.DistanceSquaredTo(p.DetWorldCenter)) is { } e)
+                    Hunters.HunterOrders.Attack(p, e);
+        };
+        Autotest.Fields["fr_forward_done"] = () => Autotest.RequireRun().State.Friendly.PayForwardDone ? 1 : 0;
+        Autotest.Commands["fr_kill_enemies"] = arg =>
+        {
+            var sim = Sim();
+            var players = sim.Ships.HumanPlayerSignificantShips.ToList();
+            float range = arg.Trim() == "all" ? float.MaxValue : 4000f;
+            foreach (var e in sim.Ships.Where(s => !s.IsJunk && s.IsSignificant && players.Any(p => s.IsEnemiesWith(p) && s.DetWorldCenter.DistanceTo(p.DetWorldCenter) <= range)).ToList())
+                foreach (var part in e.Parts.ToList()) part.Health = 0;
+            Autotest.Wait(1);
+        };
         Autotest.Fields["fr_apprentices"] = () => Autotest.RequireRun().State.Friendly.Apprentices.Count;
         Autotest.Fields["fr_apprentice_fights"] = () => Autotest.RequireRun().State.Friendly.Apprentices.FirstOrDefault()?.Fights ?? -1;
         // fr_apprentice_hired: 1 while the first apprentice has its follow-and-fight hire.
@@ -104,6 +173,8 @@ public static class FriendlyArea
             Autotest.Wait(1);
         };
     }
+
+    static Ship? FirstWayfarer() => Autotest.RequireRun().State.Friendly.Wayfarers.Select(id => Sim().Ships[id]).FirstOrDefault(s => s is not null);
 
     static SimRoot Sim() => Autotest.RequireRun().Game.Sim ?? throw new InvalidOperationException("no sim");
 }

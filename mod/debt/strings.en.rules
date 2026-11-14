@@ -40,4 +40,17 @@ HotCargoDebt
 	PanelCollectorFmt = "  collector in {0}"
 	PanelCollectorHere = "  collector here"
 	PanelHunted = "  HUNTED"
+
+	// Debt missions (spec 1420 to 1422).
+	PayoffLineFmt = "<img name='money' colored='true'/> Debt -{0} to the {1}"
+	// The part of PayoffLineFmt that tests look for.
+	PayoffLineTag = "Debt -"
+	PayoffFmt = "The job pays {0} off your debt to the {1}."
+	// {0} buyer, {1} old lender, {2} balance, {3} new interest %, {4} minutes per step, {5} reputation loss.
+	RefinanceOfferFmt = "<b>REFINANCE</b>\nThe {0} buy your {1} debt of {2}. You owe the {0}: +{3}% every {4} min.\nThe {1} lose {5} reputation with you."
+	RefinanceFmt = "Refinance the {0} debt"
+	RefinancedFmt = "The {0} bought your debt to the {1}. The {1} lose {2} reputation with you."
+	LogRefinancedFmt = "The {0} bought the debt to the {1}."
+	CollectName = "Collect a Debt"
+	CollectDesc = "Defeat the debtor in the {mission_location} system.\nThe pay goes off your own debt."
 }

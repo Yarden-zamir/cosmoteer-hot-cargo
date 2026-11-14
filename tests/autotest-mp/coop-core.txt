@@ -159,6 +159,10 @@ expect tactics_evals > 20
 step debris.decay
 # Spec 1245: junk decay is sim state. Pieces of both players start to age on both machines at the same tick; the state hash
 # compares the ages (RunState.Debris) and the ship counts. They are still young at the resync below.
+# The hunters leave and no new wave comes until the end of debris.resync, so no fight shoots or splits the test pieces.
+# Heat and stages stay, for the checks of core.resync.
+mp maxhunters 0
+mp stasishunters
 mp debris_set DecaySeconds 40
 mp debris_set GlowSeconds 15
 mp debris_set CheckSeconds 1
@@ -205,6 +209,8 @@ on 1 waitfor debris_glowing >= 5 60
 # Junk from the fight above decays too, so more pieces than the test pieces can burn up.
 waitfor debris_removed >= 5 60
 on 1 waitfor debris_removed >= 5 60
+# The cap of the tunables file in tunablesmenu.file again.
+mp maxhunters 7
 
 step core.save-load
 # Back to the game setup with the connection kept, load the save (from before the resync) for both players, start.
@@ -214,6 +220,8 @@ mpstart {PLAYERS}
 # A loaded co-op game starts paused.
 pause off
 waitfor paused == 0 10
+# The save is from the debris steps, so it holds their hunter cap of 0. The cap of tunablesmenu.file again.
+mp maxhunters 7
 expectevent smuggler_den
 expect hc_trap_state == 2
 expect stages >= 1

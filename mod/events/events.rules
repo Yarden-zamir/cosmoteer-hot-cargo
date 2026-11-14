@@ -941,6 +941,44 @@ Events
 		]
 	}
 
+	// Spec 1367: a crew with a debt it cannot pay. Buy the debt: it follows and fights for you until it dies or its time is up,
+	// then pays the full price back (spec 1368). A clear deal: the risk is visible, it can die in your fights.
+	{
+		ID = debtor
+		Trigger = Arrival
+		Weight = 5
+		Carrier = Recruit
+		Title = "The Debtor"
+		Text = "A worn crew hails you. \"The dock bank wants its money today, and we don't have it. Buy our debt, and we fight for you until we can pay it back in full.\""
+		Choices
+		[
+			{
+				Text = "Buy their debt."
+				Cost { Money = 1.5 }
+				Outcomes [ { Text = "They fall in behind you, guns ready."; Effect = debtor } ]
+			}
+			{
+				Text = "Not my problem."
+				Outcomes [ { Text = "\"We'll find someone.\" The channel closes." } ]
+			}
+		]
+	}
+
+	// Spec 1371: the Wayfarers' closing hail after a fight they joined. No trigger: the Friendly area opens it on their leader.
+	{
+		ID = pay_it_forward
+		MaxPerRun = 0
+		Title = "The Wayfarers"
+		Text = "The Wayfarer captain hails you, grinning. \"Someone pulled us out of a fight like that once. No charge. Pay it forward to the next one in need.\""
+		Choices
+		[
+			{
+				Text = "We will."
+				Outcomes [ { Text = "They patch their hulls and spin up their drives."; Effect = wayfarers_leave } ]
+			}
+		]
+	}
+
 	// The run's one relic ship (spec 765). It opens when a ship comes close, and again on each return until the crate is taken.
 	{
 		ID = relic_ship

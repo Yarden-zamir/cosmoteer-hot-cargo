@@ -46,7 +46,7 @@ public static class DebtArea
                 : run.State.Result != RunResult.Running ? ""
                 : Format("PanelCollectorFmt", Pursuit.PursuitModel.Clock(Math.Max(0, d.NextCollectorAt - now)));
             string interest = run.State.Result != RunResult.Running ? ""
-                : Format("PanelInterestFmt", (run.T.Debt.InterestRate * 100f).ToString("0.#"), Pursuit.PursuitModel.Clock(Math.Max(0, d.NextInterestAt - now)));
+                : Format("PanelInterestFmt", (run.T.Debt.InterestRate * d.RateFactor * 100f).ToString("0.#"), Pursuit.PursuitModel.Clock(Math.Max(0, d.NextInterestAt - now)));
             string line = Format("PanelFmt", d.Balance.ToString("N0"), name, Lenders.Ratio(d).ToString("0.0"), interest, next);
             return stage switch { DebtStage.Hostile => $"<bad>{line}</bad>", DebtStage.Firm => $"<limited_color>{line}</limited_color>", _ => line };
         }));
@@ -76,6 +76,17 @@ public static class DebtArea
         return Cosmoteer.Ships.Special.SpaceStation.GetStations(Sim(), onlyOperating: true).Select(s => s.PhysicalShip).OfType<Ship>()
             .OrderBy(s => s.DetWorldCenter.DistanceSquaredTo(at)).ThenBy(s => s.UniqueID);
     }
+
+    static long _marked;
+    static string _oldFaction = "";
+    static int _oldRep;
+
+    static IEnumerable<Cosmoteer.Modes.Career.Missions.Mission> CollectOffers() =>
+        Missions.MissionArea.Offers(Sim()).Where(m => m.MetatypeID.Equals(new Cosmoteer.Data.ID<Cosmoteer.Modes.Career.Missions.MissionMetatype>(DebtMissions.CollectMetatype)));
+
+    static Cosmoteer.Modes.Career.Missions.Rewards.MoneyReward CollectMoney() =>
+        CollectOffers().SelectMany(m => m.Rewards).OfType<Cosmoteer.Modes.Career.Missions.Rewards.MoneyReward>().FirstOrDefault()
+        ?? throw new InvalidOperationException("no collect offer with a money reward");
 
     static void RegisterAutotest()
     {
@@ -134,6 +145,35 @@ public static class DebtArea
         Autotest.Commands["debt_ratio"] = arg => First().Balance = (long)Math.Ceiling(First().Principal * double.Parse(arg, CultureInfo.InvariantCulture));
         // debt_unwant: the lender of the first debt stops wanting the players, as after a lost search.
         Autotest.Commands["debt_unwant"] = _ => ((Cosmoteer.Modes.Career.CareerSimModeManager)Sim().Mode).Wanted.RemoveFactionFromWanting(First().FactionId);
+        // Debt missions (spec 1420 to 1422).
+        Autotest.Fields["debt_collect_offers"] = () => CollectOffers().Count();
+        Autotest.Fields["debt_collect_line"] = () => CollectMoney().GetRewardText(1f, R().Game)?.Contains(DebtArea.Text("PayoffLineTag"), StringComparison.Ordinal) == true ? 1 : 0;
+        // The debt that the last debt_mark saw, minus the debt now, ÷ the collect offer's money: 1 when the payout went off the debt.
+        Autotest.Fields["debt_drop_share"] = () => (double)(_marked - R().State.Debt.Total) / CollectMoney().GetScaledMoney(R().Game);
+        Autotest.Commands["debt_mark"] = _ => _marked = R().State.Debt.Total;
+        // debt_collect_pay: gives the money reward of the collect offer, the path that the vanilla payment input calls.
+        Autotest.Commands["debt_collect_pay"] = _ => CollectMoney().GiveReward(R().Game);
+        Autotest.Fields["debt_refinance_offers"] = () => Stations().Count(st => Lenders.Refinances(R(), st).Count > 0);
+        Autotest.Fields["debt_rate"] = () => First().RateFactor;
+        Autotest.Fields["debt_rep_drop"] = () => _oldRep - R().Mode.GetFactionReputation(new Cosmoteer.Data.ID<Cosmoteer.Factions.FactionRules>(_oldFaction));
+        // debt_rehome: the first debt moves to a faction that is not the nearest station's and not the corporation's ally, so that
+        // station can buy it (spec 1421). Notes the reputation of that faction for debt_rep_drop.
+        Autotest.Commands["debt_rehome"] = _ =>
+        {
+            var station = Stations().First();
+            string here = Lenders.FactionOf(station)?.ID.ToString() ?? throw new InvalidOperationException("the nearest station has no faction");
+            string ally = Factions.FactionsArea.Roles(R()).Ally.ID.ToString();
+            var to = Cosmoteer.GameApp.Rules.Factions.Select(f => f.ID.ToString()).Where(id => id != here && id != ally).OrderBy(id => id, StringComparer.Ordinal).First();
+            First().Faction = to;
+            _oldFaction = to;
+            _oldRep = R().Mode.GetFactionReputation(First().FactionId);
+            Log.Info($"AUTOTEST debt moved to {to}; station {here}, ally {ally}");
+        };
+        Autotest.Commands["debt_refinance"] = _ =>
+        {
+            var station = Stations().FirstOrDefault(st => Lenders.Refinances(R(), st).Count > 0) ?? throw new InvalidOperationException("no station buys a debt");
+            R().Game.NetManager.EnqueueInput(DebtChoiceDomain.Pick(station, DebtChoice.Refinance, R().State.Debt.Debts.IndexOf(Lenders.Refinances(R(), station)[0])));
+        };
         // debt_open loan|lender|collector: opens the comms window to that ship on its dialogue tab (for screenshots). debt_close closes it.
         Autotest.Commands["debt_open"] = arg =>
         {
