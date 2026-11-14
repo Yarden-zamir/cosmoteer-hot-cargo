@@ -79,11 +79,8 @@ if [[ -s "$PENDING_FILE" ]]; then
   done
   rm -f "$PENDING_FILE"
 fi
-# Spec section numbers must stay unique (parallel branches often pick the same next number).
-DUP="$(ls spec | cut -d- -f1 | sort | uniq -d || true)"
-[[ -z "$DUP" ]] || { echo "integrate: two spec files share the section number $DUP"; exit 1; }
-DUPREQ="$(cat spec/*.md | grep -oE '^[0-9]+\. ' | sort | uniq -d | tr -d '. ' | tr '\n' ' ' || true)"
-[[ -z "$DUPREQ" ]] || { echo "integrate: duplicate requirement numbers: $DUPREQ"; exit 1; }
+# Spec section and requirement numbers must stay unique (parallel branches often pick the same next number).
+scripts/check-spec-numbers.sh
 
 step "build"
 dotnet build src/HotCargo/HotCargo.csproj -c Release -nologo -v quiet > /tmp/hot_cargo_integrate_build.log 2>&1 \

@@ -20,7 +20,7 @@ You stole corporate tech. The corporation wants it back. Get it across about 8 s
 - **FTL-style events.** Distress beacons, checkpoints, fences, rival thieves: choices with risks, costs and rewards.
 - **Story chains.** Each station has a story in parts. What you do in one part decides the next, and some choices come back later.
 - **Start jobs.** Each run starts with a choice of jobs: less cargo worth more, a farther Buyer who pays more, a hot start, stronger hunters. Each job lists all its rules.
-- **Learn as you go.** Hot Cargo pages join the game's "How to Play" list and codex. The career log gets a "Hot Cargo run" tab with the story of your run.
+- **Learn as you go.** Hot Cargo pages join the game's "How to Play" list and codex. The career log gets a "Hot Cargo run" tab with the story of your run. The tab also lists your past runs with their scores.
 
 ![Heat stage alert](docs/screenshots/heat-alert.jpg)
 
