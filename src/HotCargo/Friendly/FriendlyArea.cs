@@ -19,6 +19,7 @@ public static class FriendlyArea
         EventRunner.Effects.Add("join", Join.Apply);
         EventRunner.Effects.Add("apprentice", Apprentice.Apply);
         EventRunner.Effects.Add("leave", Leave);
+        EventRunner.Effects.Add("halve_heat", HalveHeat);
         Run.Hooks.Tick += Apprentice.OnTick;
         Run.Hooks.SystemEntered += Apprentice.OnSystemEntered;
         AddAutotest();
@@ -36,6 +37,20 @@ public static class FriendlyArea
         run.State.Diplomacy.Leaving.Add(new Diplomacy.Leaving { Ship = id, Due = run.State.GameSeconds + run.T.Friendly.LeaveDelaySeconds });
         Ux.UxKit.ChatLine(run.Game, Text("LeavesFmt", ship.Metadata.XmlShipName));
         Log.Info($"friendly: {ship.Metadata.PlainShipName} leaves the system");
+    }
+
+    /// <summary>
+    /// Spec 1366: effect "halve_heat". Heat × FriendlyTunables.RiddleHeatKeep (0.5). The heat bar shows the drop; a center message
+    /// and a chat line name the old and new heat.
+    /// </summary>
+    static void HalveHeat(Run run, SimRoot sim, int player, PendingEvent p, List<string> lines)
+    {
+        float before = run.State.Heat;
+        run.AddHeat(before * run.T.Friendly.RiddleHeatKeep - before, sim);
+        string line = Text("HeatHalvedFmt", before.ToString("0"), run.State.Heat.ToString("0"));
+        lines.Add(line);
+        Say(run.Game, line);
+        Log.Info($"friendly: riddle heat {before:0.0} -> {run.State.Heat:0.0}");
     }
 
     internal static string Text(string key, params object?[] args) => Strings.FormatText("HotCargoFriendly/" + key, args);

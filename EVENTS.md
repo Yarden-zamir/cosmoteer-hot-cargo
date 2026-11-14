@@ -343,6 +343,9 @@ A young crew asks to follow you and learn. Let them follow (free): for 6 minutes
 
 After a trade it jumps away (spec 1364).
 
+#### Riddle Ship (Arrival; heat 10+; once per run; a pool of 5 riddles)
+A painted ship asks a riddle. Right: they talk to their contacts, and heat halves. Wrong: heat +3, and your name is in their story. Or no time for games (spec 1365, 1366).
+
 ## 4. Content rules for authors
 
 - Do not write counts that live elsewhere (the starting tech, spawn counts in spawns.rules): they drift. Use `{crates}` for the live fleet tech count. Counts that the same choice's Cost sets are fine.

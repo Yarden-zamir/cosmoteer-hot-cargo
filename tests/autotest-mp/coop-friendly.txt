@@ -57,4 +57,19 @@ on 1 waitfor ev_pending == 0 30
 waitfor fr_leaving >= 1 10
 on 1 expect ev_res_processor_gain == 1
 
+step friendly.riddle
+# Spec 1366: the client answers right from its machine. Heat halves in the sim, so both machines see it.
+mp heat 40
+mp event riddle_hole
+waitfor ev_pending == 1 20
+mp ev_carrier_goto
+wait 2
+ev_mark
+on 1 ev_mark
+on 1 ev_comms carrier A hole.
+waitfor ev_pending == 0 30
+on 1 waitfor ev_pending == 0 30
+expect ev_heat_gain < -15
+on 1 expect ev_heat_gain < -15
+
 end
