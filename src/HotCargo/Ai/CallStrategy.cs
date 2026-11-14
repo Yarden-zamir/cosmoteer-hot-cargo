@@ -6,6 +6,7 @@ using Cosmoteer.Ships;
 using Cosmoteer.Ships.AI;
 using Cosmoteer.Ships.Commands;
 using Cosmoteer.Ships.Parts;
+using Cosmoteer.Ships.Parts.Sensors;
 using Cosmoteer.Simulation.HitEffects;
 using Halfling.PortableHashing;
 using Halfling.Serialization;
@@ -42,6 +43,8 @@ internal sealed class CallStrategy(CallStrategyRules rules) : AIStrategyModule
 {
     [Serialize(Optional = true)] bool _calling;
     [Serialize(Optional = true)] Time _callStart;
+    /// <summary>Length of the running call: CallSeconds, or CallInterceptSeconds when a player sensor intercepted it (spec 1300).</summary>
+    [Serialize(Optional = true)] float _callSeconds;
     [Serialize(Optional = true)] Time _cooldownUntil;
     [Serialize(Optional = true)] bool _sawEnemy;
     [Serialize(Optional = true)] float _lastHealth = -1f;
@@ -53,12 +56,15 @@ internal sealed class CallStrategy(CallStrategyRules rules) : AIStrategyModule
     public bool Calling => _calling;
     public bool Assisting => _assist is not null;
 
-    public float Progress(Ship ship, TacticsTunables t) => AiModel.CallProgress((HunterOrders.Sim(ship).LogicalTime - _callStart).Seconds, t.CallSeconds);
+    public float CallSeconds => _callSeconds;
+
+    public float Progress(Ship ship) => AiModel.CallProgress((HunterOrders.Sim(ship).LogicalTime - _callStart).Seconds, _callSeconds);
 
     public override void GetIntegrityHash(IntegrityHash iHash)
     {
         _calling.GetIntegrityHash(iHash);
         _callStart.GetIntegrityHash(iHash);
+        _callSeconds.GetIntegrityHash(iHash);
         _cooldownUntil.GetIntegrityHash(iHash);
         _sawEnemy.GetIntegrityHash(iHash);
         _assistUntil.GetIntegrityHash(iHash);
@@ -93,7 +99,7 @@ internal sealed class CallStrategy(CallStrategyRules rules) : AIStrategyModule
         bool inStorm = AiGate.InStorm(ship, t);
         // Listeners and other callers are looked up only when a call could start, because the lookups walk the ship list.
         bool canStart = !_calling && triggered && now >= _cooldownUntil;
-        var step = AiModel.NextCall(_calling, (now - _callStart).Seconds, t.CallSeconds, triggered,
+        var step = AiModel.NextCall(_calling, (now - _callStart).Seconds, _callSeconds, triggered,
             hasListeners: canStart && HasListeners(ship, t), inStorm, coolingDown: now < _cooldownUntil,
             allyCalling: canStart && AllyCalling(ship, t));
         switch (step)
@@ -103,8 +109,15 @@ internal sealed class CallStrategy(CallStrategyRules rules) : AIStrategyModule
                 _callStart = now;
                 _target = spotted;
                 _blockedLogged = false;
-                TacticsLog.Event(ship, AiArea.CallStart, $"calls about {spotted?.Metadata.PlainShipName}");
+                var interceptor = Interceptor(ship, t);
+                _callSeconds = interceptor is null ? t.CallSeconds : t.CallInterceptSeconds;
+                TacticsLog.Event(ship, AiArea.CallStart, $"calls about {spotted?.Metadata.PlainShipName}, {_callSeconds:0} s");
                 AiText.Chat(ship, "CallStartFmt");
+                if (interceptor is not null)
+                {
+                    TacticsLog.Event(ship, AiArea.CallIntercept, $"intercepted by {interceptor.Value.Ship.Metadata.PlainShipName}");
+                    AiText.ChatAll(ship, "CallInterceptFmt", interceptor.Value.Part.Rules.NameKey.Text, ship.Metadata.PlainShipName);
+                }
                 break;
             case CallStep.Blocked when _calling:
                 Stop(ship, now, t, AiArea.CallBlocked, "storm");
@@ -122,7 +135,7 @@ internal sealed class CallStrategy(CallStrategyRules rules) : AIStrategyModule
 
     public override AIStrategyModule Clone(AIParameters? parameters) => new CallStrategy(rules)
     {
-        _calling = _calling, _callStart = _callStart, _cooldownUntil = _cooldownUntil, _sawEnemy = _sawEnemy,
+        _calling = _calling, _callStart = _callStart, _callSeconds = _callSeconds, _cooldownUntil = _cooldownUntil, _sawEnemy = _sawEnemy,
         _lastHealth = _lastHealth, _target = _target, _assist = _assist, _assistUntil = _assistUntil,
     };
 
@@ -180,6 +193,30 @@ internal sealed class CallStrategy(CallStrategyRules rules) : AIStrategyModule
         return true;
     }
 
+    static readonly PartIdSet InterceptParts = new(nameof(TacticsTunables.CallInterceptParts));
+
+    /// <summary>
+    /// Spec 1300-1301. The first part, walking the human enemy ships in sim order, of a CallInterceptParts type with a working
+    /// sensor whose radar range reaches the caller. The range is one sensor's term of SensorManager.RadarRadius.
+    /// </summary>
+    static (Ship Ship, Part Part)? Interceptor(Ship caller, TacticsTunables t)
+    {
+        foreach (var human in HunterOrders.Sim(caller).Ships.HumanPlayerSignificantShips)
+        {
+            if (!caller.IsEnemiesWith(human)) continue;
+            var parts = InterceptParts.Of(t.CallInterceptParts);
+            float distance = human.DetWorldCenter.DistanceTo(caller.DetWorldCenter);
+            // SensorManager lists only operational sensors.
+            foreach (Sensor sensor in human.Sensors)
+            {
+                if (sensor.Part is not { } part || !parts.Contains(part.Rules.ID)) continue;
+                float reach = human.WorldBoundingRadius + sensor.Rules.RadarRadius.GetValue(part, 1f) * human.Nebulas.RadarRangeFactor;
+                if (distance <= reach) return (human, part);
+            }
+        }
+        return null;
+    }
+
     bool HasListeners(Ship ship, TacticsTunables t) =>
         AiGate.IsCorporateHunter(ship) ? Run.Current?.State.Hunters.Pending.Count > 0 : Listeners(ship, t).Any();
 
@@ -202,8 +239,7 @@ internal sealed class CallStrategy(CallStrategyRules rules) : AIStrategyModule
     // ---- Interrupts (spec 197). The hit effects run inside the sim tick on every client, so the interrupt is deterministic.
 
     static readonly ID<ResourceRules> Battery = new("battery");
-    static string[]? _partSource;
-    static HashSet<ID<PartRules>> _interruptParts = [];
+    static readonly PartIdSet InterruptParts = new(nameof(TacticsTunables.CallInterruptParts));
 
     /// <summary>A hit from an enemy stops the hit ship's call.</summary>
     static void OnDisruptHit(Ship? hitShip, Ship? sourceShip, string what)
@@ -250,15 +286,33 @@ internal sealed class CallStrategy(CallStrategyRules rules) : AIStrategyModule
             if (effectParams.SourcePart is not { } part || Run.Current is not { } run) return;
             try
             {
-                var parts = run.T.Tactics.CallInterruptParts;
-                if (!ReferenceEquals(_partSource, parts))
-                {
-                    _interruptParts = parts.Select(p => new ID<PartRules>(p)).ToHashSet();
-                    _partSource = parts;
-                }
-                if (_interruptParts.Contains(part.Rules.ID)) OnDisruptHit(effectParams.HitShip, effectParams.SourceShip, "ion beam hit");
+                if (InterruptParts.Of(run.T.Tactics.CallInterruptParts).Contains(part.Rules.ID)) OnDisruptHit(effectParams.HitShip, effectParams.SourceShip, "ion beam hit");
             }
             catch (Exception ex) { Errors.Report("call interrupt", ex.Message, ex); }
         }
+    }
+}
+
+/// <summary>
+/// A set of part IDs from a tunables list, built again only when the list changes, so a check per hit allocates nothing.
+/// A part ID that no ship rules know throws, so a tunables typo shows in the overlay instead of turning the check off.
+/// </summary>
+sealed class PartIdSet(string field)
+{
+    string[]? _source;
+    HashSet<ID<PartRules>> _ids = [];
+
+    public HashSet<ID<PartRules>> Of(string[] names)
+    {
+        if (ReferenceEquals(_source, names)) return _ids;
+        var ids = new HashSet<ID<PartRules>>();
+        foreach (string name in names)
+        {
+            var id = new ID<PartRules>(name);
+            if (!GameApp.Rules.Ships.Any(s => s.PartsByID.ContainsKey(id))) throw new InvalidOperationException($"Tactics.{field}: unknown part '{name}'");
+            ids.Add(id);
+        }
+        (_ids, _source) = (ids, names);
+        return _ids;
     }
 }

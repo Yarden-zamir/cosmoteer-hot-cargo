@@ -736,3 +736,56 @@ TowMission
 		}
 	]
 }
+
+// Spec 1146: the rescue tow. The towed ship is the one that fired the beacon (C# tags it hc_rescue_towed for this spawn only).
+// The destination is the nearest trade station whose owner is not hostile to it. No such station: no mission, and the beacon stays.
+RescueMission
+{
+	Spawners
+	[
+		{
+			Type = Mission
+			Metatype = HotCargoRescueTow
+			SpawnAt = Player
+			Objectives
+			[
+				{
+					Type = HotCargoTow
+					TowedTag = { Mode=Nearest; Tag=hc_rescue_towed; }
+					StationTag = trade_station
+					MinStationDistance = 0
+					ArrivalRadius = 1200
+					FriendlyOnly = true
+				}
+			]
+			Rewards
+			[
+				// Added straight to the log, not offered: no contract fee, heat, trail or informant (economy spec 100+). No pay: the players pay the tug.
+				{ Type = HotCargoContract; AcceptFee = 0; FlatHeat = 0; TrailWeight = 0; InformantChance = 0; }
+			]
+		}
+	]
+}
+
+// Spec 1146: the tug. A civilian hauler without AI: the Events area gives it its move orders and drags the towed ship.
+RescueTug
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_rescue_tug]
+			Distance = [600, 800]
+			Allegiance = FactionCivilian
+			SuppressLocationAssertions = true
+			NameGenerator = { Type = NameList; Names = ["Salvage Tug"]; }
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [trade]
+			}
+		}
+	]
+}

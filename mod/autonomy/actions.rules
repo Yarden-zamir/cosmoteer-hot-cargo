@@ -23,7 +23,7 @@
 					ChoiceID = "hc_funnel_ship"
 					Mode = 0
 					ButtonToolTipKey = "HotCargoAutonomy/FunnelShipTip"
-					ButtonSprite { Texture { File = "./Data/ships/terran/factory_processor/processor3.png"; MipLevels = 2; SampleMode = Linear } }
+					ButtonSprite { Texture { File = "autonomy/sprites/computer/icon.png"; MipLevels = 2; SampleMode = Linear } }
 				}
 				{
 					ChoiceID = "hc_funnel_all"

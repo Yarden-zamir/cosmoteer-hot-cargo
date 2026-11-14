@@ -30,11 +30,17 @@ namespace HotCargo.Dev;
 public static class Playthrough
 {
     static Mission? _mission;
+    /// <summary>The relay that Relay() chose, for the system that it chose it in.</summary>
+    static (ObjectID Node, ObjectID Destination)? _relay;
+
+    /// <summary>The clock of the repeated orders: the run's game seconds, so an order comes at the same point of the game
+    /// at any machine load (requirement 1007).</summary>
+    static double GameSeconds() => Autotest.RequireRun().State.GameSeconds;
     static Func<Circle?>? _target;
 
     internal static void Register()
     {
-        // pt_goto station|mission|relay <timeout seconds>: a right click order, again every 20 seconds until the ship is near (pt_near).
+        // pt_goto station|mission|relay <timeout seconds>: a right click order, again every 20 game seconds until the ship is near (pt_near).
         // A far station is in stasis, so its size is a guess; a person clicks again when it is in view.
         Autotest.Commands["pt_goto"] = arg =>
         {
@@ -52,7 +58,7 @@ public static class Playthrough
             Autotest.WaitFor(() =>
             {
                 if (Near()) return true;
-                double now = Halfling.App.Clock.Time.Seconds;
+                double now = GameSeconds();
                 if (now >= next)
                 {
                     next = now + 20;
@@ -77,7 +83,7 @@ public static class Playthrough
         Autotest.Fields["pt_unlocked"] = () => Autotest.RequireRun().Mode.Techs.IsTechUnlocked(new ID<TechRules>("cosmoteer.hyperdrive_small")) ? 1 : 0;
         // pt_buy <timeout seconds> <resource id> <total> [<resource id> <total> ...]: the trade window, station to ship, until the ship
         // stores each total. Vanilla cancels and refunds a transfer that the crew did not finish, for example when the ship chases an
-        // attacker out of trade range. A person then flies back and buys the rest: every 20 seconds, each missing resource with no
+        // attacker out of trade range. A person then flies back and buys the rest: every 20 game seconds, each missing resource with no
         // transfer on its way is bought again, after a move order back to the picked station if the ship is not near it.
         // pt_buy <timeout seconds> part <part id>: the totals are the part's build cost from its rules, as the build window shows it.
         Autotest.Commands["pt_buy"] = arg =>
@@ -94,7 +100,7 @@ public static class Playthrough
             {
                 var missing = wants.Where(w => Stored(w.Resource) < w.Total).ToList();
                 if (missing.Count == 0) return true;
-                double now = Halfling.App.Clock.Time.Seconds;
+                double now = GameSeconds();
                 if (now < next) return false;
                 next = now + 20;
                 if (!Near()) GoTo("station");
@@ -104,7 +110,7 @@ public static class Playthrough
         };
         // pt_repair <timeout seconds>: the repair-all button of the build window (BuildToolbox.OnRepairAllClicked: repair damaged parts,
         // rebuild destroyed ones), then the trade window for the resources that it costs. A person repairs at the station before a long
-        // flight: a ship with shot thrusters crawls. Ends when no repair or rebuild is left. Every 20 seconds, a resource of the
+        // flight: a ship with shot thrusters crawls. Ends when no repair or rebuild is left. Every 20 game seconds, a resource of the
         // repair that the ship has run out of, with no buy on its way, is bought again (RepairTopUp units), after a move order back
         // to the station if the ship AI chased an attacker away.
         Autotest.Commands["pt_repair"] = arg =>
@@ -131,11 +137,11 @@ public static class Playthrough
                 Game().NetManager.EnqueueInput(new MPUpdateShipInput(sui, flags));
                 Log.Info($"AUTOTEST playthrough: repair queued, cost {string.Join(", ", cost.Resources.Select(r => $"{r.Value} {r.Key}"))}");
             }
-            double next = Halfling.App.Clock.Time.Seconds + 20;
+            double next = GameSeconds() + 20;
             Autotest.WaitFor(() =>
             {
                 if (!Repairing(TechAutotest.PlayerShip())) return true;
-                double now = Halfling.App.Clock.Time.Seconds;
+                double now = GameSeconds();
                 if (now < next) return false;
                 next = now + 20;
                 if (!Near()) GoTo("station");
@@ -155,7 +161,7 @@ public static class Playthrough
         };
         Autotest.Fields["pt_drives"] = () => TechAutotest.PlayerShip().Ftl.HasFtlDrives ? 1 : 0;
         Autotest.Fields["pt_fuel"] = () => TechAutotest.PlayerShip().Ftl.GetTotalFuel();
-        // pt_relayjump: a right click on the relay toward the first unvisited neighbor. The drives spin up on the relay.
+        // pt_relayjump: a right click on the relay that Relay() chose. The drives spin up on the relay.
         Autotest.Commands["pt_relayjump"] = _ =>
         {
             var ship = TechAutotest.PlayerShip();
@@ -164,7 +170,7 @@ public static class Playthrough
             Game().NetManager.EnqueueInput(new MPEnqueueCommandsInput(jump, append: false, playLocalSound: false));
         };
         Autotest.Fields["pt_ready"] = () => TechAutotest.PlayerShip().Ftl.IsReadyToJump ? 1 : 0;
-        // pt_fight <timeout seconds>: right clicks the mission's nearest live target ship, again every 20 seconds as it moves,
+        // pt_fight <timeout seconds>: right clicks the mission's nearest live target ship, again every 20 game seconds as it moves,
         // until no fight step is left: the mission ended, or only a step such as ReceiveRewards is left (pt_collect).
         // A target in stasis or out of sight gets a move order to the objective area instead.
         Autotest.Commands["pt_fight"] = arg =>
@@ -174,7 +180,7 @@ public static class Playthrough
             {
                 var m = _mission ?? throw new InvalidOperationException("no accepted mission");
                 if (m.Completion != CompletionState.InProgress || !FightLeft(m)) return true;
-                double now = Halfling.App.Clock.Time.Seconds;
+                double now = GameSeconds();
                 if (now >= next)
                 {
                     next = now + 20;
@@ -194,7 +200,7 @@ public static class Playthrough
             double every = double.Parse(arg, CultureInfo.InvariantCulture), next = 0;
             Halfling.App.Director.FrameEnded += (_, _) =>
             {
-                double now = Halfling.App.Clock.Time.Seconds;
+                double now = GameSeconds();
                 // No acting ship during a jump (between systems) or after the ship is lost: nothing to report.
                 if (now < next || Run.Current is not { Game.Sim: { } sim } || Autotest.ActingShip(sim) is null) return;
                 next = now + every;
@@ -304,12 +310,39 @@ public static class Playthrough
     static bool BuyPending(ID<ResourceRules> resource) =>
         TechAutotest.PlayerShip().Resources.ManualTransferJobs.Any(j => j.TradeType == TradeType.Buy && j.ResourceType == resource);
 
+    /// <summary>Enemy ships nearer than this to the straight route from the ship to a relay count against that relay.</summary>
+    const float RouteMargin = 2500f;
+
+    /// <summary>
+    /// Spec 1004: the relay toward an unvisited system with the fewest enemy ships near the straight route from the player ship,
+    /// then the nearest. A person avoids a known pirate nest. Ships in stasis count too, so this knows more than the map shows.
+    /// The choice stays fixed for the system, so the target does not change while the ship flies.
+    /// </summary>
     static MetaFtlGate Relay()
     {
         var run = Autotest.RequireRun();
-        var next = run.Game.CurrentMapNode.Connections.FirstOrDefault(n => !run.State.VisitedNodes.Contains(n.UniqueID))
-            ?? throw new InvalidOperationException("no unvisited neighbor system");
-        return FtlGate.GetGateForDestination(run.Game.Sim, next) ?? throw new InvalidOperationException($"no relay toward {next.Name}");
+        var sim = run.Game.Sim;
+        var node = run.Game.CurrentMapNode.UniqueID;
+        var relays = FtlGate.GetGates(sim).Where(g => !run.State.VisitedNodes.Contains(g.DestinationID)).OrderBy(g => g.DestinationID).ToList();
+        if (_relay is { } kept && kept.Node.Equals(node))
+        {
+            int i = relays.FindIndex(g => g.DestinationID.Equals(kept.Destination));
+            return i >= 0 ? relays[i] : throw new InvalidOperationException("the chosen relay is gone");
+        }
+        if (relays.Count == 0) throw new InvalidOperationException("no relay toward an unvisited system");
+        var ship = TechAutotest.PlayerShip();
+        int me = ship.Metadata.PlayerIndex;
+        var from = ship.DetWorldCenter;
+        var enemies = sim.Ships.Where(s => !s.IsJunk && s.IsEnemiesWith(ship)).Select(s => s.DetWorldCenter)
+            .Concat(sim.Stasis.Where(s => SimQueries.StasisTags(s) is not null && sim.Mode.AreEnemies(s.ObjectAllegiance, me)).Select(s => s.Location))
+            .ToList();
+        int Threat(MetaFtlGate g) => enemies.Count(e =>
+            Worlds.WorldsModel.DistanceToSegment(e.X, e.Y, from.X, from.Y, g.DetWorldCenter.X, g.DetWorldCenter.Y) < RouteMargin);
+        var chosen = relays.OrderBy(Threat).ThenBy(g => g.DetWorldCenter.DistanceSquaredTo(from)).First();
+        Log.Info("AUTOTEST playthrough: relays " + string.Join(", ", relays.Select(g =>
+            $"{g.DestinationNode?.Name} enemies={Threat(g)} distance={g.DetWorldCenter.DistanceTo(from):0}")) + $"; chosen {chosen.DestinationNode?.Name}");
+        _relay = (node, chosen.DestinationID);
+        return chosen;
     }
 
     /// <summary>

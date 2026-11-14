@@ -89,7 +89,7 @@ static class TelemetryPatches
         ("MPShipSurrenderedInput", "surrender"), ("MPTransferMoneyInput", "transfer"),
         ("FleeStrategy", "flee_jump"), ("AIExitSectorModule", "exit_sector"), ("AIDeleteSelfModule", "delete_self"),
         ("AITradeShipModule", "trade_route"),
-        ("FameCapHeat", "fame_cap"), ("Deals", "diplomacy"), ("Scout.Report", "scout_report"), ("Hacker.Apply", "hacker"), ("TracerBeacon", "tracer"), ("StartJobs.Pick", "start_job"),
+        ("FameCapHeat", "fame_cap"), ("Deals", "diplomacy"), ("Scout.Report", "scout_report"), ("Hacker.Apply", "hacker"), ("TracerBeacon", "tracer"), ("StartJobs.Pick", "start_job"), ("PatrolListen", "patrol_listen"), ("RescueBeacon", "rescue_beacon"),
     ];
 
     /// <summary>

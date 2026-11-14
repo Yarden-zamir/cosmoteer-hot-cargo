@@ -22,6 +22,8 @@ src/HotCargo/
   Pursuit/                 the Pursuit director: wave ramp, fleet factor, big event pacer (Pacer), reporting scout, relay blockade, network outage, hacker
   Debt/                    debt (section 55): loans, interest, collectors, the hostile lender, the comms pages and shared choice domain
   StartJobs/               start jobs (section 48): the offer, the job rules, the intro panel with the jobs, shared choice domain
+  RunRecord/               run record (section 49): past runs in the save folder, rows in the career log tab
+  Debris/                  debris decay (section 50): old loose junk glows, then burns up (DebrisModel, DebrisGlow)
   Ui/                      overlay, heat panel (areas add lines through HeatPanel.ExtraLines), run intro and end panels
   Dev/Autotest.cs          headless test commands
   Telemetry/               session telemetry files (TELEMETRY.md); read-only hooks and patches

@@ -1,0 +1,66 @@
+# Patrol listen (spec 1122, 1123): a sensor array listens to a faction ship. Range breaks it, a finished listen changes heat,
+# and each faction ship is heard once. Combat breaks are not covered here.
+newgame run
+wait 8
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+ev_set CooldownSeconds 0
+godmode on
+ev_sensor_build
+pause off
+expect ev_sensor_works == 1
+heat 50
+# A short range, so only the faction ship next to the fleet counts.
+ev_set ListenRange 500
+ev_faction_goto 2500
+wait 2
+expect ev_listen_target == 0
+ev_sensor_select
+expect ev_listen_button == 0
+# In range: the button can start, and a listen runs with a progress bar.
+ev_faction_goto 150
+wait 2
+expect ev_listen_target == 1
+expect ev_listen_button == 1
+ev_listen
+expect ev_listening == 1
+expect ev_listen_button == 0
+# Out of range in the middle: the listen breaks, heat does not change, and the ship can be heard later.
+wait 3
+expect ev_listen_progress > 0.2
+ev_mark
+ev_faction_goto 2500
+wait 2
+expect ev_listening == 0
+expect ev_heat_gain < 1
+expect ev_heat_gain > -1
+expect ev_listened == 0
+# A full listen (forced success): heat -4, and the ship is heard.
+ev_faction_goto 150
+wait 2
+ev_mark
+ev_listen_force 1
+ev_listen
+expect ev_listening == 1
+waitfor ev_listening == 0 20
+expect ev_heat_gain <= -3
+expect ev_listened == 1
+expect ev_faction_heard == 1
+# A failure (forced): heat +5.
+ev_listen_forget
+ev_mark
+ev_listen_force 0
+ev_listen
+waitfor ev_listening == 0 20
+expect ev_heat_gain >= 4
+expect ev_listened == 1
+# Patrol Chatter keeps only the clear deal.
+heat 15
+expectcomms faction Ask about hunters nearby 1
+ev_comms faction Ask about hunters nearby
+expectevent hunter_intel
+expectcomms faction Pay for their patrol logs 1
+expectcomms faction Ask nicely 0
+ev_comms faction Never mind
+quit

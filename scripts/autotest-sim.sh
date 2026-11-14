@@ -36,6 +36,7 @@ SUITE_START=$SECONDS
 STAGE="$RUN_DIR/stage"
 { dotnet build tools/headless-sim/HeadlessSim.csproj -c Release -nologo -v quiet -clp:ErrorsOnly && scripts/stage.sh "$STAGE"; } > "$RUN_DIR/build.log" 2>&1 \
   || { cat "$RUN_DIR/build.log"; echo "== build failed"; exit 1; }
+echo "== build and stage: $((SECONDS - SUITE_START)) s"
 
 # Takes $2 free sim slots at once (all or none, so two co-op runs cannot deadlock), writes the owner pid $1 into each and
 # prints their lock folders. A co-op session runs two game processes.
@@ -62,7 +63,9 @@ run_mp() {
   # so every other taker would judge the lock stale and remove it.
   locks="$(take_sim_slots "$me" 2)"
   out="$RUN_DIR/$1.out"
-  SIM_STAGE="$STAGE" scripts/autotest-sim-mp.sh "tests/autotest-mp/$name.txt" "$((TIMEOUT + 200))" > "$out" 2>&1 || rc=$?
+  # The real-time budget of a session. Its waits count game seconds (requirement 1007), so a sim that runs at half speed on a
+  # loaded machine needs twice the wall time. Revisit if sessions often run near this budget.
+  SIM_STAGE="$STAGE" scripts/autotest-sim-mp.sh "tests/autotest-mp/$name.txt" "$((TIMEOUT * 2 + 200))" > "$out" 2>&1 || rc=$?
   rm -rf $locks
   return $rc
 }
@@ -74,7 +77,7 @@ run_once() {
   lock="$(take_sim_slots "$me" 1)"
   log="$LOG_DIR/$name.$(date +%Y%m%d-%H%M%S).sim.log"
   save="$(mktemp -d)"
-  { echo "telename $name"; cat "tests/autotest/$name.txt"; } > "$save/script.txt"
+  { echo "telename $name"; speed_line "tests/autotest/$name.txt"; cat "tests/autotest/$name.txt"; } > "$save/script.txt"
   SIM_STAGE="$STAGE" SIM_SAVE="$save" timeout "$TIMEOUT" tools/headless-sim/run.sh autotest "$save/script.txt" > "$log" 2>&1 || rc=$?
   rm -rf "$lock"
   { echo; echo "=== hot_cargo_log.txt"; cat "$save/Mods/hot_cargo/csharp/hot_cargo_log.txt" 2>/dev/null; } >> "$log"

@@ -26,6 +26,7 @@ Actions: **smoke** (in the smoke tier), keep (full tier only), done (changed in 
 | Test | Time | Checks | Needs the game for | Unit | Action |
 |---|---|---|---|---|---|
 | ai-call | 87 s | call start, complete, interrupt by disruptor and EMP, storm block | AI radar, weapon hits, storms | AiModel.NextCall | keep |
+| ai-call-intercept | 60 s | call time, and the longer call that a player sensor intercepts | AI radar, sensors | AiModel.NextCall | keep |
 | ai-cover | 68 s | a ship hides behind a rock | AI movement, line of sight | PersonalityModel.CoverSpot, NextCoverPhase | keep |
 | ai-flee | 79 s | roll once, unarmed runs, flee jump | AI, damage, jumps | AiModel.NextFlee | keep |
 | ai-personality | 69 s | personalities by faction, heavy ships never kite | ship builds, spawns | PersonalityModel | **smoke** |
@@ -43,7 +44,7 @@ Actions: **smoke** (in the smoke tier), keep (full tier only), done (changed in 
 | diplomacy-friends | 100 s | hold, fee, betrayal, hire, mercenaries, wanted | comms pages, AI, money | DiplomacyModel | keep |
 | diplomacy-hunters | 142 s | hand-over, punishment combos, bluff, deal crowd, demand hail | comms pages, hunters leave | DiplomacyModel, MultiChoiceModel | keep |
 | diplomacy-surrender | 96 s | demand, fuel overflow, yield offer, players surrender | AI, fuel, comms | DiplomacyModel.SurrenderChance | **smoke** |
-| events-abandoned | 99 s | abandoned ship event, relic ship | proximity triggers | EventModel | keep |
+| events-abandoned | 99 s | hulk loot, hold reveal, blast, relic ship | proximity triggers | EventModel | keep |
 | events-batch2 | 78 s | five events: spawns, flags, toll by heat, Buyer price | rules, spawns, prices | EventModel.HeatScaledUnits, BuyerPriceAfter | keep |
 | events-courier | 65 s | courier offer, contact out of stasis | stations, stasis | — | keep |
 | events-hail | 78 s | ship hails, players hail, attack mid-dialogue | comms | — | keep |

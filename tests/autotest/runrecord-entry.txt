@@ -1,0 +1,53 @@
+# Run record (spec 1220 to 1226): a won run writes one entry with its numbers, a later delivery updates it, a load adds no
+# second entry, a loss writes its entry, and the career log tab shows the past runs.
+# tier: smoke
+newgame run
+wait 8
+closepanel
+ev_set Enabled false
+rr_clear
+expect rr_entries == 0
+sj_pick contract
+wait 1
+# Spec 1223: the tick keeps the highest heat.
+heat 30
+wait 2
+expect rr_peakheat_state >= 30
+# A run that has not ended has no entry.
+expect rr_has == 0
+win
+wait 2
+expect rr_entries == 1
+expect rr_won == 1
+expect rr_score == 184500
+expect rr_peakheat >= 30
+expect rr_delivered == 4
+expect rr_sectors == 8
+expect rr_job_matches == 1
+# A delivery after the win sets the score again (spec 7), and the entry follows.
+buyer deliver 1
+wait 2
+expect rr_entries == 1
+expect rr_score > 184500
+expect rr_delivered == 5
+careerlog
+wait 2
+expect rr_tab_rows == 1
+# A load of the won run keeps one entry.
+save rrwon
+load rrwon
+wait 3
+expect rr_entries == 1
+# A new career with the same test seed has the same run ID, so its loss replaces the entry.
+# Limit (spec 1221): two careers with the same galaxy seed share one entry.
+newgame run
+wait 8
+closepanel
+ev_set Enabled false
+lose
+wait 2
+expect rr_entries == 1
+expect rr_has == 1
+expect rr_won == 0
+expect rr_score == 0
+quit
