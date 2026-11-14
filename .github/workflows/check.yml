@@ -1,11 +1,14 @@
-# Checks every pushed branch and pull request: private data, build against the game references, unit tests, and the game
+# Checks pushes to main and pull requests: private data, build against the game references, unit tests, and the game
 # tests in the headless sim (tools/headless-sim) on Linux. Tests with the line "# runner: pc" need the Windows PC: the PR
 # owner runs the affected ones (LIST_ONLY=1 RUNNER=pc scripts/autotest-affected.sh) and ticks the PR template's box.
 # Game files: the private repo Yarden-zamir/cosmoteer-hot-cargo-game-refs (read-only deploy key). Only pushes and pull
 # requests from this repo get the key; never pull_request_target. Game files never go into a cache or an artifact.
 name: check
 on:
+  # Only main: a pull request commit gets one run (the pull_request one), not a second push run that competes for jobs.
+  # release.sh reads the checks of main commits; dev-release.yml has its own trigger.
   push:
+    branches: [main]
   pull_request:
 # A newer push to a pull request cancels its older run: the game tests take about 17 of the ~20 parallel jobs a free
 # account gets, so stale runs only delay the others. Pushes (main included) are never cancelled.
@@ -39,9 +42,9 @@ jobs:
   # The game tests, split over parallel shards so that the whole set takes under 10 minutes (scripts/ci-sim-tests.sh).
   game-tests-shard:
     runs-on: ubuntu-latest
-    # Once per change: pushes to main (release.sh reads their checks) and pull requests from this repo. A push to a branch
-    # with a PR also starts a pull_request run, so a branch push alone runs no game tests.
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    # After build, so that the cheap required checks never wait in the job queue behind the shards. Forks: no secrets, no run.
+    needs: build
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -95,7 +98,8 @@ jobs:
   game-tests:
     runs-on: ubuntu-latest
     needs: game-tests-shard
-    if: always() && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
+    # always(): a failed build skips the shards, and this job then fails instead of being skipped.
+    if: always() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - uses: actions/checkout@v7.0.1
         with:

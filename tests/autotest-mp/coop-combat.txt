@@ -170,7 +170,6 @@ step worlds.current
 mprestart
 mp godmode on
 mp ev_set Enabled false
-mp pu_set Enabled false
 mp worlds paint
 mp worlds goto current
 wait 3
