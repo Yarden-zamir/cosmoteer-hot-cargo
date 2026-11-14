@@ -65,6 +65,13 @@ expect huntershostile == 1
 on 1 hunters client
 on 1 expect huntershostile == 1
 
+step factions.watch
+# Spec 664: the Strike stage above marked the neighbor systems; the client's galaxy map shows CORPORATE WATCH too.
+expect fa_watched >= 1
+expect fa_tag_watch >= 1
+on 1 expect fa_watched >= 1
+on 1 expect fa_tag_watch >= 1
+
 step tunablesmenu.host-edit
 # Spec 504: the host's menu change reaches the client through the tunables input. A menu edit keeps the file's other values.
 waitfor menu_ready == 1 30

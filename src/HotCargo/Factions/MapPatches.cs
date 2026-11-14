@@ -48,6 +48,8 @@ static class MapPatches
             if (FactionsArea.IsRival(run, f))
                 sb.Append('\n').Append(FactionsArea.Format("TipRivalFmt", t.RivalFencePremium));
         }
+        if (FactionsArea.Watched(run, node))
+            sb.Append('\n').Append(FactionsArea.Format("TipWatchFmt", t.WatchHeatFactor));
         if (node != run.Game.CurrentMapNode && run.Game.Map.Nodes.CanJumpTo(node))
         {
             float stored = run.State.NodeHeat.TryGetValue(node.UniqueID, out float h) ? h : 0f;
@@ -61,7 +63,7 @@ static class MapPatches
         return sb.ToString();
     }
 
-    /// <summary>Spec 645: a short tag under the node name for a hot zone and for fence space.</summary>
+    /// <summary>Spec 645, 664, 665: a short tag under the node name for a hot zone, corporate watch, shelter and fence space.</summary>
     [HarmonyPatch(typeof(CareerGameModeManager), nameof(CareerGameModeManager.GetMapNodeText))]
     static class NodeText
     {
@@ -72,8 +74,13 @@ static class MapPatches
             try
             {
                 var f = FactionsArea.Controller(node);
-                if (FactionsArea.IsAlly(run, f)) sb.Append("\n<s16><bad>").Append(FactionsArea.Text("TagAlly")).Append("</bad></s16>");
-                else if (FactionsArea.IsRival(run, f)) sb.Append("\n<s16><good>").Append(FactionsArea.Text("TagRival")).Append("</good></s16>");
+                switch (FactionsArea.ZoneOf(run, node))
+                {
+                    case Zone.Ally: sb.Append("\n<s16><bad>").Append(FactionsArea.Text("TagAlly")).Append("</bad></s16>"); break;
+                    case Zone.Watch: sb.Append("\n<s16><bad>").Append(FactionsArea.Text("TagWatch")).Append("</bad></s16>"); break;
+                    case Zone.Shelter: sb.Append("\n<s16><good>").Append(FactionsArea.Text("TagShelter")).Append("</good></s16>"); break;
+                }
+                if (FactionsArea.IsRival(run, f)) sb.Append("\n<s16><good>").Append(FactionsArea.Text("TagRival")).Append("</good></s16>");
             }
             catch (Exception ex) { Errors.Report("ux faction map tag", ex.Message, ex); }
         }

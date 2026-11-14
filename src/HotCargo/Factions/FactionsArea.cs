@@ -4,6 +4,7 @@ using Cosmoteer.GalaxyMap;
 using Cosmoteer.Localization;
 using Cosmoteer.Ships;
 using Cosmoteer.Ships.Special;
+using Cosmoteer.Simulation;
 using Halfling.Random;
 using HotCargo.Core;
 using HotCargo.Journey;
@@ -21,11 +22,13 @@ public static class FactionsArea
     public static void Register()
     {
         Run.Hooks.TimeHeatFactor = run =>
-            FactionsModel.TimeHeatFactor(ZoneOf(run, run.Game.CurrentMapNode), run.T.Factions.AllyHeatFactor, run.T.Factions.ShelterHeatFactor);
+            FactionsModel.TimeHeatFactor(ZoneOf(run, run.Game.CurrentMapNode), run.T.Factions.AllyHeatFactor, run.T.Factions.ShelterHeatFactor,
+                run.T.Factions.WatchHeatFactor);
         Run.Hooks.NotorietyFactor = run => FactionsModel.NotorietyFactor(ZoneOf(run, run.Game.CurrentMapNode), run.T.Factions.AllyNotorietyFactor);
         Run.Hooks.JumpHeatKept = run => HeatKept(run, Jumps.PendingKind(run));
         Run.Hooks.Tick += Jumps.OnTick;
         Run.Hooks.SystemEntered += OnSystemEntered;
+        Run.Hooks.StageStarted += OnStageStarted;
         AllyPeace.Register();
         FactionsAutotest.Register();
     }
@@ -56,15 +59,56 @@ public static class FactionsArea
 
     public static bool IsRival(Run run, FactionRules? f) => f is not null && f == Roles(run).Rival;
 
-    /// <summary>Spec 643: a faction that is not the ally shelters the players from ShelterReputation reputation.</summary>
+    /// <summary>
+    /// Spec 643, 665: a faction that is not the ally shelters the players from ShelterReputation reputation, or after a story chain
+    /// at one of its stations ended well.
+    /// </summary>
     public static bool Shelters(Run run, FactionRules? f) =>
-        f is not null && !IsAlly(run, f) && run.Mode.GetFactionReputation(f.ID) >= run.T.Factions.ShelterReputation;
+        f is not null && !IsAlly(run, f)
+        && (run.Mode.GetFactionReputation(f.ID) >= run.T.Factions.ShelterReputation || run.State.Factions.ChainShelters.Contains(f.ID.ToString()));
+
+    /// <summary>Spec 664: the system is under corporate watch.</summary>
+    public static bool Watched(Run run, MapNode node) => run.State.Factions.WatchedNodes.Contains(node.UniqueID);
 
     public static Zone ZoneOf(Run run, MapNode node)
     {
         if (!run.PressureActive) return Zone.Neutral;
         var f = Controller(node);
-        return IsAlly(run, f) ? Zone.Ally : Shelters(run, f) ? Zone.Shelter : Zone.Neutral;
+        return FactionsModel.ZoneOf(IsAlly(run, f), Watched(run, node), Shelters(run, f));
+    }
+
+    /// <summary>
+    /// Spec 664: when the last heat stage (Strike) starts, the corporation watches every neighbor of this system for the rest of the run.
+    /// Sim logic: the stage starts in a sim tick on every machine.
+    /// </summary>
+    static void OnStageStarted(Run run, SimRoot sim, int stage)
+    {
+        if (stage != run.T.Heat.Stages.Length - 1) return;
+        var node = run.Game.CurrentMapNode;
+        var added = node.Connections.Where(n => run.State.Factions.WatchedNodes.Add(n.UniqueID)).Select(n => n.Name).ToList();
+        if (added.Count == 0) return;
+        Log.Info($"factions: corporate watch on {string.Join(", ", added)} (strike in {node.Name})");
+        string line = Format("WatchStartFmt", node.Name, string.Join(", ", added), run.T.Factions.WatchHeatFactor);
+        Run.OnNextFrame(() => UxKit.ChatLine(run.Game, line));
+    }
+
+    /// <summary>
+    /// Spec 665: a story chain ended well at a station of this player index, so its faction shelters the players for the rest of the run.
+    /// Sim logic: chain results apply in a sim tick on every machine.
+    /// </summary>
+    public static void ShelterAfterChain(Run run, int stationPlayerIndex, string chainTitle)
+    {
+        var f = GameApp.Rules.Factions.FirstOrDefault(x => x.MatchesPlayer(stationPlayerIndex));
+        // The corporation's ally never shelters the players (spec 643).
+        if (f is null || IsAlly(run, f))
+        {
+            Log.Info($"factions: chain {chainTitle} ended well, but its station's faction ({f?.ID.ToString() ?? "none"}) gives no shelter");
+            return;
+        }
+        if (!run.State.Factions.ChainShelters.Add(f.ID.ToString())) return;
+        Log.Info($"factions: {f.ID} shelters the players after chain {chainTitle}");
+        string line = Format("ChainShelterFmt", Name(f), chainTitle, run.T.Factions.ShelterHeatFactor);
+        Run.OnNextFrame(() => UxKit.ChatLine(run.Game, line));
     }
 
     /// <summary>Spec 650: the share of heat that a switch of this kind keeps. A view switch (no jump) keeps Heat.HeatCarryOverFraction.</summary>
@@ -134,13 +178,14 @@ public static class FactionsArea
         }
         if (!run.PressureActive) return;
         var f = Controller(run.Game.CurrentMapNode);
-        if (f is null) return;
         var t = run.T.Factions;
+        // Ally space and shelter need a controlling faction; corporate watch does not.
         string? line = ZoneOf(run, run.Game.CurrentMapNode) switch
         {
-            Zone.Ally => Format("ArrivalAllyFmt", Name(f), t.AllyHeatFactor, t.AllyMoneyFactor),
-            Zone.Shelter => Format("ArrivalShelterFmt", Name(f), t.ShelterHeatFactor),
-            _ when IsRival(run, f) => Format("ArrivalRivalFmt", Name(f), t.RivalFencePremium),
+            Zone.Ally when f is not null => Format("ArrivalAllyFmt", Name(f), t.AllyHeatFactor, t.AllyMoneyFactor),
+            Zone.Shelter when f is not null => Format("ArrivalShelterFmt", Name(f), t.ShelterHeatFactor),
+            Zone.Watch => Format("ArrivalWatchFmt", t.WatchHeatFactor),
+            _ when f is not null && IsRival(run, f) => Format("ArrivalRivalFmt", Name(f), t.RivalFencePremium),
             _ => null,
         };
         if (line is null) return;
