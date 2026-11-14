@@ -1,10 +1,11 @@
 // Rescue Beacon (spec 1147): fire it to call a tug that tows the ship to the nearest friendly station, for a fee and some heat.
-// Trade stations sell it in their comms (events.rules, rescue_beacon_sale). Sprites are the vanilla processor sprites with a tint.
+// Trade stations stock it and sell it in their trade window (events/actions.rules); RescueBeacon.cs sets its price. Sprites are the
+// vanilla processor sprites with a tint.
 ID = yarden_zamir.rescue_beacon
 NameKey = "HotCargoItems/RescueBeacon"
 PluralNameKey = "HotCargoItems/RescueBeaconPlural"
 DescriptionKey = "HotCargoItems/RescueBeaconDesc"
-// Not in the station trade lists (the comms line sells it); 1, not 0, because some vanilla code divides by it.
+// Not the price: RescueBeacon.cs sets it (Events.RescueBeaconPrice money units). 1, not 0, because some vanilla code divides by it.
 BuyPrice = 1
 MaxPerNugget = 1
 MaxStackSize = 1

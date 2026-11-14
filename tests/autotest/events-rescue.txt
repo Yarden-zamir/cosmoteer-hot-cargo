@@ -1,4 +1,4 @@
-# Rescue Beacon (spec 1147, 1148): a station sells it in its comms, the fire action shows the fee and heat, and a tug tows the ship to
+# Rescue Beacon (spec 1147, 1148): a station sells it in its trade window, the fire action shows the fee and heat, and a tug tows the ship to
 # the nearest friendly station. Without money the tug comes anyway. A lost tug ends the tow with a message.
 newgame run
 wait 8
@@ -9,18 +9,25 @@ godmode on
 worlds jumpto hc_trade_hub
 ev_tostation
 wait 2
-# A clear deal in the station's comms.
-expectcomms station Buy a rescue beacon 1
+# The station stocks beacons at 0.3 money units (times its heat markup), and the player buys one the vanilla way (a trade order).
+expect ev_station_beacons >= 1
+expect ev_rescue_price_ratio >= 1
+expect ev_rescue_price_ratio < 2
+expectcomms station Buy a rescue beacon 0
+pt_goto station 60
 ev_mark
-ev_comms station Buy a rescue beacon
-expectevent rescue_beacon_sale
-ev_comms carrier Buy the beacon
+pt_buy 120 yarden_zamir.rescue_beacon 1
 expect ev_res_yarden_zamir.rescue_beacon_gain == 1
 expect ev_money_gain < 0
 # The action button shows while the beacon's part is selected; its tooltip shows the fee.
 item_select yarden_zamir.rescue_beacon
 expect item_button == 1
 expect ev_rescue_tip == 1
+# Back to the trade station of the jump, then away from it, so the nearest friendly station is a real tow away. The ship drops
+# the move order of the shop trip, so it does not fly back by itself.
+ev_stop
+ev_tostation
+wait 2
 ev_tostation 3000
 wait 2
 # Fire: the fee, the heat, a tug. It reaches the ship, takes it on the line and tows it to the station.

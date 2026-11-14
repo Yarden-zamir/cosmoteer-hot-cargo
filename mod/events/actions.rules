@@ -37,6 +37,13 @@
 	AddTo = "<resources/resources.rules>/Resources"
 	ToAdd = &<events/rescue_beacon.rules>
 }
+// Spec 1147: trade stations stock the Rescue Beacon, so it sells in their trade window like other goods. The archetype and vanilla
+// sector types inherit this list. About 1 or 2 per station (a share of the untyped storage tiles; the beacon stacks 1 per tile).
+{
+	Action = Add
+	AddTo = "<modes/career/sectors/sector_basic/sector_basic.rules>/Sector/TradeRoutes/StationResourceTradeDeltas"
+	ToAdd { ResourceType = yarden_zamir.rescue_beacon; PercentOfTypedTiles = [0%, 0%]; PercentOfUntypedTiles = [1%, 1.5%]; }
+}
 {
 	Action = Overrides
 	OverrideIn = "<modes/career/mission_metatypes.rules>"
