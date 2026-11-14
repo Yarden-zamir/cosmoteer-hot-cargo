@@ -1,0 +1,30 @@
+# Wandering trader (spec 1364): the trade rows in its comms, and the trader leaving after a trade.
+# Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
+render on
+newgame run 0
+wait 10
+# Close the run intro.
+closepanel
+wait 1
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+godmode on
+ev_storage_fill steel
+event wandering_trader
+ev_carrier_goto
+pause off
+wait 2
+ev_open carrier
+wait 2
+pick 1 2
+wait 1
+screenshot friendly-trader-page
+ev_comms carrier Make the trades
+wait 1
+closepanel
+wait 3
+pause on
+wait 1
+screenshot friendly-trader-leaves
+quit

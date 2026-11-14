@@ -1,0 +1,33 @@
+# Debtor (spec 1367, 1368): its page, its label (what it owes, the time left), and the pay-back message.
+# Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
+render on
+newgame run 0
+wait 10
+# Close the run intro.
+closepanel
+wait 1
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+godmode on
+event debtor
+ev_carrier_goto
+pause off
+wait 2
+ev_open carrier
+wait 2
+screenshot friendly-debtor-page
+ev_comms carrier Buy their debt
+wait 1
+closepanel
+wait 3
+pause on
+wait 1
+screenshot friendly-debtor-label
+pause off
+fr_debtor_end
+wait 1
+pause on
+wait 1
+screenshot friendly-debtor-pays
+quit
