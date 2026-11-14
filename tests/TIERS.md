@@ -26,6 +26,7 @@ Actions: **smoke** (in the smoke tier), keep (full tier only), done (changed in 
 | Test | Time | Checks | Needs the game for | Unit | Action |
 |---|---|---|---|---|---|
 | ai-call | 87 s | call start, complete, interrupt by disruptor and EMP, storm block | AI radar, weapon hits, storms | AiModel.NextCall | keep |
+| ai-call-intercept | 60 s | call time, and the longer call that a player sensor intercepts | AI radar, sensors | AiModel.NextCall | keep |
 | ai-cover | 68 s | a ship hides behind a rock | AI movement, line of sight | PersonalityModel.CoverSpot, NextCoverPhase | keep |
 | ai-flee | 79 s | roll once, unarmed runs, flee jump | AI, damage, jumps | AiModel.NextFlee | keep |
 | ai-personality | 69 s | personalities by faction, heavy ships never kite | ship builds, spawns | PersonalityModel | **smoke** |

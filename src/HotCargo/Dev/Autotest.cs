@@ -284,10 +284,11 @@ public static class Autotest
             var t when t == typeof(bool) => parts[1] is "on" or "true",
             var t when t == typeof(int) => int.Parse(parts[1], CultureInfo.InvariantCulture),
             var t when t == typeof(float) => float.Parse(parts[1], CultureInfo.InvariantCulture),
-            _ => throw new InvalidOperationException($"{parts[0]} is a {field.FieldType.Name}; only bool, int and float are supported"),
+            var t when t == typeof(string[]) => parts[1].Split(',', StringSplitOptions.RemoveEmptyEntries),
+            _ => throw new InvalidOperationException($"{parts[0]} is a {field.FieldType.Name}; only bool, int, float and string[] (comma-separated) are supported"),
         };
         field.SetValue(target, value);
-        Log.Info($"AUTOTEST {target.GetType().Name}.{parts[0]} = {value}");
+        Log.Info($"AUTOTEST {target.GetType().Name}.{parts[0]} = {(value is string[] list ? string.Join(",", list) : value)}");
     }
 
     /// <summary>Moves a ship and stops it. Test only: it changes sim state from a GUI frame, so single player only.</summary>

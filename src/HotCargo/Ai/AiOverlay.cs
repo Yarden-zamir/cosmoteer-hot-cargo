@@ -27,6 +27,13 @@ static class AiText
         string text = StringTools.EscapeForXml(Format(key, ship.Metadata.PlainShipName));
         Ux.UxKit.ChatLine(game, $"<limited_color>{text}</limited_color>");
     }
+
+    /// <summary>A log line for every player, also without the ship on radar: a player's sensor picked it up. GUI only.</summary>
+    public static void ChatAll(Ship ship, string key, params object?[] args)
+    {
+        if (ship.Sim?.Game is not { } game) return;
+        Ux.UxKit.ChatLine(game, $"<limited_color>{StringTools.EscapeForXml(Format(key, args))}</limited_color>");
+    }
 }
 
 /// <summary>
@@ -60,7 +67,7 @@ static class AiOverlay
             if (ship.AI?.GetStrategyModule<CallStrategy>() is not { Calling: true } call) continue;
             float r = ship.WorldBoundingRadius;
             circle.Draw(ship.WorldCenter, r * 2.2f, scale, new Color(1f, 0.3f, 0.2f, 0.35f));
-            circle.Draw(ship.WorldCenter, r * (1.2f + call.Progress(ship, t)), scale * 1.5f, new Color(1f, 0.3f, 0.2f, pulse));
+            circle.Draw(ship.WorldCenter, r * (1.2f + call.Progress(ship)), scale * 1.5f, new Color(1f, 0.3f, 0.2f, pulse));
         }
     });
 
@@ -69,7 +76,7 @@ static class AiOverlay
     {
         if (ship.AI is not { } ai) return null;
         if (ai.GetStrategyModule<CallStrategy>() is { Calling: true } call)
-            return $"<bad>{AiText.Format("LabelCallingFmt", (int)(call.Progress(ship, t) * 100f))}</bad>";
+            return $"<bad>{AiText.Format("LabelCallingFmt", (int)(call.Progress(ship) * 100f))}</bad>";
         if (ai.GetStrategyModule<FleeStrategy>()?.SecondsToJump(ship, t) is { } s)
             return $"<limited_color>{AiText.Format("LabelJumpFmt", (int)Math.Ceiling(s))}</limited_color>";
         return null;
