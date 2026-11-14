@@ -81,7 +81,7 @@
 | `Mechanics.SurveyScanSeconds` | 15 s | 136 |
 | `Mechanics.ScanRange`, `IntensivePayBonus`, `MaxIntensivePerWave` | 3500, 0.25, 2 | 140 |
 | Archetype weights | rules values in `mod/worlds/archetypes.rules`, restart needed | 220 |
-| `Worlds.CurrentFlowSpeed`, `CurrentAccel`, `CurrentArrows` | 45, 9, on | 221 |
+| `Worlds.CurrentFlowSpeed`, `CurrentAccel`, `CurrentSideShare`, `CurrentArrows` | 45, 9, 0.25, on | 221 |
 | `Worlds.PassHoldSeconds`, `PassLostSeconds`, `PassWaveSeconds`, `PassWaveDistance` | 120 s, 15 s, 35 s, 2500 | 222 |
 | `Worlds.SundiveSalvageSeconds`, `HeatWarnDepth` | 5 s, 0.5 | 223 |
 | `Worlds.LairDiscoverDistance` | 2000 | 224 |
