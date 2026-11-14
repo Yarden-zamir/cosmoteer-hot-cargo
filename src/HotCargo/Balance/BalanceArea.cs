@@ -42,8 +42,7 @@ public static class BalanceArea
                 .FirstOrDefault()
                 ?? run.Game.CurrentMapNode.Connections.Where(n => !run.State.VisitedNodes.Contains(n.UniqueID)).OrderBy(n => n.UniqueID).FirstOrDefault()
                 ?? throw new InvalidOperationException("no unvisited neighbor system");
-            run.Game.JumpToNode(next, doFtlAnimation: false, run.Game.Sim.Ships.HumanPlayerShips.ToList())
-                .ContinueWith(t => Log.Error("AUTOTEST balance_route failed", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+            Autotest.JumpWhenAllowed(run, next, "balance_route");
         };
     }
 
