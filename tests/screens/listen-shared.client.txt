@@ -1,0 +1,9 @@
+# Co-op shared ships screenshots, client side (headless): shares the host's ships, then opens comms with the event carrier.
+mpjoin 127.0.0.1:{PORT}
+mpready shared
+waitfor ev_carrier == 1 60
+listen_target carrier
+waitfor listen_reach == 1 60
+listen_speak
+waitfor mpmark >= 1 120
+quit

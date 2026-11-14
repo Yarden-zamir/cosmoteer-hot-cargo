@@ -34,6 +34,11 @@ public sealed class ChainInstance
     [Serialize(Optional = true)] public List<string> Story = new();
     /// <summary>The stage mission (an offer in the station's list, or a mission in the log), or null.</summary>
     [Serialize(Optional = true)] public ObjectID? MissionId;
+    /// <summary>
+    /// Spec 1127: ships of the stage offer that would fight the players, held neutral until the players accept the stage. The value is
+    /// the hostile allegiance that the accept gives back.
+    /// </summary>
+    [Serialize(Optional = true)] public Dictionary<ObjectID, int> HeldShips = new();
     /// <summary>Game seconds when the stage mission spawned. A mission that spawns straight into the log arrives a moment later.</summary>
     [Serialize(Optional = true)] public double MissionSince;
     /// <summary>Serial of the chain page that waits for a choice, or 0.</summary>

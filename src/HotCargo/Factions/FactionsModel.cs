@@ -1,7 +1,8 @@
 namespace HotCargo.Factions;
 
 /// <summary>The relation of the controlling faction of a system to the players, for heat (spec 641, 643).</summary>
-public enum Zone { Neutral, Ally, Shelter }
+/// <summary>Spec 641, 643, 664: the heat zone of a system. Watch is last, so the saved test values of the others stay.</summary>
+public enum Zone { Neutral, Ally, Shelter, Watch }
 
 /// <summary>
 /// The kind of system switch that runs now (spec 650). View is a switch to a system where own ships wait, with no jump.
@@ -41,12 +42,20 @@ public static class FactionsModel
     public static float CrewFactor(float heat, float factorAtMax, float step) =>
         1f + (factorAtMax - 1f) * Math.Clamp(SteppedHeat(heat, step) / MaxHeat, 0f, 1f);
 
-    public static float TimeHeatFactor(Zone zone, float allyFactor, float shelterFactor) => zone switch
+    public static float TimeHeatFactor(Zone zone, float allyFactor, float shelterFactor, float watchFactor) => zone switch
     {
         Zone.Ally => allyFactor,
         Zone.Shelter => shelterFactor,
+        Zone.Watch => watchFactor,
         _ => 1f,
     };
+
+    /// <summary>
+    /// Spec 641, 643, 664: one zone for a system. Corporate ally space comes first, then corporate watch, then shelter: the corporation
+    /// watches a sheltering faction's system too.
+    /// </summary>
+    public static Zone ZoneOf(bool ally, bool watched, bool shelters) =>
+        ally ? Zone.Ally : watched ? Zone.Watch : shelters ? Zone.Shelter : Zone.Neutral;
 
     /// <summary>Spec 642: notoriety grows faster only in corporate ally space; shelter keeps the normal rate.</summary>
     public static float NotorietyFactor(Zone zone, float allyFactor) => zone == Zone.Ally ? allyFactor : 1f;

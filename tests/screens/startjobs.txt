@@ -1,0 +1,21 @@
+# Start jobs (spec 1203, 1205): the run intro panel with the job buttons, then the heat panel tooltip after a pick.
+# Windowed test slot (needs graphics).
+render on
+newgame run
+wait 10
+pause off
+ev_set Enabled false
+expect sj_panel == 1
+# Away from the ships, so the resting cursor shows no part tooltip.
+camera 6000 6000 3000
+wait 1
+screenshot startjobs-panel
+# The offer of the test seed: contract, grudge, loud_exit.
+sj_click loud_exit
+wait 3
+screenshot startjobs-picked
+rm_showpaneltip
+wait 1
+expect rm_tipshown == 1
+rm_tipshot startjobs-paneltip
+quit

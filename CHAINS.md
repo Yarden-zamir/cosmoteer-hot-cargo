@@ -24,7 +24,7 @@ The content files are the source of truth: `mod/chains/chains.rules` (chains, st
 
 | Kind | Where | Starts |
 |---|---|---|
-| Mission | Station | The offer shows in the station's comms, in the "Story Chains" category. A declined or expired offer comes back on the next visit. |
+| Mission | Station | The offer shows in the station's comms, in the "Story Chains" category. A declined or expired offer comes back on the next visit. Its ships stay neutral until the players accept it. |
 | Mission | Return, Arrival | The mission goes straight into the mission log, near the station or the fleet. The event window shows the stage title and briefing. |
 | Page | Station | The choice window opens when a player ship comes within `PageTriggerDistance` (1,500) of the station. |
 | Page | Return, Arrival | The choice window opens `LaterDelaySeconds` (8 s) after the system switch. |

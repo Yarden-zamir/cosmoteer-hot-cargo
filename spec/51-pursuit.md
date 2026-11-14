@@ -1,4 +1,4 @@
-## 42. The Pursuit
+## 51. The Pursuit
 
 The heat clock is the core resource. The heat stages still start the waves (section 10). The Pursuit is a director on top: it makes waves weaker and rarer early and ramps them toward the Buyer, and it paces big events so that they do not pile up. Code: `src/HotCargo/Pursuit`. Strings: `mod/pursuit`. Numbers: the `Pursuit` tunables section. Pure math: `Pursuit/PursuitModel.cs`.
 

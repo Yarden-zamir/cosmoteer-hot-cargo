@@ -83,4 +83,9 @@ public sealed class UxTunables
     /// Higher costs less on a slow machine; in co-op every machine runs the HUD, and the game runs at the speed of the slowest.
     /// </summary>
     [Serialize(Optional = true)] public float HudRefreshSeconds = 0.25f;
+    /// <summary>
+    /// The largest part of the screen height that a Hot Cargo comms page window takes (0.2 to 1). The window grows with the page up
+    /// to this height; a longer page scrolls.
+    /// </summary>
+    [Serialize(Optional = true)] public float CommsMaxScreenShare = 0.9f;
 }

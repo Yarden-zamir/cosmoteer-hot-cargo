@@ -1,1 +1,2 @@
+- [ ] Game tests that the change needs, run before the push: <names> (the merge queue runs them all)
 - [ ] Tests outside CI: none affected, or ran: <names> (`LIST_ONLY=1 RUNNER=pc scripts/autotest-affected.sh`)

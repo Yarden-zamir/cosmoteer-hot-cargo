@@ -100,6 +100,15 @@ public static class EventsArea
             string actual = RequireRun().State.Events.Pending?.EventId ?? "none";
             Autotest.Check(actual == arg, $"pending event is {arg} (actual {actual})");
         };
+        // waitevent <event id> [timeout seconds, default 20]: waits until that event is pending. Use it after "mp event": the event
+        // starts in the sim some ticks after the line, later on a slow machine.
+        Autotest.Commands["waitevent"] = arg =>
+        {
+            var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length is not (1 or 2)) throw new InvalidOperationException("waitevent needs: event id [timeout]");
+            double timeout = parts.Length == 2 ? double.Parse(parts[1], CultureInfo.InvariantCulture) : 20;
+            Autotest.WaitFor(() => RequireRun().State.Events.Pending?.EventId == parts[0], timeout, $"pending event {parts[0]}");
+        };
         // expectchoice <choice number> enabled|disabled|hidden: checks the dialog view of the pending page for the local player.
         Autotest.Commands["expectchoice"] = arg =>
         {

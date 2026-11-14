@@ -1,0 +1,27 @@
+# Corporate watch (spec 664): the Strike stage marks the neighbor systems, the galaxy map shows CORPORATE WATCH on them,
+# the marks save with the run, and heat rises x WatchHeatFactor (1.1) in a watched system.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+pause off
+expect fa_watched == 0
+expect fa_tag_watch == 0
+# Warning, Hunt, Strike.
+stage
+stage
+stage
+wait 2
+expect stages == 3
+expect fa_watched >= 1
+expect fa_tag_watch >= 1
+save factions_watch
+load factions_watch
+wait 5
+expect fa_watched >= 1
+expect fa_tag_watch >= 1
+fa_jump_watched
+pause off
+expect fa_zone == 3
+expect fa_timefactor == 1.1
+quit

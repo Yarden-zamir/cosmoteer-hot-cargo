@@ -90,6 +90,7 @@ public static class ChainRunner
         bool here = sim.NodeId() == c.NodeId;
         if (c.MissionId is { } id)
         {
+            if (here && c.HeldShips.Count > 0 && run.Mode.Missions[id] is not null) ReleaseShips(run, sim, c);
             if (here || stage.Where != StageWhere.Station) CheckMissionGone(run, sim, c, id);
             return;
         }
@@ -259,6 +260,7 @@ public static class ChainRunner
         m.OnMissionDisplayLinesChanged(null, EventArgs.Empty);
         c.MissionId = m.MissionID;
         c.MissionSince = run.State.GameSeconds;
+        if (stage.Where == StageWhere.Station) HoldShips(run, sim, c, objects);
         Log.Info($"chain {c.ChainId} stage {c.Stage}: mission {stage.Mission} spawned ({m.MissionID})");
         // A Return or Arrival mission skips the comms offer, so the event window tells the players why ships come for them.
         if (stage.Where != StageWhere.Station && run.State.Events.Pending is null)
@@ -279,6 +281,38 @@ public static class ChainRunner
         Log.Info($"chain {c.ChainId} stage {c.Stage}: the offer is gone; it comes back on the next visit");
         c.MissionId = null;
         c.HoldUntilNextVisit = true;
+        // Limit: the ships of an offer that went away stay neutral where they are; the next visit spawns the offer with new ships.
+        // Revisit if players report idle chain ships.
+        c.HeldShips.Clear();
+    }
+
+    /// <summary>
+    /// Spec 1127: the ships of a station stage that would fight the players stay neutral (vanilla Neutral, friends with every ship)
+    /// while the stage is an offer, so a guard cannot attack before the players accept. Ship IDs come from this spawn's hc_ch_ tags.
+    /// </summary>
+    static void HoldShips(Run run, SimRoot sim, ChainInstance c, SpawnedObjectCollection objects)
+    {
+        var mode = (CareerSimModeManager)sim.Mode;
+        var ids = objects.Where(kv => kv.Key.ToString().StartsWith("hc_ch_", StringComparison.Ordinal))
+            .SelectMany(kv => kv.Value).Select(o => o.UniqueID).OfType<ObjectID>().Distinct().OrderBy(i => i);
+        foreach (var id in ids)
+        {
+            if (Cosmoteer.Ships.MetaShip.GetInSim(sim, id) is not { } ship) continue;
+            int hostile = ship.PlayerIndex;
+            if (!run.Game.HumanPlayersIndexes.Any(h => mode.AreEnemies(hostile, h))) continue;
+            c.HeldShips[id] = hostile;
+            ship.PlayerIndex = PlayerIndexes.Neutral;
+        }
+        if (c.HeldShips.Count > 0) Log.Info($"chain {c.ChainId} stage {c.Stage}: {c.HeldShips.Count} ships held neutral until the accept");
+    }
+
+    /// <summary>Spec 1127: the players accepted the stage. Its held ships get their hostile allegiance back.</summary>
+    static void ReleaseShips(Run run, SimRoot sim, ChainInstance c)
+    {
+        foreach (var (id, hostile) in c.HeldShips.OrderBy(kv => kv.Key))
+            if (Cosmoteer.Ships.MetaShip.GetInSim(sim, id) is { } ship) ship.PlayerIndex = hostile;
+        Log.Info($"chain {c.ChainId} stage {c.Stage}: accepted; {c.HeldShips.Count} held ships are hostile again");
+        c.HeldShips.Clear();
     }
 
     /// <summary>Subscribes to the mission log of the current run. A new or loaded game has a new log.</summary>
@@ -369,6 +403,7 @@ public static class ChainRunner
         c.Part++;
         Log.Info($"chain {chain.ID} stage {stage.ID}: result {result} -> row {row + 1}, next '{r.Next}'");
         Advance(run, chain, c, r.Next);
+        if (c.Ended && ChainModel.EndsWell(result, r.Reputation)) Factions.FactionsArea.ShelterAfterChain(run, c.StationPlayerIndex, chain.Title);
         Onboarding.RunLog.ChainResult(run, chain.Title, r.Story, lines, c.Ended);
         Show(run, sim, c, chain, r.Effects?.Text ?? "", lines, resultSerial);
     }

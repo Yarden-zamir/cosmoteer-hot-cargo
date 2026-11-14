@@ -14,6 +14,8 @@ namespace HotCargo.Chains;
 /// </summary>
 public static class ChainsArea
 {
+    static Cosmoteer.Game.ObjectID? _guard;
+
     public static void Register()
     {
         EventLibrary.ExtraFiles.Add(ChainLibrary.PagesPath);
@@ -231,7 +233,41 @@ public static class ChainsArea
         Autotest.Fields["chain_part"] = () => Test().Part;
         Autotest.Fields["chain_story"] = () => Test().Story.Count;
         Autotest.Fields["chain_mission"] = () => Test().MissionId is null ? 0 : 1;
-        Autotest.Fields["chain_accepted"] = () => Test().MissionId is { } id && RequireRun().Mode.Missions[id] is not null ? 1 : 0;
+        // Spec 1127. chain_held: ships of the test chain's offer held neutral. chain_guard_hostile: live hc_ch_enemy ships that are enemies
+        // of the players. chain_guard_attacks: live chain ships with an attack command on a player ship.
+        Autotest.Fields["chain_held"] = () => Test().HeldShips.Count;
+        // chain_guard_goto [zoom]: moves the player ships next to the test chain's guard (the first ship that its offer held neutral;
+        // remembered after the accept). With a zoom size, the camera shows that area.
+        Autotest.Commands["chain_guard_goto"] = arg =>
+        {
+            var sim = RequireSim();
+            if (Test().HeldShips.Count > 0) _guard = Test().HeldShips.Keys.Order().First();
+            var id = _guard ?? throw new InvalidOperationException("the test chain held no ship");
+            var guard = Cosmoteer.Ships.MetaShip.GetInSim(sim, id) ?? throw new InvalidOperationException("the guard is gone");
+            float offset = guard.DetWorldBoundingCircle.Radius + 300f;
+            foreach (var s in sim.Ships.HumanPlayerSignificantShips.ToList())
+            {
+                Autotest.Teleport(s, guard.DetWorldCenter + new Vector2(offset + s.WorldBoundingRadius, 0f));
+                offset += 2f * s.WorldBoundingRadius + 100f;
+            }
+            // The camera follows the first player ship, which now sits next to the guard.
+            if (arg.Trim().Length > 0 && SimQueries.FirstHumanShip(sim) is { } me)
+            {
+                me.FocusCamera(playSound: false);
+                sim.Camera.ViewController.ZoomToFit(new Vector2(float.Parse(arg.Trim(), System.Globalization.CultureInfo.InvariantCulture)));
+            }
+            Autotest.Wait(1);
+        };
+        Autotest.Fields["chain_guard_hostile"] = () =>
+        {
+            var sim = RequireSim();
+            var me = SimQueries.FirstHumanShip(sim) ?? throw new InvalidOperationException("no player ship");
+            return SimQueries.TaggedShips(sim, new Cosmoteer.Data.ID<Cosmoteer.Generators.Simulation.SimObjectSpawner>("hc_ch_enemy")).Count(t => t.Live is { } s && s.IsEnemiesWith(me));
+        };
+        Autotest.Fields["chain_guard_attacks"] = () => RequireSim().Ships.Count(s => !s.IsHumanPlayerShip && !s.IsJunk
+            && s.Tags is { } tags && tags.Any(t => t.ToString().StartsWith("hc_ch_", StringComparison.Ordinal))
+            && s.Commands.ConfirmedCommands.OfType<Cosmoteer.Ships.Commands.IAttackCommand>().Any(c => c.Target is { IsHumanPlayerShip: true }));
+        Autotest.Fields["chain_accepted"] =() => Test().MissionId is { } id && RequireRun().Mode.Missions[id] is not null ? 1 : 0;
         Autotest.Fields["chain_awaiting"] = () => Test().AwaitingSerial > 0 ? 1 : 0;
         Autotest.Fields["chain_count"] = () => RequireRun().State.Chains.Instances.Count;
         Autotest.Fields["chain_here"] = () => RequireRun().State.Chains.Instances.Count(i => i.NodeId == RequireSim().NodeId());

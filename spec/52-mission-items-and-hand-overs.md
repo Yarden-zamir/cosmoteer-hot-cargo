@@ -1,4 +1,4 @@
-## 45. Mission items and hand-overs
+## 52. Mission items and hand-overs
 
 A mission that says you carry something gives you a real item. A mission that says you hand something over, or meet someone, has a real action for it. `docs/mission-fidelity.md` lists the gaps that remain.
 

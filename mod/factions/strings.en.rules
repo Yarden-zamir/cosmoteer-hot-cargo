@@ -8,15 +8,23 @@ HotCargoFactions
 	TipJumpFmt = "Arrive at heat {0:0} by a clear relay, {1:0} if hunters watch the relay, {2:0} by blind jump (fuel ×{3:0.##}, hull risk)."
 	TipRelayWatched = "<bad>Hunters are near the relay now.</bad>"
 	TipTargetFmt = "<img name='objective' colored='true'/> {0}"
+	TipWatchFmt = "<bad>Corporate watch</bad>: the corporation watches this system since your Strike next door. Heat rises ×{0:0.##}."
 
 	// Galaxy map tags under the system name.
 	TagAlly = "HOT ZONE"
 	TagRival = "FENCES"
+	TagWatch = "CORPORATE WATCH"
+	TagShelter = "SHELTER"
 
 	// Chat lines on arrival.
 	ArrivalAllyFmt = "<bad>Corporate ally space.</bad> {0} reports you. Heat rises ×{1:0.##}, but offers pay ×{2:0.##}."
 	ArrivalShelterFmt = "<good>Shelter.</good> {0} hides you. Heat rises ×{1:0.##}."
 	ArrivalRivalFmt = "<good>Rival space.</good> {0} fences pay ×{1:0.##} for tech."
+	ArrivalWatchFmt = "<bad>Corporate watch.</bad> The corporation watches this system. Heat rises ×{0:0.##}."
+
+	// Chat lines when the map changes.
+	WatchStartFmt = "<bad>Strike in {0}.</bad> The corporation now watches {1}. Heat rises ×{2:0.##} there."
+	ChainShelterFmt = "<good>{0} owes you</good> for {1}. Its systems are now your shelter: heat rises ×{2:0.##} there."
 
 	// Station prices and refusals.
 	MarkupBand = "You are hot. Stations charge more."

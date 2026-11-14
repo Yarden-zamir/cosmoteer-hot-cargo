@@ -1,0 +1,76 @@
+# Start jobs (spec 1200 to 1208): the offer in the run intro panel, its button texts, each rule of a pick, the log line,
+# the tooltip, the How to Play page, the save and load of a waiting choice and of a pick, and the switch off.
+# tier: smoke
+newgame run
+wait 8
+ev_set Enabled false
+expect sj_pending == 1
+expect sj_panel == 1
+expect sj_offer == 3
+expect sj_missing_strings == 0
+sj_check_buttons
+# A waiting choice saves, and a load opens the panel again (without the intro).
+save sjwait
+load sjwait
+wait 3
+ev_set Enabled false
+expect sj_pending == 1
+expect sj_panel == 1
+# Every job in the offer, so that the test can pick each one.
+sj_set OfferCount 7
+wait 1
+expect sj_offer == 7
+sj_check_buttons
+# Prototype Cores, clicked like a player: 4 tech less, tech value x1.75. The panel closes, the log and the page show it.
+expect tech == 8
+sj_click prototype
+wait 1
+expect sj_pending == 0
+expect sj_panel == 0
+expect tech == 4
+expect rm_tech == 1.75
+expect runlog_job == 1
+rm_check_paneltip
+waitfor hint_hc_jobs == 1 10
+# Deep Space Buyer: the Buyer waits in sector 8 + 2, and pays 4 x 1.4.
+sj_reset
+wait 1
+expect sj_panel == 1
+sj_pick deep_space
+wait 1
+expect sj_sectors == 10
+expect sj_buyerfactor == 5.6
+# Rush Order: sector 6, price x0.7.
+sj_reset
+sj_pick rush
+wait 1
+expect sj_sectors == 6
+expect sj_buyerfactor == 2.8
+# Loud Exit: heat 20 at once.
+expect heat < 5
+sj_reset
+sj_pick loud_exit
+wait 1
+expect heat >= 20
+expect rm_tech == 1.25
+# Corporate Grudge: hunter tiers +1. The pick saves and loads.
+sj_reset
+sj_pick grudge
+wait 1
+expect rm_tiers == 1
+save sjpicked
+load sjpicked
+wait 3
+ev_set Enabled false
+expect sj_pending == 0
+expect sj_panel == 0
+expect rm_tiers == 1
+expect sj_buyerfactor == 5.2
+# Off: a new run offers no jobs and shows the plain intro.
+tunablesfile StartJobs { Enabled = false }
+newgame run
+wait 8
+expect sj_pending == 0
+expect sj_panel == 0
+expect sj_job == 0
+quit
