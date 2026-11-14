@@ -1,0 +1,27 @@
+# Join request (spec 1361): a ship carries the page in its comms. The clear deal costs money, and the ship becomes the player's.
+newgame run
+wait 8
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+ev_set CooldownSeconds 0
+event join_request
+expect ev_carrier == 1
+ev_carrier_goto
+pause off
+wait 2
+expectcomms carrier Join Request 1
+expectcomms carrier Take them in 1
+ev_mark
+expect fr_player_ships == 1
+ev_comms carrier Take them in
+expect ev_pending == 0
+expect ev_money_gain < 0
+expect fr_player_ships == 2
+expect fr_joined == 1
+expect fr_joined_crew > 0
+# It flies with the fleet: a move order from the player works.
+wait 5
+expect fr_joined == 1
+quit
+# tier: smoke

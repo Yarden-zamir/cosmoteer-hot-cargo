@@ -789,3 +789,34 @@ RescueTug
 		}
 	]
 }
+
+// Spec 1361: the join request's ship, a small armed ship that answers comms and waits. It joins the chooser's fleet.
+Recruit
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_ev_carrier]
+			Distance = [700, 900]
+			Allegiance = FactionCivilian
+			SuppressLocationAssertions = true
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				Tier = -1
+				AllowTierRangeExpansion = true
+				Tags = [combat]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 50
+				TargetAcquireRangeFromOrigin = 100
+				TargetUnacquireRangeFromOrigin = 100
+			}
+		}
+	]
+}
