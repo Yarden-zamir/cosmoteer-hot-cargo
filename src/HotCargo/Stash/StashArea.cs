@@ -20,7 +20,6 @@ namespace HotCargo.Stash;
 public static class StashArea
 {
     public const string Metatype = "HotCargoStash";
-    public const string GroupTag = "hc_group_stash";
 
     /// <summary>Tests: the outcome of the next stash that resolves, instead of the roll.</summary>
     internal static StashState? ForcedOutcome;
@@ -50,11 +49,10 @@ public static class StashArea
         };
         Autotest.Fields["st_ambushers"] = () => Objective().Ambushers.Count(a => a.IsAlive);
         Autotest.Fields["st_chance_param"] = () => TunablesFor(Autotest.RequireRun().Game).OfferChance;
-        Autotest.Fields["st_group_chance"] = () => MissionArea.FindGroup(Sim(), GroupTag).SpawnChance;
         // st_set <StashTunables field> <value>: changes a live tunable for this run.
         Autotest.Commands["st_set"] = arg => Autotest.SetField(Autotest.RequireRun().T.Stash, arg);
-        // st_generate: runs the stash spawner group now (SpawnChance 1), next to the player ship.
-        Autotest.Commands["st_generate"] = _ => MissionArea.GenerateGroups(Sim(), [GroupTag]);
+        // st_generate: spawns a stash offer now, next to the player ship.
+        Autotest.Commands["st_generate"] = _ => TestGenerate();
         Autotest.Commands["st_accept"] = _ => MissionArea.AcceptOffer(Metatype);
         // st_age <minutes>: the offer becomes older by this many game minutes (the found-first chance rises).
         Autotest.Commands["st_age"] = arg => Objective().Age(double.Parse(arg, CultureInfo.InvariantCulture) * 60.0);
@@ -106,18 +104,52 @@ public static class StashArea
         return list.FirstOrDefault();
     }
 
-    /// <summary>Spec 970: sets the spawn chance of the stash group from the tunables before a system generates.</summary>
+    /// <summary>
+    /// Spec 970: the stash offer spawns right after the system generates, with a random source seeded by the system. The system's own
+    /// generator and its random draws stay as they were, so the stash never moves the other content of a system.
+    /// Runs only when a system generates for the first time; a loaded system keeps its saved objects.
+    /// </summary>
     [HarmonyPatch(typeof(CareerSimModeManager), nameof(CareerSimModeManager.InitSimRoot))]
-    static class ChancePatch
+    static class OfferPatch
     {
-        static void Prefix(CareerSimModeManager __instance) => Errors.Guard("stash spawn chance", () =>
+        static void Postfix(CareerSimModeManager __instance) => Errors.Guard("stash offer", () =>
         {
             if (!Activation.IsModEnabled()) return;
-            var tag = new ID<Cosmoteer.Generators.Simulation.SimObjectSpawner>(GroupTag);
-            var group = MissionArea.AllSpawners(__instance.SectorType.SystemGenerator.Spawners).OfType<Cosmoteer.Generators.Simulation.SimObjectSpawner>()
-                .FirstOrDefault(g => g.Tags?.Contains(tag) == true)
-                ?? throw new InvalidOperationException($"spawner group {GroupTag} is missing in sector {__instance.SectorType.ID}");
-            group.SpawnChance = (__instance.Sim.Game is { } game ? TunablesFor(game) : Defaults).OfferChance;
+            var sim = __instance.Sim;
+            var rand = new Halfling.Random.FastRand(__instance.MapNodeData.RandomSeed ^ 0x5354_4153_4853UL);
+            float chance = (sim.Game is { } game ? TunablesFor(game) : Defaults).OfferChance;
+            if (rand.Single() >= chance) return;
+            Spawn(sim, rand, default);
+            Log.Info("stash offer spawned");
         });
+    }
+
+    static Cosmoteer.Generators.Simulation.SimulationGenerator? _generator;
+
+    static string FilePath => Path.Combine(Mod.ModRoot, "stash", "stash.rules");
+
+    /// <summary>The stash group from stash/stash.rules in the mod folder. It is not part of the game rules tree.</summary>
+    static Cosmoteer.Generators.Simulation.SimulationGenerator Generator => _generator ??=
+        Halfling.App.ObjectTextSerializer.ReadFromPath<Cosmoteer.Generators.Simulation.SimulationGenerator>(new Halfling.ObjectText.OTFile(FilePath), "Stash")
+        ?? throw new InvalidDataException($"Stash missing in {FilePath}");
+
+    /// <summary>
+    /// Runs the stash group at a root location. Like MissionArea.GenerateGroups, the existing tags include objects in stasis (their
+    /// reserved IDs): far stations go into stasis as the system generates, and the vanilla tag scan gives them no ID.
+    /// </summary>
+    static void Spawn(SimRoot sim, Halfling.Random.Rand rand, Halfling.Geometry.Vector2 root)
+    {
+        var mode = (CareerSimModeManager)sim.Mode;
+        var parentTree = new List<Cosmoteer.Generators.Simulation.SimSpawner.SpawnedObject> { new(root) };
+        uint batch = 0, fleet = 0;
+        foreach (var g in Generator.Spawners.OfType<Cosmoteer.Generators.Simulation.SimObjectSpawner>())
+            g.Spawn(sim, rand, parentTree, 0, ref batch, ref fleet, loadInstantly: true, [], MissionArea.ExistingSpawnTags(sim), mode.GetSpawnFlags(), 0f);
+    }
+
+    /// <summary>Tests: spawns a stash offer now, next to the player ship, with the sim random source.</summary>
+    static void TestGenerate()
+    {
+        Spawn(Sim(), Sim().Rand, TechAutotest.PlayerShip().DetWorldCenter);
+        Autotest.Wait(2);
     }
 }

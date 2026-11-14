@@ -4,8 +4,6 @@ newgame run
 wait 8
 ev_set Enabled false
 godmode on
-expect st_group_chance >= 0.34
-expect st_group_chance <= 0.36
 st_generate
 expect st_offers >= 1
 st_line
@@ -86,4 +84,10 @@ expect st_chance == 90
 st_goto
 wait 3
 expect st_state >= 1
+# Real generation (spec 970): with OfferChance 1, the next new system gets a stash offer right after it generates.
+st_set OfferChance 1
+jump
+wait 20
+expect sector == 2
+expect st_offers >= 1
 quit
