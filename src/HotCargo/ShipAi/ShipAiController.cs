@@ -311,11 +311,12 @@ internal static class ShipAiController
     static void WorkOn(Ship ship, ShipTactics t, View view, Ship target, Autonomy.CargoSettings? mine)
     {
         var tun = view.Autonomy;
-        Vector2 dir = Vector2.FromAngle(target.DetWorldCenter.DirectionTo(ship.DetWorldCenter));
-        var spot = target.DetWorldCenter + dir * (target.WorldBoundingRadius + ship.WorldBoundingRadius + tun.MineDistance);
-        var face = ship.DetWorldCenter.DirectionTo(target.DetWorldCenter);
-        if (Current(ship, t) is not MoveCommand { Location: { } at } || at.DistanceTo(in spot) > tun.MineDistance * 0.5f)
-            Issue(ship, t, new MoveCommand(ship, ship.Commands.AllocGlobalCommandID(), spot, face, CollisionAvoidanceFlags.All, isTentative: false));
+        // Spec 1070: hold beside the work part with the laser aimed at it. The spot follows the part as the target turns; a new order
+        // only when it moved more than a quarter of MineDistance or the rotation changed by more than 10 degrees.
+        if (Autonomy.AutonomyWorld.WorkSpot(ship, target, mine, tun.MineDistance, tun.MineReach) is { } work
+            && (Current(ship, t) is not MoveCommand { Location: { } at, Rotation: { } rot }
+                || at.DistanceTo(work.Spot) > tun.MineDistance * 0.25f || (float)rot.AngularDistanceTo(work.Rotation) > 10f * MathF.PI / 180f))
+            Issue(ship, t, new MoveCommand(ship, ship.Commands.AllocGlobalCommandID(), work.Spot, work.Rotation, CollisionAvoidanceFlags.All, isTentative: false));
         if (HunterOrders.EdgeDistance(ship, target) <= tun.MineDistance * 3f) Autonomy.AutonomyWorld.OrderSalvage(ship, target, mine, tun.SalvageJobs);
     }
 
