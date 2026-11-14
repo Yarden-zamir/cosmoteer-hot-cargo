@@ -69,8 +69,13 @@ public static class DebtArea
         _ => throw new ArgumentException($"debt target '{kind}': loan, lender or collector"),
     };
 
-    static IEnumerable<Ship> Stations() =>
-        Cosmoteer.Ships.Special.SpaceStation.GetStations(Sim(), onlyOperating: true).Select(s => s.PhysicalShip).OfType<Ship>().OrderBy(s => s.UniqueID);
+    /// <summary>Operating stations, nearest to the acting ship first, lowest ID on a tie.</summary>
+    static IEnumerable<Ship> Stations()
+    {
+        var at = Autotest.ActingShip(Sim())?.DetWorldCenter ?? default;
+        return Cosmoteer.Ships.Special.SpaceStation.GetStations(Sim(), onlyOperating: true).Select(s => s.PhysicalShip).OfType<Ship>()
+            .OrderBy(s => s.DetWorldCenter.DistanceSquaredTo(at)).ThenBy(s => s.UniqueID);
+    }
 
     static void RegisterAutotest()
     {
@@ -82,13 +87,6 @@ public static class DebtArea
         Autotest.Fields["debt_wanted"] = () => Lenders.Wants(Sim(), First().Faction) ? 1 : 0;
         Autotest.Fields["debt_collectors"] = () => R().State.Debt.Collectors.Count;
         Autotest.Fields["debt_hailed"] = () => R().State.Debt.Collectors.Count(c => c.Hailed);
-        // Why a collector does not hail: its distance to the nearest human ship, and whether that ship can call it and it answers.
-        Autotest.Fields["debt_collector_distance"] = () => Target("collector") is var c && SimQueries.NearestHumanShip(Sim(), c.DetWorldCenter) is { } h ? h.DetWorldCenter.DistanceTo(c.DetWorldCenter) : -1;
-        Autotest.Fields["debt_collector_callable"] = () => Target("collector") is var c && Sim().Ships.HumanPlayerShips.Any(h => Diplomacy.Situation.Career(Sim()).CanShipCallShip(h, c)) ? 1 : 0;
-        Autotest.Fields["debt_comms_radius"] = () => Sim().Ships.HumanPlayerShips.Max(h => h.Sensors.DetWorldCommsCircle.Radius);
-        Autotest.Fields["debt_collector_crew"] = () => Target("collector") is var c && c.Commands.CanExecuteCrewCommandsFrom(c.Metadata.PlayerIndex) ? 1 : 0;
-        Autotest.Fields["debt_collector_ai"] = () => Target("collector").AI is null ? 0 : 1;
-        Autotest.Fields["debt_collector_answers"] = () => Target("collector") is var c && Sim().Ships.HumanPlayerShips.Any(h => Diplomacy.Situation.Career(Sim()).WillShipAnswerCall(h, c)) ? 1 : 0;
         Autotest.Fields["debt_loan_stations"] = () => Stations().Count(s => Lenders.OffersLoan(R(), s));
         Autotest.Fields["debt_loan_credits"] = () => DebtDeals.LoanCredits(R());
         Autotest.Fields["debt_collector_in"] = () => First().NextCollectorAt - R().State.GameSeconds;
@@ -136,6 +134,18 @@ public static class DebtArea
         Autotest.Commands["debt_ratio"] = arg => First().Balance = (long)Math.Ceiling(First().Principal * double.Parse(arg, CultureInfo.InvariantCulture));
         // debt_unwant: the lender of the first debt stops wanting the players, as after a lost search.
         Autotest.Commands["debt_unwant"] = _ => ((Cosmoteer.Modes.Career.CareerSimModeManager)Sim().Mode).Wanted.RemoveFactionFromWanting(First().FactionId);
+        // debt_open loan|lender|collector: opens the comms window to that ship on its dialogue tab (for screenshots). debt_close closes it.
+        Autotest.Commands["debt_open"] = arg =>
+        {
+            var me = Autotest.ActingShip(Sim()) ?? throw new InvalidOperationException("no acting ship");
+            var window = new Cosmoteer.Modes.Career.Comms.CommWindow(R().Game, me, Target(arg.Trim()));
+            R().Game.Gui.FloatingWindows.AddChild(window);
+            window._tabs.TabsListBox.SelectedWidget = window._dialogueTab ?? throw new InvalidOperationException("the ship has no dialogue tab");
+        };
+        Autotest.Commands["debt_close"] = _ =>
+        {
+            foreach (var w in R().Game.Gui.FloatingWindows.Children.OfType<Cosmoteer.Modes.Career.Comms.CommWindow>().ToList()) Cosmoteer.Game.Gui.Extensions.Unparent(w);
+        };
         // debt_page lender|collector|loan: logs the page text and rows of that ship's comms for the acting ship.
         Autotest.Commands["debt_page"] = arg =>
         {

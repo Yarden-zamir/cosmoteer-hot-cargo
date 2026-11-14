@@ -20,8 +20,9 @@ src/HotCargo/
   ShipAi/                  player ship tactics: model (ShipAiModel), per-ship state and save hooks (ShipTactics), sim controller, MP input, editor
   Autonomy/                autonomous ships (section 45): Computer manning and ownership, Funnel, cargo and trade (AutonomyModel, AutonomyWorld)
   Pursuit/                 the Pursuit director: wave ramp, fleet factor, big event pacer (Pacer), reporting scout, relay blockade, network outage, hacker
+  Debt/                    debt (section 55): loans, interest, collectors, the hostile lender, the comms pages and shared choice domain
   StartJobs/               start jobs (section 48): the offer, the job rules, the intro panel with the jobs, shared choice domain
-  Ui/                      overlay, heat panel, run intro and end panels
+  Ui/                      overlay, heat panel (areas add lines through HeatPanel.ExtraLines), run intro and end panels
   Dev/Autotest.cs          headless test commands
   Telemetry/               session telemetry files (TELEMETRY.md); read-only hooks and patches
 tests/HotCargo.Tests/      fast unit tests for the pure model files
