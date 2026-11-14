@@ -18,9 +18,24 @@ public static class FriendlyArea
     {
         EventRunner.Effects.Add("join", Join.Apply);
         EventRunner.Effects.Add("apprentice", Apprentice.Apply);
+        EventRunner.Effects.Add("leave", Leave);
         Run.Hooks.Tick += Apprentice.OnTick;
         Run.Hooks.SystemEntered += Apprentice.OnSystemEntered;
         AddAutotest();
+    }
+
+    /// <summary>
+    /// Spec 1364: effect "leave". The page's carrier jumps out of the system after FriendlyTunables.LeaveDelaySeconds, with the
+    /// Diplomacy leaving jump (vanilla FTL jump-out effect), and a chat line names it.
+    /// </summary>
+    static void Leave(Run run, SimRoot sim, int player, PendingEvent p, List<string> lines)
+    {
+        var id = p.Carrier ?? throw new InvalidDataException($"event {p.EventId}: Effect leave needs a Carrier");
+        if (sim.Ships[id] is not { IsJunk: false } ship) return;
+        ship.Tags?.Remove(EventHail.CarrierTag);
+        run.State.Diplomacy.Leaving.Add(new Diplomacy.Leaving { Ship = id, Due = run.State.GameSeconds + run.T.Friendly.LeaveDelaySeconds });
+        Ux.UxKit.ChatLine(run.Game, Text("LeavesFmt", ship.Metadata.XmlShipName));
+        Log.Info($"friendly: {ship.Metadata.PlainShipName} leaves the system");
     }
 
     internal static string Text(string key, params object?[] args) => Strings.FormatText("HotCargoFriendly/" + key, args);
@@ -48,6 +63,8 @@ public static class FriendlyArea
     static void AddApprenticeAutotest()
     {
         // fr_apprentices: running apprentices. fr_apprentice_fights: fights the first one saw.
+        // fr_leaving: ships that are about to jump out or are jumping (Diplomacy leaving list).
+        Autotest.Fields["fr_leaving"] = () => Autotest.RequireRun().State.Diplomacy.Leaving.Count;
         Autotest.Fields["fr_apprentices"] = () => Autotest.RequireRun().State.Friendly.Apprentices.Count;
         Autotest.Fields["fr_apprentice_fights"] = () => Autotest.RequireRun().State.Friendly.Apprentices.FirstOrDefault()?.Fights ?? -1;
         // fr_apprentice_hired: 1 while the first apprentice has its follow-and-fight hire.

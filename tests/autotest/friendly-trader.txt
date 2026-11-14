@@ -1,0 +1,25 @@
+# Wandering trader (spec 1364): page options trade resources at about twice the station value, then the trader jumps away.
+newgame run
+wait 8
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+ev_set CooldownSeconds 0
+ev_storage_clear steel
+ev_storage_fill steel
+event wandering_trader
+ev_carrier_goto
+pause off
+wait 2
+expectcomms carrier Wandering Trader 1
+ev_mark
+# Two steps of steel for processors.
+pick 1 2
+ev_comms carrier Make the trades
+expect ev_pending == 0
+expect ev_res_steel_gain == -80
+expect ev_res_processor_gain == 2
+expect fr_leaving == 1
+wait 10
+expect fr_leaving == 0
+quit

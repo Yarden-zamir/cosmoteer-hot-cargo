@@ -336,6 +336,15 @@ A small armed crew asks to fly under your colors. Take them in for 1 money unit:
 #### Apprentice (Arrival; weight 5)
 A young crew asks to follow you and learn. Let them follow (free): for 6 minutes it fights at your side. Its label counts the enemy ships that die near it. With 3 or more it joins your fleet; with fewer it thanks you and leaves; hurt badly, it leaves early (spec 1362, 1363).
 
+#### Wandering Trader (Arrival; weight 5)
+| Trade (1 to 3 times) | About |
+|---|---|
+| 40 steel for 1 processor | 2.5 × value |
+| 10 coils for 10 tristeel | 2 × value |
+| 40 hyperium for 1 diamond | 2 × value |
+
+After a trade it jumps away (spec 1364).
+
 ## 4. Content rules for authors
 
 - Do not write counts that live elsewhere (the starting tech, spawn counts in spawns.rules): they drift. Use `{crates}` for the live fleet tech count. Counts that the same choice's Cost sets are fine.

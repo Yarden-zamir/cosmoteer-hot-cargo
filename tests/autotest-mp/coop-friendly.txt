@@ -40,4 +40,21 @@ mp fr_apprentice_end
 waitfor fr_apprentices == 0 20
 on 1 waitfor fr_apprentices == 0 30
 
+step friendly.trader
+# Spec 1364: the client selects a trade in the shared draft and submits it. The client pays its steel; the processor arrives on
+# both machines' view of the client's ship; the trader leaves on both.
+mp event wandering_trader
+waitfor ev_pending == 1 20
+mp ev_carrier_goto
+as 1 ev_storage_fill steel
+wait 2
+ev_mark
+on 1 ev_mark
+on 1 pick 1 1
+on 1 ev_comms carrier Make the trades
+waitfor ev_pending == 0 30
+on 1 waitfor ev_pending == 0 30
+waitfor fr_leaving >= 1 10
+on 1 expect ev_res_processor_gain == 1
+
 end

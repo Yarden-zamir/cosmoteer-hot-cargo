@@ -765,6 +765,35 @@ Events
 		]
 	}
 
+	// Spec 1364: a wandering trader with a few trades at about twice the station value (vanilla BuyPrice). Clear deals: each row says
+	// what goes and what comes. After a trade it jumps away (effect leave).
+	{
+		ID = wandering_trader
+		Trigger = Arrival
+		Weight = 5
+		Carrier = Trader
+		Title = "Wandering Trader"
+		Text = "A battered hauler, its hold full of odd goods, hails you. \"I trade, I don't haggle. These rates are good for today only.\""
+		Options
+		[
+			{ Text = "40 steel for 1 processor"; Pay = Resource; Resource = steel; Unit = 40; MinUnits = 1; MaxUnits = 3; Points = 1; Effect { Resources = [{ ID = processor; Amount = 1 }] } }
+			{ Text = "10 coils for 10 tristeel"; Pay = Resource; Resource = coil; Unit = 10; MinUnits = 1; MaxUnits = 3; Points = 1; Effect { Resources = [{ ID = tristeel; Amount = 10 }] } }
+			{ Text = "40 hyperium for 1 diamond"; Pay = Resource; Resource = hyperium; Unit = 40; MinUnits = 1; MaxUnits = 3; Points = 1; Effect { Resources = [{ ID = diamond; Amount = 1 }] } }
+		]
+		Choices
+		[
+			{
+				Text = "Make the trades."
+				NeedPoints = 1
+				Outcomes [ { Text = "The crates change hulls. \"Pleasure.\" The trader spins up its drive."; Effect = leave } ]
+			}
+			{
+				Text = "Not today."
+				Outcomes [ { Text = "\"Your loss. I won't pass this way again.\"" } ]
+			}
+		]
+	}
+
 	// The run's one relic ship (spec 765). It opens when a ship comes close, and again on each return until the crate is taken.
 	{
 		ID = relic_ship
