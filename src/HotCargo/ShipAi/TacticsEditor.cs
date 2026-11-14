@@ -562,13 +562,13 @@ internal sealed class TacticsEditor : WindowBox
         var addTerm = NewButton("AddTerm", () => Edit(i, ShipAiModel.AddTerm(_rows[i])));
         addTerm.ToolTips.TextProvider = new Ux.LiveText(() => Text("AddTermTip"));
         addTerm.SelfInputActive = row.Terms.Length < ShipAiModel.MaxTerms;
-        Place(line, addTerm, ColEnd, 8f);
+        Place(line, addTerm, ColEnd, 7f);
         var up = NewButton("Up", () => Swap(i, i - 1));
         up.SelfInputActive = i > 0;
-        Place(line, up, 85f, 5f);
+        Place(line, up, 84f, 5f);
         var down = NewButton("Down", () => Swap(i, i + 1));
         down.SelfInputActive = i < _rows.Count - 1;
-        Place(line, down, 90f, 5f);
+        Place(line, down, 89f, 6f);
         Place(line, NewButton("Remove", () => { _rows.RemoveAt(i); SendRows(); }), 95f, 5f);
     }
 
