@@ -1,0 +1,35 @@
+# Mission cargo in the world (spec 1141, 1142, 1144): the Sundive objective line while the hold has no free storage for the
+# recorder, and a chain result whose reward drifts loose as crates. The result window stays open (a click closes it), so it is last.
+# Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
+render on
+newgame run 0
+wait 10
+closepanel
+wait 1
+ev_set Enabled false
+godmode
+# Sundive with full storage: the salvage is done, and the objective line asks for a free storage slot.
+worlds jumpto hc_solar_zone
+pause off
+worlds set SundiveSalvageSeconds 2
+worlds generate sundive
+worlds accept sundive
+ev_storage_fill steel
+worlds goto sundive
+wait 4
+pause on
+wait 1
+screenshot missions-sundive-noroom
+pause off
+ev_storage_clear steel
+# Take It Back: the result window says that the processors drift loose.
+chain_force magpie_rivalry
+chain_jump ambush
+chain_due
+wait 12
+chain_kill
+wait 3
+pause on
+wait 1
+screenshot missions-cargo-result
+quit

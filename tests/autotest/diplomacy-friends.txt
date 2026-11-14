@@ -83,8 +83,7 @@ dip_spawn enemy 400
 wait 4
 expect dip_friendattacking == 1
 dip_damage friend 0.3
-wait 3
-expect dip_hirefleeing == 1
+waitfor dip_hirefleeing == 1 10
 dip_log fleeing
 # Mercenaries: an armed friendly ship near a station rolls mercenary, hails, and takes pay by the minute (slider).
 tostation

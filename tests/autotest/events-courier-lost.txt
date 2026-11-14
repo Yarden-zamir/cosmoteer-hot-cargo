@@ -7,8 +7,14 @@ ev_set ArrivalEventChance 0
 worlds jumpto hc_trade_hub
 ev_tostation
 wait 2
+ev_mark
 ev_courier_accept
 expect ev_courier_handover == 0
+# A jump with the case aboard is no loss: during the jump no player ship is in any system (spec 1103).
+jump
+wait 8
+expect ev_courier_handover == 0
+expect ev_res_yarden_zamir.sealed_case_gain == 1
 # The case is destroyed (a storage hit with no drop).
 ev_storage_clear yarden_zamir.sealed_case
 wait 2
