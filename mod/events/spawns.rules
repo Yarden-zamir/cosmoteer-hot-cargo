@@ -768,3 +768,34 @@ Recruit
 	]
 }
 
+// Spec 1364: the wandering trader, a civilian hauler that answers comms and waits.
+Trader
+{
+	Spawners
+	[
+		{
+			Type = Ships
+			Tags = [hc_ev_carrier]
+			Distance = [700, 900]
+			Allegiance = FactionCivilian
+			SuppressLocationAssertions = true
+			NameGenerator = { Type = NameList; Names = ["Wandering Trader"]; }
+			ShipCriteria
+			{
+				UseLocalFactionWeights = true
+				UseTierField = true
+				AllowTierRangeExpansion = true
+				Tags = [trade]
+			}
+			AI
+			{
+				Type = Normal
+				ChanceToConsiderSurrenderingToPlayer = 0
+				PatrolRadius = 50
+				TargetAcquireRangeFromOrigin = 100
+				TargetUnacquireRangeFromOrigin = 100
+			}
+		}
+	]
+}
+
