@@ -65,6 +65,13 @@ expect huntershostile == 1
 on 1 hunters client
 on 1 expect huntershostile == 1
 
+step factions.watch
+# Spec 664: the Strike stage above marked the neighbor systems; the client's galaxy map shows CORPORATE WATCH too.
+expect fa_watched >= 1
+expect fa_tag_watch >= 1
+on 1 expect fa_watched >= 1
+on 1 expect fa_tag_watch >= 1
+
 step tunablesmenu.host-edit
 # Spec 504: the host's menu change reaches the client through the tunables input. A menu edit keeps the file's other values.
 waitfor menu_ready == 1 30
@@ -157,7 +164,8 @@ mp hc_accept shady
 mp hc_shady_spring
 mp event smuggler_den
 waitfor hc_trap_state == 2 20
-expectevent smuggler_den
+# The event starts in the sim some ticks after the line, later on a slow machine: wait for it.
+waitevent smuggler_den 20
 # The fight can destroy a ship's control room (godmode cannot stop a one-hit kill); a ship without command becomes a wreck.
 # So the tactics check compares every ship that is still a human ship with a snapshot from just before the resync.
 mp tactics_snapshot

@@ -403,6 +403,7 @@ public static class ChainRunner
         c.Part++;
         Log.Info($"chain {chain.ID} stage {stage.ID}: result {result} -> row {row + 1}, next '{r.Next}'");
         Advance(run, chain, c, r.Next);
+        if (c.Ended && ChainModel.EndsWell(result, r.Reputation)) Factions.FactionsArea.ShelterAfterChain(run, c.StationPlayerIndex, chain.Title);
         Onboarding.RunLog.ChainResult(run, chain.Title, r.Story, lines, c.Ended);
         Show(run, sim, c, chain, r.Effects?.Text ?? "", lines, resultSerial);
     }

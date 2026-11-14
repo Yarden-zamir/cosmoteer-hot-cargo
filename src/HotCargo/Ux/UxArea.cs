@@ -146,6 +146,8 @@ public static class UxArea
         Autotest.Commands["map"] = arg => { var r = Autotest.RequireRun(); r.Game.ShowMap = arg != "off"; };
         // camera <x> <y> <size>: test only. The sim camera stops following ships, centers on the world point and zooms to fit a
         // square of that size (for whole-system screenshots).
+        // mapfocus: test only. Opens the galaxy map and centers it on the current system (vanilla MapNode.FocusCamera).
+        Autotest.Commands["mapfocus"] = _ => { Autotest.RequireRun().Game.CurrentMapNode.FocusCamera(playSound: false); Autotest.Wait(3); };
         Autotest.Commands["camera"] = arg =>
         {
             var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
