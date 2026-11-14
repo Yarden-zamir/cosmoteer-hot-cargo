@@ -14,6 +14,15 @@ namespace HotCargo.Debt;
 /// <summary>Spec 1430 to 1437: a friendly faction helps in a fight and asks for pay after it, by the share of the damage it dealt.</summary>
 static class DebtHelp
 {
+    const ulong HelpSalt = 0x4445_4254_4845_4CUL;
+
+    /// <summary>
+    /// Limit: while a test script runs, the help trigger (spec 1430) stays off unless the test sends debt_help_on. Every test starts in
+    /// the same seeded system, so a help roll there would add a fight side to the exact counts that other areas' tests check.
+    /// Not a tunable: in co-op the host's tunables file replaces run tunables at the first frame. Revisit if tests get their own seeds.
+    /// </summary>
+    internal static bool OnInTests;
+
     internal static bool IsEnemyOfPlayers(SimRoot sim, Ship ship) =>
         !ship.IsHumanPlayerShip && !ship.IsJunk && sim.Game is { } game && game.HumanPlayersIndexes.Any(i => sim.Mode.AreEnemies(i, ship.Metadata.PlayerIndex));
 
@@ -55,9 +64,10 @@ static class DebtHelp
         if (s.Help is not { } g)
         {
             var node = sim.NodeId();
-            if (!t.HelpEnabled || s.HelpSystems.Contains(node) || EnemiesNear(run, sim) < t.HelpMinEnemies) return;
+            if (!t.HelpEnabled || (Dev.Autotest.IsActive && !OnInTests) || s.HelpSystems.Contains(node) || EnemiesNear(run, sim) < t.HelpMinEnemies) return;
             s.HelpSystems.Add(node);
-            if (sim.Rand.Single() >= t.HelpChance || Helper(run, sim) is not { } faction || SimQueries.FleetCenter(sim) is not { } center)
+            // A roll of its own, so a fight without help leaves the sim random stream as it was.
+            if (new Halfling.Random.FastRand((uint)node, HelpSalt).Single() >= t.HelpChance || Helper(run, sim) is not { } faction || SimQueries.FleetCenter(sim) is not { } center)
             {
                 Log.Info("debt: no help in this fight");
                 return;

@@ -180,6 +180,16 @@ public static class DebtArea
         {
             foreach (var ship in Sim().Ships.Where(sh => DebtHelp.IsEnemyOfPlayers(Sim(), sh)).ToList()) Sim().Ships.Remove(ship, dispose: true, handleLostShip: false);
         };
+        // debt_help_on: the help trigger works in this test (it is off in tests by default). In co-op run it through "mp".
+        Autotest.Commands["debt_help_on"] = _ => DebtHelp.OnInTests = true;
+        // debt_attack: single player. The acting ship attacks the nearest enemy of the players.
+        Autotest.Commands["debt_attack"] = _ =>
+        {
+            var me = Autotest.ActingShip(Sim()) ?? throw new InvalidOperationException("no acting ship");
+            var target = Sim().Ships.Where(sh => DebtHelp.IsEnemyOfPlayers(Sim(), sh)).MinBy(sh => sh.DetWorldCenter.DistanceSquaredTo(me.DetWorldCenter))
+                ?? throw new InvalidOperationException("no enemy of the players");
+            Hunters.HunterOrders.Attack(me, target);
+        };
         // debt_mark_rep: notes the reputation of this system's controlling faction for debt_rep_drop.
         Autotest.Commands["debt_mark_rep"] = _ =>
         {

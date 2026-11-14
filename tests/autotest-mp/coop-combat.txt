@@ -8,8 +8,6 @@ mphost {PORT}
 mpstart {PLAYERS}
 mp godmode on
 mp ev_set Enabled false
-# Paid help (spec 1430) changes fights. Only debt.help brings helpers.
-mp debt_set HelpChance 0
 
 step scaling.generation
 # Spec 330 to 336: the host's value reaches the client. Both machines generate the first system with factor 2:
