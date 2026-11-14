@@ -104,7 +104,7 @@ Platform and game loop (`HeadlessPlatform.cs`, `Boot.cs`, `Program.cs`):
 
 5. `Halfling.Platforms.Platform.Create` loads `HalflingPlatformWDX` (Direct3D 11, XAudio2, Win32). The host patches it to return `HeadlessPlatform`. That class returns the game's own null devices (`NullWindow`, `NullGraphicsManager`, `NullAudioManager`, `NullInputManager`), the same ones `--headless` uses on the PC.
 6. `RealTimeClock.AdvanceRealTime` reads the real time. The host advances it by 1/60 s per frame. The game then runs faster than real time.
-7. `GameRoot.JumpToNode` loads the new system on a background thread (about 4 s). A test waits for it in game seconds, and the fast clock ends the wait first. While a jump runs, each frame takes at least 1/60 s of real time.
+7. `GameRoot.JumpToNode` loads the new system on a background thread (about 4 s). A test waits for it in game seconds, and the fast clock ends the wait first. While a jump of the current game runs, each frame takes at least 1/60 s of real time. A jump with the FTL animation of a game that a test covers with a new game never ends (the animation waits for drawn frames), so it stops counting; before that fix, the rest of the process ran about 5 times slower.
 8. `GameApp.Main` reads `--cores` and sets `FastParallel.ThreadCount`. The host skips `Main`, so `Program.cs` reads `--cores`. Without it, each run starts one spinning helper thread per core.
 9. An exception that leaves the game loop after `AUTOTEST DONE` (for example a cancelled task in `StasisDoodadSpawner.CancelPreload` at shutdown) does not fail the run. The log decides, like on the PC.
 
