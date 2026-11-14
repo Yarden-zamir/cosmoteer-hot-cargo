@@ -100,13 +100,11 @@ public static class PursuitArea
             var dir = Halfling.Geometry.Vector2.FromAngle(relay.DirectionTo(me.DetWorldCenter));
             Autotest.Teleport(me, relay + dir * float.Parse(arg, CultureInfo.InvariantCulture));
         };
-        // pu_focusblockade: centers the camera on the acting ship and zooms out until the blockade relay fits (screenshots).
-        Autotest.Commands["pu_focusblockade"] = _ =>
+        // pu_camerarelay <size>: centers the camera on the blockade relay and fits a square of this size (screenshots).
+        Autotest.Commands["pu_camerarelay"] = arg =>
         {
             var relay = Blockade.RelayAt(R(), Sim()) ?? throw new InvalidOperationException("no blockade relay");
-            var me = Me();
-            me.FocusCamera(playSound: false);
-            Sim().Camera.ViewController.ZoomToFit(new Halfling.Geometry.Vector2(2f * me.DetWorldCenter.DistanceTo(relay) + 1600f));
+            Autotest.Commands["camera"](string.Create(CultureInfo.InvariantCulture, $"{relay.X} {relay.Y} {arg.Trim()}"));
         };
         // pu_blockade: the live hunters park at the needed relay, through the pacer.
         Autotest.Commands["pu_blockade"] = _ =>
@@ -153,12 +151,20 @@ public static class PursuitArea
         };
         // pu_started <kind>: records a big event start, as another area would.
         Autotest.Commands["pu_started"] = arg => Pacer.Started(R(), arg.Trim());
-        // pu_killscout: destroys every part of the scouts (use "mp pu_killscout" in co-op).
+        // pu_killscout: stops every scout. A live scout loses all its parts; a scout in stasis (far from the players) loses its stasis
+        // spawner, so it never comes back to report. Use "mp pu_killscout" in co-op.
         Autotest.Commands["pu_killscout"] = _ =>
         {
-            foreach (var s in R().State.Pursuit.Scouts.ToList())
+            var scouts = R().State.Pursuit.Scouts.ToList();
+            if (scouts.Count == 0) throw new InvalidOperationException("no scout");
+            foreach (var s in scouts)
+            {
                 if (Sim().Ships[s.Ship] is { } ship)
                     foreach (var part in ship.Parts.ToList()) part.Health = 0;
+                else if (Sim().Stasis.FirstOrDefault(x => x.ReservedObjectID == s.Ship) is { } stasis)
+                    Sim().Stasis.RemoveStasisSpawner(stasis);
+                else throw new InvalidOperationException($"scout {s.Ship} is neither live nor in stasis");
+            }
         };
         // pu_addmoney <credits>: gives every human player money (use "mp pu_addmoney" in co-op).
         Autotest.Commands["pu_addmoney"] = arg =>

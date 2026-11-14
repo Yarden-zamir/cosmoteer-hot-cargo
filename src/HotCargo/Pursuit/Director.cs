@@ -1,13 +1,14 @@
 using Cosmoteer.Simulation;
 using HotCargo.Core;
 using HotCargo.Hunters;
+using HotCargo.StartJobs;
 
 namespace HotCargo.Pursuit;
 
 /// <summary>Spec 900 to 904: hunter waves come weaker and less often early, and the fleet value moves their strength a little.</summary>
 public static class Director
 {
-    static float Progress(Run run) => WaveModel.Progress(run.State.SectorIndex, run.T.Journey.RunSectorCount);
+    static float Progress(Run run) => WaveModel.Progress(run.State.SectorIndex, run.SectorCount());
 
     /// <summary>Spec 901: the ramp factor on hunter ships for the sector index.</summary>
     public static float RampFactor(Run run) => PursuitModel.Lerp(run.T.Pursuit.EarlyShipFactor, run.T.Pursuit.LateShipFactor, Progress(run));

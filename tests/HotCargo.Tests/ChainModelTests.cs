@@ -22,6 +22,16 @@ public class ChainModelTests
     ]);
 
     [Fact]
+    public void A_chain_ends_well_on_a_result_that_is_no_failure_and_a_row_that_keeps_reputation()
+    {
+        Assert.True(ChainModel.EndsWell(ChainModel.Success, 0));
+        Assert.True(ChainModel.EndsWell("codes", 1));
+        foreach (string failure in new[] { ChainModel.Fail, ChainModel.Timeout, ChainModel.Lost, ChainModel.Abandoned })
+            Assert.False(ChainModel.EndsWell(failure, 0));
+        Assert.False(ChainModel.EndsWell("leave", -1));
+    }
+
+    [Fact]
     public void Failure_kinds_fall_back_to_fail_then_any()
     {
         Assert.Equal(["timeout", "fail", "any"], ChainModel.Keys("timeout"));

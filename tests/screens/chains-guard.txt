@@ -1,0 +1,27 @@
+# Chain guard (spec 1127): the Black Box guard next to the player ship before the accept (neutral), and after the accept (hostile).
+# Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
+render on
+newgame run 0
+wait 10
+closepanel
+wait 1
+ev_set Enabled false
+godmode
+chain_force black_box
+chain_guard_goto
+wait 6
+pause on
+chain_guard_goto 2500
+wait 2
+screenshot chains-guard-offer
+pause off
+chain_tostation
+chain_accept
+wait 2
+chain_guard_goto
+wait 6
+pause on
+chain_guard_goto 2500
+wait 2
+screenshot chains-guard-accepted
+quit
