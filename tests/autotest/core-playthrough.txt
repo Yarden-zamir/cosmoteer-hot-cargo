@@ -19,7 +19,8 @@ pt_status station
 pt_accept
 wait 3
 expect pt_mission == 1
-pt_fight 600
+# The fight time depends on the picked target and the ship AI; the timeout only catches a fight that never ends.
+pt_fight 900
 pt_status fight
 expect pt_mission == 1
 # Back to the station: collect the bounty, sell 1 tech, repair, unlock and build a hyperdrive, buy fuel.
@@ -35,9 +36,10 @@ pt_repair 300
 pt_status repaired
 pt_unlock cosmoteer.hyperdrive_small
 waitfor pt_unlocked == 1 30
-pt_buy 300 steel 40 coil 90
+pt_buy 300 part cosmoteer.hyperdrive_small
 pt_build cosmoteer.hyperdrive_small
 waitfor pt_drives == 1 240
+# About ten jumps of hyperium: the jump to sector 2 used 2 (playthrough log, Mac sim). Revisit if a jump costs more than 20.
 pt_buy 300 hyperium 20
 pt_status drive
 # The relay toward an unvisited system: fly there, right click it, wait for the drives, press ENGAGE.

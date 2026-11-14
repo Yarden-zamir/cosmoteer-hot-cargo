@@ -1,7 +1,6 @@
 # Calls for help (spec 196-199): start, complete (brings the next hunter group), interrupt by disruptor and EMP hits, storm block.
 newgame run
 wait 8
-pu_set Enabled false
 ev_set Enabled false
 godmode on
 tacticlog on
@@ -42,8 +41,9 @@ disrupt emp
 wait 2
 # The interrupt count shows the hit stopped the call. Another hunter off its 1 s cooldown can start its own call here.
 expect ai_call_interrupt >= 2
-# Inside an ion storm a hunter cannot call. No hunter is cooling down (1 s cooldown); only the stormed hunter takes damage.
-storm -1
+# Inside an ion storm a hunter cannot call. The storm covers every hunter: a call still running (another hunter can start one
+# after the EMP step) stops as blocked, and while it runs no other hunter tries a call. Only the last hunter takes damage.
+storm all
 wait 1
 damagehunter -1 0.7
 wait 3

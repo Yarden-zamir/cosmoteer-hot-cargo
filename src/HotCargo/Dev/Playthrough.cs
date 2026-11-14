@@ -79,11 +79,15 @@ public static class Playthrough
         // stores each total. Vanilla cancels and refunds a transfer that the crew did not finish, for example when the ship chases an
         // attacker out of trade range. A person then flies back and buys the rest: every 20 seconds, each missing resource with no
         // transfer on its way is bought again, after a move order back to the picked station if the ship is not near it.
+        // pt_buy <timeout seconds> part <part id>: the totals are the part's build cost from its rules, as the build window shows it.
         Autotest.Commands["pt_buy"] = arg =>
         {
             var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length < 3 || parts.Length % 2 == 0) throw new InvalidOperationException("pt_buy needs: timeout resource total [resource total ...]");
-            var wants = parts.Skip(1).Chunk(2).Select(p => (Resource: new ID<ResourceRules>(p[0]), Total: int.Parse(p[1], CultureInfo.InvariantCulture))).ToList();
+            var wants = parts is [_, "part", var partId]
+                ? TechAutotest.PlayerShip().Rules.PartsByID[new ID<PartRules>(partId)].Resources.Select(r => (Resource: r.Type, Total: (int)r.Quantity)).ToList()
+                : parts.Length >= 3 && parts.Length % 2 == 1
+                    ? parts.Skip(1).Chunk(2).Select(p => (Resource: new ID<ResourceRules>(p[0]), Total: int.Parse(p[1], CultureInfo.InvariantCulture))).ToList()
+                    : throw new InvalidOperationException("pt_buy needs: timeout resource total [resource total ...] | timeout part <part id>");
             _target = _station ?? throw new InvalidOperationException("no picked station; run pt_goto station first");
             double next = 0;
             Autotest.WaitFor(() =>

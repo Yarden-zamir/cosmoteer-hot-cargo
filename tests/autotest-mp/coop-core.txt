@@ -9,7 +9,7 @@ client: codex_reset
 client: tutorials on
 codex_reset
 tutorials on
-tunablesfile Heat { HeatPerGameMinute = 30; HeatCarryOverFraction = 0.5 }  Events { Enabled = false }  Pursuit { Enabled = false }
+tunablesfile Heat { HeatPerGameMinute = 30; HeatCarryOverFraction = 0.5 }  Events { Enabled = false }
 mphost {PORT}
 mpstart {PLAYERS}
 mp godmode on
@@ -75,7 +75,7 @@ on 1 menu value Heat.HeatCarryOverFraction == 0.5
 step tunablesmenu.file
 # Spec 60, 850: a change of the host's tunables.rules mid-run goes out as the tunables input, and every machine applies it
 # at the same tick. A bad file sends nothing. The client's own file has no effect.
-tunablesfile Events { Enabled = false }; Heat { HeatPerGameMinute = 50 }; Hunters { MaxLiveHunters = 7 }; Pursuit { Enabled = false }
+tunablesfile Events { Enabled = false }; Heat { HeatPerGameMinute = 50 }; Hunters { MaxLiveHunters = 7 }
 waitfor heatperminute == 50 30
 menu open
 menu shows Heat.HeatPerGameMinute 50

@@ -2,7 +2,6 @@
 # on the starting ship against two hunters, the manual order override, and an ally.
 newgame run
 wait 8
-pu_set Enabled false
 ev_set Enabled false
 godmode on
 shipai Log on

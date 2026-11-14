@@ -1,7 +1,6 @@
 # Events batch 2 (spec 79-86): Wanted Broadcast, The Magpies Return, Refugee Convoy, Pirate Toll Gate, The Buyer's Agent.
 newgame run
 wait 8
-pu_set Enabled false
 eventviewall
 # Wanted Broadcast: local bounty hunters spawn with their own tag, and the Hunters area does not count them.
 event wanted_broadcast

@@ -2,7 +2,6 @@
 # and the build menu's "Load ship (replace)".
 newgame run
 wait 8
-pu_set Enabled false
 ev_set Enabled false
 godmode on
 tactics Sniper

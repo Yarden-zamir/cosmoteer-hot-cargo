@@ -2,7 +2,6 @@
 # snapshots, perf, the log copy, and a save and load that continues the run ID. Telemetry overhead stays below 1 % of frame time.
 newgame run
 wait 8
-pu_set Enabled false
 expect tele_active == 1
 expect tele_trace_missing == 0
 expect tele_trace_patched >= 10
