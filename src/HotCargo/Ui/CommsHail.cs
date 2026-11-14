@@ -223,12 +223,15 @@ public static class CommsHail
     static void ShowRows(CommDialogueTab tab, OptionRows rows)
     {
         var page = tab._currentDialogue as HailPage;
+        // A listener sees the shared draft but cannot change it (spec 1134).
+        bool listening = SharedChoice.ListenIn.SpeakerOf(tab._window) is not null;
         var views = new List<OptionRowView>();
         if (page is not null)
             foreach (var r in page.Rows)
             {
                 int value = r.Slider is not { } spec ? 0 : r.Toggle && r.Selected ? spec.Snap(r.Value) : SliderValue(tab.Callee, spec);
-                views.Add(new OptionRowView(r.Key, r.Text, r.Active, r.Tooltip, r.Toggle, r.Selected, r.Slider, value, SliderActive: !r.Toggle || r.Selected));
+                bool readOnly = listening && r.Toggle;
+                views.Add(new OptionRowView(r.Key, r.Text, r.Active && !readOnly, r.Tooltip, r.Toggle, r.Selected, r.Slider, value, SliderActive: !readOnly && (!r.Toggle || r.Selected)));
             }
         rows.Show(views);
         // The tab does not scroll: the window grows with the rows and buttons of the page, up to MaxWindowHeight.
@@ -249,7 +252,7 @@ public static class CommsHail
         if (Run.Current is not { } run || tab._currentDialogue is not HailPage page || RowOf(tab, view.Key) is not { } row) return;
         if (row.Toggle)
         {
-            if (page.Multi is not { } multi) return;
+            if (page.Multi is not { } multi || SharedChoice.ListenIn.SpeakerOf(tab._window) is not null) return;
             int value = row.Slider is { } spec ? SliderValue(tab.Callee, spec) : 0;
             MultiChoice.DraftSender.Toggle(run, multi.Domain, multi.Serial, row.Option, !row.Selected, value);
             return;
@@ -278,6 +281,11 @@ public static class CommsHail
         if (Run.Current is not { } run || !Panels.TryGetValue(tab, out var shared)) return;
         var page = tab._currentDialogue as HailPage;
         var buttons = tab._dialogueButtonsBox.Children;
+        // A listener only votes (spec 1134): vanilla buttons and hail lines are not shared choices, so they are off.
+        string? speaker = SharedChoice.ListenIn.SpeakerOf(tab._window);
+        if (speaker is not null && tab._currentDialogue is { } shown)
+            for (int i = 0; i < shown.Buttons.Count && i < buttons.Count; i++)
+                if (shown.Buttons[i] is not HailChoice) buttons[i].SelfInputActive = false;
         if (page?.Shared is not { } s) { shared.Panel?.Hide(buttons); return; }
         // The page of an open tab changes: a hail line opens an event page in the same tab. The first page with shared choices,
         // or a page of another domain, gets a new panel in place of the old one.
@@ -285,7 +293,7 @@ public static class CommsHail
         {
             var box = shared.PageBox.Children;
             if (shared.Panel is not null) box.Remove(shared.Panel.Bar);
-            shared.Panel = new SharedChoice.SharedChoicePanel(run, s.Domain);
+            shared.Panel = new SharedChoice.SharedChoicePanel(run, s.Domain) { ListeningTo = speaker };
             shared.Domain = s.Domain;
             shared.LockedUntil = 0;
             box.Insert(box.IndexOf(tab._dialogueButtonsBox), shared.Panel.Bar);
@@ -299,6 +307,8 @@ public static class CommsHail
             var widget = buttons[i];
             if (locked) widget.SelfInputActive = false;
             slots.Add(new SharedChoice.OptionSlot(widget, choice.Option));
+            // A vote (vote mode, or any click of a listener) is not a pick: the window stays open, so the voter sees the votes.
+            if (speaker is not null || SharedChoice.SharedChoices.Voting(run)) choice.CloseOnClick = false;
             choice.OnClick = (_, _) => Errors.Guard("hail choice", () =>
             {
                 if (!panel.Click(s.Serial, choice.Option)) return;
@@ -322,6 +332,12 @@ public static class CommsHail
         foreach (var (_, shared) in Panels)
             if (shared.Domain == domain && shared.LockedSerial == serial) shared.LockedUntil = 0;
     }
+
+    /// <summary>The dialogue tabs of every open comms window. For autotests.</summary>
+    internal static List<CommDialogueTab> OpenTabs() => Rows.Where(kv => kv.Value.Box.Root is not null).Select(kv => kv.Key).ToList();
+
+    /// <summary>The dialogue tabs of a comms window.</summary>
+    internal static IEnumerable<CommDialogueTab> TabsOf(CommWindow window) => Rows.Select(kv => kv.Key).Where(t => t._window == window).ToList();
 
     /// <summary>The option rows of a dialogue tab, or null before the tab has them. For the dialogue keys.</summary>
     internal static OptionRows? RowsOf(CommDialogueTab tab) => Rows.TryGetValue(tab, out var rows) ? rows : null;
