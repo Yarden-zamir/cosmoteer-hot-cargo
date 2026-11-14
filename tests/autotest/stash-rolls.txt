@@ -1,0 +1,93 @@
+# Stash (spec 970 to 975): the offer shows the found-first chance, the chance grows with time, and each outcome on arrival:
+# loot (money, and tech by chance), empty, and an ambush. st_force pins the outcome of the next stash; the last part rolls for real.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+st_generate
+expect st_offers >= 1
+st_line
+st_accept
+# Spec 971 defaults: 10% at the offer, +4% per game minute.
+expect st_chance >= 10
+expect st_chance <= 11
+st_age 6
+expect st_chance >= 34
+expect st_chance <= 35
+st_line
+# The mission log formats the line into a string: it shows the text, not a type name.
+expect st_shown == 1
+
+# Loot without tech: money and no tech.
+st_set LootTechChance 0
+st_force looted
+hc_mark
+st_goto
+wait 3
+expect st_state == 1
+expect st_done == 1
+expect hc_money_gain > 0
+expect tech == 8
+
+# Loot with tech: one more unit in the vaults (one slot freed first).
+tech remove 1
+wait 1
+expect tech == 7
+st_set LootTechChance 1
+st_generate
+st_accept
+st_force looted
+st_goto
+wait 3
+expect st_state == 1
+expect tech == 8
+
+# Loot with tech and full vaults: the unit floats next to the ship as a loose crate.
+expect techcrates == 0
+st_generate
+st_accept
+st_force looted
+st_goto
+wait 3
+expect st_state == 1
+expect techcrates >= 1
+
+# Empty: done, no loot.
+st_generate
+st_accept
+st_force empty
+hc_mark
+st_goto
+wait 3
+expect st_state == 2
+expect st_done == 1
+expect hc_money_gain == 0
+
+# Ambush: the corporate trap spawns; the mission ends when the ambushers are gone.
+st_generate
+st_accept
+st_force ambush
+st_goto
+wait 3
+expect st_state == 3
+expect st_ambushers >= 2
+expect st_done == 0
+st_kill_ambush
+wait 2
+expect st_done == 1
+
+# A real roll at the cap (90%): some outcome, logged as "stash resolved".
+st_generate
+st_accept
+st_age 60
+expect st_chance == 90
+st_goto
+wait 3
+expect st_state >= 1
+# Real generation (spec 970): with OfferChance 1, the next new system gets a stash offer right after it generates.
+st_set OfferChance 1
+jump
+wait 20
+expect sector == 2
+expect st_offers >= 1
+quit

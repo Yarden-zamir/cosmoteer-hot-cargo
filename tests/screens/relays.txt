@@ -1,0 +1,54 @@
+# Relays and stash screenshots (spec 953, 958, 974). Main slot only (needs graphics): see the hot-cargo-screenshots skill.
+render on
+newgame run
+wait 10
+pause off
+# Close the run intro.
+closepanel
+wait 1
+ev_set Enabled false
+godmode on
+# The galaxy map with a marked neighbour.
+rl_mark pirates
+rl_mapfocus
+wait 3
+screenshot relays-map
+map off
+wait 2
+# The bribe page with credits and fuel selected.
+contract_money 100000
+dip_fillfuel
+rl_here pirates
+waitfor rl_guards >= 2 10
+rl_guardsnear
+waitfor rl_live >= 1 15
+wait 2
+rl_pick money price
+wait 1
+rl_pick res 20
+wait 1
+# Right next to a guard: a start ship has a short comms range.
+rl_toguard
+wait 1
+pause on
+rl_open
+wait 2
+screenshot relays-bribe
+dip_close
+pause off
+rl_killguards
+wait 2
+# The accepted stash in the mission log: the same live found-first line as the offer (spec 974).
+# The offer sits in a station list only when the system has a trade station, so the log is the stable view.
+st_set OfferChance 1
+st_generate
+expect st_offers >= 1
+st_accept
+st_age 6
+missionlog open
+wait 1
+logselect Stash
+wait 2
+screenshot stash-log
+missionlog close
+quit

@@ -1,0 +1,83 @@
+# Relays: pirates hold the relays (spec 957 to 959). Bribe with money, bribe with cargo, fight, or a failed bribe.
+
+# Bribe with money at the full price: a sure deal. The guards stand down (truce) and the relays open.
+newgame
+wait 8
+ev_set Enabled false
+godmode on
+rl_here pirates
+waitfor rl_guards >= 2 10
+expect rl_blocks == 1
+# The guards spawn at the relay, often in stasis far from the fleet: bring them close first.
+rl_guardsnear
+waitfor rl_live >= 1 15
+rl_toguard
+waitfor rl_callable == 1 30
+contract_money 100000
+rl_page
+rl_mark_money
+rl_pick money price
+wait 1
+rl_bribe
+wait 3
+expect rl_blocks == 0
+expect rl_bribed == 1
+expect rl_guards == 0
+expect rl_spent >= 1
+
+# Bribe with cargo: a cheap price, paid in fuel.
+newgame
+wait 8
+ev_set Enabled false
+godmode on
+rl_set BribeUnits 0.01
+dip_fillfuel
+rl_here pirates
+waitfor rl_guards >= 2 10
+# The guards spawn at the relay, often in stasis far from the fleet: bring them close first.
+rl_guardsnear
+waitfor rl_live >= 1 15
+rl_toguard
+waitfor rl_callable == 1 30
+expect rl_resources > 0
+rl_pick res max
+wait 1
+rl_page
+rl_bribe
+wait 3
+expect rl_blocks == 0
+expect rl_bribed == 1
+
+# Fight: the relays open when every guard is gone.
+newgame
+wait 8
+ev_set Enabled false
+godmode on
+rl_here pirates
+waitfor rl_guards >= 2 10
+rl_killguards
+waitfor rl_blocks == 0 10
+
+# A bribe at the min share always fails: no second offer, and the blind jump is the way out.
+newgame
+wait 8
+ev_set Enabled false
+godmode on
+rl_here pirates
+waitfor rl_guards >= 2 10
+# The guards spawn at the relay, often in stasis far from the fleet: bring them close first.
+rl_guardsnear
+waitfor rl_live >= 1 15
+rl_toguard
+waitfor rl_callable == 1 30
+rl_set BribeMinShare 0.99
+rl_pick money 1
+wait 1
+rl_bribe
+wait 3
+expect rl_bribefailed == 1
+expect rl_blocks == 1
+fa_blind on
+wait 1
+expect rl_blocks == 0
+quit

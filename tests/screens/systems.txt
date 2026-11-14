@@ -1,0 +1,14 @@
+# Whole start system at the current SystemScale (spec 105), for the before/after shots of the smaller systems.
+# Windowed test slot (needs graphics): scripts/screens.sh tests/screens/systems.txt <out-dir>
+# The same seed gives the same system; change Scale in mod/contracts/system_scale.rules for the other shot.
+render on
+newgame run
+wait 8
+closepanel
+wait 1
+ev_set Enabled false
+godmode on
+camera 0 0 34000
+wait 3
+screenshot systems-start
+quit

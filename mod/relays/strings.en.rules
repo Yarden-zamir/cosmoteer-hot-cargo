@@ -1,0 +1,45 @@
+HotCargoRelays
+{
+	// Kinds, in chat lines.
+	KindClosed = "the relays are closed"
+	KindFee = "the relays charge a toll"
+	KindPirates = "pirates hold the relays"
+
+	// Galaxy map tag under the system name, and the tooltip line. {0} is the price, {1} the closed minutes.
+	TagClosed = "RELAY CLOSED"
+	TagFee = "RELAY TOLL"
+	TagPirates = "PIRATE RELAY"
+	TipClosedFmt = "<bad>Relay lockdown:</bad> the local faction closes the relays for about {1} min. Blind jump, or wait."
+	TipFeeFmt = "<bad>Relay toll:</bad> the local faction wants {0} to let you out. Pay at its station, or blind jump."
+	TipPiratesFmt = "<bad>Pirates hold the relays.</bad> They want about {0}. Bribe them, fight them, or blind jump."
+
+	// Chat lines.
+	MarkedFmt = "Word on the relay net: in {0}, {1}."
+	ArriveToast = "RELAY LOCKDOWN"
+	ArriveClosedFmt = "<bad>The relays are closed.</bad> Blind jump, or wait it out."
+	ArriveFeeFmt = "<bad>Relay toll: {0}.</bad> Pay at a faction station, or blind jump."
+	ArrivePiratesFmt = "<bad>Pirates hold the relays.</bad> Hail them to bribe (about {0}), fight, or blind jump."
+	ClosedOpens = "The relays open again."
+	GuardsGone = "The relay guards are gone. The relays are open."
+	FeePaidFmt = "Toll paid: {0}. The relays are open."
+
+	// Spin-up window and blocked jumps.
+	BlockedClosed = "RELAY CLOSED: blind jump only"
+	BlockedFee = "RELAY TOLL: pay at a station, or blind jump"
+	BlockedPirates = "PIRATES HOLD THE RELAY: bribe, fight, or blind jump"
+
+	// Comms pages. {0} is the ship name, {1} the price.
+	FeeAskFmt = "{0}: \"Relay toll is {1}. No toll, no jump.\""
+	FeePayFmt = "Pay the toll ({0})"
+	BribeAskFmt = "{0}: \"This relay is ours. {1}, and you pass. Cash or cargo.\""
+	BribeMoney = "Credits"
+	BribeResourceFmt = "{0}"
+	BribeOfferFmt = "Your offer: {0}. They take it: {1}%."
+	BribeSubmit = "Make the offer"
+	BribeRefuse = "\"Come and take it.\""
+	BribeYes = "\"Pleasure doing business.\" The pirates let you pass."
+	BribeNo = "\"Insulting.\" The pirates stop talking."
+	BribeRefused = "The pirates close the channel."
+	NoMoney = "Not enough money."
+	NoPick = "Select something to offer."
+}

@@ -107,7 +107,7 @@ public static class FactionsArea
         if (!run.PressureActive || run.State.Heat < t.RefuseHeat) return false;
         if (station.IsHumanPlayerShip || Buyer.IsBuyer(station) || SpaceStation.GetStation(station, onlyOperating: false) is null) return false;
         var faction = FactionRules.GetShipFaction(station);
-        if (faction is null || IsRival(run, faction) || Shelters(run, faction)) return false;
+        if (faction is null || IsRival(run, faction) || Shelters(run, faction) || Relays.RelaysArea.CollectsFee(run, station)) return false;
         if (caller is not null && OwesReward(station, caller)) return false;
         float roll = new FastRand(0x4843_5245_4655_5345UL ^ (uint)station.UniqueID.GetHashCode(), (ulong)run.State.SectorIndex).Single();
         return FactionsModel.Refuses(run.State.Heat, t.RefuseHeat, t.RefuseChance, roll);
