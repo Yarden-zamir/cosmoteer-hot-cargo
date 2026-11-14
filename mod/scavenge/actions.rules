@@ -4,3 +4,28 @@
 		Name = HotCargoScavenger
 		ToAdd = &<scavenge/ai_scavenger.rules>
 	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_normal.rules>/StrategyModules"
+		ManyToAdd = &<scavenge/ai_vanilla.rules>/Strategy
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_easy.rules>/StrategyModules"
+		ManyToAdd = &<scavenge/ai_vanilla.rules>/Strategy
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_wanderer.rules>/StrategyModules"
+		ManyToAdd = &<scavenge/ai_vanilla.rules>/Strategy
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_station_guard.rules>/StrategyModules"
+		ManyToAdd = &<scavenge/ai_vanilla.rules>/Strategy
+	}
+	{
+		Action = AddMany
+		AddTo = "<ai/ai_police.rules>/StrategyModules"
+		ManyToAdd = &<scavenge/ai_vanilla.rules>/Strategy
+	}

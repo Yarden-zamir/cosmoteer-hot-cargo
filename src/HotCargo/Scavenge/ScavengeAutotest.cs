@@ -34,15 +34,16 @@ internal static class ScavengeAutotest
         RegisterFaction();
         // scav_set <Field> <value>: sets a Scavenge tunable for this run (setup only; no validation).
         Autotest.Commands["scav_set"] = arg => Autotest.SetField(Autotest.RequireRun().T.Scavenge, arg);
-        // scav_spawn <name> <where> [keep]: a tier 1 to 3 faction trade ship (crew, empty storage bays) with the StationGuard AI (patrols 500 around its spawn point) and the
-        // HcScavenge module, renamed to name. where: player or station (next to the nearest live trading station). keep: Sells = false.
+        // scav_spawn <name> <where>: a tier 1 to 3 faction trade ship (crew, empty storage bays) with the StationGuard AI (patrols 500 around
+        // its spawn point; the AI has the HcScavenge module, spec 1350), renamed to name. where: player or station (next to the nearest live
+        // trading station).
         // The auto_ fields of the autonomy tests read it after "auto_ship <name>".
         Autotest.Commands["scav_spawn"] = arg =>
         {
             var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (p.Length is < 2 or > 3) throw new InvalidOperationException("scav_spawn needs: name where [keep]");
+            if (p.Length != 2) throw new InvalidOperationException("scav_spawn needs: name where");
             _name = p[0];
-            Spawn(p[0], p[1], sells: p.Length < 3 || p[2] != "keep");
+            Spawn(p[0], p[1]);
         };
         Autotest.Commands["scav_ship"] = arg => _name = arg.Trim();
         Autotest.Fields["scav_live"] = () => Sim().Ships.AllShips.Count(s => s.Metadata.PlainShipName == _name && !s.IsJunk);
@@ -111,6 +112,41 @@ internal static class ScavengeAutotest
             var wrecks = Sim().Ships.AllShips.Where(s => s.IsJunk && s.Metadata.PlainShipName == "Test wreck").ToList();
             return wrecks.Count > 0 && wrecks.All(w => Autotest.RequireRun().State.Scavenge.Seen.ContainsKey(w.UniqueID)) ? 1 : 0;
         };
+        // scav_npc <pirate|faction> <distance>: a tier 1 to 4 combat ship with storage bays, at least distance from the player's first ship,
+        // with the StationGuard AI (it patrols 500 around its spawn point; the AI has HcScavenge, spec 1350). pirate: a new hostile side;
+        // faction: the military of the system's faction. The scav_ fields then read it.
+        Autotest.Commands["scav_npc"] = arg =>
+        {
+            var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (p.Length != 2) throw new InvalidOperationException("scav_npc needs: pirate|faction distance");
+            var sim = Sim();
+            var me = Me();
+            var faction = sim.MapNode?.ControllingFaction is { } fid ? GameApp.Rules.Factions.First(f => f.ID == fid) : GameApp.Rules.Factions.First();
+            int allegiance = p[0] switch
+            {
+                "pirate" => Diplomacy.Situation.Career(sim).AllocUniquePlayerIndex(),
+                "faction" => faction.MilitaryPlayerIndex,
+                var k => throw new InvalidOperationException($"scav_npc: unknown kind '{k}'"),
+            };
+            var ships = new List<BuiltinShipRules>();
+            GameApp.Rules.BuiltinShips.GetMatchingShips(ships, null, new Range<int>(1, 4), null, [new ID<BuiltinShipTag>("combat")]);
+            var built = ships.OrderBy(b => b.ID.ToString(), StringComparer.Ordinal)
+                .FirstOrDefault(b => b.File.LoadShipBlueprints().BlueprintParts.Any(bp => bp.Rules.ID.ToString().StartsWith("cosmoteer.storage_", StringComparison.Ordinal)))
+                ?? throw new InvalidOperationException("no built-in combat ship of tier 1 to 4 with storage bays");
+            var loc = Autotest.ClearSpotNear(sim, me.DetWorldCenter, float.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture), 150f);
+            var spawner = new StasisShipSpawner(sim, built.ID, loc, SpawnedShipFeatures.None, 77UL, [])
+            {
+                AI = new ID<ShipAIRules>("StationGuard"),
+                Direction = loc.DirectionTo(me.DetWorldCenter),
+                ObjectAllegiance = allegiance,
+            };
+            spawner.Spawn(sim);
+            var ship = sim.Ships[spawner.ReservedObjectID] ?? throw new InvalidOperationException($"{built.ID} did not spawn");
+            _name = $"Test {p[0]}";
+            ship.Metadata.PlainShipName = _name;
+            Log.Info($"AUTOTEST scav_npc {_name} ({built.ID}) player={allegiance} crew={ship.Crew.Assigned.Count} fill={AutonomyWorld.CargoFill(ship)?.ToString("0.00") ?? "none"}");
+        };
+        Autotest.Fields["scav_excess"] = () => TestShip() is var s ? Module(s).Excess(s) : 0;
         Autotest.Fields["scav_count"] = () => Scavengers.InSystem(Sim());
         Autotest.Fields["scav_lasers"] = () => TestShip().Weapons.OfType<Cosmoteer.Ships.Parts.Weapons.TurretWeapon>().Count(AutonomyWorld.IsSalvageTurret);
         Autotest.Fields["scav_crew"] = () => TestShip().Crew.Assigned.Count;
@@ -136,7 +172,7 @@ internal static class ScavengeAutotest
         };
     }
 
-    static void Spawn(string name, string where, bool sells)
+    static void Spawn(string name, string where)
     {
         var sim = Sim();
         var me = Autotest.ActingShip(sim) ?? throw new InvalidOperationException("no player ship");
@@ -162,8 +198,8 @@ internal static class ScavengeAutotest
         var ship = sim.Ships[spawner.ReservedObjectID] ?? throw new InvalidOperationException($"{built.ID} did not spawn");
         ship.Metadata.PlainShipName = name;
         var ai = ship.AI ?? throw new InvalidOperationException($"{name} has no AI");
-        ai.AddModule(new ScavengeStrategy(new ScavengeStrategyRules { Sells = sells }));
+        if (ai.GetStrategyModule<ScavengeStrategy>() is null) throw new InvalidOperationException($"{name}: the StationGuard AI has no HcScavenge module");
         Log.Info($"AUTOTEST scav_spawn {name} ({built.ID}) id={ship.UniqueID} player={ship.Metadata.PlayerIndex} crew={ship.Crew.Assigned.Count} " +
-                 $"cargo={AutonomyWorld.CargoFill(ship)?.ToString("0.00") ?? "none"} sells={sells}");
+                 $"cargo={AutonomyWorld.CargoFill(ship)?.ToString("0.00") ?? "none"}");
     }
 }

@@ -163,13 +163,13 @@ internal static class Scavenger
 
     /// <summary>
     /// Spec 1336: flies to the nearest station that trades with the ship and, once in the vanilla trade distance, sells all storage bay cargo
-    /// there. False when no station trades with the ship.
+    /// there but keep(type) units of each type. False when no station trades with the ship.
     /// </summary>
-    internal static bool Sell(Run run, Ship self)
+    internal static bool Sell(Run run, Ship self, Func<string, int>? keep = null)
     {
         if (AutonomyWorld.StationInRange(self) is { } station)
         {
-            SoldUnits += AutonomyWorld.Sell(self, station, CargoSettings.Default);
+            SoldUnits += AutonomyWorld.Sell(self, station, CargoSettings.Default, keep);
             return true;
         }
         if (AutonomyWorld.PickStation(self, ShipAi.StationPick.Nearest, CargoSettings.Default) is not { } s) return false;
@@ -185,11 +185,19 @@ internal static class Scavenger
     // ---- One AI step (spec 1337)
 
     /// <summary>
-    /// Spec 1337: a ship scavenges only when idle: no enemy in its sight, no attack order, and its exit module does not run.
+    /// Spec 1337: a ship scavenges only when idle: no enemy in its sight, no attack order, its exit module does not run, it does not follow
+    /// a fleet leader (vanilla AIFollowFleetLeaderModule), and its side runs no wanted search (vanilla AIWantedSearchModule).
     /// </summary>
     internal static bool Idle(Ship ship, ShipAI ai) =>
         ship.Commands.CanExecuteCommands && ship.Commands.CurConfirmedCommand is not IAttackCommand
-        && ai.GetStrategyModule<AIExitSectorModule>() is not { IsActivated: true } && EnemyInSight(ship) is null;
+        && ai.GetStrategyModule<AIExitSectorModule>() is not { IsActivated: true } && !FollowsLeader(ship, ai) && !Searching(ship)
+        && EnemyInSight(ship) is null;
+
+    static bool FollowsLeader(Ship ship, ShipAI ai) =>
+        ai.Parameters?.FleetLeader is { } leader && leader != ship.UniqueID && HunterOrders.Sim(ship).Ships[leader] is not null;
+
+    static bool Searching(Ship ship) =>
+        ship.Sim?.Mode is Cosmoteer.Modes.Career.CareerSimModeManager career && career.Wanted.GetClosestWantedSearchArea(ship.Metadata.PlayerIndex, ship.DetWorldCenter) is not null;
 
     /// <summary>
     /// Spec 1337: the first significant enemy (sim order) whose hull touches the ship's sight circle: the circle in which the vanilla
@@ -208,19 +216,23 @@ internal static class Scavenger
         return null;
     }
 
-    /// <summary>Spec 1336: decides and does one step. sells: the ship sells its cargo (else it keeps it). Returns the step it took.</summary>
-    internal static ScavengeStep Step(Run run, Ship self, bool sells)
+    /// <summary>
+    /// Spec 1336, 1350: decides and does one step. keep(type): the units of each type that the ship keeps (its cargo before it scavenged);
+    /// it sells only what is above that, and only when a station trades with it. Returns the step it took.
+    /// </summary>
+    internal static ScavengeStep Step(Run run, Ship self, Func<string, int> keep)
     {
         if (AutonomyWorld.CargoFill(self) is not { } fill) return ScavengeStep.Idle;
         var target = FindTarget(run, self);
-        var step = ScavengeModel.Next(Math.Clamp(fill, 0f, 1f), target is not null, sells && CanSell(self), run.T.Scavenge.FullFraction);
+        bool canSell = AutonomyWorld.CargoByType(self).Any(kv => kv.Value > keep(kv.Key)) && CanSell(self);
+        var step = ScavengeModel.Next(Math.Clamp(fill, 0f, 1f), target is not null, canSell, run.T.Scavenge.FullFraction);
         switch (step)
         {
             case ScavengeStep.Collect:
                 Work(run, self, target!);
                 break;
             case ScavengeStep.Sell:
-                if (!Sell(run, self)) return ScavengeStep.Idle;
+                if (!Sell(run, self, keep)) return ScavengeStep.Idle;
                 break;
         }
         return step;

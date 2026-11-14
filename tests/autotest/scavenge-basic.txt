@@ -1,4 +1,4 @@
-# Scavenging (spec 1330 to 1339): a crewed NPC ship with the HcScavenge module leaves a fresh wreck and fresh loose steel alone for
+# Scavenging (spec 1330 to 1339): a crewed NPC ship with the HcScavenge module (its StationGuard AI has it, spec 1350) leaves a fresh wreck and fresh loose steel alone for
 # the cooldown, then salvages the wreck and fetches the steel, and sells the cargo at the nearest station.
 newgame run
 wait 8

@@ -1,0 +1,8 @@
+// Scavenging for the vanilla AIs (spec 1350, 1351): pirates and faction ships scavenge when idle. mod/scavenge/actions.rules appends
+// it to each strategy list, so it runs before the vanilla modules; it gives control back as soon as the ship is not idle.
+Strategy
+[
+	{
+		Type = HcScavenge
+	}
+]
