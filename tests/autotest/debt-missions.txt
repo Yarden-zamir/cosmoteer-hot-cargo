@@ -1,0 +1,33 @@
+# Debt missions (spec 1420 to 1422): the Collect a Debt job at the lender's station pays the debt; another faction buys the debt.
+newgame run
+wait 8
+ev_set Enabled false
+debt_set LoanStationChance 1
+debt_set RefinanceStationChance 1
+debt_goto loan
+wait 2
+debt_loan
+wait 1
+expect debt_count == 1
+# Spec 1422: the lender's station offers the job once in this system. Spec 1420: its money line names the debt, and the payout
+# takes the money off the debt.
+waitfor debt_collect_offers == 1 10
+wait 3
+expect debt_collect_offers == 1
+expect debt_collect_line == 1
+debt_mark
+debt_collect_pay
+wait 1
+expect debt_drop_share == 1
+# Spec 1421: another faction's station buys the debt at a lower rate; the old lender loses reputation.
+fa_roles other -
+debt_rehome
+wait 1
+expect debt_refinance_offers >= 1
+debt_refinance
+wait 1
+expect debt_count == 1
+expect debt_rate == 0.6
+expect debt_ratio == 1
+expect debt_rep_drop == 200
+quit

@@ -33,12 +33,27 @@ public sealed class DebtTunables
     /// <summary>Spec 1411: the score loses this many times the sum of the balances.</summary>
     [Serialize(Optional = true)] public float ScoreDebtFactor = 2f;
 
+    /// <summary>Spec 1420: chance that a mission of a lender's faction pays the debt instead of money. The roll holds for the mission.</summary>
+    [Serialize(Optional = true)] public float MissionPayoffChance = 0.35f;
+    /// <summary>Spec 1421: chance that a trade station offers to buy a debt. The roll holds for the station for the run.</summary>
+    [Serialize(Optional = true)] public float RefinanceStationChance = 0.3f;
+    /// <summary>Spec 1421: a refinanced debt grows at InterestRate × this.</summary>
+    [Serialize(Optional = true)] public float RefinanceRateFactor = 0.6f;
+    /// <summary>Spec 1421: the old lender loses this much reputation when another faction buys the debt.</summary>
+    [Serialize(Optional = true)] public int RefinanceReputationLoss = 200;
+    /// <summary>Spec 1422: off turns the Collect a Debt offers off.</summary>
+    [Serialize(Optional = true)] public bool CollectEnabled = true;
+    /// <summary>Spec 1422: the collect job pays this many standard missions' money (always off the debt).</summary>
+    [Serialize(Optional = true)] public float CollectRewardFactor = 1.5f;
+
     public void Validate(Action<bool, string> require)
     {
         require(LoanStationChance is >= 0 and <= 1, "Debt.LoanStationChance must be 0 to 1");
         require(LoanUnits > 0 && InterestRate >= 0 && PayStepShare is > 0 and <= 1, "Debt.LoanUnits must be above 0, InterestRate not negative, PayStepShare above 0 and at most 1");
         require(InterestSeconds > 0 && CollectorSeconds > 0 && CollectorWaitSeconds > 0 && ReturnSeconds >= 0, "Debt timers must be above 0 (ReturnSeconds not negative)");
         require(FirmRatio > 1 && HostileRatio >= FirmRatio, "Debt.FirmRatio must be above 1 and HostileRatio at least FirmRatio");
+        require(MissionPayoffChance is >= 0 and <= 1 && RefinanceStationChance is >= 0 and <= 1, "Debt.MissionPayoffChance and RefinanceStationChance must be 0 to 1");
+        require(RefinanceRateFactor >= 0 && RefinanceReputationLoss >= 0 && CollectRewardFactor >= 0, "Debt.RefinanceRateFactor, RefinanceReputationLoss and CollectRewardFactor must not be negative");
         require(CollectorDistance > 0 && ScoreDebtFactor >= 0, "Debt.CollectorDistance must be above 0, ScoreDebtFactor not negative");
     }
 }

@@ -18,6 +18,8 @@ public sealed class Debt
     [Serialize] public DebtStage Stage;
     /// <summary>Spec 1410: the lender wanted the players at the last tick.</summary>
     [Serialize] public bool WasWanted;
+    /// <summary>Spec 1421: the interest of this debt is InterestRate × this. A refinanced debt has a lower factor.</summary>
+    [Serialize(Optional = true)] public float RateFactor = 1f;
 
     public ID<FactionRules> FactionId => new(Faction);
 }
@@ -38,6 +40,8 @@ public sealed class DebtState
     /// <summary>One debt for each lender, in the order the players took them (a stable order for the tick).</summary>
     [Serialize] public List<Debt> Debts = [];
     [Serialize] public List<Collector> Collectors = [];
+    /// <summary>Spec 1422: the systems (map node IDs) that offered a Collect a Debt job.</summary>
+    [Serialize(Optional = true)] public List<ObjectID> CollectSystems = [];
 
     public Debt? Of(string faction) => Debts.FirstOrDefault(d => d.Faction == faction);
 

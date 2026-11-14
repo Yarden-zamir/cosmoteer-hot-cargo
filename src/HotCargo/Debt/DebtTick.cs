@@ -35,6 +35,19 @@ static class Lenders
         && FactionOf(station) is { } f && run.State.Debt.Of(f.ID.ToString()) is null && IsStation(station)
         && DebtModel.Offers(new FastRand((uint)station.UniqueID, OfferSalt).Single(), run.T.Debt.LoanStationChance);
 
+    const ulong RefinanceSalt = 0x4445_4254_5245_46UL;
+
+    /// <summary>Spec 1421: the debts that a trade station of another faction offers to buy now, in list order.</summary>
+    public static List<Debt> Refinances(Run run, Ship station)
+    {
+        if (run.State.Result != RunResult.Running || !run.T.Debt.Enabled || run.State.Debt.Debts.Count == 0 || !station.HasTag(TradeStationTag)
+            || station.HasTag(BuyerTag) || FactionOf(station) is not { } f || !IsStation(station)) return [];
+        string id = f.ID.ToString();
+        if (run.State.Debt.Of(id) is not null || Factions.FactionsArea.Roles(run).Ally.ID.ToString() == id
+            || new FastRand((uint)station.UniqueID, RefinanceSalt).Single() >= run.T.Debt.RefinanceStationChance) return [];
+        return run.State.Debt.Debts.Where(d => d.Faction != id).ToList();
+    }
+
     /// <summary>Spec 1405: the debt that a station of the lender or a collector takes payments for, or null.</summary>
     public static Debt? DebtAt(Run run, Ship ship)
     {
@@ -84,7 +97,7 @@ static class DebtTick
         {
             while (now >= d.NextInterestAt)
             {
-                d.Balance = DebtModel.Interest(d.Balance, t.InterestRate);
+                d.Balance = DebtModel.Interest(d.Balance, t.InterestRate * d.RateFactor);
                 d.NextInterestAt += t.InterestSeconds;
             }
             var stage = Lenders.StageOf(run, d);
@@ -100,6 +113,7 @@ static class DebtTick
             }
         }
         TickCollectors(run, sim, now);
+        DebtMissions.Tick(run, sim);
     }
 
     /// <summary>Collectors belong to the system they came to.</summary>
