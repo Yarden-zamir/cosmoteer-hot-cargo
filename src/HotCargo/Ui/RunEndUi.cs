@@ -4,6 +4,7 @@ using Halfling.Gui.Dialogs;
 using HotCargo.Core;
 using HotCargo.Tech;
 using HotCargo.Ux;
+using HotCargo.StartJobs;
 
 namespace HotCargo.Ui;
 
@@ -53,8 +54,10 @@ public static class RunEndUi
         _introFor = run;
         if (!run.T.Ux.RunIntro) return;
         var t = run.T;
-        string body = UxKit.Format("IntroBodyFmt", t.Journey.RunSectorCount, t.Heat.Stages.Length,
+        string body = UxKit.Format("IntroBodyFmt", run.SectorCount(), t.Heat.Stages.Length,
             t.Factions.RelayWatchedHeatCut, t.Factions.RelayClearHeatCut, t.Factions.BlindHeatCut) + RunModes.RunModesArea.IntroLines(run);
+        // Spec 1203: a waiting start job choice takes the intro text, so the run starts with one panel.
+        if (StartJobs.StartJobs.Waiting(run)) { StartJobs.StartJobPanel.ShowWithIntro(run, UxKit.Text("IntroTitle"), body); return; }
         // Wider than the win panel, so each rule fits on one line at 1280 x 720.
         CenterPanel.Show(run.Game, UxKit.Text("IntroTitle"), WidgetRules.Instance.FameTextColor, body, UxKit.Text("IntroButton"), width: 760f);
     }
@@ -65,7 +68,7 @@ public static class RunEndUi
         var s = run.State;
         var time = TimeSpan.FromSeconds(s.GameSeconds);
         long value = run.TechValue();
-        return UxKit.Format("RunStatsFmt", s.SectorIndex, run.T.Journey.RunSectorCount, $"{(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}",
+        return UxKit.Format("RunStatsFmt", s.SectorIndex, run.SectorCount(), $"{(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}",
             s.FleetTech, value.ToString("N0"));
     }
 }

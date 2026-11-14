@@ -14,11 +14,12 @@ using HotCargo.Events;
 using HotCargo.Journey;
 using HotCargo.Tech;
 using HotCargo.Ux;
+using HotCargo.StartJobs;
 
 namespace HotCargo.Onboarding;
 
 /// <summary>Kind of a run log line. The career log tab colors the line by kind.</summary>
-public enum RunLogKind { Sector, Stage, Sale, Delivery, Contract, Chain, Event, Loss, Won, Lost }
+public enum RunLogKind { Sector, Stage, Sale, Delivery, Contract, Chain, Event, Loss, Won, Lost, Job }
 
 /// <summary>One line of the run log (spec 730). The text is XML for a game label, written in the language of the machine that logged it.</summary>
 [ReflectiveSerialization(Explicit = true)]
@@ -66,10 +67,10 @@ public static class RunLog
         {
             if (!firstVisit) return;
             var sector = run.Mode.GetMapNodeData(run.Game.CurrentMapNode).SectorType;
-            Add(run, RunLogKind.Sector, Format("SectorFmt", run.State.SectorIndex, run.T.Journey.RunSectorCount,
+            Add(run, RunLogKind.Sector, Format("SectorFmt", run.State.SectorIndex, run.SectorCount(),
                 Escape(run.Game.CurrentMapNode.Name), sector.NameKey.Text));
         };
-        Run.Hooks.NewRunStarted += run => Add(run, RunLogKind.Sector, Format("StartFmt", run.T.Tech.StartingTechUnits, run.T.Journey.RunSectorCount));
+        Run.Hooks.NewRunStarted += run => Add(run, RunLogKind.Sector, Format("StartFmt", run.T.Tech.StartingTechUnits, run.SectorCount()));
         Run.Hooks.RunEnded += run =>
         {
             if (run.State.Result == RunResult.Won) Add(run, RunLogKind.Won, Format("WonFmt", run.State.Score.ToString("N0")));

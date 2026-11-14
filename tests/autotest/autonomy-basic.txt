@@ -14,6 +14,13 @@ waitfor auto_control == 1 10
 # The Computer faces the mining laser: that part counts as crewed, and only that one.
 waitfor auto_manned == 1 10
 expect auto_crewed_parts == 1
+# Spec 1051, 1052: the Computer is 1 crew member. A 2-crew laser in front of it is served but still lacks a crew member.
+auto_build Gunner player yarden_zamir.computer@0,5 cosmoteer.laser_blaster_large@0,0 yarden_zamir.targeted_reactor@2,4
+wait 1
+waitfor auto_manned == 1 10
+wait 2
+expect auto_crewed_parts == 0
+auto_ship Drone
 # A new autonomous ship gets Auto on with no rows.
 tactics_ship Drone
 waitfor tactics_auto == 1 10

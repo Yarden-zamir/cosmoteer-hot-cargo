@@ -14,6 +14,7 @@ using Halfling.ObjectText;
 using HarmonyLib;
 using HotCargo.Core;
 using HotCargo.Tech;
+using HotCargo.StartJobs;
 
 namespace HotCargo.Journey;
 
@@ -47,13 +48,13 @@ public static class Buyer
     internal static void OnSystemEntered(Run run, bool firstVisit)
     {
         // At or after RunSectorCount, so that a value lowered mid-run below the current sector still gives a Buyer in the next new system.
-        if (!firstVisit || run.State.BuyerSpawned || run.State.SectorIndex < run.T.Journey.RunSectorCount) return;
+        if (!firstVisit || run.State.BuyerSpawned || run.State.SectorIndex < run.SectorCount()) return;
         Spawn(run);
     }
 
     internal static void OnNewRun(Run run)
     {
-        if (run.T.Journey.RunSectorCount <= 1) Spawn(run);
+        if (run.SectorCount() <= 1) Spawn(run);
     }
 
     /// <summary>Spawns the Buyer into the current system. Deterministic: uses the sim random source only.</summary>
@@ -86,8 +87,8 @@ public static class Buyer
             missions.TrackMission(mission);
     }
 
-    /// <summary>Spec 7: BuyerPriceFactor × the run's Buyer price multiplier (an advance from the Buyer's agent event lowers it).</summary>
-    public static float PriceFactor(Run run) => run.T.Journey.BuyerPriceFactor * run.State.BuyerPriceMultiplier;
+    /// <summary>Spec 7, 1201: BuyerPriceFactor × the run's Buyer price multiplier (an advance from the Buyer's agent event lowers it) × the start job's factor.</summary>
+    public static float PriceFactor(Run run) => run.T.Journey.BuyerPriceFactor * run.State.BuyerPriceMultiplier * StartJobs.StartJobs.BuyerPrice(run);
 
     public static bool IsBuyer(Ship ship) => ship.HasTag(Tag);
 

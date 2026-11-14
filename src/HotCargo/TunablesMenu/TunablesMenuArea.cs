@@ -21,7 +21,7 @@ public static class TunablesMenuArea
         Autotest.Commands["menu"] = MenuCommand;
         Autotest.Fields["menu_ready"] = () => Autotest.RequireRun() is { HostTunablesPending: false, HostSendsInFlight: 0 } ? 1 : 0;
         Autotest.Fields["menu_open"] = () => TunablesDialog.Open is null ? 0 : 1;
-        Autotest.Fields["menu_rows"] = () => Dialog().Rows.Count;
+        Autotest.Fields["menu_rows"] = () => Dialog().RowCount;
         Autotest.Fields["menu_sections"] = () => Dialog().SectionCount;
         Autotest.Fields["menu_error"] = () => Dialog().Error is null ? 0 : 1;
         Autotest.Fields["menu_readonly"] = () => Dialog().ReadOnly ? 1 : 0;
@@ -84,7 +84,7 @@ public static class TunablesMenuArea
                     ?? throw new InvalidOperationException("the escape menu has no Hot Cargo settings button");
                 button.ClickController.InvokeClicked();
                 Autotest.Check(TunablesDialog.Open is not null, "the Hot Cargo settings button opens the window");
-                Log.Info($"tunables menu: {Dialog().SectionCount} sections, {Dialog().Rows.Count} rows");
+                Log.Info($"tunables menu: {Dialog().SectionCount} sections, {Dialog().RowCount} rows");
                 break;
             }
             case ["set", var path, var value]:
@@ -144,8 +144,7 @@ public static class TunablesMenuArea
         }
     }
 
-    static TunablesDialog.Row Row(string path) =>
-        Dialog().Rows.TryGetValue(path, out var row) ? row : throw new InvalidOperationException($"the settings window has no row '{path}'");
+    static TunablesDialog.Row Row(string path) => Dialog().RowAt(path);
 
     static IEnumerable<Widget> Walk(Widget w) => w.GetChainedWidgets(recursive: true).Prepend(w);
 }
