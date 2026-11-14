@@ -1,0 +1,8 @@
+# Co-op listen-in screenshots, client side (headless): opens comms with the event carrier from its own ship.
+mpjoin 127.0.0.1:{PORT}
+mpready
+waitfor ev_carrier == 1 60
+wait 8
+listen_speak
+waitfor mpmark >= 1 120
+quit
