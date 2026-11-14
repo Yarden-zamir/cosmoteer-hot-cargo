@@ -1,0 +1,28 @@
+# Riddle ship (spec 1365, 1366): the riddle in its comms, and the heat drop after the right answer.
+# Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
+render on
+newgame run 0
+wait 10
+# Close the run intro.
+closepanel
+wait 1
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+godmode on
+heat 60
+event riddle_hole
+ev_carrier_goto
+pause off
+wait 2
+ev_open carrier
+wait 2
+screenshot friendly-riddle-page
+ev_comms carrier A hole.
+wait 1
+closepanel
+wait 1
+pause on
+wait 1
+screenshot friendly-riddle-right
+quit
