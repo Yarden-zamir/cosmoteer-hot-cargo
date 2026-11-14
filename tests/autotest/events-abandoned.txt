@@ -61,6 +61,8 @@ wait 2
 expect ev_hulk_stocked == 0
 expect ev_damage_gain == 0
 # 4. The relic: the vault senses it far away, the event opens close up, and it gives 1 tech unit.
+# Chains that started by themselves can have raiders near the relic; they would wreck the vaults before the recovery.
+chain_kill
 tech remove 1
 ev_relic_spawn
 expect ev_relic_messaged == 0
