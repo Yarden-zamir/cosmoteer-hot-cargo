@@ -51,8 +51,9 @@ ZIP="$(cd "$WT" && scripts/package.sh "$VERSION" "$STAGE")"
 # Dev prereleases (CI, one for each push) are not part of the changelog of a tested release.
 PREV="$(git describe --tags --abbrev=0 --exclude '*-dev.*' "$SHA" 2>/dev/null || true)"
 NOTES="$STAGE/notes.md"
+GAME_VERSION="$(scripts/game-version.sh "$WT")"
 {
-  echo "🤖 Hot Cargo $VERSION for Cosmoteer 0.30.5a (Windows)."
+  echo "🤖 Hot Cargo $VERSION for Cosmoteer $GAME_VERSION (Windows)."
   echo
   echo "Install: download the zip, unzip it, double-click \`install.bat\`, then turn on Hot Cargo in the game's Mods menu. Details are in INSTALL.md inside the zip."
   echo
