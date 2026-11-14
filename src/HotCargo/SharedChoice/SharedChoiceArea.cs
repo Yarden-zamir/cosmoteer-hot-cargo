@@ -76,6 +76,8 @@ public static class SharedChoiceArea
         Autotest.Wait(1);
     }
 
+    static string? _reachTarget;
+
     static void AddListenAutotest()
     {
         // Listen-in (spec 1131 to 1138). listen <n>: clicks the n-th listen button. listen_click <text>: clicks the button of the
@@ -92,6 +94,22 @@ public static class SharedChoiceArea
         Autotest.Fields["listen_open"] = () => { ListenIn.Frame(); return ListenIn.OpenWindows().Count(); };
         Autotest.Fields["listen_vote_marks"] = () => Tabs(listening: true).Sum(t => SharedChoicePanel.VoteMarks(t._dialogueButtonsBox.Children));
         Autotest.Fields["comms_vote_marks"] = () => Tabs(listening: false).Sum(t => SharedChoicePanel.VoteMarks(t._dialogueButtonsBox.Children));
+        // listen_target carrier|<diplomacy target>: the ship for listen_reach. listen_reach: 1 when this machine's own ship can call it
+        // and it answers (vanilla comms range, sight, answer rules), so a step waits for that state instead of a fixed time.
+        Autotest.Commands["listen_target"] = arg => _reachTarget = arg.Trim();
+        Autotest.Fields["listen_reach"] = () =>
+        {
+            var sim = RequireRun().Game.Sim;
+            var mode = (Cosmoteer.Modes.Career.CareerSimModeManager)sim.Mode;
+            var own = Autotest.ActingShip(sim);
+            var target = _reachTarget switch
+            {
+                null => throw new InvalidOperationException("listen_target first"),
+                "carrier" => RequireRun().State.Events.Pending?.Carrier is { } id ? sim.Ships[id] : null,
+                var name => Diplomacy.DiplomacyAutotest.Target(name),
+            };
+            return own is not null && target is not null && mode.CanShipCallShip(own, target) && mode.WillShipAnswerCall(own, target) ? 1 : 0;
+        };
         // listen_speak: opens the real comms window from this machine's own ship to the ship that carries the pending event page.
         Autotest.Commands["listen_speak"] = _ =>
         {
