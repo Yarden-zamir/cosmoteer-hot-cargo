@@ -36,6 +36,7 @@ SUITE_START=$SECONDS
 STAGE="$RUN_DIR/stage"
 { dotnet build tools/headless-sim/HeadlessSim.csproj -c Release -nologo -v quiet -clp:ErrorsOnly && scripts/stage.sh "$STAGE"; } > "$RUN_DIR/build.log" 2>&1 \
   || { cat "$RUN_DIR/build.log"; echo "== build failed"; exit 1; }
+echo "== build and stage: $((SECONDS - SUITE_START)) s"
 
 # Takes $2 free sim slots at once (all or none, so two co-op runs cannot deadlock), writes the owner pid $1 into each and
 # prints their lock folders. A co-op session runs two game processes.
