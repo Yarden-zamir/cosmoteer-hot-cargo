@@ -36,10 +36,12 @@ done
 echo "=== host ($HOST)"; grep -E 'AUTOTEST (PASS|FAIL|DONE)|ERROR|screenshot' <<<"$HOST_LOG" || true
 echo "=== client ($CLIENT)"; grep -E 'AUTOTEST (PASS|FAIL|DONE)|ERROR' <<<"$CLIENT_LOG" || true
 mkdir -p "$OUT"
+echo "$HOST_LOG" > "$OUT/$(basename "$HOST_SCRIPT" .txt).log"
+echo "$CLIENT_LOG" > "$OUT/$(basename "$CLIENT_SCRIPT" .txt).log"
 (
   export SLOT="$HOST"
   source "$LIB_DIR/pc.sh"
-  pc "$PS_PATHS"'tar.exe -cf - -C (Join-Path $modDir "screenshots") .' | tar -xf - -C "$OUT"
+  pc "$PS_PATHS"'$d = Join-Path $modDir "screenshots"; if (Test-Path $d) { tar.exe -cf - -C $d . }' </dev/null | tar -xf - -C "$OUT"
 )
 echo "== screenshots in $OUT"
 log_passed <<<"$HOST_LOG" && log_passed <<<"$CLIENT_LOG"

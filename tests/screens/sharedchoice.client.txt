@@ -2,6 +2,9 @@
 mpjoin 127.0.0.1:{PORT}
 mpready
 waitfor ev_pending == 1 60
+# The event window opens only after the run intro closes; presence comes from that window.
+closepanel
+wait 1
 hover 3
 waitfor sc_votemode == 1 120
 vote 2
