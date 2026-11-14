@@ -54,7 +54,7 @@ It also improves some of the base game's UI. You can switch off each change in `
 
 Windows, Cosmoteer from Steam, game version 0.30.5a.
 
-1. Download the latest zip from [Releases](https://github.com/Yarden-zamir/cosmoteer-hot-cargo/releases).
+1. Download the latest zip from [Releases](https://github.com/game-design-driven/cosmoteer-hot-cargo/releases).
 2. Close Cosmoteer, unzip, and double-click `install.bat`.
 3. In Cosmoteer, open **Mods**, turn on **Hot Cargo**, and restart the game when it asks.
 4. Start a new career. The map size "Hot Cargo run" is the default.
