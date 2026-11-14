@@ -1,4 +1,4 @@
-# Autonomous ship screenshots (spec 1057). Main slot only (needs graphics): scripts/screens.sh tests/screens/autonomy.txt <out-dir>
+# Autonomous ship screenshots (spec 1057). Windowed test slot (needs graphics): scripts/screens.sh tests/screens/autonomy.txt <out-dir>
 render on
 newgame run
 wait 10
