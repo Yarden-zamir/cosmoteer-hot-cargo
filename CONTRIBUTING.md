@@ -70,7 +70,7 @@ The game runs on a Windows PC that a person also uses. `autotest.sh` runs headle
 
 ## Git
 
-- Feature work: push a feature branch and open a pull request. CI builds it and runs the unit tests, the private-data check and the game tests in the headless sim (`game-tests`). The owner runs the affected tests outside CI that the merge depends on (`# runner: pc`; the PR template has the box), then turns on auto-merge (`gh pr merge --auto --merge`). `main` requires the checks and an up-to-date branch, so GitHub orders the merges. Small fixes go through a short PR too.
+- Feature work: push a feature branch and open a pull request. CI builds it and runs the unit tests, the private-data check and the game tests in the headless sim (`game-tests`). The owner runs the affected tests outside CI that the merge depends on (`# runner: pc`; the PR template has the box), then turns on auto-merge (`gh pr merge --auto --merge`). `main` requires the checks. `main` has a merge queue: it tests each PR on top of the newest `main` and the PRs ahead of it, then merges it. A PR does not have to be up to date with `main`. Small fixes go through a short PR too.
 - Use conventional commits (`feat:`, `fix:`, `docs:`, `chore:`).
 
 Parallel autotests work, also from one worktree: `deploy.sh` holds a build lock. `scripts/autotest-affected.sh` runs the smoke tests of the areas a change touches (`tests/TIERS.md`); name a test after its area folder (`tech-sell` for `src/HotCargo/Tech`).
@@ -81,4 +81,4 @@ Parallel autotests work, also from one worktree: `deploy.sh` holds a build lock.
 1. Merge, push, and run `scripts/autotest-all.sh` on a clean tree. A full pass writes a marker for that commit.
 2. Run `scripts/release.sh <version> [--prerelease]`. It builds `hot-cargo-<version>.zip` (mod, loader, `install.bat`, `uninstall.bat`, `INSTALL.md`), tags the commit and publishes a GitHub release.
 
-Every push to `main` also publishes an untested dev prerelease (`v<last tag>-dev.<run>`) through `.github/workflows/dev-release.yml`. It builds, runs the unit tests and the private-data check. A newer push cancels a running build, so only the newest commit gets a release. CI compiles against the game DLLs in the private repo `Yarden-zamir/cosmoteer-hot-cargo-game-refs`, read with the deploy key in the `GAME_REFS_DEPLOY_KEY` secret. After a game update, push the new `Cosmoteer.dll` and `HalflingCore.dll` there.
+Every push to `main` also publishes an untested dev prerelease (`v<last tag>-dev.<run>`) through `.github/workflows/dev-release.yml`. It builds, runs the unit tests and the private-data check. A newer push cancels a running build, so only the newest commit gets a release. CI builds and tests with the game files in the private repo `Yarden-zamir/cosmoteer-hot-cargo-game-refs` (`Bin/`, `Data/`, `StandardMods/`), read with the deploy key in the `GAME_REFS_DEPLOY_KEY` secret. After a game update, run `scripts/pull-game.sh`, then `scripts/refresh-game-refs.sh --push`.
