@@ -1,4 +1,4 @@
-# Sundive recorder (spec 1125): with no free storage the salvage waits; then the recorder goes into the hold; a lost recorder fails
+# Sundive recorder (spec 1144): with no free storage the salvage waits; then the recorder goes into the hold; a lost recorder fails
 # the job. worlds-solar covers the escape.
 newgame run
 wait 8

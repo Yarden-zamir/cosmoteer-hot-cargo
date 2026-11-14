@@ -26,7 +26,7 @@ namespace HotCargo.Worlds;
 /// <summary>
 /// Rules type "HotCargoSundive" (spec 223): a wreck site deep in a sun's heat zone.
 /// Dive: a human ship within Radius of the site salvages; salvage time adds up over visits. At Worlds.SundiveSalvageSeconds
-/// the ship that finished gets one Recorder item in its storage (spec 1125); with no free storage the salvage waits.
+/// the ship that finished gets one Recorder item in its storage (spec 1144); with no free storage the salvage waits.
 /// Escape: the objective completes when a human ship that holds the recorder is out of every heat zone. It fails when no recorder is
 /// left in the players' ships or loose in the system. When the mission leaves the log, the client takes the recorder (IMissionCargo).
 /// </summary>

@@ -22,7 +22,7 @@ using HotCargo.Core;
 namespace HotCargo.Events;
 
 /// <summary>
-/// An objective whose item leaves the players' ships with the mission (spec 1101, 1125). When the mission leaves the log,
+/// An objective whose item leaves the players' ships with the mission (spec 1101, 1144). When the mission leaves the log,
 /// <see cref="MissionCargo"/> takes one unit back: the first of these forms that a player ship holds.
 /// </summary>
 internal interface IMissionCargo
@@ -39,7 +39,7 @@ internal interface IMissionCargo
 /// Once held, the objective fails when no unit is left in the players' ships or loose in the system. Without a ResourceType, LineKey names the exchange.
 /// Fails when the contact dies.
 /// Limit: the lost check counts units of the resource, not units of this mission. Two open jobs with the same item fail only when every
-/// unit is gone. Sundive also gives a Flight Recorder (spec 1125), so a Black Box hand-over can take a Sundive recorder while both
+/// unit is gone. Sundive also gives a Flight Recorder (spec 1144), so a Black Box hand-over can take a Sundive recorder while both
 /// run. Revisit if players report it.
 /// </summary>
 [ReflectiveSerialization(Explicit = true)]

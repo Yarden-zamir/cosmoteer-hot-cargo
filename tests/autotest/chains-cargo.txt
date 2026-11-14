@@ -1,4 +1,4 @@
-# Spec 1122: chain rewards that the stage text calls cargo drift loose as crates. They do not go straight into the hold.
+# Spec 1141: chain rewards that the stage text calls cargo drift loose as crates. They do not go straight into the hold.
 # Okafor's Depot drops a tech crate, Take It Back drops the processors. chain_kill removes the ships without wrecks, so the crates
 # drift beside the fleet; in play they drift beside the nearest wreck.
 newgame run

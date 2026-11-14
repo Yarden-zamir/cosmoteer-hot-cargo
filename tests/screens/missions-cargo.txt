@@ -1,4 +1,4 @@
-# Mission cargo in the world (spec 1122, 1123, 1125): the Sundive objective line while the hold has no free storage for the
+# Mission cargo in the world (spec 1141, 1142, 1144): the Sundive objective line while the hold has no free storage for the
 # recorder, and a chain result whose reward drifts loose as crates. The result window stays open (a click closes it), so it is last.
 # Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
 render on

@@ -38,7 +38,7 @@ pause off
 expect worlds_heat_depth > 0.1
 # A quick dive: out as soon as the recorder is aboard. The heat cooks a Tech Vault within seconds.
 wait 4
-# Spec 1125: the recorder is a real item in the hold.
+# Spec 1144: the recorder is a real item in the hold.
 expect worlds_sundive_held == 1
 expect ev_res_yarden_zamir.flight_recorder_gain == 1
 expect worlds_state_sundive == 0

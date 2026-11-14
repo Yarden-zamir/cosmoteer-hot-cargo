@@ -160,7 +160,7 @@ public sealed class OutcomeRules
     [Serialize(Optional = true)] public int CrewLeaves;
     [Serialize(Optional = true)] public ResourceAmount[] Resources = [];
     /// <summary>
-    /// A ship tag (spec 1122). The Tech and resource gains drift loose as crates beside the ship with this tag that is nearest to the
+    /// A ship tag (spec 1141). The Tech and resource gains drift loose as crates beside the ship with this tag that is nearest to the
     /// fleet (live, wreck or in stasis), not into the hold. Empty: gains go into the hold.
     /// </summary>
     [Serialize(Optional = true)] public string DropNear = "";

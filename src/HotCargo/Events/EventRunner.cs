@@ -664,7 +664,7 @@ public static class EventRunner
     }
 
     /// <summary>
-    /// Spec 1122: a gain drifts loose beside the ship with the tag that is nearest to the fleet: live, a wreck (it keeps its tags), or in
+    /// Spec 1141: a gain drifts loose beside the ship with the tag that is nearest to the fleet: live, a wreck (it keeps its tags), or in
     /// stasis. With no such ship in the system (all of it gone), the crates drift beside the fleet, and the log says so.
     /// </summary>
     static void DropNear(SimRoot sim, string tagName, ID<ResourceRules> resource, int amount, List<string> lines)

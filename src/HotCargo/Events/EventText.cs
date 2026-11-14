@@ -69,7 +69,7 @@ public static class EventText
 
     public static string NoBunk(int crew) => $"<gray>No free bunk for {crew} more crew.</gray>";
 
-    /// <summary>A gain that drifts loose in space (spec 1122): the crew must fly over and pick it up.</summary>
+    /// <summary>A gain that drifts loose in space (spec 1141): the crew must fly over and pick it up.</summary>
     public static string Loose(ID<ResourceRules> id, int amount)
     {
         var r = GameApp.Rules.GetResourceRules(id);
