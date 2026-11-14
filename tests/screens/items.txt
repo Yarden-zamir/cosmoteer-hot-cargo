@@ -1,0 +1,36 @@
+# Item context actions (spec 1111 to 1116): the action button on a selected storage part, and the result message after a press.
+# Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
+render on
+newgame run 0
+wait 10
+# Close the run intro.
+closepanel
+wait 1
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+item_give yarden_zamir.sealed_case
+wait 2
+vault focus
+wait 2
+# The storage part with the case is selected: the parts card (lower left) shows the "Open the case" button.
+item_select yarden_zamir.sealed_case
+wait 2
+expect item_button == 1
+screenshot items-case-selected
+# The press (the real MP input) with the codes: the center message and the chat line.
+item_force 1
+item_action yarden_zamir.sealed_case open
+pause on
+wait 1
+screenshot items-case-opened-codes
+pause off
+# A second case with the tracer: the beacon's own button ("Space the beacon") shows on its part.
+item_give yarden_zamir.sealed_case
+wait 2
+item_force 2
+item_action yarden_zamir.sealed_case open
+item_select yarden_zamir.tracer_beacon
+pause on
+wait 1
+screenshot items-case-opened-tracer
+quit
