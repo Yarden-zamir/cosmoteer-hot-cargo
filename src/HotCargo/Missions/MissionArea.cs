@@ -45,7 +45,7 @@ public static class MissionArea
             Autotest.Fields[$"hc_active_{name}"] = () => RequireRun().Mode.Missions.Count(m => m.MetatypeID.Equals(id) && m.Completion == CompletionState.InProgress);
             Autotest.Fields[$"hc_completed_{name}"] = () => RequireRun().Mode.Missions.Count(m => m.MetatypeID.Equals(id) && m.Completion == CompletionState.Completed);
         }
-        // Spec 1126. hc_markers_mark <metatype ID>: remembers the markers of the latest mission of that type in the log; the field
+        // Spec 1145. hc_markers_mark <metatype ID>: remembers the markers of the latest mission of that type in the log; the field
         // hc_markers_left counts how many of them are in the current system. hc_abandon <metatype ID>: abandons that mission (MP input).
         Autotest.Commands["hc_markers_mark"] = arg =>
         {

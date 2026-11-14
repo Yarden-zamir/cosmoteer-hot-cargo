@@ -19,7 +19,7 @@ internal interface IMissionMarkers
 /// Vanilla removes a bounty marker only when its ships die (AutoRemoveWhenTagDestroyed), so an abandoned bounty kept its marker too.
 /// Runs from the mission log's MissionRemoved event, which every client gets at the same sim step (like ChainRunner).
 /// Markers in another system cannot go at once (object IDs belong to one system): the run remembers them, and the next arrival in
-/// that system removes them (spec 1126).
+/// that system removes them (spec 1145).
 /// </summary>
 internal static class MissionMarkers
 {
@@ -78,7 +78,7 @@ internal static class MissionMarkers
     });
 
     /// <summary>
-    /// Spec 1126: the markers of a mission that ended while its objectives are in another system. An objective's markers lie in its
+    /// Spec 1145: the markers of a mission that ended while its objectives are in another system. An objective's markers lie in its
     /// first map node; the next arrival there removes them.
     /// </summary>
     static void Remember(Run run, SimRoot sim, Mission m)
@@ -94,7 +94,7 @@ internal static class MissionMarkers
         }
     }
 
-    /// <summary>Spec 1126: removes the remembered markers of this system, unless a mission in progress or an offer owns them now.</summary>
+    /// <summary>Spec 1145: removes the remembered markers of this system, unless a mission in progress or an offer owns them now.</summary>
     static void OnSystemEntered(Run run)
     {
         if (run.Game.Sim is not { } sim || !run.State.EndedMarkers.Remove(sim.NodeId(), out var ids)) return;

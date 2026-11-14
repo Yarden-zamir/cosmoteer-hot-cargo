@@ -1,4 +1,4 @@
-# Spec 1126: a job that ends while the players are in another system loses its markers on the next arrival in its system.
+# Spec 1145: a job that ends while the players are in another system loses its markers on the next arrival in its system.
 # The Black Box's first chain stage owns target area markers (the guarded wreck). The players accept it, leave, abandon the job
 # in the other system, and come back.
 newgame run
