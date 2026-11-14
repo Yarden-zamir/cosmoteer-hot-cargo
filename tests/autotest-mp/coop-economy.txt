@@ -184,6 +184,8 @@ waitfor ev_courier_offers >= 1 20
 wait 2
 mp contract_pick any HotCargoCourier
 mp contract_terms informant 0
+# Earlier steps fill the holds (stripped cargo, loot); the job needs a free slot for the case (spec 1101).
+mp ev_storage_room 2
 wait 2
 ev_mark
 on 1 ev_mark
@@ -234,6 +236,8 @@ on 1 waitfor ev_hulk_stocked == 0 30
 step events.rescue
 # Spec 1147, 1148: the client fires a rescue beacon from its machine (the item action MP input). The client pays the fee; the tug and
 # the tow run in the sim on both machines. A lost tug ends the tow on both.
+# The beacon needs a free slot in the client's hold.
+mp ev_storage_room 2
 ev_mark
 on 1 ev_mark
 as 1 item_give yarden_zamir.rescue_beacon
