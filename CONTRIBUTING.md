@@ -59,7 +59,7 @@ Commands for co-op sessions (`src/HotCargo/Dev/MpAutotest.cs`):
 - `as <player> <command>`: like `mp`, as that player index (0 the host, 1 the client). An input that the command sends runs at once as that player, after the game's `AllowMPInput` check. Use it for choices that read only sim state: `choose`, `vote`, `dip`, `dip_pick`, `dip_punish`, `spawnstage`, `tostation`, `buyer goto`.
 - `on <player> <command>`: run a command on that player's own machine and wait until it reports back. A failure there fails the step. Use it for that machine's UI and view (`menu`, `hover`, `expectcomms`, `tactics_editor`, `expect` of local fields such as money gains) and for inputs that it sends over the network like a real click (`choose`, `tech sell`, `fa_buy`, `buyer sell`, `contract_accept`, `tactics`).
 - Real player actions of the host run without `mp`: `choose`, `tech sell`, `vote`, `pause`.
-- `waitfor <field> <op> <value> [timeout]`: wait until a check holds.
+- `waitfor <field> <op> <value> [timeout]`: wait until a check holds. A field can add a state description to the timeout message (`Autotest.WaitContext`; `auto_cargo` and `auto_salvage_jobs` describe the mining ship).
 - `mplobby` (host): return all players to the game setup screen. `mpload <name>` (host): the next `mpstart` loads the save `HotCargoTest_<name>`. A loaded game starts paused: `pause off`. `mprestart` (host): a new run with the connection kept, for steps after a won or lost run.
 - `mpresync` (host): do the resync that follows a desync (the host's game goes to every machine). Then `waitfor mpgames >= <n>`.
 - `mpchoose <serial|marked> <choice>`: send an event choice for any page, like a late second click. `marked`: the page that was pending at the last `ev_mark`.
