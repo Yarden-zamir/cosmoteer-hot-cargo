@@ -515,6 +515,12 @@ public static class EventRunner
         foreach (var r in cost.Resources) ChangeResource(sim, r.ID, -r.At(p.Tier), lines);
     }
 
+    /// <summary>
+    /// Spec 1360: C# outcome effects by name, for the outcome field Effect. Areas add theirs in Register, before the events load.
+    /// An effect runs in the choice input (sim logic, every machine): run, sim, the chooser, the page, the result lines.
+    /// </summary>
+    public static readonly Dictionary<string, Action<Run, SimRoot, int, PendingEvent, List<string>>> Effects = new(StringComparer.Ordinal);
+
     /// <summary>Applies the effects of an outcome and adds one result line per effect. Also used by the Chains area for stage results.</summary>
     internal static void ApplyOutcome(Run run, SimRoot sim, int playerIndex, OutcomeRules o, PendingEvent p, List<string> lines)
     {
@@ -541,6 +547,7 @@ public static class EventRunner
         if (o.Spawn.Length > 0) Spawn(run, sim, o.Spawn, p.Seed);
         if (o.HandOver) HandOverObjective.Deliver(run, p.Carrier, o.HandOverPay);
         if (o.ContactTurns != ContactReaction.None) HandOverObjective.React(run, sim, p.Carrier, o.ContactTurns);
+        if (o.Effect.Length > 0) Effects[o.Effect](run, sim, playerIndex, p, lines);
         // UI only: the chat tells every player the result.
         if (o.Chat && o.Text.Length > 0) Ux.UxKit.ChatLine(run.Game, EventText.Fill(o.Text, run.State.FleetTech, p));
     }

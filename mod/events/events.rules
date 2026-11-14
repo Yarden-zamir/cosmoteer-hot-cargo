@@ -771,6 +771,30 @@ Events
 		]
 	}
 
+	// ---- Friendly encounters (spec 1360 and later). Ships that carry their page and ask for something.
+
+	// Spec 1361: a crew asks to join the fleet. A clear deal: pay their debts, and the ship is yours.
+	{
+		ID = join_request
+		Trigger = Arrival
+		Weight = 5
+		Carrier = Recruit
+		Title = "Join Request"
+		Text = "A small crew hails you. \"Our captain sold us to the corporation and ran. We heard who you are. Clear our dock debts, and we fly under your colors.\""
+		Choices
+		[
+			{
+				Text = "Take them in."
+				Cost { Money = 1 }
+				Outcomes [ { Text = "They paint your colors on the hull."; Effect = join } ]
+			}
+			{
+				Text = "Not now."
+				Outcomes [ { Text = "\"Your loss.\" They turn away." } ]
+			}
+		]
+	}
+
 	// The run's one relic ship (spec 765). It opens when a ship comes close, and again on each return until the crate is taken.
 	{
 		ID = relic_ship
