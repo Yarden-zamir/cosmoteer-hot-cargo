@@ -72,4 +72,23 @@ on 1 waitfor ev_pending == 0 30
 expect ev_heat_gain < -15
 on 1 expect ev_heat_gain < -15
 
+step friendly.debtor
+# Spec 1367, 1368: the client buys a debt from its machine; at its time the debtor pays the client back. Both machines agree.
+as 1 contract_money 500000
+mp event debtor
+waitfor ev_pending == 1 20
+mp ev_carrier_goto
+wait 2
+ev_mark
+on 1 ev_mark
+on 1 ev_comms carrier Buy their debt
+waitfor fr_debtors == 1 30
+on 1 waitfor fr_debtors == 1 30
+on 1 expect ev_money_gain < 0
+mp fr_debtor_end
+waitfor fr_debtors == 0 20
+on 1 waitfor fr_debtors == 0 30
+on 1 expect ev_money_gain == 0
+expect ev_money_gain == 0
+
 end

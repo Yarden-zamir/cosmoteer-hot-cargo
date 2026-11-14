@@ -348,6 +348,9 @@ After a trade it jumps away (spec 1364).
 #### Riddle Ship (Arrival; heat 10+; once per run; a pool of 5 riddles)
 A painted ship asks a riddle. Right: they talk to their contacts, and heat halves. Wrong: heat +3, and your name is in their story. Or no time for games (spec 1365, 1366).
 
+#### The Debtor (Arrival; weight 5)
+Buy their debt for 1.5 money units. The debtor fights at your side for 30 minutes, then pays you the same amount back and leaves. If it dies first, the money is gone. Its label shows what it owes and the time left (spec 1367, 1368).
+
 ## 4. Content rules for authors
 
 - Do not write counts that live elsewhere (the starting tech, spawn counts in spawns.rules): they drift. Use `{crates}` for the live fleet tech count. Counts that the same choice's Cost sets are fine.

@@ -6,6 +6,12 @@ HotCargoFriendly
 	FollowerGone = "The ship is gone before it can follow you."
 	LeavesFmt = "{0} spins up its drive and leaves the system."
 	// Riddle ship (spec 1366). {0} = heat before, {1} = heat after.
+	// Debtor (spec 1367, 1368). {1} = minutes, {2} = credits.
+	DebtorFollowsFmt = "You own the debt of {0} now. It follows you and fights for you for {1} minutes, then pays you {2} credits."
+	DebtorPaysFmt = "{0} pays you back {1} credits and leaves. \"We're square.\""
+	DebtorDiedFmt = "{0} is destroyed. Its debt of {1} credits dies with it."
+	DebtorBehind = "Your debtor cannot jump with you. It stays behind and pays when its time is up."
+	LabelDebtorFmt = "DEBTOR OWES {0}  {1}"
 	HeatHalvedFmt = "Their contacts lose your trail. Heat {0} -> {1}."
 	// Apprentice (spec 1362, 1363). {1} = fights it saw, {2} = fights it wants to see.
 	ApprenticeFollowsFmt = "{0} follows you for {1} minutes to learn. It wants to see {2} fights."

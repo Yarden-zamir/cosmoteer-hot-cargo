@@ -20,6 +20,9 @@ public static class FriendlyArea
         EventRunner.Effects.Add("apprentice", Apprentice.Apply);
         EventRunner.Effects.Add("leave", Leave);
         EventRunner.Effects.Add("halve_heat", HalveHeat);
+        EventRunner.Effects.Add("debtor", Debtor.Apply);
+        Run.Hooks.Tick += Debtor.OnTick;
+        Run.Hooks.SystemEntered += Debtor.OnSystemEntered;
         Run.Hooks.Tick += Apprentice.OnTick;
         Run.Hooks.SystemEntered += Apprentice.OnSystemEntered;
         AddAutotest();
@@ -80,6 +83,23 @@ public static class FriendlyArea
         // fr_apprentices: running apprentices. fr_apprentice_fights: fights the first one saw.
         // fr_leaving: ships that are about to jump out or are jumping (Diplomacy leaving list).
         Autotest.Fields["fr_leaving"] = () => Autotest.RequireRun().State.Diplomacy.Leaving.Count;
+        // Debtor (spec 1367, 1368): running debtors, the first one's hire, and test commands to end it now or to kill it.
+        Autotest.Fields["fr_debtors"] = () => Autotest.RequireRun().State.Friendly.Debtors.Count;
+        Autotest.Fields["fr_debtor_hired"] = () => Autotest.RequireRun().State.Friendly.Debtors.FirstOrDefault() is { } d
+            && Autotest.RequireRun().State.Diplomacy.Hires.Any(h => h.Ship == d.Ship) ? 1 : 0;
+        Autotest.Commands["fr_debtor_end"] = _ =>
+        {
+            var d = Autotest.RequireRun().State.Friendly.Debtors.FirstOrDefault() ?? throw new InvalidOperationException("no debtor");
+            d.Until = Autotest.RequireRun().State.GameSeconds;
+            Autotest.Wait(1);
+        };
+        Autotest.Commands["fr_debtor_kill"] = _ =>
+        {
+            var d = Autotest.RequireRun().State.Friendly.Debtors.FirstOrDefault() ?? throw new InvalidOperationException("no debtor");
+            var ship = Sim().Ships[d.Ship] ?? throw new InvalidOperationException("the debtor is not live");
+            foreach (var part in ship.Parts.ToList()) part.Health = 0;
+            Autotest.Wait(1);
+        };
         Autotest.Fields["fr_apprentices"] = () => Autotest.RequireRun().State.Friendly.Apprentices.Count;
         Autotest.Fields["fr_apprentice_fights"] = () => Autotest.RequireRun().State.Friendly.Apprentices.FirstOrDefault()?.Fights ?? -1;
         // fr_apprentice_hired: 1 while the first apprentice has its follow-and-fight hire.
