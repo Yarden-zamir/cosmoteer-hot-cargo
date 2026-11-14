@@ -30,15 +30,37 @@ static class PayItForward
 
     static FriendlyState S(Run run) => run.State.Friendly;
 
-    /// <summary>Strength of the players and of their enemies within PayForwardRadius of a player ship (Situation.Strength: firepower × health).</summary>
-    static (float Players, float Enemies) Strengths(Run run, SimRoot sim)
+    /// <summary>The players' significant ships, and the enemy ships within PayForwardRadius of one of them.</summary>
+    static (List<Ship> Players, List<Ship> Enemies) Sides(Run run, SimRoot sim)
     {
         var players = sim.Ships.HumanPlayerSignificantShips.ToList();
-        if (players.Count == 0) return (0f, 0f);
         float r = run.T.Friendly.PayForwardRadius;
-        float enemies = sim.Ships.Where(s => s.IsSignificant && !s.IsJunk && !s.IsHumanPlayerShip && players.Any(p => s.IsEnemiesWith(p) && s.DetWorldCenter.DistanceTo(p.DetWorldCenter) <= r))
-            .Sum(Situation.Strength);
-        return (players.Sum(Situation.Strength), enemies);
+        var enemies = sim.Ships.Where(s => s.IsSignificant && !s.IsJunk && !s.IsHumanPlayerShip && players.Any(p => s.IsEnemiesWith(p) && s.DetWorldCenter.DistanceTo(p.DetWorldCenter) <= r))
+            .OrderBy(s => s.UniqueID).ToList();
+        return (players, enemies);
+    }
+
+    /// <summary>Strength of the players and of their near enemies (Situation.Strength: firepower × health).</summary>
+    static (float Players, float Enemies) Strengths(Run run, SimRoot sim)
+    {
+        var (players, enemies) = Sides(run, sim);
+        return (players.Sum(Situation.Strength), enemies.Sum(Situation.Strength));
+    }
+
+    /// <summary>
+    /// Spec 1370: an actual fight. Within PayForwardFightSeconds a player ship fired, or a near enemy fired and the players lost health
+    /// since the last check. It updates the saved player health on every call, so call it on every check.
+    /// </summary>
+    static bool InFight(Run run, SimRoot sim, List<Ship> players, List<Ship> enemies)
+    {
+        float window = run.T.Friendly.PayForwardFightSeconds;
+        double now = sim.LogicalTime;
+        bool Fired(Ship s) => Events.PatrolListenModel.FiredRecently(now, s.Weapons.LastWeaponFireTime, window);
+        long health = players.Sum(p => p.Parts.Sum(x => (long)x.Health));
+        long before = S(run).PlayerHealth;
+        S(run).PlayerHealth = health;
+        bool hurt = before >= 0 && health < before;
+        return players.Any(Fired) || hurt && enemies.Any(Fired);
     }
 
     /// <summary>Sim tick (Run.Hooks), every PayForwardCheckSeconds of game time: the help roll, the quiet check, the hail, the exit.</summary>
@@ -77,16 +99,19 @@ static class PayItForward
     }
 
     /// <summary>
-    /// Spec 1370: the first time the players are clearly outclassed in a system is a qualifying fight; it rolls once, from the system's ID,
-    /// so every machine agrees. The Wayfarers come at most once per run (PayForwardDone, saved in the run state).
+    /// Spec 1370: the first time in a system that the players are clearly outclassed in an actual fight is a qualifying fight; it rolls
+    /// once, from the system's ID, so every machine agrees. Enemies near the players with no fight (for example at the run start) do not
+    /// count. The Wayfarers come at most once per run (PayForwardDone, saved in the run state).
     /// </summary>
     static void TryHelp(Run run, SimRoot sim)
     {
         var t = run.T.Friendly;
         var node = sim.NodeId();
         if (S(run).PayForwardDone || S(run).HelpRolled.Contains(node)) return;
-        var (players, enemies) = Strengths(run, sim);
-        if (enemies <= 0f || enemies < t.PayForwardOutclassRatio * Math.Max(players, 1f)) return;
+        var (playerShips, enemyShips) = Sides(run, sim);
+        bool fight = InFight(run, sim, playerShips, enemyShips);
+        float players = playerShips.Sum(Situation.Strength), enemies = enemyShips.Sum(Situation.Strength);
+        if (enemies <= 0f || enemies < t.PayForwardOutclassRatio * Math.Max(players, 1f) || !fight) return;
         S(run).HelpRolled.Add(node);
         float roll = new FastRand((uint)node, 0x5041_5946UL).Single();
         Log.Info($"friendly: outclassed (players {players:0}, enemies {enemies:0}); help roll {roll:0.000} vs {t.PayForwardChance:0.000}");

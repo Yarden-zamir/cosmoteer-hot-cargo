@@ -19,6 +19,11 @@ public sealed class FriendlyTunables
     [Serialize(Optional = true)] public float PayForwardChance = 0.15f;
     /// <summary>Pay it forward: "clearly outclassed" means enemy strength near the players is at least this many times the players' strength.</summary>
     [Serialize(Optional = true)] public float PayForwardOutclassRatio = 2f;
+    /// <summary>
+    /// Pay it forward: an actual fight means a player ship fired, or a near enemy fired and the players lost health, within this many
+    /// game seconds. Outclassed without a fight (enemies near, nobody shooting) does not roll.
+    /// </summary>
+    [Serialize(Optional = true)] public float PayForwardFightSeconds = 5f;
     /// <summary>Pay it forward: enemies within this distance of a player ship count for the strength check.</summary>
     [Serialize(Optional = true)] public float PayForwardRadius = 3000f;
     /// <summary>Pay it forward: game seconds between checks.</summary>

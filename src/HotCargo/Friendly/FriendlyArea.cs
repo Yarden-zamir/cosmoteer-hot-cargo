@@ -123,6 +123,22 @@ public static class FriendlyArea
         };
         // fr_help_reset: the systems can roll the Wayfarers' help again (sim state: use "mp" in co-op). It keeps the once-per-run flag.
         Autotest.Commands["fr_help_reset"] = _ => Autotest.RequireRun().State.Friendly.HelpRolled.Clear();
+        // fr_help_rolled: systems where the help roll ran. fr_idle_enemies: enemy ships of the players lose their AI (they stop fighting).
+        Autotest.Fields["fr_help_rolled"] = () => Autotest.RequireRun().State.Friendly.HelpRolled.Count;
+        Autotest.Commands["fr_idle_enemies"] = _ =>
+        {
+            var sim = Sim();
+            var players = sim.Ships.HumanPlayerSignificantShips.ToList();
+            foreach (var e in sim.Ships.Where(s => !s.IsJunk && players.Any(p => s.IsEnemiesWith(p))).ToList()) e.AI = null;
+        };
+        // fr_attack: every player ship gets an attack order on its nearest enemy ship (sim state: use "mp" in co-op).
+        Autotest.Commands["fr_attack"] = _ =>
+        {
+            var sim = Sim();
+            foreach (var p in sim.Ships.HumanPlayerSignificantShips.OrderBy(s => s.UniqueID).ToList())
+                if (sim.Ships.Where(s => !s.IsJunk && s.IsSignificant && s.IsEnemiesWith(p)).MinBy(s => s.DetWorldCenter.DistanceSquaredTo(p.DetWorldCenter)) is { } e)
+                    Hunters.HunterOrders.Attack(p, e);
+        };
         Autotest.Fields["fr_forward_done"] = () => Autotest.RequireRun().State.Friendly.PayForwardDone ? 1 : 0;
         Autotest.Commands["fr_kill_enemies"] = arg =>
         {

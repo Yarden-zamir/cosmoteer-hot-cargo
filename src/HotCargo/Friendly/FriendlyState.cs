@@ -13,6 +13,8 @@ public sealed class FriendlyState
     [Serialize(Optional = true)] public List<ObjectID> Wayfarers = [];
     /// <summary>Systems where the Wayfarers' help roll already ran (spec 1370): one roll per system for the run.</summary>
     [Serialize(Optional = true)] public HashSet<ObjectID> HelpRolled = new();
+    /// <summary>Total part health of the players' ships at the last help check (spec 1370), or -1 before the first.</summary>
+    [Serialize(Optional = true)] public long PlayerHealth = -1;
     /// <summary>True once the Wayfarers came in this run (spec 1370): they come at most once per run.</summary>
     [Serialize(Optional = true)] public bool PayForwardDone;
     /// <summary>Run game seconds since no enemy is near the players while the Wayfarers help, or -1.</summary>

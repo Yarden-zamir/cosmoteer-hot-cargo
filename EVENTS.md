@@ -352,7 +352,7 @@ A painted ship asks a riddle. Right: they talk to their contacts, and heat halve
 Buy their debt for 1.5 money units. The debtor fights at your side for 30 minutes, then pays you the same amount back and leaves. If it dies first, the money is gone. Its label shows what it owes and the time left (spec 1367, 1368).
 
 #### Pay It Forward (in a fight; at most once per run; 15 % per qualifying fight)
-When you are clearly outclassed (enemies near you at least twice your strength; the first time in a system counts), the Wayfarers may drop in: 2 ships with their own allegiance that fight your enemies. When the fight is over they repair, their captain hails ("Pay it forward to the next one in need."), and they leave (spec 1369 to 1371).
+When you are clearly outclassed in an actual fight (enemies near you at least twice your strength, and shots fired in the last 5 seconds; the first time in a system counts), the Wayfarers may drop in: 2 ships with their own allegiance that fight your enemies. When the fight is over they repair, their captain hails ("Pay it forward to the next one in need."), and they leave (spec 1369 to 1371).
 
 ## 4. Content rules for authors
 

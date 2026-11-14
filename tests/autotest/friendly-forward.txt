@@ -1,4 +1,4 @@
-# Pay it forward (spec 1369 to 1371): outclassed players get help from the Wayfarers, who have their own allegiance (friends of the
+# Pay it forward (spec 1369 to 1371): outclassed players in an actual fight get help from the Wayfarers, who have their own allegiance (friends of the
 # players, enemies of their enemies). After the fight they hail with the "pay it forward" page, repair and leave.
 newgame run
 wait 8
@@ -11,9 +11,19 @@ godmode on
 fr_set PayForwardChance 1
 fr_set PayForwardOutclassRatio 0.01
 expect fr_wayfarers == 0
-dip_spawn enemy 900
+# Outclassed with no fight (an enemy near, out of weapon range, without AI): no roll.
+dip_spawn enemy 2600
+fr_idle_enemies
 pause off
-waitfor fr_wayfarers >= 1 20
+wait 10
+expect fr_help_rolled == 0
+expect fr_wayfarers == 0
+# An actual fight: an enemy close by shoots and is shot at. The roll runs, and the Wayfarers come.
+fr_kill_enemies all
+dip_spawn enemy 900
+fr_attack
+waitfor fr_wayfarers >= 1 30
+expect fr_help_rolled == 1
 expect fr_wayfarer_sides == 1
 # The fight ends: after the quiet time their leader hails with the page, and the fleet repairs itself.
 fr_damage_wayfarer

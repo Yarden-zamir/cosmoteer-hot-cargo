@@ -102,7 +102,10 @@ mp fr_kill_enemies all
 wait 2
 mp fr_help_reset
 mp dip_spawn enemy 900
-waitfor fr_wayfarers >= 1 30
+# The roll needs an actual fight (spec 1370): the players attack it.
+mp fr_attack
+# Co-op runs in real time: the ships need a while to close in and fire.
+waitfor fr_wayfarers >= 1 60
 on 1 waitfor fr_wayfarers >= 1 30
 expect fr_wayfarer_sides == 1
 on 1 expect fr_wayfarer_sides == 1
