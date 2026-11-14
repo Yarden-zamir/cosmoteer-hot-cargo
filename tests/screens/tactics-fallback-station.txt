@@ -1,0 +1,40 @@
+# Fall back to a station (spec 1308): a damaged Monolith ship docks at a friendly station and comes back repaired.
+# Windowed test slot: see the hot-cargo-screenshots skill.
+render on
+newgame run 0
+wait 10
+closepanel
+wait 1
+ev_set Enabled false
+godmode on
+tacticlog on
+aiset FleeOnVanilla false
+aiset RegroupOnVanilla false
+aiset CallOnVanilla false
+aiset CoverEnabled false
+aiset BaitEnabled false
+aiset TeamEnabled false
+aiset FallBackStationRepairsPerTick 1
+aijitter 0
+aitrait Monolith Phalanx FallBack 1
+aitrait Monolith Lancers FallBack 1
+aispawn monolith 1
+wait 3
+aistrip new resources
+aistrip new crew 2
+aidamage new 0.3
+waitfor ai_fb_station >= 1 30
+aiplan_near 600
+wait 1
+ainew_camera 0 900
+wait 1
+screenshot fallback-1-damaged
+waitfor ai_fb_supplied >= 1 60
+ainew_camera 0 900
+wait 1
+screenshot fallback-2-docked
+waitfor ai_fb_active == 0 200
+ainew_camera 0 900
+wait 1
+screenshot fallback-3-repaired
+quit

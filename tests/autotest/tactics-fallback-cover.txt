@@ -1,0 +1,29 @@
+# Fall back in cover (spec 1305, 1306): a damaged pirate cargo ship that carries the resources hides behind a rock and repairs.
+newgame run
+wait 8
+ev_set Enabled false
+godmode on
+tacticlog on
+aiset FleeOnVanilla false
+aiset RegroupOnVanilla false
+aiset CallOnVanilla false
+aiset CoverEnabled false
+aiset BaitEnabled false
+aiset TeamEnabled false
+aijitter 0
+aitrait Pirate Raiders FallBack 1
+aitrait Pirate Ambushers FallBack 1
+# A big cargo ship repairs slowly: give the crew time. The plan and the hiding spot are the checks.
+aiset FallBackMaxSeconds 600
+openspace 6000
+airocks 6 900
+aispawn pirates 1 3 trade
+wait 3
+aistrip 0 resources
+aidamage 0 0.3
+aigivelacking 0 0
+waitfor ai_fb_cover >= 1 30
+waitfor ai_fb_in_cover >= 1 90
+waitfor ai_fb_active == 0 400
+expect ai_new_min_health >= 0.6
+quit

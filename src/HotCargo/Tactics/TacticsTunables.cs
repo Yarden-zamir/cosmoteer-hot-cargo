@@ -34,6 +34,25 @@ public sealed class TacticsTunables
     [Serialize(Optional = true)] public float FallBackMaxSeconds = 45f;
     /// <summary>Distance that a ship flies away from the nearest player ship before it repairs.</summary>
     [Serialize(Optional = true)] public float FallBackDistance = 1500f;
+    /// <summary>
+    /// A ship that falls back picks where it repairs (spec 1305): behind a rock, with resources from a donor ship, or at a friendly
+    /// station. Off: it always flies FallBackDistance away and repairs with what it has.
+    /// </summary>
+    [Serialize(Optional = true)] public bool FallBackResupplyEnabled = true;
+    /// <summary>Time limit of a fall back to a donor ship or a station. Cover and away use FallBackMaxSeconds.</summary>
+    [Serialize(Optional = true)] public float FallBackTripSeconds = 180f;
+    /// <summary>A ship with less crew than this fraction of its crew places goes to a station for crew.</summary>
+    [Serialize(Optional = true)] public float FallBackCrewFraction = 0.5f;
+    /// <summary>A ship within this distance of its cover spot holds there and repairs.</summary>
+    [Serialize(Optional = true)] public float FallBackArriveDistance = 100f;
+    /// <summary>Friendly AI ships within this edge-to-edge distance can give a falling back ship the resources it lacks.</summary>
+    [Serialize(Optional = true)] public float FallBackDonorRange = 3000f;
+    /// <summary>A donor gives at most this fraction of its stock of each resource.</summary>
+    [Serialize(Optional = true)] public float FallBackDonorShare = 0.5f;
+    /// <summary>A ship stops this far from the hull of a donor or a station. Must stay under the vanilla transfer distance (400).</summary>
+    [Serialize(Optional = true)] public float FallBackDockGap = 150f;
+    /// <summary>A friendly station repairs a docked ship this many damaged or destroyed parts per AI check, at once and for free.</summary>
+    [Serialize(Optional = true)] public int FallBackStationRepairsPerTick = 2;
 
     [Serialize(Optional = true)] public bool BaitEnabled = true;
     [Serialize(Optional = true)] public string BaitMinStage = "Strike";
@@ -168,6 +187,11 @@ public sealed class TacticsTunables
         require(CallSeconds > 0 && CallInterceptSeconds > 0 && CallRange > 0, "Tactics.CallSeconds, CallInterceptSeconds and CallRange must be above 0");
         require(CallStormStrength is > 0 and <= 1, "Tactics.CallStormStrength must be above 0 and at most 1");
         require(RegroupMinGroup >= 1, "Tactics.RegroupMinGroup must be 1 or more");
+        require(FallBackTripSeconds > 0 && FallBackArriveDistance > 0 && FallBackDonorRange >= 0,
+            "Tactics.FallBackTripSeconds and FallBackArriveDistance must be above 0, FallBackDonorRange 0 or more");
+        require(FallBackCrewFraction is >= 0 and <= 1 && FallBackDonorShare is >= 0 and <= 1, "Tactics.FallBackCrewFraction and FallBackDonorShare must be 0 to 1");
+        require(FallBackStationRepairsPerTick >= 1, "Tactics.FallBackStationRepairsPerTick must be 1 or more");
+        require(FallBackDockGap is >= 0 and < 400, "Tactics.FallBackDockGap must be 0 or more and below the vanilla transfer distance 400");
         require(TeamRadius > 0 && CoverSearchRange > 0 && CoverPeekSeconds > 0 && CoverHideSeconds > 0,
             "Tactics.TeamRadius, CoverSearchRange, CoverPeekSeconds and CoverHideSeconds must be above 0");
         require(BrawlRangeFraction is > 0 and <= 1, "Tactics.BrawlRangeFraction must be above 0 and at most 1");
