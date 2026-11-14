@@ -43,7 +43,7 @@ Actions: **smoke** (in the smoke tier), keep (full tier only), done (changed in 
 | diplomacy-friends | 100 s | hold, fee, betrayal, hire, mercenaries, wanted | comms pages, AI, money | DiplomacyModel | keep |
 | diplomacy-hunters | 142 s | hand-over, punishment combos, bluff, deal crowd, demand hail | comms pages, hunters leave | DiplomacyModel, MultiChoiceModel | keep |
 | diplomacy-surrender | 96 s | demand, fuel overflow, yield offer, players surrender | AI, fuel, comms | DiplomacyModel.SurrenderChance | **smoke** |
-| events-abandoned | 99 s | abandoned ship event, relic ship | proximity triggers | EventModel | keep |
+| events-abandoned | 99 s | hulk loot, hold reveal, blast, relic ship | proximity triggers | EventModel | keep |
 | events-batch2 | 78 s | five events: spawns, flags, toll by heat, Buyer price | rules, spawns, prices | EventModel.HeatScaledUnits, BuyerPriceAfter | keep |
 | events-courier | 65 s | courier offer, contact out of stasis | stations, stasis | — | keep |
 | events-hail | 78 s | ship hails, players hail, attack mid-dialogue | comms | — | keep |

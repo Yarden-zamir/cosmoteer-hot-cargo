@@ -21,8 +21,6 @@ public enum EventTrigger
     Station,
     /// <summary>When the players become wanted while heat is at stage 1 or more (spec 471).</summary>
     Wanted,
-    /// <summary>When a human ship first comes near a vanilla abandoned ship (spec 764).</summary>
-    Abandoned,
     /// <summary>When a human ship comes close to the run's relic ship (spec 765).</summary>
     Relic,
     /// <summary>A line in the comms of a station or faction ship (HailLine, HailTarget). Clicking it opens the page there (spec 769).</summary>

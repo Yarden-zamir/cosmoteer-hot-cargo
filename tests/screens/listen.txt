@@ -1,0 +1,34 @@
+# Patrol listen (spec 1122): the button on a selected sensor array, the progress bar above it, and the result message.
+# Windowed test slot (needs graphics): see the hot-cargo-screenshots skill.
+render on
+newgame run 0
+wait 10
+# Close the run intro.
+closepanel
+wait 1
+ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
+ev_set CourierChance 0
+godmode on
+ev_sensor_build
+heat 40
+ev_faction_goto 150
+wait 2
+ev_sensor_select
+ev_sensor_camera
+wait 2
+expect ev_listen_button == 1
+screenshot listen-button
+ev_listen_force 1
+ev_listen
+wait 4
+pause on
+wait 1
+screenshot listen-progress
+pause off
+waitfor ev_listening == 0 20
+wait 1
+pause on
+wait 1
+screenshot listen-result
+quit

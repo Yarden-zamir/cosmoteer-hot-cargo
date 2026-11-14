@@ -253,7 +253,7 @@ The autotests `onboarding-hints` and `onboarding-log` cover each trigger, the or
 1. The Archive at a station: is "Trade 1 crate (worth 15,000) for research worth 21,000" clear? Do the new parts show as buildable at once?
 2. A Lab That Won't Take No: does refusing feel like a real threat (heat +20)?
 3. Data Broker: is the sale price tempting without being free money late in the run?
-4. Fly to an abandoned ship ("?" POI). Does the event open when you are close? Is a corporate trap at high heat a fair surprise?
+4. Fly to an abandoned ship ("?" POI). Does its message show when you are close? Wreck or salvage it: do the drops match the message when the hold breaks open? Is the tracer beacon trap at high heat a fair surprise, and is a Cold Hulk's blast clear?
 5. Find the relic ship (one per run, sector 2 or later). Does the vault message make you want to look for it? Is the "?" easy to spot?
 
 ## Events in ship comms (spec 767-771)

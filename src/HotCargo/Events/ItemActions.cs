@@ -166,7 +166,8 @@ public static class ItemActions
         Log.Info($"item action: no room in {ship.Metadata.PlainShipName} for {r}; it drifts loose");
     }
 
-    static bool Takes(FlexResourceGrid.ResourceTile t, ID<ResourceRules> r)
+    /// <summary>True when the tile can take one more unit: its preferred type allows it, and it is empty or holds a short stack of it.</summary>
+    internal static bool Takes(FlexResourceGrid.ResourceTile t, ID<ResourceRules> r)
     {
         var preferred = t.PreferredResourceType.Confirmed;
         if (preferred is { } p && p != r) return false;
