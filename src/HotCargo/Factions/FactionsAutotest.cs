@@ -5,12 +5,14 @@ using Cosmoteer.Factions;
 using Cosmoteer.Game.Multiplayer;
 using Cosmoteer.Game.Multiplayer.MPInputs;
 using Cosmoteer.Modes.Career;
+using Cosmoteer.Modes.Career.Map;
 using Cosmoteer.Modes.Career.Missions.Rewards;
 using Cosmoteer.Resources;
 using Cosmoteer.Ships;
 using Cosmoteer.Ships.AI.CommsModules;
 using Cosmoteer.Ships.Crew.Jobs;
 using Cosmoteer.Ships.Resources;
+using Halfling;
 using HotCargo.Core;
 using HotCargo.Dev;
 using HotCargo.Missions;
@@ -22,6 +24,20 @@ namespace HotCargo.Factions;
 static class FactionsAutotest
 {
     static Run R() => Autotest.RequireRun();
+
+    /// <summary>
+    /// Trade stations (live or in stasis) of this system's controlling faction (spec 663), with a log line of every station's
+    /// faction. -1 when the system has no controlling faction.
+    /// </summary>
+    static int ControllerStations()
+    {
+        var node = R().Game.CurrentMapNode;
+        var stations = SimQueries.TaggedShips(R().Game.Sim, new("trade_station"));
+        var controller = FactionsArea.Controller(node);
+        var factions = stations.Select(s => GameApp.Rules.Factions.FirstOrDefault(f => f.MatchesPlayer(s.PlayerIndex))?.ID.ToString() ?? "none");
+        Log.Info($"AUTOTEST controller stations in {node.Name}: controller {controller?.ID.ToString() ?? "none"}, stations [{string.Join(", ", factions)}]");
+        return controller is null ? -1 : stations.Count(s => controller.MatchesPlayer(s.PlayerIndex));
+    }
 
     /// <summary>Values that fa_base records, so fields can report a price as a ratio to it.</summary>
     static double _baseBuy = double.NaN, _baseCrew = double.NaN, _baseFuel = double.NaN, _baseOffers = double.NaN;
@@ -41,6 +57,38 @@ static class FactionsAutotest
             t.RivalFaction = Pick(parts[1]);
             var (ally, rival) = FactionsArea.Roles(R());
             Log.Info($"AUTOTEST factions roles: ally {ally.ID}, rival {rival.ID}, controller {FactionsArea.Controller(R().Game.CurrentMapNode)?.ID}");
+        };
+        Autotest.Fields["fa_controller_stations"] = () => ControllerStations();
+        // fa_controller_tour <rounds>: jumps <rounds> times to a new system of every sector type (each one a new map node, so a new
+        // seed) and checks each system and the start for a trade station of its controlling faction (spec 663). It fails at the end
+        // and names every system without one.
+        Autotest.Commands["fa_controller_tour"] = arg =>
+        {
+            var run = R();
+            var types = GameApp.Rules.CareerMode.SectorTypes.Select(t => t.ID).OrderBy(id => id.ToString(), StringComparer.Ordinal).ToList();
+            var queue = new Queue<ID<SectorTypeRules>>(Enumerable.Range(0, int.Parse(arg, CultureInfo.InvariantCulture)).SelectMany(_ => types));
+            var without = new List<string>();
+            int systems = 0;
+            void Next()
+            {
+                systems++;
+                if (ControllerStations() == 0) without.Add($"{run.Game.CurrentMapNode.Name} ({run.Mode.CurrentSectorType.ID})");
+                if (queue.Count == 0)
+                {
+                    Autotest.Check(without.Count == 0, $"every system has a trade station of its controller ({systems} systems; without: {string.Join(", ", without)})");
+                    return;
+                }
+                var next = run.Game.CurrentMapNode.Connections.FirstOrDefault(n => !run.State.VisitedNodes.Contains(n.UniqueID))
+                    ?? throw new InvalidOperationException("no unvisited neighbor system");
+                run.Mode.GetMapNodeData(next).SectorTypeID = queue.Dequeue();
+                // Like "worlds jumpto": a fixed wait first, because the jump waits for drawn frames (GameRoot.JumpToNode).
+                Autotest.JumpWhenAllowed(run, next, "fa_controller_tour", () =>
+                {
+                    Autotest.Wait(8);
+                    Autotest.WaitFor(() => !run.Game.IsDoingNodeJump && run.Game.CurrentMapNode == next, 120, $"the jump to {next.Name}", Next);
+                });
+            }
+            Next();
         };
         // fa_rep <n>: sets the reputation with this system's controlling faction.
         Autotest.Commands["fa_rep"] = arg =>
