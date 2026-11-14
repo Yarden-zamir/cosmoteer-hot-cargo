@@ -35,6 +35,7 @@ public sealed class SharedChoicePanel
     {
         public readonly WidgetTextRenderer Text = text;
         public Color? Highlight;
+        public int Votes;
     }
 
     static readonly ConditionalWeakTable<ImageButton, Marker> Markers = new();
@@ -87,17 +88,25 @@ public sealed class SharedChoicePanel
         return b;
     }
 
+    /// <summary>
+    /// The speaker's name in a listen window (spec 1134), else null. A listener's click is always a vote, also in first pick mode,
+    /// where the vote is advisory and the speaker picks.
+    /// </summary>
+    public string? ListeningTo { get; init; }
+
+    bool Listener => ListeningTo is not null;
+
     /// <summary>The local vote on the page, or -1.</summary>
     public int LocalVote => Box()?.Votes.FirstOrDefault(v => v.Player == _run.Game.NetManager.LocalPlayerID)?.Option ?? -1;
 
     /// <summary>
     /// A click on an option. First pick mode: sends the choice and returns true, so the dialog locks its buttons until the page
-    /// changes. Vote mode: casts the vote, or takes it back on a second click, and returns false.
+    /// changes. Vote mode, and a listener in any mode: casts the vote, or takes it back on a second click, and returns false.
     /// </summary>
     public bool Click(int serial, int option)
     {
         _serial = serial;
-        if (!SharedChoices.Voting(_run))
+        if (!SharedChoices.Voting(_run) && !Listener)
         {
             Send(SharedChoiceAction.Choose, option);
             return true;
@@ -122,7 +131,8 @@ public sealed class SharedChoicePanel
 
         bool voting = SharedChoices.Voting(_run);
         var voters = SharedChoices.Electorate(_run);
-        var box = voting ? Box() : null;
+        // Outside vote mode the box holds the advisory votes of listeners (spec 1136).
+        var box = Box();
         var hovers = Presence.Others(_run, _domain, serial);
         _mode.Text = SharedChoices.Text(voting ? "ModeVote" : "ModeFirstPick");
         _force.SelfActive = voting && box is { Votes.Count: > 0 } && _run.Game.NetManager.IsHost;
@@ -135,6 +145,7 @@ public sealed class SharedChoicePanel
             var votes = box?.Votes.Where(v => v.Option == slot.Option).Select(v => Colored(voters, v.Player, SharedChoices.PlayerName(_run, v.Player))).ToList() ?? [];
             string voteText = votes.Count > 0 ? SharedChoices.Format("VotesFmt", votes.Count, string.Join(", ", votes)) : "";
             marker.Text.Text = string.Join("\n", new[] { string.Join(" ", names), voteText }.Where(t => t.Length > 0));
+            marker.Votes = votes.Count;
             var first = hovers.FirstOrDefault(h => h.Option == slot.Option);
             marker.Highlight = first is null ? null : ColorOf(voters, first.Player);
             foreach (var r in TextRenderers(slot.Button))
@@ -151,12 +162,16 @@ public sealed class SharedChoicePanel
             if (!Markers.TryGetValue(b, out var m)) continue;
             m.Text.Text = "";
             m.Highlight = null;
+            m.Votes = 0;
         }
     }
 
+    /// <summary>How many of these buttons show votes now. For autotests.</summary>
+    internal static int VoteMarks(IEnumerable<ImageButton> buttons) => buttons.Count(b => Markers.TryGetValue(b, out var m) && m.Votes > 0);
+
     string Status(bool voting, VoteBox? box, int voterCount)
     {
-        if (!voting) return SharedChoices.Text("StatusFirstPick");
+        if (!voting) return ListeningTo is { } speaker ? SharedChoices.Format("StatusListenFirstPick", speaker) : SharedChoices.Text("StatusFirstPick");
         int votes = box?.Votes.Count ?? 0;
         float timeout = _run.T.SharedChoice.VoteTimeoutSeconds;
         if (box is null || box.FirstVoteSeconds < 0 || timeout <= 0) return SharedChoices.Format("StatusVoteFmt", votes, voterCount);

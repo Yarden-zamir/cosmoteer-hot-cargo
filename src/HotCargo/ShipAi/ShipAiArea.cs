@@ -96,12 +96,17 @@ public static class ShipAiArea
 
     /// <summary>The ship that the test commands act on: tactics_ship picks it by index among the acting player's ships (by ID).</summary>
     static int _shipIndex;
+    /// <summary>tactics_ship &lt;name&gt;: the test ship by name (an autonomous test ship), else null.</summary>
+    static string? _shipName;
 
     static Ship TestShip()
     {
         var sim = Sim();
         int player = Autotest.ActingPlayerIndex;
-        var own = sim.Ships.HumanPlayerShips.Where(s => s.Commands.CanExecuteCrewCommandsFrom(player)).OrderBy(s => s.UniqueID).ToList();
+        if (_shipName is { } name)
+            return sim.Ships.HumanPlayerShips.Where(s => s.Metadata.PlainShipName == name).MinBy(s => s.UniqueID)
+                ?? throw new InvalidOperationException($"no own ship named '{name}'");
+        var own = sim.Ships.HumanPlayerShips.Where(s => s.Commands.IsCommandableBy(player)).OrderBy(s => s.UniqueID).ToList();
         if (_shipIndex >= own.Count) throw new InvalidOperationException($"no own ship {_shipIndex}; the player has {own.Count}");
         return own[_shipIndex];
     }
@@ -158,6 +163,7 @@ public static class ShipAiArea
         };
         Autotest.Fields["tactics_editor"] = () => TacticsEditor.IsOpen ? 1 : 0;
         Autotest.Fields["tactics_facing_row"] = () => Tactics().FacingRow;
+        Autotest.Fields["tactics_trade_row"] = () => Tactics().TradeRow;
         // The facing of the tactics attack order: the nose offset from the target (rotation plus FlightDirection) in whole degrees,
         // 0 to 359, while it has a rotation target, else -999.
         Autotest.Fields["tactics_face"] = () => TestShip().Commands.CurConfirmedCommand is AttackCommand { RotationTarget: not null, Rotation: { } r }
@@ -179,21 +185,25 @@ public static class ShipAiArea
         Autotest.Fields["design_parts"] = () => _loadedDesign?.BlueprintParts.Count ?? -1;
         Autotest.Fields["ship_parts"] = () => TestShip().BlueprintParts.Count;
 
-        // tactics_ship <index>: the test commands act on this own ship (by ID order). Default 0.
-        Autotest.Commands["tactics_ship"] = arg => _shipIndex = int.Parse(arg, CultureInfo.InvariantCulture);
+        // tactics_ship <index>|<name>: the test commands act on this own ship (by ID order), or on the own ship with this name. Default 0.
+        Autotest.Commands["tactics_ship"] = arg =>
+        {
+            bool index = int.TryParse(arg, NumberStyles.Integer, CultureInfo.InvariantCulture, out _shipIndex);
+            _shipName = index ? null : arg;
+        };
         // tactics <preset name|clear|HC1:...>: sets the rows of the test ship through the tactics input, like the editor. Auto keeps its value.
         // A real player action: run it without "mp".
         Autotest.Commands["tactics"] = arg =>
         {
             var ship = TestShip();
-            Sim().RequireGame().NetManager.EnqueueInput(new TacticsInput(ship, RowsText(arg), ShipTactics.Of(ship)?.Auto ?? false));
+            Sim().RequireGame().NetManager.EnqueueInput(TacticsInput.Rows(ship, RowsText(arg), ShipTactics.Of(ship)?.Auto ?? false));
             Autotest.Wait(1);
         };
         // tacticsauto on|off: the Auto switch of the test ship, through the tactics input.
         Autotest.Commands["tacticsauto"] = arg =>
         {
             var ship = TestShip();
-            Sim().RequireGame().NetManager.EnqueueInput(new TacticsInput(ship, ShipTactics.Of(ship)?.Text ?? "", arg != "off"));
+            Sim().RequireGame().NetManager.EnqueueInput(TacticsInput.Rows(ship, ShipTactics.Of(ship)?.Text ?? "", arg != "off"));
             Autotest.Wait(1);
         };
         // Human ships with Auto on, of every player (co-op checks).
