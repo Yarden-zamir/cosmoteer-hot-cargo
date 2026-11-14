@@ -12,6 +12,6 @@ public sealed partial class Tunables
 
 public sealed partial class RunState
 {
-    /// <summary>Debris decay (spec 1200 to 1219).</summary>
+    /// <summary>Debris decay (spec 1240 to 1246).</summary>
     [Serialize(Optional = true)] public DebrisState Debris = new();
 }

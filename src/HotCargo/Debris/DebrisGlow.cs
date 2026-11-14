@@ -9,7 +9,7 @@ using HotCargo.Ux;
 namespace HotCargo.Debris;
 
 /// <summary>
-/// Spec 1203: a junk piece in its glow time gets a pulsing orange outline on every part, brighter toward the burn-up. UI only: it reads
+/// Spec 1243: a junk piece in its glow time gets a pulsing orange outline on every part, brighter toward the burn-up. UI only: it reads
 /// the run state and the sim, and never changes them. The vault outline (Ux/Markers.cs) works the same way.
 /// </summary>
 static class DebrisGlow

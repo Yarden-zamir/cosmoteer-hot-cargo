@@ -2,7 +2,7 @@ namespace HotCargo.Debris;
 
 public enum DebrisPhase { Waiting, Glowing, Burning }
 
-/// <summary>Pure rules of the debris decay (spec 1202, 1203). No game types, so the unit tests cover them.</summary>
+/// <summary>Pure rules of the debris decay (spec 1242, 1243). No game types, so the unit tests cover them.</summary>
 public static class DebrisModel
 {
     /// <summary>The phase of a junk piece that could decay for ageSeconds: it waits, glows for the last glowSeconds, then burns up.</summary>

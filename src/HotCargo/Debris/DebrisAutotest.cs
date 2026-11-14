@@ -76,7 +76,7 @@ static class DebrisAutotest
             var t = run.T.Debris;
             return run.State.Debris.Since.Values.Count(s => DebrisModel.Phase(run.State.GameSeconds - s, t.DecaySeconds, t.GlowSeconds) == DebrisPhase.Glowing);
         };
-        // Junk pieces that may decay now (spec 1201), for checks that a protection holds.
+        // Junk pieces that may decay now (spec 1241), for checks that a protection holds.
         Autotest.Fields["debris_candidates"] = () =>
         {
             var run = R();

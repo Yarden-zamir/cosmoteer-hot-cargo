@@ -134,7 +134,7 @@ wait 30
 expect tactics_evals > 20
 
 step debris.decay
-# Spec 1205: junk decay is sim state. Pieces of both players start to age on both machines at the same tick; the state hash
+# Spec 1245: junk decay is sim state. Pieces of both players start to age on both machines at the same tick; the state hash
 # compares the ages (RunState.Debris) and the ship counts. They are still young at the resync below.
 mp debris_set DecaySeconds 40
 mp debris_set GlowSeconds 15
@@ -175,7 +175,7 @@ on 1 expect tactics_snapshot_kept >= 1
 on 1 expect tactics_snapshot_changed == 0
 
 step debris.resync
-# Spec 1205: the ages came back with the host's game, so the pieces glow and burn up at the same tick on both machines.
+# Spec 1245: the ages came back with the host's game, so the pieces glow and burn up at the same tick on both machines.
 waitfor debris_glowing >= 5 60
 on 1 waitfor debris_glowing >= 5 60
 # Junk from the fight above decays too, so more pieces than the test pieces can burn up.

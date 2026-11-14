@@ -1,4 +1,4 @@
-# Debris decay (spec 1203): small junk pieces in their glow time, next to the player ship. Windowed test slot: see the
+# Debris decay (spec 1243): small junk pieces in their glow time, next to the player ship. Windowed test slot: see the
 # hot-cargo-screenshots skill.
 render on
 newgame run 0

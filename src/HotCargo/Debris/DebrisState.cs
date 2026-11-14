@@ -7,7 +7,7 @@ namespace HotCargo.Debris;
 [ReflectiveSerialization(Explicit = true)]
 public sealed class DebrisState
 {
-    /// <summary>Spec 1202: run game seconds at which each live junk piece first could decay, by ship ID.</summary>
+    /// <summary>Spec 1242: run game seconds at which each live junk piece first could decay, by ship ID.</summary>
     [Serialize(Optional = true)] public Dictionary<ObjectID, double> Since = new();
     /// <summary>Junk pieces that burned up in this run.</summary>
     [Serialize(Optional = true)] public int Removed;

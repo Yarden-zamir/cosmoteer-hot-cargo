@@ -1,4 +1,4 @@
-# Debris decay (spec 1200 to 1206), single player: small loose junk glows, then burns up. A wreck with more than MaxParts parts
+# Debris decay (spec 1240 to 1246), single player: small loose junk glows, then burns up. A wreck with more than MaxParts parts
 # and tech crates stay. With the switch off, junk stays and nothing is tracked.
 # tier: smoke
 newgame run

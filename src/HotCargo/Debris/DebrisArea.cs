@@ -11,9 +11,9 @@ using HotCargo.Events;
 namespace HotCargo.Debris;
 
 /// <summary>
-/// Entry point of the Debris area (spec 1200 to 1219). Old loose junk glows, then burns up, so a long fight does not leave the
+/// Entry point of the Debris area (spec 1240 to 1246). Old loose junk glows, then burns up, so a long fight does not leave the
 /// system full of pieces that the game simulates. The check runs in the sim tick, reads sim state only and walks the ships in sim
-/// order. Each piece's age is run state, so every co-op machine removes the same pieces at the same tick (spec 1205).
+/// order. Each piece's age is run state, so every co-op machine removes the same pieces at the same tick (spec 1245).
 /// </summary>
 public static class DebrisArea
 {
@@ -37,7 +37,7 @@ public static class DebrisArea
         Check(run, sim, t, state);
     }
 
-    /// <summary>Spec 1202 to 1205: tracks every piece that can decay, forgets the others, and removes the pieces whose time is over.</summary>
+    /// <summary>Spec 1242 to 1245: tracks every piece that can decay, forgets the others, and removes the pieces whose time is over.</summary>
     static void Check(Run run, SimRoot sim, DebrisTunables t, DebrisState state)
     {
         double now = run.State.GameSeconds;
@@ -69,7 +69,7 @@ public static class DebrisArea
     }
 
     /// <summary>
-    /// Spec 1201: a junk piece can decay when it has no value and nothing holds it. Never: a ship that is not junk, an asteroid,
+    /// Spec 1241: a junk piece can decay when it has no value and nothing holds it. Never: a ship that is not junk, an asteroid,
     /// a wreck with more than MaxParts parts, a piece with resources (tech, mission items, cargo) or crew aboard, a station or
     /// landmark, the relic, a vanilla abandoned ship, a piece that a mission names, a piece that crew salvage, a piece in reach of a
     /// player's tractor beam, or a piece that the game locks against removal. Tech crates are not ships, so they never decay.
