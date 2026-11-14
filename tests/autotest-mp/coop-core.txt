@@ -24,6 +24,22 @@ step onboarding.coop-page
 waitfor hint_hc_coop == 1 15
 on 1 waitfor hint_hc_coop == 1 15
 
+step startjobs.pick
+# Spec 1204: the start job is one shared choice. Both machines show the panel, the client's hover shows on the host,
+# and the client's pick closes the panel and sets the job on both machines. "The Contract" changes nothing for the later steps.
+waitfor sj_panel == 1 15
+on 1 waitfor sj_panel == 1 15
+on 1 hover 1
+waitfor sj_hovers == 1 10
+on 1 hover off
+on 1 sj_click contract
+waitfor sj_pending == 0 10
+on 1 waitfor sj_pending == 0 10
+expect sj_job == 1
+on 1 expect sj_job == 1
+expect sj_panel == 0
+on 1 expect sj_panel == 0
+
 step core.client-heat
 # The client adds heat, and the first stage (Warning at heat 40, #19) starts on both machines.
 as 1 heat 40

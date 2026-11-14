@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # Build a player release zip and publish it as a GitHub release.
-# Usage: release.sh <version> [--prerelease] [--commit <sha>]
+# Usage: release.sh <version> [--commit <sha>]
+# A release is a full release and becomes the latest one. Only the dev builds (dev-release.yml) are prereleases.
 # Releases a tested commit, not whatever main is now, so releases need no merge freeze: by default the newest commit on
 # origin/main whose required checks (branch protection of main, for example build, private-data and game-tests) all
 # passed in CI. --commit picks one; it must be on origin/main and green. The zip is built in a scratch worktree there.
 # Set FORCE=1 to skip the check (not for normal use).
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION="${1:?usage: release.sh <version> [--prerelease] [--commit <sha>]}"; shift
-PRE="" WANT=""
+VERSION="${1:?usage: release.sh <version> [--commit <sha>]}"; shift
+WANT=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --prerelease) PRE=yes ;;
     --commit) WANT="${2:?--commit needs a sha}"; shift ;;
     *) echo "release: unknown argument $1"; exit 1 ;;
   esac
@@ -63,4 +63,4 @@ GAME_VERSION="$(scripts/game-version.sh "$WT")"
 
 git tag -a "$TAG" -m "Hot Cargo $VERSION" "$SHA"
 git push -q origin "$TAG"
-gh release create "$TAG" "$ZIP" --title "Hot Cargo $VERSION" --notes-file "$NOTES" ${PRE:+--prerelease}
+gh release create "$TAG" "$ZIP" --title "Hot Cargo $VERSION" --notes-file "$NOTES" --latest
