@@ -1,27 +1,66 @@
-# Abandoned ships (spec 764) and the run's relic ship (spec 765).
+# Abandoned ships (spec 764, 1124 to 1126) and the run's relic ship (spec 765).
+# A vanilla abandoned ship carries real loot and opens no dialog. The hold shows its outcome when it breaks open.
 newgame run
 wait 8
 ev_set CooldownSeconds 0
 ev_set StationEventChance 0
+ev_set ArrivalEventChance 0
 ev_set CourierChance 0
 # One relic sector per run, from RelicMinSector (2) to the sector before the Buyer.
 expect ev_relic_sector >= 2
-# A vanilla abandoned ship: coming near opens an Abandoned event (chance forced to 1), once per ship.
-ev_set AbandonedEventChance 1
+# 1. Abandoned Ship, steel and processors (forced): the cargo is in its storage, and the approach shows a message, not a page.
+ev_hulk_force abandoned_ship 1
 ev_abandoned
-ev_abandoned_goto
 pause off
 wait 2
-expect ev_pending == 1
-eventview
-choose last
+expect ev_hulk_stocked == 1
+expect ev_hulk_steel >= 30
+expect ev_hulk_processor >= 5
+expect ev_hulk_messaged == 0
 ev_abandoned_goto
-pause off
 wait 2
+expect ev_hulk_messaged == 1
 expect ev_pending == 0
-# The relic: the vault senses it far away, the event opens close up, and it gives 1 tech unit.
-# Other abandoned ships near the relic must not open their own event.
-ev_set AbandonedEventChance 0
+# Shot apart: the hold breaks open, and the cargo drops loose at vanilla drop rates.
+ev_mark
+ev_hulk_wreck shoot
+wait 2
+expect ev_hulk_stocked == 0
+expect ev_loose_steel_gain > 0
+# 2. The corporate trap (forced): bait steel and a Tracer Beacon. Careful salvage drops the beacon loose; shots would destroy it.
+ev_hulk_force abandoned_ship 4
+ev_abandoned
+wait 2
+expect ev_hulk_yarden_zamir.tracer_beacon == 1
+expect ev_hulk_steel >= 15
+ev_mark
+ev_hulk_wreck salvage
+wait 2
+expect ev_loose_yarden_zamir.tracer_beacon_gain == 1
+# 3. Cold Hulk, the reactor coughs (forced): when its hold breaks open, its tanks blow and damage the player ships close by.
+ev_hulk_force cold_hulk 2
+ev_abandoned
+wait 2
+expect ev_hulk_hyperium >= 15
+ev_abandoned_goto 100
+wait 2
+ev_mark
+ev_hulk_wreck shoot
+wait 2
+expect ev_hulk_stocked == 0
+expect ev_damage_gain > 0
+# From far away, the blast misses: the safe way to drain a cold hulk.
+ev_hulk_force cold_hulk 2
+ev_abandoned
+wait 2
+ev_abandoned_goto 600
+wait 2
+ev_mark
+ev_hulk_wreck shoot
+wait 2
+expect ev_hulk_stocked == 0
+expect ev_damage_gain == 0
+# 4. The relic: the vault senses it far away, the event opens close up, and it gives 1 tech unit.
 tech remove 1
 ev_relic_spawn
 expect ev_relic_messaged == 0

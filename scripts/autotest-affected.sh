@@ -5,6 +5,8 @@
 #        COMMITTED_ONLY=1 ignores uncommitted changes.
 #        RUNNER=pc keeps only the affected tests that CI does not run (the line "# runner: pc"); RUNNER=sim only the others.
 #        LIST_ONLY=1 RUNNER=pc autotest-affected.sh   the tests outside CI that a PR's owner checks before auto-merge.
+#        CHANGED_FILE=<file> reads the changed paths from that file (one per line) in place of git; CI uses it with the
+#        file list of a pull request (scripts/ci-test-set.sh).
 #        HEAD_REF=<ref> uses the changes of that ref in place of HEAD (no uncommitted changes); integrate.sh uses it
 #        with LIST_ONLY=1 to tell which branch of a batch touches a failed test.
 # --detach: run the suite detached (see autotest-all.sh).
@@ -42,8 +44,11 @@ TIMEOUT="${2:-400}"
 
 # Committed changes since BASE, plus uncommitted ones unless COMMITTED_ONLY=1.
 HEAD_REF="${HEAD_REF:-}"
-CHANGED="$( { git diff --name-only "$BASE"..."${HEAD_REF:-HEAD}"
-  if [[ "${COMMITTED_ONLY:-}" != 1 && -z "$HEAD_REF" ]]; then git diff --name-only HEAD; git ls-files --others --exclude-standard; fi; } | sort -u)"
+if [[ -n "${CHANGED_FILE:-}" ]]; then CHANGED="$(sort -u "$CHANGED_FILE")"
+else
+  CHANGED="$( { git diff --name-only "$BASE"..."${HEAD_REF:-HEAD}"
+    if [[ "${COMMITTED_ONLY:-}" != 1 && -z "$HEAD_REF" ]]; then git diff --name-only HEAD; git ls-files --others --exclude-standard; fi; } | sort -u)"
+fi
 TESTS=("core")
 FULL=no
 TIER="${AUTOTEST_TIER:-smoke}"

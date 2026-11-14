@@ -6,6 +6,7 @@
 # its whole real-time run). The single-player tests, sorted by name, then go round-robin over all shards, starting after
 # the last shard with a session, so that the shards without a session get the first extra test.
 # Limit: the split counts tests, not their run times. If one shard often runs much longer than the others, revisit it.
+# CI_TESTS, when set, limits the tests to these names (scripts/ci-test-set.sh, the set of the pull requests); unset runs all.
 # Writes the shard's results to $GITHUB_STEP_SUMMARY when it is set. Exit code 0 only when every test of the shard passed.
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -20,6 +21,13 @@ for f in tests/autotest/*.txt; do
   t="$(basename "$f" .txt)"
   if grep -qx '# runner: pc' "$f"; then PC+=("$t"); else SINGLES+=("$t"); fi
 done
+if [[ -n "${CI_TESTS+set}" ]]; then
+  keep() { [[ " $CI_TESTS " == *" $1 "* ]]; }
+  S=() T=()
+  for t in "${SESSIONS[@]}"; do keep "$t" && S+=("$t"); done
+  for t in "${SINGLES[@]}"; do keep "$t" && T+=("$t"); done
+  SESSIONS=("${S[@]+"${S[@]}"}") SINGLES=("${T[@]+"${T[@]}"}")
+fi
 MINE=()
 for i in "${!SESSIONS[@]}"; do (( i % SHARDS == SHARD - 1 )) && MINE+=("${SESSIONS[$i]}"); done
 start=$(( ${#SESSIONS[@]} % SHARDS ))

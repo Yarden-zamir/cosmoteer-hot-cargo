@@ -47,12 +47,29 @@ public sealed class ItemActionRules
     [Serialize(Optional = true)] public ItemContentRules[] Contents = [];
     /// <summary>The message when there are no contents. {0} = the ship.</summary>
     [Serialize(Optional = true)] public KeyString? MessageKey;
+    /// <summary>Spec 1146: a C# handler (ItemActions.Handlers) that runs first. It gives the message and can refuse, so the unit stays.</summary>
+    [Serialize(Optional = true)] public string? Handler;
+}
+
+/// <summary>The result of an item action handler: the message, and whether the action used the unit.</summary>
+public readonly record struct ItemActionResult(string Message, bool Used);
+
+/// <summary>Spec 1146: C# logic of an item action, named by its Handler in the rules.</summary>
+public interface IItemActionHandler
+{
+    /// <summary>Sim logic, from the MP input on every machine, before the unit is used.</summary>
+    ItemActionResult Run(Run run, SimRoot sim, Part part, int playerIndex);
+    /// <summary>UI only: lines for the button tooltip now (for example a fee), or null.</summary>
+    string? ToolTip(Run run, Part part);
 }
 
 /// <summary>Item context actions (spec 1111 to 1114): rules, the sim side, and the MP input.</summary>
 public static class ItemActions
 {
     static readonly ConditionalWeakTable<ResourceRules, ItemActionRules[]> Table = new();
+
+    /// <summary>Item action handlers by name. Areas add theirs in Register, before the rules load.</summary>
+    public static readonly Dictionary<string, IItemActionHandler> Handlers = new(StringComparer.Ordinal);
 
     /// <summary>Test only (item_force): the next action picks this content index. Set on every machine in co-op.</summary>
     internal static int? ForcedContent;
@@ -69,7 +86,8 @@ public static class ItemActions
             foreach (var a in actions)
             {
                 if (a.ID.Length == 0) throw new InvalidDataException($"{at}: an action has no ID");
-                if (a.Contents.Length == 0 && a.MessageKey is null) throw new InvalidDataException($"{at} {a.ID}: an action without Contents needs a MessageKey");
+                if (a.Handler is { } h && !Handlers.ContainsKey(h)) throw new InvalidDataException($"{at} {a.ID}: no item action handler '{h}'");
+                if (a.Contents.Length == 0 && a.MessageKey is null && a.Handler is null) throw new InvalidDataException($"{at} {a.ID}: an action without Contents and Handler needs a MessageKey");
                 if (a.Contents.Any(c => c.Weight < 0 || c.WeightPerHeat < 0)) throw new InvalidDataException($"{at} {a.ID}: weights must not be negative");
             }
             Table.AddOrUpdate(__instance, actions);
@@ -92,13 +110,21 @@ public static class ItemActions
     /// Sim logic, from the MP input on every machine. Takes one unit of the item out of the part, puts its Becomes item into the same
     /// slot and one rolled content into the part (or loose). Returns the message, or null when the part holds no unit.
     /// </summary>
-    public static string? Apply(Run run, SimRoot sim, Part part, ID<ResourceRules> item, string actionId)
+    public static string? Apply(Run run, SimRoot sim, Part part, ID<ResourceRules> item, string actionId, int playerIndex)
     {
         var action = For(item).FirstOrDefault(a => a.ID == actionId)
             ?? throw new InvalidOperationException($"item {item} has no action {actionId}");
         var tile = Tiles(part).FirstOrDefault(t => t.HasResources && t.ResourceType == item);
         if (tile is null) return null;
         var ship = part.Ship ?? throw new InvalidOperationException("the part has no ship");
+        string? handled = null;
+        if (action.Handler is { } h)
+        {
+            var result = Handlers[h].Run(run, sim, part, playerIndex);
+            Log.Info($"item action {item} {actionId} on {ship.Metadata.PlainShipName}: handler {h} used={result.Used}");
+            if (!result.Used) return result.Message;
+            handled = result.Message;
+        }
         tile.SetResources(tile.Resources - 1, item);
         if (action.Becomes is { } becomes) Place(sim, part, tile, becomes);
         string message;
@@ -115,6 +141,7 @@ public static class ItemActions
             message = Strings.FormatText(content.MessageKey.Key, ship.Metadata.XmlShipName);
             Log.Info($"item action {item} {actionId} on {ship.Metadata.PlainShipName}: roll {roll:0.000} over [{string.Join(", ", weights.Select(w => w.ToString("0.##")))}] -> {content.Resource?.ToString() ?? "nothing"}");
         }
+        else if (handled is not null) message = handled;
         else
         {
             message = action.MessageKey is { } k ? Strings.FormatText(k.Key, ship.Metadata.XmlShipName) : "";
@@ -139,7 +166,8 @@ public static class ItemActions
         Log.Info($"item action: no room in {ship.Metadata.PlainShipName} for {r}; it drifts loose");
     }
 
-    static bool Takes(FlexResourceGrid.ResourceTile t, ID<ResourceRules> r)
+    /// <summary>True when the tile can take one more unit: its preferred type allows it, and it is empty or holds a short stack of it.</summary>
+    internal static bool Takes(FlexResourceGrid.ResourceTile t, ID<ResourceRules> r)
     {
         var preferred = t.PreferredResourceType.Confirmed;
         if (preferred is { } p && p != r) return false;
@@ -195,7 +223,7 @@ internal sealed class ItemActionInput : MPInput
     {
         if (Run.Current is not { } run || run.Game != game || game.Sim is not { } sim) return;
         if (Part?.Ship is not { } ship || !Part.ExistsInSim(sim) || Part.IsDestroyed || !ship.Commands.IsCommandableBy(playerIndex)) return;
-        if (ItemActions.Apply(run, sim, Part, Item, Action) is not { Length: > 0 } message) return;
+        if (ItemActions.Apply(run, sim, Part, Item, Action, playerIndex) is not { Length: > 0 } message) return;
         // UI only: every machine shows the same result.
         Ux.UxKit.CenterText(game, message);
         Ux.UxKit.ChatLine(game, message);

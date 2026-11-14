@@ -1,19 +1,27 @@
 # Checks pull requests and the merge queue of main: private data, build against the game references and unit tests on
-# every run; the game tests in the headless sim (tools/headless-sim) on Linux only in the merge queue and in manual runs. Tests with the line "# runner: pc" need the Windows PC: the PR
-# owner runs the affected ones (LIST_ONLY=1 RUNNER=pc scripts/autotest-affected.sh) and ticks the PR template's box.
+# every run. Game tests in the headless sim (tools/headless-sim) on Linux: in the merge queue, the set of the group's pull
+# requests (scripts/ci-test-set.sh); every test in manual and scheduled runs (the full-suite check). Tests with the line
+# "# runner: pc" need the Windows PC: the PR owner runs the affected ones (LIST_ONLY=1 RUNNER=pc
+# scripts/autotest-affected.sh) and ticks the PR template's box.
 # Game files: the private repo Yarden-zamir/cosmoteer-hot-cargo-game-refs (read-only deploy key). Only runs of this repo
 # get the key (pull requests from forks do not); never pull_request_target. Game files never go into a cache or an artifact.
 name: check
 on:
   # No push trigger: main moves only through the merge queue, and main gets the exact commit that the queue tested, with
   # its checks. release.sh reads those checks. dev-release.yml has its own trigger.
+  # "edited": a change of the pull request text checks its "### Game tests" block again.
   pull_request:
+    types: [opened, synchronize, reopened, edited]
   # The merge queue of main: it tests each pull request on top of main and the pull requests ahead of it.
   merge_group:
     types: [checks_requested]
   # A full run of a branch on request (gh workflow run check.yml --ref <branch>), for example before a risky pull request
   # enters the queue.
   workflow_dispatch:
+  # The safety net: every game test on main, so that a break that the smaller queue sets skip stays short. It skips a main
+  # commit that already has a green full-suite check. Revisit the interval if main moves much faster or slower.
+  schedule:
+    - cron: "17 */3 * * *"
 # A newer push to a pull request cancels its older run. Merge queue groups and manual runs are never cancelled.
 concurrency:
   group: check-${{ github.event_name }}-${{ github.ref }}
@@ -32,25 +40,41 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     outputs:
       game-tests: ${{ steps.scope.outputs.game-tests }}
+      tests: ${{ steps.scope.outputs.tests }}
+      shards: ${{ steps.scope.outputs.shards }}
+      full: ${{ steps.scope.outputs.full }}
     steps:
       - uses: actions/checkout@v7.0.1
-      # The game tests run in the merge queue and in manual runs, not on pull requests: the owner picks the tests to run
-      # before a push. A merge queue group skips them when it changes only docs or scripts that the game tests do not run
-      # (scripts/ci-needs-game-tests.sh); it compares with the main commit that it starts from. A change to this file
-      # always runs them.
+      # The game test set (scripts/ci-test-set.sh). A pull request run checks its "### Game tests" block and shows the set
+      # that the queue will run; it runs no game test. A merge queue group runs the union of its pull requests' sets.
+      # Manual runs and the schedule run every test; the schedule skips a commit that has a green full-suite check.
       - id: scope
         env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
           QUEUE_BASE: ${{ github.event.merge_group.base_sha }}
+          QUEUE_HEAD: ${{ github.event.merge_group.head_sha }}
         run: |
+          run=true
           case "${{ github.event_name }}" in
-            pull_request) result="false (pull request: the game tests run in the merge queue)" ;;
-            merge_group) git fetch -q --depth=1 origin "$QUEUE_BASE"
-              result="$(git diff --name-only --no-renames "$QUEUE_BASE" HEAD | scripts/ci-needs-game-tests.sh)" ;;
-            workflow_dispatch) result="true (manual run)" ;;
+            pull_request) scripts/ci-test-set.sh "$PR" > set.txt; run=false ;;
+            merge_group) scripts/ci-test-set.sh --group "$QUEUE_BASE" "$QUEUE_HEAD" > set.txt ;;
+            workflow_dispatch) scripts/ci-test-set.sh --all > set.txt ;;
+            schedule)
+              done="$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?check_name=full-suite" \
+                --jq '[.check_runs[] | select(.conclusion == "success")] | length')"
+              if (( done > 0 )); then printf '== main %s has a green full suite\nTESTS \nSHARDS 0\nFULL no\n' "$GITHUB_SHA" > set.txt
+              else scripts/ci-test-set.sh --all > set.txt; fi ;;
             *) echo "check: unexpected event ${{ github.event_name }}"; exit 1 ;;
           esac
-          echo "game tests: $result"
-          echo "game-tests=${result%% *}" >> "$GITHUB_OUTPUT"
+          cat set.txt
+          tests="$(sed -n 's/^TESTS //p' set.txt)" shards="$(sed -n 's/^SHARDS //p' set.txt)"
+          [[ "$run" == true && -n "$tests" ]] || run=false
+          { echo "### Game tests"; echo; grep '^== ' set.txt | sed 's/^== /- /'
+            if [[ "${{ github.event_name }}" == pull_request ]]; then echo; echo "The merge queue runs this set for this pull request."; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          { echo "game-tests=$run"; echo "tests=$tests"; echo "shards=$(jq -cn --argjson n "$shards" '[range(1; $n + 1)]')"
+            echo "full=$(sed -n 's/^FULL //p' set.txt | sed 's/yes/true/; s/no/false/')"; } >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v7.0.1
         with:
           repository: Yarden-zamir/cosmoteer-hot-cargo-game-refs
@@ -63,9 +87,9 @@ jobs:
         env:
           CosmoteerBin: ${{ github.workspace }}/.game-refs/Bin
       - run: dotnet run --project tests/HotCargo.Tests
-  # The game tests, split over a few full jobs (scripts/ci-sim-tests.sh). A runner has 4 cores and 16 GB, and one sim takes
-  # about one core and 2 GB, so each job runs 4 sims at once. 6 jobs: two merge queue groups (9 jobs each) fit in the ~20
-  # parallel jobs of the free plan. More jobs make one group shorter but make the second group wait.
+  # The game tests of the set, split over a few full jobs (scripts/ci-sim-tests.sh). A runner has 4 cores and 16 GB, and one
+  # sim takes about one core and 2 GB, so each job runs 4 sims at once. The set decides the job count, at most 6
+  # (scripts/ci-test-set.sh): two merge queue groups fit in the ~20 parallel jobs of the free plan.
   game-tests-shard:
     runs-on: ubuntu-latest
     # After build, so that the cheap required checks never wait in the job queue behind the shards. Forks: no secrets, no run.
@@ -75,7 +99,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: ${{ fromJSON(needs.build.outputs.shards) }}
     steps:
       # The repo in repo/ and the game files in .game/, so that the scripts find ../.game as on a developer machine.
       - uses: actions/checkout@v7.0.1
@@ -107,6 +131,7 @@ jobs:
         working-directory: repo
         env:
           HOT_CARGO_SIM_JOBS: "4"
+          CI_TESTS: ${{ needs.build.outputs.tests }}
         run: scripts/ci-sim-tests.sh ${{ matrix.shard }} ${{ strategy.job-total }}
       # Only text logs, checked for game data (scripts/ci-check-logs.sh); never the game files or the staged mod.
       - name: Collect logs
@@ -143,3 +168,19 @@ jobs:
           echo "build: ${{ needs.build.result }}, game tests needed: ${{ needs.build.outputs.game-tests }}, shards: ${{ needs.game-tests-shard.result }}"
           [[ "${{ needs.game-tests-shard.result }}" == success ]] || [[ "${{ needs.build.result }}" == success &&
             "${{ needs.build.outputs.game-tests }}" == false && "${{ needs.game-tests-shard.result }}" == skipped ]]
+  # The full-suite check: only when the run takes every game test (manual and scheduled runs, or a group that needs all).
+  # release.sh needs it green on the released commit. A failure on main shows as a red check on the commit.
+  full-suite:
+    runs-on: ubuntu-latest
+    needs: [build, game-tests-shard]
+    # Never on pull_request runs: they skip the game tests, even when a check.yml change asks for all of them.
+    if: always() && needs.build.outputs.full == 'true' && github.event_name != 'pull_request'
+    steps:
+      - name: Result of the full suite
+        run: |
+          result="${{ needs.game-tests-shard.result }}"
+          { echo "### Full suite"; echo
+            if [[ "$result" == success ]]; then echo "Every CI game test passed on ${GITHUB_SHA:0:9}."
+            else echo "**The full suite failed on ${GITHUB_SHA:0:9}** (shards: $result). The game-test-logs artifacts hold the logs."; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          [[ "$result" == success ]]

@@ -63,10 +63,13 @@ step relays.bribe
 mp contract_money 100000
 mp rl_here pirates
 waitfor rl_guards >= 2 60
-# The guards spawn at the relay, often in stasis far from the fleet: bring them next to the client's ship.
+# The guards spawn at the relay, often in stasis far from the fleet: bring them next to the client's ship and hold them there.
+# A start ship's comms range is short, and a free guard hovers at its edge, so the page would open and close.
 as 1 rl_guardsnear
 waitfor rl_live >= 1 15
-# Sight of a moved enemy ship comes a moment later: the page opens only when a human ship can call the guard.
+# Guards that were in stasis wake free; a second call holds the live ones.
+as 1 rl_guardsnear
+# The host submits, so the host's own ship must be able to call the guard (the input checks the chooser's ship).
 waitfor rl_callable == 1 30
 on 1 rl_pick money price
 waitfor rl_picks >= 1 30

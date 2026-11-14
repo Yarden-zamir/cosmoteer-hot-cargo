@@ -1,0 +1,31 @@
+# Formation rows (spec 423 to 427): the V in flight and the editor with the Formation preset. Windowed test slot (needs graphics):
+# scripts/screens.sh tests/screens/shipai-formation.txt <out-dir>
+render on
+newgame run
+wait 10
+ev_set Enabled false
+closepanel
+wait 1
+pause off
+godmode on
+tactics_ally
+tactics_ally
+tactics_ship 1
+tactics Formation
+tacticsauto on
+tactics_ship 2
+tactics Formation
+tacticsauto on
+waitfor formation_followers == 2 30
+tactics_ship 0
+tactics_manual
+wait 12
+vault focus wide
+wait 2
+screenshot formation-v
+tactics_ship 1
+tactics_editor open
+wait 2
+screenshot formation-editor
+tactics_editor close
+quit

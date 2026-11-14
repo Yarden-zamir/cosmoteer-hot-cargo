@@ -1,0 +1,47 @@
+# Autonomous part sprites (spec 1057) in the game and in the ship editor (build mode). Windowed test slot (needs graphics):
+# scripts/screens.sh tests/screens/autonomy-sprites.txt <out-dir>
+render on
+newgame run
+wait 10
+ev_set Enabled false
+closepanel
+wait 1
+pause off
+godmode on
+auto_build Showcase away yarden_zamir.computer@2,0,1 cosmoteer.mining_laser_small@3,0,1 yarden_zamir.targeted_reactor@2,2 cosmoteer.storage_2x2@0,0 yarden_zamir.funnel@0,2 cosmoteer.thruster_small@0,4 cosmoteer.thruster_small@3,4 cosmoteer.thruster_small@0,-2,2 cosmoteer.thruster_small@3,-2,2 cosmoteer.thruster_small@-2,0,1 cosmoteer.thruster_small@-2,2,1 cosmoteer.thruster_small@6,0,3 cosmoteer.thruster_small@4,2,3
+wait 3
+auto_focus 18
+wait 2
+screenshot sprites-roofs
+# Build mode: the interior on the build grid, and each part picked in the part list.
+auto_buildmode on
+wait 2
+auto_focus 18
+wait 2
+screenshot sprites-build
+auto_buildpart yarden_zamir.computer
+wait 2
+screenshot sprites-pick-computer
+auto_buildpart yarden_zamir.targeted_reactor
+wait 2
+screenshot sprites-pick-reactor
+auto_buildpart yarden_zamir.funnel
+wait 2
+screenshot sprites-pick-funnel
+auto_buildmode off
+wait 1
+# Damage levels: about a half and a fifth of the health.
+godmode off
+auto_damage yarden_zamir.computer 0.5
+auto_damage yarden_zamir.targeted_reactor 0.5
+auto_damage yarden_zamir.funnel 0.5
+wait 2
+auto_focus 18
+wait 1
+screenshot sprites-damage-half
+auto_damage yarden_zamir.computer 0.2
+auto_damage yarden_zamir.targeted_reactor 0.2
+auto_damage yarden_zamir.funnel 0.2
+wait 2
+screenshot sprites-damage-fifth
+quit
