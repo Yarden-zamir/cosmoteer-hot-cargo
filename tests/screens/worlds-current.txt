@@ -1,0 +1,38 @@
+# Spec 221: the trade hub current (WORLDS.md). The smaller cloud with its leaning arrows, and a tech crate that drifts out at the near side.
+# Windowed test slot (needs graphics): scripts/screens.sh tests/screens/worlds-current.txt <out-dir>
+render on
+newgame run
+wait 8
+closepanel
+wait 1
+ev_set Enabled false
+godmode on
+tech_set LossGraceSeconds 900
+worlds jumpto hc_trade_hub
+wait 1
+pause off
+worlds goto current
+# auto_focus fits a square of world size around the auto_ship ship; here that is the player ship.
+auto_ship Model-L
+auto_focus 9000
+wait 3
+screenshot current-01-overview
+auto_focus 4500
+wait 2
+screenshot current-02-arrows
+tech drop 1
+vault focus wide
+wait 2
+screenshot current-03-crate-drop
+auto_focus 6000
+wait 20
+screenshot current-04-crate-drifting
+wait 20
+auto_focus 6000
+wait 1
+screenshot current-05-crate-near-edge
+wait 25
+auto_focus 7000
+wait 1
+screenshot current-06-crate-out
+quit
