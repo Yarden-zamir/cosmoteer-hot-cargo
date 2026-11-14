@@ -19,7 +19,8 @@ You stole corporate tech. The corporation wants it back. Get it across about 8 s
 - **Sector types.** Trade hubs with currents, mining belts, solar zones and ion storms, each with its own hazard.
 - **FTL-style events.** Distress beacons, checkpoints, fences, rival thieves: choices with risks, costs and rewards.
 - **Story chains.** Each station has a story in parts. What you do in one part decides the next, and some choices come back later.
-- **Learn as you go.** Hot Cargo pages join the game's "How to Play" list and codex. The career log gets a "Hot Cargo run" tab with the story of your run.
+- **Start jobs.** Each run starts with a choice of jobs: less cargo worth more, a farther Buyer who pays more, a hot start, stronger hunters. Each job lists all its rules.
+- **Learn as you go.** Hot Cargo pages join the game's "How to Play" list and codex. The career log gets a "Hot Cargo run" tab with the story of your run. The tab also lists your past runs with their scores.
 
 ![Heat stage alert](docs/screenshots/heat-alert.jpg)
 
@@ -54,7 +55,7 @@ It also improves some of the base game's UI. You can switch off each change in `
 
 Windows, Cosmoteer from Steam, game version 0.30.5a.
 
-1. Download the latest zip from [Releases](https://github.com/Yarden-zamir/cosmoteer-hot-cargo/releases).
+1. Download the latest zip from [Releases](https://github.com/game-design-driven/cosmoteer-hot-cargo/releases).
 2. Close Cosmoteer, unzip, and double-click `install.bat`.
 3. In Cosmoteer, open **Mods**, turn on **Hot Cargo**, and restart the game when it asks.
 4. Start a new career. The map size "Hot Cargo run" is the default.

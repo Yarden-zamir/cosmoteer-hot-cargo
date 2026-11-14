@@ -123,6 +123,15 @@ public static class AutonomyModel
         _ => Enumerable.Range(0, box.H).Select(i => new Cell(box.X - 1, box.Y + box.H - 1 - i)).ToArray(),
     };
 
+    /// <summary>Spec 1051: a working Computer counts as this many crew members in the crew slot it serves.</summary>
+    public const int ComputerCrew = 1;
+
+    /// <summary>Spec 1051: whether a crew slot is full with the crew that is there and the Computer's crew.</summary>
+    public static bool CrewMet(int crew, int needed, int computer) => crew + computer >= needed;
+
+    /// <summary>Spec 1051: the crew that vanilla still sends to a served slot.</summary>
+    public static int CrewStillWanted(int desired, int computer) => Math.Max(0, desired - computer);
+
     /// <summary>
     /// Spec 1051. Which part a Computer mans: the first front tile that holds a part that can be manned. partAt gives the index of
     /// the part on a tile, or null for none or for a part that cannot be manned. Null when no front tile has one.

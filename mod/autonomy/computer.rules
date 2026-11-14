@@ -1,5 +1,5 @@
 // Computer (spec 1050, 1051). 2x1: command points and sensors without crew, like control_room_small. It needs power.
-// It mans the one crewed part in front of its arrow (C#, AutonomyPatches). Art: vanilla 1x2 sprites turned a quarter
+// It counts as 1 crew member in the one crewed part in front of its arrow (C#, Autonomy.cs). Art: vanilla 1x2 sprites turned a quarter
 // (UVRotation = 1) to fit 2x1: the rocket battery grille floor, the chaingun magazine walls and roof, the processor chip.
 // The chip sits at the front (top at rotation 0), the batteries at the back.
 Part : <./Data/ships/terran/base_part_terran.rules>/Part

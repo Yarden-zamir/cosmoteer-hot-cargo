@@ -112,6 +112,14 @@ public static class UxArea
         Autotest.Commands["closepanel"] = _ => CenterPanel.CloseAll();
         // comms open|contract|chain|close: opens a comms window from the first own ship to the nearest trading station
         // (contract: the station of the offer that contract_pick chose; chain: the test chain's station), or closes it.
+        // comms_fit: 1 when at least one Hot Cargo comms page is open and every one is on the screen and shows its whole page or its scroll bar (spec 816).
+        Autotest.Fields["comms_fit"] = () => CommsHail.PageFit() is var (open, fit) && open > 0 && fit == open ? 1 : 0;
+        // comms_scroll <amount>: scrolls every open Hot Cargo comms page (spec 816), like the mouse wheel. Down is positive.
+        Autotest.Commands["comms_scroll"] = arg =>
+        {
+            if (CommsHail.ScrollOpenPages(float.Parse(arg, System.Globalization.CultureInfo.InvariantCulture)) == 0)
+                throw new InvalidOperationException("no open comms window with a Hot Cargo page");
+        };
         Autotest.Commands["comms"] = arg =>
         {
             var game = Autotest.RequireRun().Game;
@@ -138,6 +146,8 @@ public static class UxArea
         Autotest.Commands["map"] = arg => { var r = Autotest.RequireRun(); r.Game.ShowMap = arg != "off"; };
         // camera <x> <y> <size>: test only. The sim camera stops following ships, centers on the world point and zooms to fit a
         // square of that size (for whole-system screenshots).
+        // mapfocus: test only. Opens the galaxy map and centers it on the current system (vanilla MapNode.FocusCamera).
+        Autotest.Commands["mapfocus"] = _ => { Autotest.RequireRun().Game.CurrentMapNode.FocusCamera(playSound: false); Autotest.Wait(3); };
         Autotest.Commands["camera"] = arg =>
         {
             var p = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);

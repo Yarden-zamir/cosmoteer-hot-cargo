@@ -7,6 +7,8 @@ event the_fence
 pick 1
 choose 1 1
 ev_set Enabled false
+# The chain station's faction must not be the corporation's ally, which never shelters (spec 643, 665).
+fa_roles other -
 chain_force black_box
 chain_tostation
 chain_accept
@@ -50,4 +52,12 @@ wait 3
 expectstage end
 expect ev_tech_gain == 1
 expect chain_story >= 3
+# Spec 665: the chain ended well, so the station's faction shelters the players; its systems show SHELTER, also after a load.
+expect fa_chain_shelters == 1
+expect fa_tag_shelter >= 1
+save chains_shelter
+load chains_shelter
+wait 5
+expect fa_chain_shelters == 1
+expect fa_tag_shelter >= 1
 quit

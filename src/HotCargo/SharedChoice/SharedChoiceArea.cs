@@ -89,6 +89,8 @@ public static class SharedChoiceArea
         // Listen buttons that show on this machine, open listen windows (after one frame of each), and option buttons with votes
         // shown in listen windows and in the player's own comms windows.
         Autotest.Fields["listen_hails"] = () => ListenIn.ShownCount;
+        // Join buttons on this machine: hails of the local player index by another human of that index (spec 1139).
+        Autotest.Fields["listen_joins"] = () => ListenIn.JoinCount;
         // Open comms channels of all players in the sim (the vanilla set that the listen list reads).
         Autotest.Fields["listen_channels"] = () => RequireRun().Game.Sim.Mode is Cosmoteer.Modes.Career.CareerSimModeManager m ? m.OpenComms.Values.Sum(c => c.Count) : 0;
         Autotest.Fields["listen_open"] = () => { ListenIn.Frame(); return ListenIn.OpenWindows().Count(); };
