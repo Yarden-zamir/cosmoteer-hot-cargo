@@ -68,8 +68,7 @@ debt_page collector
 debt_notnow
 wait 1
 expect debt_wanted == 1
-# The score counts the debt twice.
+# The score counts the debt twice. Read it in the frame of the delivery: the lender's police change money and ships later.
 buyer deliver 0
-wait 1
 expect debt_score_factor == 2
 quit
