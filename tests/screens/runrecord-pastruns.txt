@@ -1,0 +1,10 @@
+# Past Runs window of the main menu (spec 1227 to 1231), with three sample runs. Windowed test slot (needs graphics).
+render on
+wait 6
+pr_sample
+pr_click
+wait 2
+screenshot runrecord-pastruns
+pr_close
+rr_clear
+quit

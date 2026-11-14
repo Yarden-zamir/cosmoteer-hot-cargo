@@ -8,4 +8,23 @@ HotCargoRunRecord
 	RowLostFmt = "<gray>{0}</gray>  <bad>LOST</bad>   {2}   sector {3}/{4}   {5}   peak heat {6}   {7} vaults lost"
 	NoJob = "no job"
 	ThisRun = "\n<fame_color>THIS RUN</fame_color>"
+	Won = "<good>WON</good>"
+	Lost = "<bad>LOST</bad>"
+	ErrorFmt = "<bad>The run record does not read: {0}</bad>"
+
+	// Past Runs window on the main menu (spec 1227 to 1233).
+	MenuButton = "PAST RUNS"
+	Title = "Past Runs"
+	SummaryFmt = "{0} runs on this machine. Click a column to sort by it."
+	BestMark = "<good>BEST</good>"
+	Close = "Close"
+	ColDate = "Date"
+	ColJob = "Start job"
+	ColResult = "Result"
+	ColScore = "Score"
+	ColDelivered = "Delivered"
+	ColTime = "Time"
+	ColPeakHeat = "Peak heat"
+	ColVaultsLost = "Lost vaults"
+	ColPlayers = "Players"
 }

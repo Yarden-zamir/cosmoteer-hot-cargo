@@ -39,5 +39,53 @@ public static class RunRecordArea
         Autotest.Fields["rr_sectors"] = () => ThisRun()?.Sectors ?? -1;
         Autotest.Fields["rr_job_matches"] = () => ThisRun() is { } e && e.Job == Autotest.RequireRun().State.StartJobs.Job ? 1 : 0;
         Autotest.Fields["rr_tab_rows"] = () => RecordRows.Shown;
+        AddPastRunsAutotest();
+    }
+
+    static PastRunsDialog Window() => PastRunsDialog.Open ?? throw new InvalidOperationException("the Past Runs window is not open");
+
+    /// <summary>Spec 1227 to 1233: the Past Runs window. These commands work on the main menu, before a career starts.</summary>
+    static void AddPastRunsAutotest()
+    {
+        // pr_sample: writes three sample runs to this test slot's record file (scores 120,000 won, 340,000 won, 0 lost; newest last).
+        Autotest.Commands["pr_sample"] = _ =>
+        {
+            var day = new DateTimeOffset(2026, 11, 10, 20, 0, 0, TimeSpan.Zero);
+            List<RunEntry> runs =
+            [
+                new("3", day.AddDays(2), false, 0, 0, 1500, 4, 6, 100f, 3, "rush", "Rush Order", 2),
+                new("2", day.AddDays(1), true, 340_000, 6, 5400, 10, 10, 95f, 1, "deep_space", "Deep Space Buyer", 1),
+                new("1", day, true, 120_000, 4, 4200, 8, 8, 80f, 0, "contract", "The Contract", 1),
+            ];
+            Directory.CreateDirectory(Path.GetDirectoryName(Recorder.FilePath)!);
+            File.WriteAllText(Recorder.FilePath, RunRecordModel.Write(runs));
+            Recorder.ResetForTest();
+        };
+        // pr_badfile: writes a record file that does not read.
+        Autotest.Commands["pr_badfile"] = _ =>
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(Recorder.FilePath)!);
+            File.WriteAllText(Recorder.FilePath, "{ not json");
+            Recorder.ResetForTest();
+        };
+        // pr_click: clicks the main menu button like a player (the button's own click event).
+        Autotest.Commands["pr_click"] = _ =>
+        {
+            var button = PastRunsButton.Shown is { } b ? b : throw new InvalidOperationException("no Past Runs button on the main menu");
+            button.ClickController.InvokeClicked();
+            Autotest.Wait(1);
+        };
+        // pr_sort <column>: clicks the header of a RunColumn.
+        Autotest.Commands["pr_sort"] = arg => Window().SortBy(Enum.Parse<RunColumn>(arg.Trim()));
+        Autotest.Commands["pr_close"] = _ => { Window().Close(); Autotest.Wait(1); };
+        Autotest.Fields["pr_button"] = () => PastRunsButton.Shown is null ? 0 : 1;
+        Autotest.Fields["pr_open"] = () => PastRunsDialog.Open is null ? 0 : 1;
+        Autotest.Fields["pr_rows"] = () => Window().Shown.Count;
+        // The score of the first table row, and the ID of the first row (the sample IDs are numbers).
+        Autotest.Fields["pr_first_score"] = () => Window().Shown[0].Score;
+        Autotest.Fields["pr_first_id"] = () => double.Parse(Window().Shown[0].Id, System.Globalization.CultureInfo.InvariantCulture);
+        Autotest.Fields["pr_best_row"] = () => Window().BestRow;
+        Autotest.Fields["pr_descending"] = () => Window().Descending ? 1 : 0;
+        Autotest.Fields["pr_error"] = () => Recorder.LoadError is null ? 0 : 1;
     }
 }

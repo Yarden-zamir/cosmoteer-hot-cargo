@@ -1,0 +1,37 @@
+# Past Runs window of the main menu (spec 1227 to 1233). It runs on the main menu, before a career starts.
+# tier: smoke
+expect pr_button == 1
+# Empty record: the window opens with no rows.
+rr_clear
+pr_click
+expect pr_open == 1
+expect pr_rows == 0
+expect pr_best_row == -1
+pr_close
+expect pr_open == 0
+# Three runs: sorted by score, highest first, and the best run marked.
+pr_sample
+pr_click
+expect pr_rows == 3
+expect pr_first_score == 340000
+expect pr_descending == 1
+expect pr_best_row == 0
+# A header click sorts by that column; a second click turns the order around.
+pr_sort Date
+expect pr_first_id == 3
+expect pr_best_row == 1
+pr_sort Date
+expect pr_first_id == 1
+pr_sort Score
+expect pr_first_score == 340000
+pr_sort Score
+expect pr_first_score == 0
+pr_close
+# A file that does not read: the window shows the error and no rows, and the file stays as it was.
+pr_badfile
+pr_click
+expect pr_error == 1
+expect pr_rows == 0
+pr_close
+rr_clear
+quit
