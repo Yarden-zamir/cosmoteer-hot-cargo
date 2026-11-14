@@ -164,6 +164,36 @@ internal static class Resupply
         return done;
     }
 
+    /// <summary>Tactics log event of a station supply (autotest field tactic_fallback_supply).</summary>
+    public const string SupplyEvent = "fallback_supply";
+
+    /// <summary>
+    /// Spec 1308, 1315: one AI tick of a station visit. The ship flies next to the station; there the station supplies it once
+    /// (supplied turns true) and repairs it, and the ship holds still. threat: the ship keeps its strong side to it on the way.
+    /// </summary>
+    public static void VisitStation(Ship ship, StationRef station, ref bool supplied, Ship? threat, TacticsTunables t)
+    {
+        if (!AtStation(ship, station))
+        {
+            Ai.PersonalityStrategy.MoveGuarded(ship, Beside(ship, station.Center, station.Radius, t.FallBackDockGap), t.FallBackDockGap * 0.5f, threat, t);
+            return;
+        }
+        if (!supplied)
+        {
+            var (units, crew) = Supply(ship);
+            supplied = true;
+            TacticsLog.Event(ship, SupplyEvent, $"station {station.Live?.Metadata.PlainShipName} supplies {units} units and {crew} crew");
+        }
+        StationRepair(ship, t.FallBackStationRepairsPerTick);
+        HoldStill(ship);
+    }
+
+    /// <summary>Stops the ship where it is: no move or attack command.</summary>
+    public static void HoldStill(Ship ship)
+    {
+        if (ship.Commands.CurConfirmedCommand is not null) ship.Commands.Clear();
+    }
+
     /// <summary>A spot gap from the target's hull on the ship's side, so the ship stops next to it and not inside it.</summary>
     public static Vector2 Beside(Ship ship, Vector2 center, float radius, float gap)
     {
